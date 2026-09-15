@@ -499,6 +499,99 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
     a.close(); b.close();
   });
 
+  // An open socket bills the room's Durable Object for wall-clock time whether
+  // anyone is typing or not, so a session that nobody is using lets go of it
+  // (client/session.mjs, "sleeping an idle tab"). The deadlines are in
+  // milliseconds here; they are ten and two minutes in a browser.
+  test('an unused session lets go of the socket, and stops hearing the room', async () => {
+    const room = uniqueRoom('sleep');
+    const a = open(room, 'ada', p, { idleMs: 600, hiddenMs: 0 });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+    await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+
+    await waitFor(() => a.asleep, 5000, 'the idle session never let go of the socket');
+    // Not `offline`: nothing failed, and the editor draws a band over the page
+    // for offline that would be a lie here.
+    assert.equal(a.state.status, 'asleep');
+    assert.equal(b.asleep, false, 'idleMs: 0 never sleeps');
+
+    const docB = parseContent(p.content);
+    const slot = docB.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+    slot.text = slot.text + ' while A was asleep';
+    b.flush({ content: serializeContent(docB), layout: p.layout });
+    await sleep(500);
+    assert.ok(!a.files().content.includes('while A was asleep'), 'a sleeping session is not listening');
+    a.close(); b.close();
+  });
+
+  // The waking half, with the deadline out of the way: a test short enough to
+  // watch a session fall asleep is far too short for it to stay awake once it
+  // has, so this one puts it to sleep by hand and exercises the way back.
+  test('a woken session merges what it did while asleep with what it missed', async () => {
+    const room = uniqueRoom('wake');
+    const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0 });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+    await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+
+    assert.equal(a.sleep(), true);
+    assert.equal(a.state.status, 'asleep');
+
+    const docB = parseContent(p.content);
+    const key = docB.blocks.find(x => x.kind === 'slot' && x.text.length > 20).key;
+    const slotB = docB.blocks.find(x => x.key === key);
+    slotB.text = slotB.text + ' (B while A was asleep)';
+    b.flush({ content: serializeContent(docB), layout: p.layout });
+    await sleep(400);
+    assert.ok(!a.files().content.includes('(B while A'), 'a sleeping session is not listening');
+
+    // Typing is what wakes it: the editor calls flush() as it always does, and
+    // the edit made while the socket was gone is merged on the way back in.
+    const docA = parseContent(a.files().content);
+    const slotA = docA.blocks.find(x => x.key === key);
+    slotA.text = 'A while asleep: ' + slotA.text;
+    a.mark(); a.flush({ content: serializeContent(docA), layout: p.layout });
+    assert.equal(a.asleep, false, 'a local edit wakes the session at once');
+
+    await waitFor(() => {
+      const fa = a.files().content;
+      return a.state.status === 'live' && fa === b.files().content
+        && fa.includes('(B while A was asleep)') && fa.includes('A while asleep: ');
+    }, 15_000, 'the woken session never converged with what it missed');
+    assert.equal(a.shadow.getArray('blocks').length, b.shadow.getArray('blocks').length, 'no duplicate blocks');
+    // Both edits, one slot, nobody's lost — the same merge a dropped
+    // connection already gets, reached on purpose.
+    const merged = parseContent(a.files().content).blocks.find(x => x.key === key).text;
+    assert.ok(merged.startsWith('A while asleep: ') && merged.endsWith('(B while A was asleep)'), merged);
+    a.close(); b.close();
+  });
+
+  test('a collaborator typing keeps an otherwise idle session awake', async () => {
+    const room = uniqueRoom('watch');
+    // A is only READING — no local edits at all, and a deadline it would trip
+    // several times over during this test.
+    const a = open(room, 'ada', p, { idleMs: 500, hiddenMs: 0 });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+
+    // Duration is billed per ROOM, not per connection: B holds it awake
+    // regardless, so A leaving would save nothing and cost A the edits.
+    const docB = parseContent(p.content);
+    const slot = docB.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+    for (let i = 0; i < 6; i++) {
+      slot.text = slot.text + ` ${i}`;
+      b.flush({ content: serializeContent(docB), layout: p.layout });
+      await sleep(200);
+      assert.equal(a.asleep, false, `A slept while B was typing (round ${i})`);
+    }
+    await waitFor(() => a.files().content.includes(' 5'), 10_000, 'A never saw B\'s last edit');
+    a.close(); b.close();
+  });
+
   test('presence: selection, page, typing spot and colour reach the other side, and leave with it', async () => {
     const room = uniqueRoom('presence');
     const seenA = [], seenB = [];

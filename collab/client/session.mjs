@@ -118,6 +118,45 @@ function peerOf(clientId, st) {
 const STATUS_POLL_MS = 200;
 const PRESENCE_POLL_MS = 250;
 
+/* --------------------------------------------------- sleeping an idle tab */
+//
+// A Durable Object is billed for wall-clock time while a websocket is open,
+// not for the work it does — the room sets `hibernate: false`, so an open
+// socket bills 128 MB × wall-clock whether anyone is typing or not. One tab
+// left open overnight is ~10,800 GB-s/day, which is the whole free daily
+// allowance spent on nobody editing.
+//
+// So the socket is not a thing a tab holds for as long as it is open. It is
+// held for as long as somebody is USING the document, and dropped when they
+// are not. Yjs makes that safe in a way it would not be for a plain
+// websocket editor: both documents stay in memory while the socket is gone,
+// local edits keep landing in the shadow, and the reconnect merges them —
+// the same path a network blip already takes, exercised deliberately.
+//
+// Three deliberate choices:
+//
+//   - A REMOTE update counts as activity. Duration is billed per ROOM, not
+//     per connection, so staying to watch a collaborator type costs nothing:
+//     they are holding the room awake regardless. The saving is only ever
+//     from a room where EVERYONE has stopped, which is exactly when it is
+//     free to leave. Without this rule the reader of a document someone else
+//     is writing would be dropped mid-sentence for no saving at all.
+//   - Activity is measured HERE, from document and presence changes, not
+//     read off the editor's own `idle` flag. That flag is wired to three
+//     events on the top window (edit.html), so input inside the report
+//     iframe does not always reset it. Being wrongly marked idle currently
+//     dims an avatar; if it also dropped the socket it would need to be
+//     right, and this is the version that is.
+//   - A hidden tab sleeps sooner than a visible one. Nobody is reading a
+//     document they cannot see, and "left open in another tab" is the case
+//     this exists for.
+//
+// The status is `asleep`, never `offline`: nothing failed, and the band the
+// editor draws over the page for a broken relay would be a lie here.
+const IDLE_SLEEP_MS = 10 * 60 * 1000;   // visible, no input and no peer edits
+const HIDDEN_SLEEP_MS = 2 * 60 * 1000;  // hidden: long enough to survive a tab switch
+const SLEEP_TICK_MS = 15 * 1000;        // one timer, not a reset per keystroke
+
 export class CollabSession {
   /**
    * @param {object} o
@@ -140,6 +179,9 @@ export class CollabSession {
    * @param {() => void} [o.onHistory]
    * @param {boolean} [o.debug]        assert the document round-trips after every local write
    * @param {boolean} [o.connect]      default true
+   * @param {number} [o.idleMs]        drop the socket after this long with no input and no
+   *                                   peer edits (default 10 min; 0 never sleeps)
+   * @param {number} [o.hiddenMs]      the same for a tab that is not on screen (default 2 min)
    * @param {Function} [o.WebSocketPolyfill]   for a Node client (see below); browsers never set it
    */
   constructor(o) {
@@ -197,6 +239,9 @@ export class CollabSession {
     // net -> shadow: a collaborator's update, held while the editor is busy.
     this.net.on('update', (u, origin) => {
       if (origin === ORIGIN.SHADOW) return;
+      // A collaborator is typing. They hold the room awake whatever we do, so
+      // staying to watch is free — see "sleeping an idle tab" above.
+      this.#touch();
       this.#pending.push(u);
       this.#drainSoon();
     });
@@ -226,11 +271,15 @@ export class CollabSession {
       connect: false,
     });
     this.provider.on('status', ({ status }) => {
+      // While asleep the socket is closed BECAUSE we closed it: the provider
+      // says 'disconnected' and it is not offline, so the deliberate status
+      // stands until something wakes us.
+      if (this.#asleep) return;
       if (status === 'connected') this.#set({ status: this.state.phase === 'ready' ? 'live' : 'connecting' });
       else if (status === 'disconnected') this.#set({ status: 'offline' });
       else this.#set({ status: 'connecting' });
     });
-    this.provider.on('connection-error', () => this.#set({ status: 'offline' }));
+    this.provider.on('connection-error', () => { if (!this.#asleep) this.#set({ status: 'offline' }); });
     this.provider.on('synced', synced => { if (synced) this.#onSynced(); });
     this.provider.on('custom-message', s => this.#onMessage(s));
     this.provider.awareness.on('change', () => this.#presence());
@@ -244,6 +293,10 @@ export class CollabSession {
       }, PRESENCE_POLL_MS);
     }
 
+    this.#idleMs = o.idleMs ?? IDLE_SLEEP_MS;
+    this.#hiddenMs = o.hiddenMs ?? HIDDEN_SLEEP_MS;
+    this.#watchIdle();
+
     if (o.connect !== false) this.connect();
   }
 
@@ -252,6 +305,15 @@ export class CollabSession {
   #drainTimer = 0;
   #presenceTimer = 0;
   #lastPresence = '';
+  #lastInput = '';
+  #idleMs = IDLE_SLEEP_MS;
+  #hiddenMs = HIDDEN_SLEEP_MS;
+  #activeAt = Date.now();
+  #hiddenAt = 0;             // when the tab went off screen; 0 while it is visible
+  #asleep = false;
+  #sleepTimer = 0;
+  #deadWs = null;            // the socket sleep() killed; wake() takes it off the provider
+  #unwatch = [];             // teardown for the DOM listeners, run by close()
   #readyRes; #readyRej;
   #lastEmitted = null;
   #localSinceEmit = false;   // the editor moved the shadow since it was last handed the document
@@ -270,6 +332,12 @@ export class CollabSession {
                    idle: !!p.idle, boxes: p.boxes || [],
                    agent: p.agent ?? null, comments: p.comments ?? null };
     const sig = JSON.stringify(next);
+    // What this person is DOING, without `idle` — which is the editor's own
+    // verdict about inactivity, and would otherwise count its own arrival as
+    // activity and reset the very timer it is reporting on.
+    const { idle: _away, ...doing } = next;
+    const input = JSON.stringify(doing);
+    if (input !== this.#lastInput) { this.#lastInput = input; this.#touch(); }
     if (sig === this.#lastPresence) return false;
     this.#lastPresence = sig;
     const aw = this.provider.awareness;
@@ -278,7 +346,115 @@ export class CollabSession {
   }
 
   connect() {
+    this.#asleep = false;
+    this.#activeAt = Date.now();
     this.provider.connect().catch(e => this.#set({ status: 'offline', error: String(e && e.message || e) }));
+  }
+
+  /* --------------------------------------------------- sleeping an idle tab */
+
+  /** True while the socket is deliberately closed. See the note above. */
+  get asleep() { return this.#asleep; }
+
+  /** Somebody is using this document. Wakes a sleeping session. */
+  #touch() {
+    this.#activeAt = Date.now();
+    if (this.#asleep) this.wake();
+  }
+
+  /**
+   * Drop the socket, keep the documents. Local edits keep landing in the
+   * shadow while this is closed and merge on the way back; what is lost is
+   * only what collaborators do meanwhile, which arrives on the reconnect.
+   *
+   * Never before the handshake is done: a session still deciding whether it
+   * must seed the room has work outstanding that the room is waiting on.
+   */
+  sleep() {
+    // Only ever a LIVE connection: there is nothing to save by sleeping one
+    // that is already down, and doing so would dress a real outage up as a
+    // deliberate pause.
+    if (this.#asleep || this.state.phase !== 'ready' || !this.provider.wsconnected) return false;
+    this.#asleep = true;
+    this.#deadWs = this.provider.ws;
+    try { this.provider.disconnect(); } catch (e) { /* already closed */ }
+    this.#set({ status: 'asleep' });
+    return true;
+  }
+
+  /** Back to the room, and sync whatever was missed. */
+  wake() {
+    if (!this.#asleep) return false;
+    // `disconnect()` closed that socket, but the provider only lets go of the
+    // one it holds when a close EVENT arrives — and `connect()` will not open
+    // a second one while it is still there. A close handshake that never
+    // completes therefore strands the session asleep with no way back, which
+    // is a far worse bug than the bill this saves: Miniflare does exactly
+    // that under the tests, and so does a proxy that swallows the close.
+    //
+    // No guessing is needed about whether that has happened. We killed this
+    // socket ourselves, so if the provider is still holding THAT one it is
+    // dead by construction — take it away rather than wait for news of it.
+    // Should the close turn up afterwards, the provider clears a socket it no
+    // longer owns, sees itself disconnected and reconnects: one extra round
+    // trip, and no stranding.
+    const dead = this.#deadWs;
+    this.#deadWs = null;
+    if (dead && this.provider.ws === dead) {
+      this.provider.ws = null;
+      this.provider.wsconnected = false;
+      this.provider.wsconnecting = false;
+      try { dead.close(); } catch (e) { /* already gone */ }
+    }
+    this.#set({ status: 'connecting' });
+    this.connect();
+    return true;
+  }
+
+  /**
+   * One timer for both deadlines, rather than a reset on every keystroke:
+   * `#touch()` writes a timestamp and this reads it.
+   */
+  #watchIdle() {
+    if (!this.#idleMs && !this.#hiddenMs) return;
+
+    const vis = () => {
+      const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      if (hidden) { this.#hiddenAt = this.#hiddenAt || Date.now(); return; }
+      // Back on screen: looking at the document is using it, and the socket
+      // should already be open by the time the first keystroke lands.
+      this.#hiddenAt = 0;
+      this.#touch();
+    };
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); this.#unwatch.push(() => t.removeEventListener(ev, fn, o)); };
+      on(document, 'visibilitychange', vis);
+      vis();   // a tab that was ALREADY hidden when the session opened
+      if (typeof window !== 'undefined') {
+        const opts = { capture: true, passive: true };
+        // Belt and braces beside the presence signal: these fire for the
+        // editor chrome, which has no presence of its own to change.
+        for (const ev of ['pointerdown', 'keydown', 'wheel', 'focus']) {
+          on(window, ev, () => this.#touch(), opts);
+        }
+      }
+    }
+
+    // A quarter of the nearest deadline, capped: at the shipped ten minutes
+    // that is the 15s tick, and a test asking for a deadline in milliseconds
+    // gets a tick that can actually reach it.
+    const soonest = Math.min(...[this.#idleMs, this.#hiddenMs].filter(Boolean));
+    const tick = Math.max(50, Math.min(SLEEP_TICK_MS, Math.floor(soonest / 4)));
+
+    this.#sleepTimer = setInterval(() => {
+      if (this.#asleep || this.state.phase !== 'ready') return;
+      const now = Date.now();
+      const hiddenTooLong = this.#hiddenMs && this.#hiddenAt && now - this.#hiddenAt >= this.#hiddenMs;
+      const idleTooLong = this.#idleMs && now - this.#activeAt >= this.#idleMs;
+      if (hiddenTooLong || idleTooLong) this.sleep();
+    }, tick);
+    // A Node client (the tests, an agent) must not be held open by this.
+    if (this.#sleepTimer && typeof this.#sleepTimer.unref === 'function') this.#sleepTimer.unref();
   }
 
   /* ------------------------------------------------------- local writes */
@@ -294,7 +470,7 @@ export class CollabSession {
     if (this.state.phase !== 'ready') return false;
     let changed = false;
     this.shadow.transact(() => { changed = writeFiles(this.shadow, files); }, ORIGIN.LOCAL);
-    if (changed) this.#localSinceEmit = true;
+    if (changed) { this.#localSinceEmit = true; this.#touch(); }
     if (changed && this.debug) checkY(this.shadow);
     return changed;
   }
@@ -395,6 +571,9 @@ export class CollabSession {
   close() {
     clearTimeout(this.#drainTimer);
     clearInterval(this.#presenceTimer);
+    clearInterval(this.#sleepTimer);
+    for (const off of this.#unwatch) { try { off(); } catch (e) { /* gone with the page */ } }
+    this.#unwatch = [];
     try { this.provider.destroy(); } catch (e) { /* already closed */ }
     this.undoManager.destroy();
     this.shadow.destroy();
