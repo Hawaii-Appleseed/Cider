@@ -332,14 +332,16 @@ export class CollabSession {
                    idle: !!p.idle, boxes: p.boxes || [],
                    agent: p.agent ?? null, comments: p.comments ?? null };
     const sig = JSON.stringify(next);
-    // What this person is DOING, without `idle` — which is the editor's own
-    // verdict about inactivity, and would otherwise count its own arrival as
-    // activity and reset the very timer it is reporting on.
+    // Nothing moved at all, which is the common case four times a second: no
+    // second serialisation, and nothing below it can have changed either.
+    if (sig === this.#lastPresence) return false;
+    this.#lastPresence = sig;
+    // Something moved — but WHAT? `idle` is the editor's own verdict about
+    // inactivity, and counting its arrival as activity would reset the very
+    // timer it is reporting on. So the activity signal is everything else.
     const { idle: _away, ...doing } = next;
     const input = JSON.stringify(doing);
     if (input !== this.#lastInput) { this.#lastInput = input; this.#touch(); }
-    if (sig === this.#lastPresence) return false;
-    this.#lastPresence = sig;
     const aw = this.provider.awareness;
     aw.setLocalState({ ...(aw.getLocalState() || {}), login: this.login, name: this.name, color: this.color, ...next });
     return true;
