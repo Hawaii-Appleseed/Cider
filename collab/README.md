@@ -130,15 +130,58 @@ is the live workspace; git stays the record. `meta.baseSha` is the commit the
 live document was built from, which is how Phase 4 will detect that the branch
 moved underneath a session.
 
-## Hibernation is off, deliberately
+## Hibernation is off, and the client lets go instead
 
 A hibernating Durable Object drops its isolate between messages, and a Yjs room
 must hold the whole document in memory to apply an update — so every message
-would pay a full reload. The cost of staying awake is bounded: a room bills
-wall-clock GB-s only while a websocket is open, and the free plan's 13,000
-GB-s/day is roughly fourteen hours of continuously-connected editing per day,
-against two to five editors. Revisit with a measurement once real sessions
-exist, not before.
+would pay a full reload. Hibernation stays off for that reason.
+
+What it costs: a room bills wall-clock GB-s while a websocket is open, at
+128 MB, whether or not anybody is typing. That is 0.125 GB-s per second **per
+room** — not per person, so two people in one document cost what one costs.
+Against the free plan's 13,000 GB-s/day it works out at about 29 hours of one
+room being open, or half that across two.
+
+Which sounded bounded until you notice what a tab does: **one document left
+open overnight is ~10,800 GB-s, most of a day's budget spent on nobody
+editing.** The original note here said to revisit with a measurement rather
+than a guess. The measurement was arithmetic, and it did not need a week.
+
+So the socket is no longer something a tab holds for as long as it is open.
+`CollabSession` drops it after ten minutes with no input, or two minutes off
+screen, and takes it back the moment anything happens (`idleMs` / `hiddenMs`,
+`0` for never). Yjs is what makes that safe: both documents stay in memory
+while the socket is gone, local edits keep landing in the shadow, and the
+reconnect merges them — the same path a network blip already takes, walked on
+purpose. See "sleeping an idle tab" in `client/session.mjs` for the three
+choices that are easy to get wrong:
+
+- **Activity is measured in the session**, from document and presence changes,
+  not read off the editor's `idle` flag — that one is wired to three events on
+  the top window, so typing inside the report iframe does not always reset it.
+- **A collaborator's edit counts as activity.** Duration is per room, so they
+  hold it awake regardless: leaving would save nothing and would drop the
+  reader of a document mid-sentence. The saving only ever comes from a room
+  where everyone has stopped.
+- **`provider.connect()` will not open a socket while the provider holds one**,
+  and it only lets go when a close *event* arrives. A handshake that never
+  completes strands the session asleep with no way back — Miniflare does this
+  under the tests, a proxy that swallows the close does it in the wild.
+  `sleep()` remembers the socket it killed so `wake()` takes that one, and
+  only that one, away.
+
+The status is `asleep`, never `offline`: nothing failed, and the band the
+editor draws over the page for a broken relay would be a lie.
+
+**The other half is on the hub**, which asks rooms who is in them: waking a
+room runs `onStart` before any handler, and `PrimerRoom.onLoad` reads the whole
+snapshot back out of storage — so a shelf of eleven documents deserialized
+eleven documents every time it was drawn. The hub now remembers occupancy for
+ten seconds (`roomStatus`); its README has the rule about which callers may use
+it and which must keep asking.
+
+Revisit hibernation only if the dashboard still shows duration you cannot
+account for. It probably will not.
 
 ## Deploying
 

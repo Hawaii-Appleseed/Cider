@@ -52,15 +52,24 @@ export class PrimerRoom extends YServer {
   };
 
   /**
-   * Hibernation is deliberately OFF for now.
+   * Hibernation is deliberately OFF, and the CLIENT is what holds the cost
+   * down instead.
    *
    * A hibernating Durable Object drops its isolate between messages, and a Yjs
    * room has to hold the whole document in memory to apply an update — so
-   * every message would pay a full reload. The cost of staying awake is
-   * bounded and small: a room bills wall-clock GB-s only while a websocket is
-   * open, and the free plan's 13,000 GB-s/day is roughly fourteen hours of
-   * continuously-connected editing per day. Revisit with a measurement, not a
-   * guess, once real sessions exist.
+   * every message would pay a full reload. That much still stands.
+   *
+   * What did not: this said the cost of staying awake was "bounded and small",
+   * and asked for a measurement. The measurement was arithmetic. A room bills
+   * wall-clock at 128 MB while a websocket is open, which is 0.125 GB-s per
+   * second per ROOM — so one tab left open overnight is ~10,800 GB-s, most of
+   * the free plan's 13,000 GB-s/day, spent on nobody typing.
+   *
+   * So the tab lets go instead: CollabSession drops its socket after ten
+   * minutes with no input (client/session.mjs, "sleeping an idle tab") and
+   * reconnects on the next keystroke, which costs a resync Yjs was already
+   * doing for every network blip. Hibernation would now save little on top of
+   * that — revisit it only against a dashboard figure you cannot explain.
    */
   static options = { hibernate: false };
 
