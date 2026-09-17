@@ -91,3 +91,107 @@ Sources
 [rxkids]: Michigan PA 119 of 2023, Sec. 2006; Hanna & Shaefer, "Playbook for Replicating Rx Kids," MSU Poverty Solutions, 2024. — https://rxkids.org/wp-content/uploads/2024/08/Rx_Kids_TANF_Playbook.pdf
 [son]: Hawaiʻi Administrative Rules §17-678-4 and §17-676-54.1. — https://humanservices.hawaii.gov/wp-content/uploads/2025/02/17-678_Financial-Assistance-Standards-Adopted-01-26-25.pdf
 [reserve]: Hawaiʻi DHS, TANF report to the 2025 Legislature (HRS §346-51.5), March 2025. — https://humanservices.hawaii.gov/wp-content/uploads/2024/11/RYamane_2025-HRS-Sect-346-51.5-TANF-Legislative-Report-DHS-BESSD-signed.pdf
+
+<!-- =========================================================
+     Page 2 — Program overview: how it works
+     ========================================================= -->
+
+[[p2.hero.eyebrow]]
+HAWAIʻI APPLESEED · PROGRAM OVERVIEW · 2026
+
+[[p2.hero.h1]]
+Rx Keiki: how it works
+
+[[p2.hero.standfirst]]
+A cash prescription for every new baby — delivered like a public health checkup, not a benefits application.
+
+[[p2.stat.a.n]]
+0
+
+[[p2.stat.a.l]]
+income tests, work rules, or asset limits
+
+[[p2.stat.b.n]]
+12
+
+[[p2.stat.b.l]]
+months of payments, birth to first birthday
+
+[[p2.stat.c.n]]
+100%
+
+[[p2.stat.c.l]]
+of families with a new baby qualify
+
+[[p2.stat.d.n]]
+1
+
+[[p2.stat.d.l]]
+simple sign-up, no separate applications later
+
+[[p2.evidence.title]]
+What the evidence shows
+
+[[p2.ev.a]]
+Fewer ER visits for child maltreatment
+
+[[p2.ev.b]]
+Better food & financial security
+
+[[p2.ev.c]]
+Fewer families separated by need
+
+[[p2.ev.d]]
+Stronger parental mental health
+
+[[p2.evidence.note]]
+Based on outcomes tied to unconditional cash support during pregnancy and a child's first year, including the 2021 expanded Child Tax Credit.
+
+[[p2.why.title]]
+Why Hawaiʻi
+
+[[p2.why.a.h]]
+2nd-highest cost of living in the U.S.
+
+[[p2.why.a.b]]
+Wages haven't kept pace with the price of raising a child here
+
+[[p2.why.b.h]]
+Multigenerational households
+
+[[p2.why.b.b]]
+Cash supports the whole ʻohana caring for a keiki, not just one parent
+
+[[p2.why.c.h]]
+Neighbor-island access
+
+[[p2.why.c.b]]
+Cash covers travel to prenatal and pediatric care that other benefits can't
+
+[[p2.benefits.title]]
+Keeps what families already have
+
+[[p2.benefits.items]]
+- Medicaid
+- SNAP
+- WIC
+- Housing assistance
+- SSI (talk to caseworker)
+
+[[p2.quote.text]]
+"Rx Kids provides a real chance at a future for me and my children."
+
+[[p2.quote.attr]]
+Teagan, Rx Kids Mom (Flint, MI)
+
+[[p2.how.title]]
+How it works
+
+[[p2.how.note]]
+No re-enrollment, no monthly paperwork — family decides how every dollar is spent.
+
+[[p2.footer.note]]
+Rx Keiki is a proposed program of Hawaiʻi Appleseed, modeled on Rx Kids (Michigan State University Pediatric Public Health Initiative & University of Michigan Poverty Solutions)
+
+[[p2.sources.note]]
+Sources: Hanna & Shaefer, "Playbook for Replicating Rx Kids," MSU Poverty Solutions, 2024 · Rx Kids program data, City of Flint, MI · Stanczyk (2016), Washington Center for Equitable Growth · Hawaiʻi DBEDT cost-of-living reporting

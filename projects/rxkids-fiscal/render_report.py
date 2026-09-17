@@ -374,6 +374,60 @@ def medicaid_split() -> str:
     return "".join(p)
 
 
+# --- Graphic 4 (page 2): how-it-works timeline ------------------------------
+
+def how_it_works_chart() -> str:
+    """Five-step horizontal flow: sign up → $1,500 → birth → $500/mo → birthday.
+
+    Step labels sit above each circle; brief descriptions below. Dollar amounts
+    are data marks, not prose — they live inside the SVG alongside the axis-
+    style step labels. Captions that a person might rephrase are in a slot
+    rendered beside the graphic, not in here.
+    """
+    W, H = VB_W, 112
+    CY = 55.0
+    R = 18.0
+    CXS = [82.0, 246.0, 410.0, 574.0, 738.0]
+
+    steps = [
+        ("Sign up",       "during pregnancy", TEAL),
+        ("$1,500",        "prenatal payment",  FED),
+        ("Baby arrives",  "deposits start",    TEAL),
+        ("$500/month",    "no re-enrollment",  FED),
+        ("1st birthday",  "family chooses",    TEAL),
+    ]
+
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
+         f'role="img" aria-label="How Rx Keiki works: sign up during pregnancy, '
+         f'receive a $1,500 prenatal payment, then $500 per month through '
+         f'the first birthday">']
+
+    # connector lines between circles
+    for i in range(len(steps) - 1):
+        x1 = CXS[i] + R + 2
+        x2 = CXS[i + 1] - R - 2
+        p.append(f'<line x1="{x1:.1f}" y1="{CY:.1f}" x2="{x2:.1f}" y2="{CY:.1f}" '
+                 f'stroke="{TEAL}" stroke-width="2" opacity="0.45"/>')
+
+    for i, (label, desc, fill) in enumerate(steps):
+        cx = CXS[i]
+        # circle
+        p.append(f'<circle cx="{cx:.1f}" cy="{CY:.1f}" r="{R:.1f}" fill="{fill}"/>')
+        # step label above the circle
+        above_y = CY - R - 5
+        p.append(f'<text x="{cx:.1f}" y="{above_y:.1f}" '
+                 f'font-size="{LABEL_U}" font-weight="700" fill="{INK}" '
+                 f'text-anchor="middle">{label}</text>')
+        # description below the circle
+        below_y = CY + R + LABEL_U + 3
+        p.append(f'<text x="{cx:.1f}" y="{below_y:.1f}" '
+                 f'font-size="{LABEL_U}" fill="{MUTE}" '
+                 f'text-anchor="middle">{desc}</text>')
+
+    p.append("</svg>")
+    return "".join(p)
+
+
 # Card "d" is the thesis (what share TANF can cover), not a peer of the three
 # descriptive facts beside it — and it is a statement about FEDERAL money, so it
 # takes the federal green the charts already use for that. The other three keep
@@ -458,11 +512,76 @@ INNER = f"""
   <div class="endnotes"><span class="srch"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</span>{ENDNOTES_SLOT}</div>
 {C.extras("page1")}"""
 
+# --- Page 2: program overview ------------------------------------------------
+
+def stat_p2(key: str) -> str:
+    return (f'<div class="stat"{L.attr(f"p2.stat.{key}")}>'
+            f'<div class="stat-n">{C.t(f"p2.stat.{key}.n")}</div>'
+            f'<div class="stat-l">{C.t(f"p2.stat.{key}.l")}</div></div>')
+
+
+INNER2 = f"""
+  <div class="eyebrow"{L.attr("p2.hero.eyebrow")}>{C.t("p2.hero.eyebrow")}</div>
+  {L.spacer("p2.hero.h1")}<h1{L.attr("p2.hero.h1")}>{C.t("p2.hero.h1")}</h1>
+  {C.html("p2.hero.standfirst", "standfirst")}
+
+  <div class="stats"{L.attr("p2.stats.strip")}>
+    {stat_p2("a")}{stat_p2("b")}{stat_p2("c")}{stat_p2("d")}
+  </div>
+
+  <h2{L.attr("p2.evidence.title")}>{C.t("p2.evidence.title")}</h2>
+  <div class="ev-grid"{L.attr("p2.ev.grid")}>
+    <div class="ev-card"{L.attr("p2.ev.a")}>{C.t("p2.ev.a")}</div>
+    <div class="ev-card"{L.attr("p2.ev.b")}>{C.t("p2.ev.b")}</div>
+    <div class="ev-card"{L.attr("p2.ev.c")}>{C.t("p2.ev.c")}</div>
+    <div class="ev-card"{L.attr("p2.ev.d")}>{C.t("p2.ev.d")}</div>
+  </div>
+  {C.html("p2.evidence.note", "cnote")}
+
+  <div class="p2-mid">
+    <div class="p2-mid-left">
+      <h2{L.attr("p2.why.title")}>{C.t("p2.why.title")}</h2>
+      <div class="why-cards">
+        <div class="why-card"{L.attr("p2.why.a")}>
+          <div class="why-h"{L.attr("p2.why.a.h")}>{C.t("p2.why.a.h")}</div>
+          <div class="why-b"{L.attr("p2.why.a.b")}>{C.t("p2.why.a.b")}</div>
+        </div>
+        <div class="why-card"{L.attr("p2.why.b")}>
+          <div class="why-h"{L.attr("p2.why.b.h")}>{C.t("p2.why.b.h")}</div>
+          <div class="why-b"{L.attr("p2.why.b.b")}>{C.t("p2.why.b.b")}</div>
+        </div>
+        <div class="why-card"{L.attr("p2.why.c")}>
+          <div class="why-h"{L.attr("p2.why.c.h")}>{C.t("p2.why.c.h")}</div>
+          <div class="why-b"{L.attr("p2.why.c.b")}>{C.t("p2.why.c.b")}</div>
+        </div>
+      </div>
+      <h2{L.attr("p2.benefits.title")}>{C.t("p2.benefits.title")}</h2>
+      <div class="benefit-row"{L.attr("p2.benefit.row")}>
+        {"".join(f'<span class="benefit-pill">{item}</span>'
+                 for item in C.list("p2.benefits.items"))}
+      </div>
+    </div>
+    <div class="p2-mid-right">
+      <blockquote class="pullquote"{L.attr("p2.quote")}>
+        {C.html("p2.quote.text", "qtext")}
+        <cite{L.attr("p2.quote.attr")}>{C.t("p2.quote.attr")}</cite>
+      </blockquote>
+    </div>
+  </div>
+
+  <h2{L.attr("p2.how.title")}>{C.t("p2.how.title")}</h2>
+  {graphic(L, "p2.chart.how", chart_scroll(how_it_works_chart(), smallest_label=LABEL_U), w=CHART_W_IN)}
+  {C.html("p2.how.note", "cnote")}
+
+  {C.html("p2.footer.note", "foot")}
+  <div class="p2sources"{L.attr("p2.sources.note")}>{C.t("p2.sources.note")}</div>
+{C.extras("page2")}"""
+
 # Every sheet, in order: this page, then any blank page added in the editor.
 # Going through L.page_order() plus L.pagemeta() is what lets the page strip
 # offer "+ Page" and reordering — the editor withholds both from a renderer
 # that never declared its pages, since an order nothing reads draws nothing.
-DESIGNED_PAGES = 1
+DESIGNED_PAGES = 2
 
 
 def sheet(pid):
@@ -472,7 +591,7 @@ def sheet(pid):
     data-page carries the page's IDENTITY, which stops matching its position
     the moment the order can be changed.
     """
-    inner = INNER if pid == DESIGNED_PAGES else ""
+    inner = INNER if pid == 1 else INNER2 if pid == 2 else ""
     return (f'<section class="page" data-page="{pid}"{L.fill_attr(f"page.{pid}")}>'
             f'{inner}'
             # Inside the section: .page is the positioning context every placed
@@ -581,6 +700,41 @@ html = f"""<!DOCTYPE html>
   sup {{ font-size:10.6px; line-height:0; }}
   sup a.fn {{ color:{DEEP}; text-decoration:none; font-weight:700; }}
   a {{ color:{DEEP}; }}
+
+  /* ---- page 2 -----------------------------------------------------------
+     All sizes below 10.5px floor: ev-card 0.88rem = 12.8px; why-b 0.82rem =
+     11.9px; benefit-pill 0.81rem = 11.8px; qtext 0.96rem = 13.9px; p2sources
+     0.72rem = 10.5px exactly at the floor. ✓ */
+  .ev-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:5px 0 0; }}
+  .ev-card {{ background:{CREAM}; border-left:3px solid {TEAL};
+              padding:9px 12px 9px 10px; border-radius:0 7px 7px 0;
+              font-size:0.88rem; font-weight:700; color:{INK}; line-height:1.3; }}
+
+  .p2-mid {{ display:flex; gap:14px; margin:8px 0 0; align-items:stretch; }}
+  .p2-mid-left {{ flex:2; }}
+  .p2-mid-right {{ flex:1; display:flex; flex-direction:column; }}
+
+  .why-cards {{ display:flex; flex-direction:column; gap:6px; margin:5px 0 0; }}
+  .why-card {{ background:{CREAM}; border-radius:7px; padding:9px 11px; }}
+  .why-h {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
+             font-size:0.875rem; font-weight:700; color:{DEEP}; margin:0 0 2px; }}
+  .why-b {{ font-size:0.82rem; color:{SLATE}; line-height:1.3; margin:0; }}
+
+  .benefit-row {{ display:flex; flex-wrap:wrap; gap:5px; margin:5px 0 0; }}
+  .benefit-pill {{ background:{SLATE}; color:#fff; border-radius:20px;
+                   padding:3px 11px; font-size:0.81rem; font-weight:700; }}
+
+  .pullquote {{ margin:0; padding:14px 15px; background:{CREAM};
+                border-left:3px solid {TEAL}; border-radius:0 7px 7px 0;
+                flex:1; display:flex; flex-direction:column; justify-content:center; }}
+  .qtext {{ font-size:0.96rem; font-style:italic; color:{INK};
+            line-height:1.45; margin:0 0 8px; }}
+  .qtext p {{ margin:0; }}
+  .pullquote cite {{ font-size:0.795rem; color:{SLATE}; font-style:normal;
+                     font-weight:700; letter-spacing:.01em; }}
+
+  .p2sources {{ margin:8px 0 0; padding-top:7px; border-top:1px solid {ASH};
+                font-size:0.72rem; color:{MUTE}; line-height:1.3; }}
 </style>
 </head>
 <body>
