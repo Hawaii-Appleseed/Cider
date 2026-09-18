@@ -19,7 +19,7 @@ HAWAIʻI APPLESEED · FISCAL ESTIMATE · 2028
 Rx Keiki: the cost, and the funding wall
 
 [[hero.standfirst]]
-A universal program: **$1,500 during pregnancy**, then **$500 a month after birth**, for every family — no income test, no work requirement. The price tag isn't the constraint; **federal TANF is.**
+A universal program: **$1,500 during pregnancy**, then **$500 a month after birth**, for every family — no income test, no work requirement.
 
 [[stat.a.n]]
 13,228
@@ -31,19 +31,19 @@ births a year — no income test
 $52.1M
 
 [[stat.b.l]]
-core program: $1,500 + 6 monthly payments
+core program: 6 months only
 
 [[stat.c.n]]
 $87.9M
 
 [[stat.c.l]]
-full program, through 12 months
+full program, 12 months total
 
 [[stat.d.n]]
 40%
 
 [[stat.d.l]]
-of the core program TANF can cover, at best
+of the core program covered by federal TANF dollars
 
 [[timeline.title]]
 Federal money runs out after the fourth payment — by rule, not by budget
@@ -55,7 +55,7 @@ Numbered bars are months after birth.
 What TANF covers — and what Hawaiʻi must raise
 
 [[funding.note]]
-**Choosing the screen is worth ~$19.2M a year** — and Michigan's takes only a state plan amendment.[^son]
+**Choosing the screen is worth ~$19.2M a year**.[^son]
 
 [[medicaid.title]]
 Six in ten births are already on Medicaid — four in ten are not
