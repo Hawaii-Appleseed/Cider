@@ -262,6 +262,7 @@ bindings:
       # section may be added. Kept in step with render_report.py by hand.
       pages:
         - ["page1", "Page 1"]
+        - ["page2", "Page 2"]
       dir: docs/rxkids-fiscal
       render: projects/rxkids-fiscal/render_report.py
       out: projects/rxkids-fiscal/index.html
