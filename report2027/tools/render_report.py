@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from docsync.content import Content, ContentError  # noqa: E402
-from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
+from docsync.blocks import chart, chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.layout import (Layout, LayoutError, check_icon_svg,  # noqa: E402
                             fill_css, fill_repr, icon_color)
 
@@ -538,35 +538,41 @@ def fig1_lifecycle(size=560):
     # whole. Don't quietly unwrap it to make the figure fit again.
     return chart_scroll("".join(out), smallest_label=12)
 
+FIG6_DATA = [("Lowest 20%", "Less than $21,900", 14.1),
+             ("Second 20%", "$21,900–$44,200", 13.7),
+             ("Middle 20%", "$44,200–$80,100", 14.2),
+             ("Fourth 20%", "$80,100–$136,600", 13.4),
+             ("Next 15%", "$136,600–$278,200", 11.8),
+             ("Next 4%", "$278,200–$594,900", 10.2),
+             ("Top 1%", "Over $594,900", 10.1)]
+
+
 def fig6_chart():
-    data = [("Lowest 20%", "Less than $21,900", 14.1), ("Second 20%", "$21,900–$44,200", 13.7),
-            ("Middle 20%", "$44,200–$80,100", 14.2), ("Fourth 20%", "$80,100–$136,600", 13.4),
-            ("Next 15%", "$136,600–$278,200", 11.8), ("Next 4%", "$278,200–$594,900", 10.2),
-            ("Top 1%", "Over $594,900", 10.1)]
-    # Geometry matched to the original: bar width 58.6pt, tallest bar 195.8pt,
-    # value 14pt / quintile 11.9pt / range 10.6pt. The SVG renders 720u across
-    # the 7.26in text column, so 1u = 0.726pt.
-    W, H, BW = 720, 390, 80
-    BASE, MAXH = 300, 285          # 285u = 207pt tall for the 15% gridline
-    gap = (W - 40 - 7 * BW) / 6
-    out = [f'<svg viewBox="0 0 {W} {H}" class="chart" role="img">']
-    for i, (q, rng, v) in enumerate(data):
-        x = 20 + i * (BW + gap)
-        h = (v / 15) * MAXH
-        y = BASE - h
-        out.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{BW}" height="{h:.0f}" fill="{SAGE}" '
-                   f'class="iv" data-tip="{q} ({rng}): {v}% of income"/>')
-        out.append(f'<text x="{x+BW/2:.0f}" y="{y-10:.0f}" text-anchor="middle" class="vlab b">{v}%</text>')
-        # quintile name reads as the category; the income range is secondary detail
-        out.append(f'<text x="{x+BW/2:.0f}" y="{BASE+24:.0f}" text-anchor="middle" class="qlab">{q}</text>')
-        out.append(f'<text x="{x+BW/2:.0f}" y="{BASE+43:.0f}" text-anchor="middle" class="rlab">{rng.split("–")[0] if "–" in rng else rng}</text>')
-        if "–" in rng:
-            out.append(f'<text x="{x+BW/2:.0f}" y="{BASE+60:.0f}" text-anchor="middle" class="rlab">–{rng.split("–")[1]}</text>')
-    out.append(f'<line x1="16" y1="{BASE}" x2="{W-16}" y2="{BASE}" stroke="{INK}" stroke-width="1"/></svg>')
-    # Scrolls rather than shrinks on a phone; 14.6px is this chart's
-    # smallest label (.rlab), which is what sets how far it may scale
-    # down before the wrapper takes over.
-    return chart_scroll("".join(out), smallest_label=14.6)
+    """Share of income paid in state and local tax, by income group.
+
+    An ENGINE chart, drawn inline by blocks.chart(), not the hand-written SVG
+    this used to be. That version predated the engine being able to express
+    it — it needed a fixed 15% ceiling, per-cent labels, and a two-line
+    category (the quintile over its income range) — and the cost of writing
+    it out by hand was that nobody could edit a word of it in the editor. All
+    three are engine features now, so this is data instead of geometry, and
+    every label, colour and number in it is editable on the page.
+
+    Sized 7.26 x 3.9in: the text column's width, and the aspect the printed
+    original was drawn at.
+    """
+    return chart(L, "whopays.fig6", {
+        "type": "bar",
+        "labels": [f"{q}\n{rng}" for q, rng, _ in FIG6_DATA],
+        "series": [{"name": "Share of income", "color": SAGE,
+                    "data": [v for _, _, v in FIG6_DATA]}],
+        "values": True,
+        "tips": True,
+        "grid": False,
+        "axisMax": 15,
+        "labelColor": INK,
+        "format": {"suffix": "%"},
+    }, w=7.26, h=3.9)
 
 # ---------- figure data (year-parameterized for the FY26/FY27 picker) ----------
 FIG3_ORDER = ["Transportation", "Formal Education", "All Others", "Economic Development", "Health"]

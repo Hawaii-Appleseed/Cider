@@ -766,3 +766,59 @@ test('tooltips are opt-in, and the editor itself stays free of them',
     // would chase the pointer through every drag.
     expect(await page.frameLocator('#out').locator('.ds-tip').count()).toBe(0);
   });
+
+// ---- inline charts ---------------------------------------------------------
+// The other kind of chart: drawn in the document FLOW by blocks.chart(), not
+// pinned in a page's SVG layer. It exists because a flow report — which the
+// Budget Primer is, with zero shapes in its layout.json — could not have an
+// editable chart at all, so all six of its figures were hand-written SVG that
+// only the renderer could change. Figure 6 is the first one ported back.
+
+test('an inline chart opens the Chart panel and edits as an override',
+  async ({ page }) => {
+    await gotoEditor(page);
+    const frame = page.frameLocator('#out');
+    const fig = frame.locator('[data-chart="whopays.fig6"]');
+    await fig.scrollIntoViewIfNeeded();
+    await fig.click();
+    await page.waitForTimeout(600);
+
+    // It is a chart to the toolbar, even though it is not a shape.
+    await expect(page.locator('#ar-chart')).toBeVisible();
+    expect(await page.evaluate(() => layout.shapes.length)).toBe(0);
+
+    await page.click('#ar-chart');
+    await page.waitForTimeout(500);
+    await expect(page.locator('#side-title')).toHaveText('Chart');
+    // The panel is showing what the RENDERER computed, which only the render
+    // knows — it travels out on data-chart-spec.
+    const rows = page.locator('#chartpop .ch-grid input.ch-num');
+    expect(await rows.count()).toBe(7);
+    expect(await rows.first().inputValue()).toBe('14.1');
+
+    // An edit lands in layout.charts, not layout.shapes...
+    await customize(page, 'Text');
+    await switchFor(page, 'Legend').click();
+    await page.waitForTimeout(1400);
+    const over = await page.evaluate(() => layout.charts['whopays.fig6']);
+    expect(over.legend).toBe(true);
+    // ...and records ONLY what changed, so a rebuild with new numbers still
+    // moves the bars. Freezing the series here is the bug this design avoids.
+    expect(over.series).toBeUndefined();
+    expect(over.labels).toBeUndefined();
+  });
+
+test('an inline chart has no background control, having no shape behind it',
+  async ({ page }) => {
+    await gotoEditor(page);
+    const frame = page.frameLocator('#out');
+    const fig = frame.locator('[data-chart="whopays.fig6"]');
+    await fig.scrollIntoViewIfNeeded();
+    await fig.click();
+    await page.waitForTimeout(600);
+    await page.click('#ar-chart');
+    await page.waitForTimeout(500);
+    await customize(page, 'Series colours');
+    await expect(
+      page.locator('#chartpop .ch-colrow', { hasText: 'Background' })).toHaveCount(0);
+  });
