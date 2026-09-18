@@ -59,6 +59,21 @@ test('a master is made from a page, given to a second page, and edited once for 
     await expect(frame(page).locator(`[data-el="${folioA}"]`)).toContainText(`${labelA} · A FAIRER TAX CODE`);
     expect(await page.evaluate(() => layout.boxes.length)).toBe(0);   // still no page copy
 
+    // A master SHAPE moves too — the instance is the master's one shape, so
+    // page B's copy follows page A's drag.
+    const ruleA = `${st.master.shapes[0].id}@${ids.a}`;
+    const mv = await page.evaluate(id => docsync.api.place(id, { y: 2.5 }), ruleA);
+    expect(mv.ok).toBe(true);
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(() => layout.masters.Section.shapes[0].y)).toBe(2.5);
+    await expect(frame(page).locator(`[data-shape="${st.master.shapes[0].id}@${ids.b}"]`)).toHaveAttribute('y', '2.5');
+    // The Layers panel is back, and lists this page's objects.
+    await page.evaluate(id => docsync.api.select(id), ruleA);
+    await page.click('#layers');
+    await expect(page.locator('#layerspop')).toBeVisible();
+    expect(await page.locator('#layerspop [data-id], #layerspop .ly-item, #layerspop button, #layerspop li').count()).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+
     // Select the instance: the strip says where it lives, and Delete refuses.
     await page.evaluate(id => docsync.api.select(id), folioA);
     await page.waitForTimeout(500);
