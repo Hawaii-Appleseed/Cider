@@ -123,6 +123,67 @@ test('the Anchor button arms a click on the paragraph, and clicking it again rel
     await expect(page.locator('#ty-anchor')).not.toHaveClass(/arming/);
   });
 
+test('an anchored box can wrap: it floats beside its paragraph, the lines flow around it, and it refuses to be dragged',
+  async ({ page }) => {
+    await gotoEditor(page);
+    const host = await hostOn(page);
+    const id = await page.evaluate(async ({ y, pg }) => {
+      const got = await docsync.api.addTextBox({ page: pg, x: 5.5, y, w: 2, md: 'A figure the text should flow around.' });
+      return got.id;
+    }, { y: +(host.top + 0.2).toFixed(2), pg: host.page });
+    await page.waitForTimeout(600);
+    // Wrap needs the anchor, and says so.
+    const early = await page.evaluate(id => docsync.api.wrap(id, 'right'), id);
+    expect(early.ok).toBe(false);
+    expect(early.error).toMatch(/not anchored/);
+    await page.evaluate(({ id, key }) => docsync.api.anchor(id, key), { id, key: host.key });
+    await page.waitForTimeout(800);
+    const r = await page.evaluate(id => docsync.api.wrap(id, 'right'), id);
+    expect(r.ok).toBe(true);
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).wrap, id)).toBe('right');
+    // The page: a float, sitting just before its paragraph in the same flow —
+    // a sibling, never a child, so the paragraph's own markup is untouched.
+    const got = await page.evaluate(({ id, key }) => {
+      const d = document.getElementById('out').contentDocument;
+      const el = d.querySelector(`[data-el="${id}"]`);
+      const host = d.querySelector(`[data-slot="${key}"]`);
+      const cs = getComputedStyle(el);
+      const er = el.getBoundingClientRect(), hr = host.getBoundingClientRect();
+      // A line box beside the float is shorter than the paragraph: the
+      // paragraph's first text sits left of the float's left edge.
+      const range = d.createRange(); range.selectNodeContents(host);
+      const first = range.getClientRects()[0];
+      return { float: cs.cssFloat, position: cs.position, sibling: el.nextElementSibling === host,
+               inside: host.contains(el),
+               // On the right half of the paragraph's width — the column's
+               // own insets decide the exact edge, not this test.
+               onTheRight: er.left > (hr.left + hr.right) / 2,
+               firstLineRight: first ? first.right : null, floatLeft: er.left };
+    }, { id, key: host.key });
+    expect(got.float).toBe('right');
+    expect(got.position).toBe('static');
+    expect(got.sibling).toBe(true);
+    expect(got.inside).toBe(false);
+    expect(got.onTheRight).toBe(true);
+    // The paragraph's first line stops before the float: the lines flow around it.
+    expect(got.firstLineRight).toBeLessThanOrEqual(got.floatLeft + 1);
+    // Not dragged: place() refuses and says why.
+    const p = await page.evaluate(id => docsync.api.place(id, { y: 8 }), id);
+    expect(p.ok).toBe(false);
+    expect(p.error).toMatch(/wraps around/);
+    // Off again: back on top of the text, absolute, at its anchor distance.
+    await page.evaluate(id => docsync.api.wrap(id, null), id);
+    await page.waitForTimeout(1200);
+    const back = await page.evaluate(id => {
+      const d = document.getElementById('out').contentDocument;
+      const el = d.querySelector(`[data-el="${id}"]`);
+      return { position: getComputedStyle(el).position, top: inchBox(el, el.closest('section.page')).y };
+    }, id);
+    expect(back.position).toBe('absolute');
+    expect(Math.abs(back.top - (host.top + 0.2))).toBeLessThan(0.05);
+  });
+
 test('a shape cannot be anchored, and the verb says why', async ({ page }) => {
   await gotoEditor(page);
   const r = await page.evaluate(async () => {
