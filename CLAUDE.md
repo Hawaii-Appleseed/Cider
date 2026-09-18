@@ -79,7 +79,10 @@ chaining; a name that does not exist fails at load). Editor: the Type strip's
 Style button (`#ty-stylebtn`, save/apply/update/rename/delete); pilot:
 `styles`/`defineStyle`/`renameStyle`/`removeStyle` and `setStyle(k, {style})`.
 Redefining a style moves every wearer — reach for it before copying a style
-dict into a second box. Spec: `tests/editor/text-styles.spec.js`.
+dict into a second box. Spec: `tests/editor/text-styles.spec.js`. The style
+schema also carries paragraph keys — `before`/`after` (space in px, emitted
+as PADDING so a box never leaves its coordinate), `indent` (first-line px,
+negative = hanging), `smallcaps`, `hyphens` — under the Spacing popover.
 
 Full verb list and contract: `pilot-api.spec.js` is the executable spec;
 the `report-editor` skill documents it. Reserve clicking/dragging for what

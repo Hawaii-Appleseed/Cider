@@ -474,11 +474,34 @@ def text_css(st: dict) -> str:
         # After colour, deliberately: hollow and splice hollow the glyph out, so
         # they must win over a colour the same style also set.
         out.append(EFFECTS[fx["kind"]](fx))
+    if st.get("smallcaps"):
+        out.append("font-variant-caps:small-caps")
+    if st.get("hyphens"):
+        # Needs the page's lang (every renderer here sets lang="en").
+        out.append("hyphens:auto")
+    # Paragraph-level keys, in px like size: space before/after the paragraph
+    # and a first-line indent (negative = hanging: the block is pushed in and
+    # the first line pulled back out). PADDING, not margin — a text box's
+    # style lands on its absolutely positioned div, where a margin would
+    # shift the box away from its stored coordinate (see Layout._style).
+    if st.get("before") is not None:
+        out.append(f'padding-top:{float(st["before"]):g}px')
+    if st.get("after") is not None:
+        out.append(f'padding-bottom:{float(st["after"]):g}px')
+    if st.get("indent") is not None:
+        ind = float(st["indent"])
+        if ind >= 0:
+            out.append(f'text-indent:{ind:g}px')
+        else:
+            out.append(f'padding-left:{-ind:g}px;text-indent:{ind:g}px')
+    block = st.get("align") or any(st.get(k) is not None for k in ("before", "after", "indent"))
     if st.get("align"):
         out.append(f'text-align:{st["align"]}')
-        # text-align does nothing to an inline box, and the inline slots are
-        # spans. Give it a box to align within — but only when alignment was
-        # actually asked for, so nothing else grows a width it never had.
+    if block:
+        # text-align, padding and text-indent do nothing to an inline box,
+        # and the inline slots are spans. Give it a box — but only when one
+        # of these was actually asked for, so nothing else grows a width it
+        # never had.
         out.append("display:inline-block;width:100%")
     return ";".join(out)
 
@@ -509,9 +532,12 @@ def _check_text(st: dict, where: str) -> None:
                           f"{', '.join(CASES)}")
     if st.get("color"):
         _hex(st["color"], where + ".color")
-    for k in ("size", "tracking", "leading"):
+    for k in ("size", "tracking", "leading", "before", "after", "indent"):
         if st.get(k) is not None:
             _num(st[k], f"{where}.{k}")
+    for k in ("before", "after"):
+        if st.get(k) is not None and float(st[k]) < 0:
+            raise LayoutError(f"{where}.{k}: {st[k]} — paragraph spacing cannot be negative")
     # Refused, not clamped. A style is authored by a person — through the
     # editor's stepper or a pilot verb — and silently enlarging what they
     # asked for teaches them nothing, while silently HONOURING it ships type

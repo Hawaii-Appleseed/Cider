@@ -26,7 +26,7 @@ Chrome) rather than features waiting to be added, so the honest framing is
 | Placing & transforming objects | Strong | Small |
 | Images | Adequate | Medium |
 | Shapes & drawing | Five primitives | Large |
-| Typography | Basic character controls | Large |
+| Typography | Character controls plus paragraph spacing, indents, small caps, hyphenation (2026-09-18) | Medium–Large |
 | Paragraph & style system | Named text styles (2026-09-18); no paragraph-level or object styles | Medium |
 | Pages, spreads, masters | Single pages only | Large |
 | Long-document automation | Endnotes only | Large |
@@ -113,10 +113,14 @@ designer cannot lay out a text-heavy report the InDesign way.
 pagination pass in the renderer.*
 
 ### 3. Typographic fine control
-Absent: kerning, hyphenation and H&J settings, space before/after paragraph,
-first-line and hanging indents, drop caps, tab stops and leaders, baseline
-grid, small caps, subscript, OpenType features (ligatures, old-style
-figures), optical margin alignment, keep-with-next and widow/orphan control.
+*Partly closed 2026-09-18:* paragraph space before/after, first-line and
+hanging indents, small caps and a hyphenation toggle are now style keys
+(`before`, `after`, `indent`, `smallcaps`, `hyphens`) in the Spacing popover
+and the pilot's `setStyle`, and can live in a named style.
+Still absent: kerning, H&J settings (word spacing, glyph scaling),
+drop caps, tab stops and leaders, baseline grid, subscript, OpenType
+features (ligatures, old-style figures), optical margin alignment,
+keep-with-next and widow/orphan control.
 Also a fixed font allowlist with no way to load a licensed face such as
 Glober. Rendered output is Chrome's line breaking, which is visibly looser
 than InDesign's paragraph composer on justified columns.
@@ -199,7 +203,9 @@ Appleseed's actual output is:
 
 1. ~~Named text styles applied by reference (gap 1).~~ Done 2026-09-18; the
    templates should be moved onto them next.
-2. Cheap typography wins: paragraph space before/after, indents, small caps,
+2. ~~Cheap typography wins~~ Done 2026-09-18 (spacing, indents, small caps,
+   hyphenation); drop caps and OpenType figure toggles remain cheap and open.
+   Previously listed as: cheap typography wins: paragraph space before/after, indents, small caps,
    hyphenation toggle, subscript (gap 3).
 3. Repeat-on-every-page elements with a page-number token, and a generated
    contents page (gaps 4, 5).

@@ -553,6 +553,26 @@ check("a non-string reference is refused",
 check_eq("no styles: an unstyled report's CSS is byte-identical",
          _layout({"text": {"a.b": {"size": 12}}}).text_style("a.b"), "font-size:12px")
 
+# --------------------------------------------- paragraph & OpenType keys
+check_eq("space before/after are padding, in px, and make the slot a block",
+         text_css({"before": 12, "after": 6}),
+         "padding-top:12px;padding-bottom:6px;display:inline-block;width:100%")
+check_eq("a positive indent is a first-line indent",
+         text_css({"indent": 24}), "text-indent:24px;display:inline-block;width:100%")
+check_eq("a negative indent hangs: pad the block, pull the first line back",
+         text_css({"indent": -18}),
+         "padding-left:18px;text-indent:-18px;display:inline-block;width:100%")
+check_eq("small caps and hyphenation are one declaration each",
+         text_css({"smallcaps": True, "hyphens": True}),
+         "font-variant-caps:small-caps;hyphens:auto")
+check_eq("align + before emit the block box once",
+         text_css({"align": "center", "before": 4}).count("display:inline-block"), 1)
+check("negative paragraph spacing is refused",
+      _layout_error({"text": {"a.b": {"after": -3}}}), "cannot be negative")
+check("a non-numeric indent is refused",
+      _layout_error({"text": {"a.b": {"indent": "big"}}}), "indent")
+check_eq("false toggles emit nothing", text_css({"smallcaps": False, "hyphens": False}), "")
+
 # ------------------------------------------------------- legibility floors
 from docsync.layout import (MIN_TEXT_PX, MIN_TEXT_PT, MIN_SUBLABEL_IN,   # noqa: E402
                             chart_svg, text_css, _check_text)

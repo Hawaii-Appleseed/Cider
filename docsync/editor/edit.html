@@ -1193,6 +1193,12 @@
   #ty-stylelist .shp.on::after { content:"✓"; margin-left:auto; color:var(--sage); }
   #ty-stylelist:not(:empty) + #ty-stylenone { display:none; }
   #ty-stylelist:not(:empty) { margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #E1E8E3; }
+  .ty-pop-h2 { margin-top:10px; padding-top:9px; border-top:1px solid #E1E8E3; }
+  .ty-pop-toggles { display:flex; gap:6px; margin-top:8px; }
+  .ty-tgl { flex:1; font:12.5px system-ui; padding:5px 0; border:1px solid #C9D6CD;
+        border-radius:7px; background:#fff; color:var(--ink); cursor:pointer; }
+  .ty-tgl:hover { border-color:var(--sage); }
+  .ty-tgl[aria-pressed="true"] { background:var(--sage); border-color:var(--sage); color:#fff; }
   #ty-reset { margin-left:auto; color:var(--dim); }
   #ty-reset:hover { color:#fff; }
   .ty-key { font:11.5px ui-monospace,monospace; color:var(--dim); max-width:170px;
@@ -2249,6 +2255,17 @@
       max="12" step="0.1"><input id="ty-track" type="number" step="0.1" min="-5" max="20"></label>
     <label><span>Line height</span><input type="range" id="ty-lead-r" min="0.8"
       max="2.6" step="0.05"><input id="ty-lead" type="number" step="0.05" min="0.6" max="4"></label>
+    <p class="pop-h ty-pop-h2">Paragraph</p>
+    <label title="Space above the paragraph, in px"><span>Space before</span><input type="range" id="ty-before-r" min="0"
+      max="60" step="1"><input id="ty-before" type="number" step="1" min="0" max="400"></label>
+    <label title="Space below the paragraph, in px"><span>Space after</span><input type="range" id="ty-after-r" min="0"
+      max="60" step="1"><input id="ty-after" type="number" step="1" min="0" max="400"></label>
+    <label title="First-line indent in px; a negative value hangs the first line out"><span>First-line indent</span><input type="range" id="ty-indent-r" min="-40"
+      max="60" step="1"><input id="ty-indent" type="number" step="1" min="-200" max="400"></label>
+    <div class="ty-pop-toggles">
+      <button class="ty-tgl" id="ty-smallcaps" aria-pressed="false">Small caps</button>
+      <button class="ty-tgl" id="ty-hyphens" aria-pressed="false">Hyphenate</button>
+    </div>
   </div>
   <button id="ty-comment" hidden class="ty-comment" aria-label="Comment on this — a note for whoever opens the document, marked on it">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
@@ -7955,6 +7972,13 @@ function showType(key) {
   $('ty-lead').value = st.leading ?? '';
   $('ty-lead').placeholder = real.leading;
   $('ty-lead-r').value = st.leading ?? real.leading;
+  [['before', 0], ['after', 0], ['indent', 0]].forEach(([k, dflt]) => {
+    $('ty-' + k).value = st[k] ?? '';
+    $('ty-' + k).placeholder = dflt;
+    $('ty-' + k + '-r').value = st[k] ?? dflt;
+  });
+  $('ty-smallcaps').setAttribute('aria-pressed', String(!!st.smallcaps));
+  $('ty-hyphens').setAttribute('aria-pressed', String(!!st.hyphens));
   $('ty-case').value = st.case || 'none';
   $('ty-color').value = /^#[0-9a-f]{6}$/i.test(st.color || '') ? st.color : '#2f3e46';
   const cur = (st.color || '').toUpperCase();
@@ -8017,6 +8041,19 @@ function wireType() {
   };
   slider('ty-track-r', 'ty-track', 'tracking');
   slider('ty-lead-r', 'ty-lead', 'leading');
+  // Paragraph spacing and indent: px, like size. An emptied or zeroed number
+  // field clears the override (a zero from the slider is kept — harmless,
+  // and Reset is one click away).
+  ['before', 'after', 'indent'].forEach(k => {
+    live($('ty-' + k), () => ({ [k]: $('ty-' + k).value === '' || +$('ty-' + k).value === 0 ? null : +$('ty-' + k).value }));
+    slider('ty-' + k + '-r', 'ty-' + k, k);
+  });
+  const tglPop = (id, prop) => $(id).addEventListener('click', async () => {
+    setStyle(selected, { [prop]: !effectiveStyle(selected)[prop] || null });
+    markDirty(); await render(); showType(selected);
+  });
+  tglPop('ty-smallcaps', 'smallcaps');
+  tglPop('ty-hyphens', 'hyphens');
 
   $('ty-colorbtn').addEventListener('click', () => {
     // Rebuild the eyedropper + in-use row each open: the colours in play change.
@@ -8060,7 +8097,7 @@ function wireType() {
     markDirty(); await render(); showType(selected);
   });
   const toggle = (id, prop) => $(id).addEventListener('click', async () => {
-    setStyle(selected, { [prop]: !styleOf(selected)[prop] || null });
+    setStyle(selected, { [prop]: !effectiveStyle(selected)[prop] || null });
     markDirty(); await render(); showType(selected);
   });
   toggle('ty-i', 'italic');

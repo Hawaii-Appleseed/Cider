@@ -184,3 +184,59 @@ test.describe('named text styles', () => {
       await expect(page.locator('#ty-track')).toHaveValue('1.5');
     });
 });
+
+// Paragraph keys on the same style object: space before/after (padding, px),
+// first-line / hanging indent, small caps, hyphenation — the Spacing popover
+// and setStyle both write them, and a named style can carry them.
+test.describe('paragraph keys', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoEditor(page);
+    await page.waitForTimeout(600);
+  });
+
+  test('setStyle writes them and the page wears them; a named style carries them', async ({ page }) => {
+    const r = await api(page, `setStyle('basics.h1', { before: 18, after: 6, indent: -12, smallcaps: true, hyphens: true })`);
+    expect(r.ok).toBe(true);
+    const cs = await page.evaluate(() => {
+      const el = $('out').contentDocument.querySelector('[data-slot="basics.h1"]');
+      const c = getComputedStyle(el);
+      return { pt: c.paddingTop, pb: c.paddingBottom, pl: c.paddingLeft, ti: c.textIndent,
+               caps: c.fontVariantCaps, hy: c.hyphens };
+    });
+    expect(cs).toEqual({ pt: '18px', pb: '6px', pl: '12px', ti: '-12px', caps: 'small-caps', hy: 'auto' });
+    expect((await api(page, `defineStyle('Neg', { after: -2 })`)).error).toContain('cannot be negative');
+    await api(page, `defineStyle('Body', { size: 15, before: 8, indent: 20 })`);
+    const id = await addBox(page);
+    await page.evaluate(i => docsync.api.setStyle(i, { style: 'Body' }), id);
+    const box = await page.evaluate(i => {
+      const c = getComputedStyle($('out').contentDocument.querySelector(`[data-el="${i}"]`));
+      return { pt: c.paddingTop, ti: c.textIndent };
+    }, id);
+    expect(box).toEqual({ pt: '8px', ti: '20px' });
+  });
+
+  test('the Spacing popover carries the paragraph controls', async ({ page }) => {
+    await api(page, `select('basics.h1')`);
+    await expect(page.locator('#type')).toBeVisible();
+    // The popover survives a re-render, so open it only when it is shut.
+    const openSpacing = async () => {
+      if (!(await page.locator('#ty-spacepop').isVisible())) await page.click('#ty-spacebtn');
+      await expect(page.locator('#ty-before')).toBeVisible();
+    };
+    await openSpacing();
+    await page.fill('#ty-before', '14');
+    await page.dispatchEvent('#ty-before', 'change');
+    expect(await page.evaluate(() => layout.text['basics.h1'].before)).toBe(14);
+    await openSpacing();
+    await page.click('#ty-smallcaps');
+    expect(await page.evaluate(() => layout.text['basics.h1'].smallcaps)).toBe(true);
+    await expect(page.locator('#ty-smallcaps')).toHaveAttribute('aria-pressed', 'true');
+    await page.click('#ty-smallcaps');
+    expect(await page.evaluate(() => layout.text['basics.h1'].smallcaps)).toBeUndefined();
+    // Emptying the field clears the override.
+    await openSpacing();
+    await page.fill('#ty-before', '');
+    await page.dispatchEvent('#ty-before', 'change');
+    expect(await page.evaluate(() => ((layout.text || {})['basics.h1'] || {}).before)).toBeUndefined();
+  });
+});
