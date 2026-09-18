@@ -80,7 +80,11 @@ test.describe('charts', () => {
 
   test('editing a value in the data grid redraws the chart', async ({ page }) => {
     await addChart(page);
-    const firstVal = page.locator('#chartpop .ch-grid input[type="number"]').first();
+    // .ch-num, not input[type=number]: the value cells became text inputs so
+    // that "1,234" and "(500)" could be typed the way a budget figure is
+    // written. The old selector matched nothing, and this spec passed by
+    // never running — it is the reason the grid went untested.
+    const firstVal = page.locator('#chartpop .ch-grid input.ch-num').first();
     await firstVal.fill('99');
     await firstVal.blur();
     await page.waitForTimeout(1300);
@@ -637,3 +641,128 @@ test('"no background" does not look like a white background', async ({ page }) =
   await expect(sw).not.toHaveClass(/unset/);
   expect(await sw.getAttribute('title')).toContain('#EEF4EF');
 });
+
+// ---- the axis, the numbers, two-line labels and tooltips -------------------
+// These close the gap that sent every real figure in the Budget Primer out of
+// the chart engine and into hand-written SVG: an axis that could not be told
+// where to start or stop, numbers with no format, labels that could only be
+// one line, and no hover at all.
+
+/** A labelled field inside the currently-open Customize section. */
+const fieldFor = (page, label) =>
+  page.locator('#chartpop .ch-field', { hasText: label }).locator('input, select');
+
+async function setField(page, label, value) {
+  const f = fieldFor(page, label);
+  await f.fill(value);
+  await f.blur();
+  await page.waitForTimeout(1300);
+}
+
+test('a negative value is drawn below the zero line, not flattened', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  // Type a negative into the data grid the way a person would.
+  const cells = page.locator('#chartpop .ch-grid input.ch-num');
+  await cells.nth(1).fill('-40');
+  await cells.nth(1).blur();
+  await page.waitForTimeout(1400);
+
+  const stored = await page.evaluate(i =>
+    layout.shapes.find(s => s.id === i).chart.series[0].data[1], id);
+  expect(stored).toBe(-40);
+
+  // The drawn bar must have real height. Before this, it was exactly zero
+  // while the axis label still read -40.
+  const heights = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"] rect.ds-cbar`)
+    .evaluateAll(els => els.map(e => +e.getAttribute('height')));
+  expect(heights[1]).toBeGreaterThan(0);
+});
+
+test('the axis can be pinned, and the tick count obeyed', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  await customize(page, 'Axis & grid');
+  await setField(page, 'Max', '500');
+  await setField(page, 'Ticks', '6');
+
+  const c = await page.evaluate(i =>
+    layout.shapes.find(s => s.id === i).chart, id);
+  expect(c.axisMax).toBe(500);
+  expect(c.axisTicks).toBe(6);
+
+  const ticks = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"] text`)
+    .evaluateAll(els => els.map(e => e.textContent));
+  expect(ticks).toContain('500');
+  // Clearing a field returns the axis to automatic rather than writing a zero.
+  const maxF = fieldFor(page, 'Max');
+  await maxF.fill(''); await maxF.blur();
+  await page.waitForTimeout(1300);
+  expect(await page.evaluate(i =>
+    'axisMax' in layout.shapes.find(s => s.id === i).chart, id)).toBe(false);
+});
+
+test('a number format reaches the axis, and the sample says so first',
+  async ({ page }) => {
+    await gotoEditor(page);
+    const id = await addChart(page);
+    await customize(page, 'Numbers');
+    await setField(page, 'Before', '$');
+    const scale = fieldFor(page, 'Scale');
+    await scale.selectOption('K');
+    await page.waitForTimeout(1300);
+
+    // The sample under the fields shows the effect before you read the chart.
+    await expect(page.locator('#chartpop .ch-eg b')).toHaveText('$1,234.57K');
+
+    const ticks = await page.frameLocator('#out')
+      .locator(`g[data-shape="${id}"] text`)
+      .evaluateAll(els => els.map(e => e.textContent));
+    expect(ticks.some(t => /^\$[\d.,]+K$/.test(t))).toBe(true);
+  });
+
+test('a label splits onto two lines, and survives a round trip', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  // A text input cannot hold a newline, so the break is typed as a pilcrow.
+  const label = page.locator('#chartpop .ch-grid input').nth(1);
+  await label.fill('Second 20% ¶ $21,900-$44,200');
+  await label.blur();
+  await page.waitForTimeout(1400);
+
+  // Stored as a real newline...
+  expect(await page.evaluate(i =>
+    layout.shapes.find(s => s.id === i).chart.labels[0], id))
+    .toBe('Second 20%\n$21,900-$44,200');
+  // ...drawn as two lines...
+  const spans = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"] text tspan`)
+    .evaluateAll(els => els.map(e => e.textContent));
+  expect(spans).toContain('Second 20%');
+  expect(spans).toContain('$21,900-$44,200');
+  // ...and shown back in the grid as a pilcrow, not as a lost break.
+  expect(await page.locator('#chartpop .ch-grid input').nth(1).inputValue())
+    .toContain('¶');
+});
+
+test('tooltips are opt-in, and the editor itself stays free of them',
+  async ({ page }) => {
+    await gotoEditor(page);
+    const id = await addChart(page);
+    await customize(page, 'Text');
+    await switchFor(page, 'Hover tooltips').click();
+    await page.waitForTimeout(1400);
+
+    expect(await page.evaluate(i =>
+      layout.shapes.find(s => s.id === i).chart.tips, id)).toBe(true);
+    // The attribute rides on the bars so the published page can show it...
+    const tips = await page.frameLocator('#out')
+      .locator(`g[data-shape="${id}"] rect.ds-cbar`)
+      .evaluateAll(els => els.map(e => e.getAttribute('data-tip')));
+    expect(tips.filter(Boolean).length).toBeGreaterThan(0);
+    // ...but the runtime is not injected into the editor, where a tooltip
+    // would chase the pointer through every drag.
+    expect(await page.frameLocator('#out').locator('.ds-tip').count()).toBe(0);
+  });
