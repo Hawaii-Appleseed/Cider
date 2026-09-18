@@ -208,6 +208,7 @@ ids it returns:
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
 | `rotate(id, deg)` / `lock(id, on?)` | rotate about the centre (0 clears) / lock out dragging and `place()` |
+| `master(page, name)` / `masterFrom(page, name)` / `detachMaster(page)` | master pages: a page uses a named set of boxes+shapes (`layout.masters`); `masterFrom` MOVES the page's own items into a new master; a master item renders as `<item>@<page>` and edits as ONE thing across pages (`setBoxText('text.folio@3', …)`); `{page}` in a master box is each page's number |
 | `wrap(id, 'left'\|'right')` / `wrap(id, null)` | float an ANCHORED box or designed element beside its paragraph so the lines flow around it (a previous sibling in the same flow, never a child); null puts it back on the text. A wrapped object refuses `place()` and drags |
 | `anchor(id, slotKey, {edge})` / `anchor(id, null)` | make a text box or designed element FOLLOW a paragraph (top, or `edge:'bottom'`) — it keeps its distance when the text reflows; null releases it where it stands. Not shapes or tables. Own history step; not a batch verb |
 | `group(ids)` / `ungroup(id)` | tie 2+ elements so they move as one (membership is exclusive) / dissolve |
