@@ -111,7 +111,11 @@ seed the default group `["card.<bullets_key>", "<title_key>", "<bullets_key>"]`.
 
 The renderer's design is the default; layout.json only speaks where the user
 moved/resized/recoloured something (`positions`, `shapes`, `boxes`, `tables`,
-`groups`, `endnote_order`). An empty file = the pristine design. Don't
+`groups`, `endnote_order`, and the two stylesheets: `textStyles` — named
+text styles a slot/box/table wears with `use` — and `objectStyles` — named
+looks for a `shape`, `box` or `table`, each style saying its `kind`; an
+object says `use: "<name>"` and its own keys still win, see
+`docsync/INDESIGN_PARITY.md`). An empty file = the pristine design. Don't
 hand-place by guessing inches — set a sensible default in the renderer and let
 the user drag.
 
