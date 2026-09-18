@@ -6,6 +6,10 @@
 // library, so the same markup serves the browser preview and the offline PDF.
 const { test, expect, gotoEditor } = require('./fixtures/editor-test');
 
+// Mirrors CHART_KINDS in edit.html. A number here rather than a magic 13,
+// so adding a type is one edit and not a puzzle in a failing assertion.
+const CHART_KINDS = 15;
+
 async function addChart(page) {
   const frame = page.frameLocator('#out');
   await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
@@ -48,7 +52,7 @@ test.describe('charts', () => {
     const id = await addChart(page);
     expect(id).toBeTruthy();
     await expect(page.locator('#side-title')).toHaveText('Chart');
-    await expect(page.locator('#chartpop .ch-typesel option')).toHaveCount(13);
+    await expect(page.locator('#chartpop .ch-typesel option')).toHaveCount(CHART_KINDS);
 
     const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
     expect(c.type).toBe('bar');
@@ -171,7 +175,7 @@ test.describe('chart colours and labels', () => {
     const frame = page.frameLocator('#out');
     // Give it a title so the title row exists, through the panel's own field.
     await customize(page, 'Text');
-    const ti = page.locator('#chartpop .ch-title');
+    const ti = page.locator('#chartpop input[data-ck="title"]');
     await ti.fill('Budget');
     await ti.blur();
     await page.waitForTimeout(1300);
@@ -432,7 +436,7 @@ test('every chart type in the dropdown renders something', async ({ page }) => {
 
   const opts = await page.locator('#chartpop .ch-typesel option')
     .evaluateAll(o => o.map(x => x.value));
-  expect(opts).toHaveLength(13);
+  expect(opts).toHaveLength(CHART_KINDS);
 
   for (const val of opts) {
     await page.selectOption('#chartpop .ch-typesel', val);
@@ -727,7 +731,9 @@ test('a label splits onto two lines, and survives a round trip', async ({ page }
   await gotoEditor(page);
   const id = await addChart(page);
   // A text input cannot hold a newline, so the break is typed as a pilcrow.
-  const label = page.locator('#chartpop .ch-grid input').nth(1);
+  // By its own hook, not by position: a single-series chart's first grid cell
+  // is now the row's colour swatch.
+  const label = page.locator('#chartpop .ch-grid input[data-ck="l0"]');
   await label.fill('Second 20% ¶ $21,900-$44,200');
   await label.blur();
   await page.waitForTimeout(1400);
@@ -743,7 +749,7 @@ test('a label splits onto two lines, and survives a round trip', async ({ page }
   expect(spans).toContain('Second 20%');
   expect(spans).toContain('$21,900-$44,200');
   // ...and shown back in the grid as a pilcrow, not as a lost break.
-  expect(await page.locator('#chartpop .ch-grid input').nth(1).inputValue())
+  expect(await page.locator('#chartpop .ch-grid input[data-ck="l0"]').inputValue())
     .toContain('¶');
 });
 
@@ -822,3 +828,182 @@ test('an inline chart has no background control, having no shape behind it',
     await expect(
       page.locator('#chartpop .ch-colrow', { hasText: 'Background' })).toHaveCount(0);
   });
+
+// ---------------------------------------------------------------------------
+// What CHART_PARITY.md listed as "still sends someone back to InDesign".
+// Each control writes ONE key, and an untouched chart writes none of them —
+// the renderer's side of that promise is checked in docsync/test_docsync.py.
+// ---------------------------------------------------------------------------
+
+test('one bar can be picked out of a single-series chart', async ({ page }) => {
+  await gotoEditor(page);
+  await addChart(page);
+  // A single-series bar chart is coloured per ROW, like a pie: the row dot is
+  // a swatch, not a hint. "This year", "the proposal" — the commonest ask of
+  // a budget chart, and the reason figure 2 is hand-written SVG.
+  const sw = page.locator('#chartpop .ch-grid .ch-dotsw');
+  await expect(sw).toHaveCount(3);
+  await sw.nth(2).evaluate(el => {
+    el.value = '#FF0000';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(1400);
+  const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.colors[2]).toBe('#FF0000');
+
+  // A second series and the colour means the SERIES again, so the swatch goes.
+  await page.click('#chartpop .tp-btn:text("+ Series")');
+  await page.waitForTimeout(1200);
+  await expect(page.locator('#chartpop .ch-grid .ch-dotsw')).toHaveCount(0);
+});
+
+test('a block of spreadsheet cells fills the table', async ({ page }) => {
+  await gotoEditor(page);
+  await addChart(page);
+  // Until now this landed in ONE cell, where chartNumber refused it — so the
+  // way to get a table of numbers into a chart was to retype it.
+  await page.locator('#chartpop .ch-grid input[data-ck="l0"]').click();
+  await page.evaluate(() => {
+    const el = document.querySelector('#chartpop .ch-grid input[data-ck="l0"]');
+    const dt = new DataTransfer();
+    dt.setData('text/plain',
+      'Label\tGeneral\tSpecial\nFY25\t6\t3\nFY26\t7\t3\nFY27\t8\t4\nFY28\t9\t5');
+    el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+  });
+  await page.waitForTimeout(1500);
+  const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.labels).toEqual(['FY25', 'FY26', 'FY27', 'FY28']);
+  expect(c.series).toHaveLength(2);
+  expect(c.series[0].name).toBe('General');       // the header row is the names
+  expect(c.series[1].data).toEqual([3, 3, 4, 5]);
+});
+
+test('a reference line is added, labelled and taken off again', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  await customize(page, 'Reference lines');
+  await page.click('#chartpop .tp-btn:text("+ Reference line")');
+  await page.waitForTimeout(1400);
+  let c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.rules).toHaveLength(1);
+
+  const val = page.locator('#chartpop .ch-rule input[data-ck="rv0"]');
+  await val.fill('15');
+  await val.press('Enter');
+  await page.waitForTimeout(1400);
+  c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.rules[0].value).toBe(15);
+  // Drawn across the plot, over the bars it is there to be read against.
+  const txt = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"]`).innerHTML();
+  expect(txt).toContain('Target');
+
+  await page.click('#chartpop .ch-rule .ch-rowdel');
+  await page.waitForTimeout(1400);
+  c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.rules).toBeUndefined();          // the last one takes the key with it
+});
+
+test('the legend can move off the bottom, and the axes can be named',
+  async ({ page }) => {
+    await gotoEditor(page);
+    await addChart(page);
+    await customize(page, 'Text');
+    // The position picker only exists once there IS a legend to place.
+    await expect(page.locator('#chartpop .ch-field', { hasText: 'Legend at' }))
+      .toHaveCount(0);
+    await switchFor(page, 'Legend').click();
+    await page.waitForTimeout(1400);
+    await page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right');
+    await page.waitForTimeout(1400);
+
+    const t = page.locator('#chartpop input[data-ck="axisTitle"]');
+    await t.fill('Millions of dollars');
+    await t.press('Enter');
+    await page.waitForTimeout(1400);
+    const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+    expect(c.legendPos).toBe('right');
+    expect(c.axisTitle).toBe('Millions of dollars');
+  });
+
+test('a series can be drawn as a line against its own scale', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  await page.click('#chartpop .tp-btn:text("+ Series")');
+  await page.waitForTimeout(1200);
+  // The section only appears once there is more than one series to tell
+  // apart — a combo chart needs two things to combine.
+  await customize(page, 'Bars & lines');
+  const row = page.locator('#chartpop .ch-secbody[data-sec="series"] .ch-colrow')
+    .nth(1);
+  await row.locator('select').first().selectOption('line');
+  await page.waitForTimeout(1400);
+  await row.locator('select').nth(1).selectOption('right');
+  await page.waitForTimeout(1400);
+  const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.series[1].type).toBe('line');
+  expect(c.series[1].axis).toBe('right');
+  const html = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"]`).innerHTML();
+  expect(html).toContain('<polyline');
+  // ...and the right-hand scale gets its own bounds field, now something
+  // is read against it.
+  await customize(page, 'Axis & grid');
+  await expect(page.locator('#chartpop .ch-field', { hasText: 'Right max' }))
+    .toHaveCount(1);
+});
+
+test('labels can be turned, and the bars can be made wider', async ({ page }) => {
+  await gotoEditor(page);
+  const id = await addChart(page);
+  await customize(page, 'Axis & grid');
+  await page.selectOption('#chartpop .ch-field:has-text("Labels") select', '-45');
+  await page.waitForTimeout(1400);
+  const gap = page.locator('#chartpop .ch-field:has-text("Bar gap") input');
+  await gap.fill('0.05');
+  await gap.press('Enter');
+  await page.waitForTimeout(1400);
+  const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
+  expect(c.labelAngle).toBe(-45);
+  expect(c.barGap).toBe(0.05);
+  const html = await page.frameLocator('#out')
+    .locator(`g[data-shape="${id}"]`).innerHTML();
+  expect(html).toContain('rotate(-45');
+});
+
+test('a look is saved, applied to every chart, and deleted', async ({ page }) => {
+  await gotoEditor(page);
+  await addChart(page);
+  // Give the chart something to remember: a legend down the right and one
+  // recoloured bar.
+  await customize(page, 'Text');
+  await switchFor(page, 'Legend').click();
+  await page.waitForTimeout(1400);
+  await page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right');
+  await page.waitForTimeout(1400);
+
+  await customize(page, 'Style');
+  await page.click('#chartpop .tp-btn:text("+ Save this look")');
+  await page.waitForTimeout(400);
+  await page.locator('dialog.dsdlg input[type="text"]').fill('House');
+  await page.locator('dialog.dsdlg button[type="submit"], dialog.dsdlg form button')
+    .last().click();
+  await page.waitForTimeout(900);
+  expect(await page.evaluate(() => Object.keys(layout.chartStyles || {})))
+    .toEqual(['House']);
+  expect(await page.evaluate(() => layout.chartStyles.House.legendPos)).toBe('right');
+  // A look is the look, not the figure: the numbers and the title stay out.
+  expect(await page.evaluate(() => layout.chartStyles.House.series)).toBeUndefined();
+  expect(await page.evaluate(() => layout.chartStyles.House.labels)).toBeUndefined();
+
+  // Applied across the document — the primer's own figure 6 included, which
+  // is an INLINE chart and records its look as an override.
+  await page.click('#chartpop .tp-btn:text("Apply to all")');
+  await page.waitForTimeout(2500);
+  expect(await page.evaluate(() => (layout.charts['whopays.fig6'] || {}).legendPos))
+    .toBe('right');
+
+  await page.click('#chartpop .tp-btn:text("Delete")');
+  await page.waitForTimeout(900);
+  expect(await page.evaluate(() => layout.chartStyles)).toBeUndefined();
+});

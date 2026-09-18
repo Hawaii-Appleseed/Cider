@@ -121,7 +121,12 @@ Rules that bite:
 - **Tests:** `npx playwright test` (editor behaviour; ~425 specs),
   `python3 docsync/test_docsync.py` (engine round-trip),
   `python3 report2027/tools/test_render.py` (render tolerances + edit.html
-  syntax guard), `python3 -m docsync.check` (every report's rendered OUTPUT:
+  syntax guard),
+  `python3 -m docsync.chart_parity` (after ANY change to `chart_svg()`: draws
+  20k charts with the working tree's engine and with HEAD's and prints what
+  moved — a published report must not move because the engine grew, and every
+  render it reports has to be accounted for in `docsync/CHART_PARITY.md`),
+  `python3 -m docsync.check` (every report's rendered OUTPUT:
   citation integrity, unrendered markdown, chart content outside its viewBox,
   text below the legibility floor — plus an `edit-mode draft` pass per binding
   that builds with DOCSYNC_EDIT=1 and warns on DEAD TEXT (visible strings with
