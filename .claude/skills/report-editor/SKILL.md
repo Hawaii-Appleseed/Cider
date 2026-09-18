@@ -208,6 +208,7 @@ ids it returns:
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
 | `rotate(id, deg)` / `lock(id, on?)` | rotate about the centre (0 clears) / lock out dragging and `place()` |
+| `anchor(id, slotKey, {edge})` / `anchor(id, null)` | make a text box or designed element FOLLOW a paragraph (top, or `edge:'bottom'`) — it keeps its distance when the text reflows; null releases it where it stands. Not shapes or tables. Own history step; not a batch verb |
 | `group(ids)` / `ungroup(id)` | tie 2+ elements so they move as one (membership is exclusive) / dissolve |
 | `remove(ids)` / `duplicate(ids)` | the UI's own Delete and Duplicate, selection handled for you |
 | `addTextBox({page,x,y,w,h,md,style,fill})` | returns `'text.<n>'` for further verbs |
