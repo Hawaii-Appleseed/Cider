@@ -1185,6 +1185,14 @@
   .ty-seg button:first-child { border-radius:7px 0 0 7px; margin-left:0; }
   .ty-seg button:last-child { border-radius:0 7px 7px 0; }
   .ty-seg button.on { position:relative; z-index:1; }
+  #ty-stylebtn { gap:5px; max-width:150px; }
+  #ty-stylename { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  #ty-stylebtn .ty-caret { font-size:9px; opacity:.7; }
+  #ty-stylebtn.plus #ty-stylename::after { content:"+"; opacity:.7; margin-left:2px; }
+  #ty-stylelist .shp.on { background:#EAF3EC; font-weight:600; }
+  #ty-stylelist .shp.on::after { content:"✓"; margin-left:auto; color:var(--sage); }
+  #ty-stylelist:not(:empty) + #ty-stylenone { display:none; }
+  #ty-stylelist:not(:empty) { margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #E1E8E3; }
   #ty-reset { margin-left:auto; color:var(--dim); }
   #ty-reset:hover { color:#fff; }
   .ty-key { font:11.5px ui-monospace,monospace; color:var(--dim); max-width:170px;
@@ -2162,6 +2170,8 @@
 <div id="type" hidden>
   <span class="ty-key" id="ty-key"></span>
   <span class="ty-sep"></span>
+  <button id="ty-stylebtn" title="Named text style — one definition, every paragraph that wears it"><span
+    id="ty-stylename">Style</span><span class="ty-caret">▾</span></button>
   <select id="ty-font" title="Font"></select>
   <select id="ty-weight" title="Weight"></select>
   <span class="ty-step" title="Size (px)">
@@ -2220,6 +2230,18 @@
     <div class="swgrid" id="ty-swgrid"></div>
     <div id="ty-color-extras"></div>
     <button class="sw-default" id="ty-colordefault">Report's own colour</button>
+  </div>
+  <div class="pop" id="ty-stylepop" hidden>
+    <p class="pop-h">Text style</p>
+    <div id="ty-stylelist"></div>
+    <p class="icon-note" id="ty-stylenone" hidden>No named styles yet. Set this text the way
+      you want it, then save it as a style — every paragraph you apply it to follows
+      when you change it.</p>
+    <button class="shp" id="ty-style-new">＋ New style from this text…</button>
+    <button class="shp" id="ty-style-update" hidden>Update <b id="ty-style-updname"></b> to match this text</button>
+    <button class="shp" id="ty-style-detach" hidden>Detach — keep the look, drop the link</button>
+    <button class="shp" id="ty-style-rename" hidden>Rename…</button>
+    <button class="shp" id="ty-style-delete" hidden>Delete…</button>
   </div>
   <div class="pop" id="ty-spacepop" hidden>
     <p class="pop-h">Spacing</p>
@@ -5753,7 +5775,7 @@ function togglePop(pop, anchor) {
 // Only the controls that OPEN one of these surfaces. #tok and the File menu's
 // own entries are inside .pop already, and #guides is a plain toggle, not an
 // anchor — listing either would just stop a click there from closing anything.
-const POP_ANCHORS = '#ty-colorbtn, #ty-spacebtn, #text, #shape, #icon, #layers,'
+const POP_ANCHORS = '#ty-colorbtn, #ty-spacebtn, #ty-stylebtn, #text, #shape, #icon, #layers,'
   + ' #download, #file, #ar-img';
 
 // The rail's PICKERS — the panels that exist to put a new object on the page.
@@ -7750,6 +7772,88 @@ const setStyle = (k, patch) => {
   if (Object.keys(st).length) layout.text[k] = st; else delete layout.text[k];
 };
 
+// Named text styles — layout.styles = { name: styleDict }. A style dict
+// (slot, box or table) says { style: 'Body', ...localOverrides } to wear one;
+// the engine's resolve_text() folds the base in under the local keys, and
+// this is its JavaScript twin for everything the strip shows before a render.
+// Redefine 'Body' and every wearer moves: the one thing per-box dicts cannot
+// do. Apply REPLACES local formatting (what "make this a Heading" means);
+// the strip's controls then write local overrides on top, shown as "Body+".
+const namedStyles = () => layout.styles || {};
+const styleRefOf = k => styleOf(k).style || null;
+function effectiveStyle(k) {
+  const raw = styleOf(k);
+  const { style: ref, ...local } = raw;
+  const base = ref ? namedStyles()[ref] : null;
+  return base ? { ...base, ...local } : local;
+}
+const styleHasLocal = k => Object.keys(styleOf(k)).some(p => p !== 'style');
+const STYLE_NAME_RE = /^\S[^\n]{0,59}$/;
+/** Every slot key / box id / table id wearing a named style. */
+function styleUsers(name) {
+  const out = [];
+  Object.entries(layout.text || {}).forEach(([k, st]) => { if (st && st.style === name) out.push(k); });
+  (layout.boxes || []).forEach(b => { if ((b.style || {}).style === name) out.push('text.' + b.id); });
+  (layout.tables || []).forEach(t => { if ((t.style || {}).style === name) out.push('table.' + t.id); });
+  return out;
+}
+/** Raw style object of ANY wearer id, for the catalogue ops below. */
+function styleStoreOf(id) {
+  if (id.startsWith('text.')) { const b = boxOf(id); return b ? [b, 'style'] : null; }
+  if (id.startsWith('table.')) {
+    const t = (layout.tables || []).find(x => 'table.' + x.id === id); return t ? [t, 'style'] : null;
+  }
+  return layout.text && layout.text[id] ? [layout.text, id] : null;
+}
+/** The engine's own verdict on a style dict — the same _check_text a load
+ *  runs, so a name or a weight it would refuse never reaches layout.json. */
+function styleError(props) {
+  py.globals.set('STYLE_JSON', JSON.stringify(props || {}));
+  // A def + call, not a bare try: runPython hands back the value of a final
+  // EXPRESSION, and a try statement is not one — it came back undefined.
+  return py.runPython(
+    'import json\nfrom docsync.layout import _check_text, LayoutError\n'
+    + 'def _ds_style_err(j):\n'
+    + '    try:\n        _check_text(json.loads(j), "style")\n        return None\n'
+    + '    except LayoutError as e:\n        return str(e)\n'
+    + '_ds_style_err(STYLE_JSON)');
+}
+function defineNamedStyle(name, props) {
+  const clean = {};
+  Object.entries(props || {}).forEach(([k, v]) => { if (v !== '' && v != null && k !== 'style') clean[k] = v; });
+  layout.styles = layout.styles || {};
+  layout.styles[name] = clean;
+  return clean;
+}
+function applyNamedStyle(k, name) {
+  const b = k.startsWith('text.') ? boxOf(k) : null;
+  if (b) { b.style = { style: name }; return; }
+  layout.text = layout.text || {};
+  layout.text[k] = { style: name };
+}
+/** Drop a name. Its wearers keep their look: the base is written into each
+ *  of them inline first, so nothing on any page moves. */
+function removeNamedStyle(name) {
+  const users = styleUsers(name);
+  users.forEach(id => {
+    const s = styleStoreOf(id); if (!s) return;
+    const [host, key] = s;
+    const { style: _ref, ...local } = host[key] || {};
+    const merged = { ...(namedStyles()[name] || {}), ...local };
+    if (Object.keys(merged).length) host[key] = merged; else delete host[key];
+  });
+  delete layout.styles[name];
+  if (!Object.keys(layout.styles).length) delete layout.styles;
+  return users;
+}
+function renameNamedStyle(from, to) {
+  const users = styleUsers(from);
+  layout.styles[to] = layout.styles[from];
+  delete layout.styles[from];
+  users.forEach(id => { const s = styleStoreOf(id); if (s) s[0][s[1]].style = to; });
+  return users;
+}
+
 /** The CSS a style means, asked of the engine rather than reimplemented here.
  *  Two implementations of that question would drift apart silently. */
 function cssFor(st) {
@@ -7762,7 +7866,7 @@ function cssFor(st) {
  *  the renderer catches up on release. */
 function paintText(key) {
   const d = $('out').contentDocument;
-  const css = cssFor(styleOf(key));
+  const css = cssFor(effectiveStyle(key));
   // A slot's whole inline style IS its text style, so replacing it is right.
   // A text BOX's inline style also carries its position and size — replacing
   // that flings the box to the page corner mid-slider — so there the text
@@ -7818,8 +7922,12 @@ function showType(key) {
   // The same comment button the arrange strip has, for the strip a lone
   // text box or paragraph gets instead.
   $('ty-comment').hidden = !docStore();
-  const st = styleOf(key);
+  const st = effectiveStyle(key);
   const real = computedType(key);
+  const ref = styleRefOf(key);
+  $('ty-stylename').textContent = ref || 'Style';
+  $('ty-stylebtn').classList.toggle('plus', !!ref && styleHasLocal(key));
+  $('ty-stylebtn').classList.toggle('on', !!ref);
   $('ty-key').textContent = key;
   $('ty-key').title = key;
   // text-align means nothing to SVG text — a curved label is centred on its
@@ -7922,6 +8030,11 @@ function wireType() {
     togglePop($('ty-colorpop'), $('ty-colorbtn'));
   });
   $('ty-spacebtn').addEventListener('click', () => togglePop($('ty-spacepop'), $('ty-spacebtn')));
+  $('ty-stylebtn').addEventListener('click', () => {
+    renderStylePop();
+    togglePop($('ty-stylepop'), $('ty-stylebtn'));
+  });
+  wireStylePop();
   $('ty-colordefault').addEventListener('click', async () => {
     $('ty-colorpop').hidden = true;
     setStyle(selected, { color: null });
@@ -7966,6 +8079,98 @@ function wireType() {
   });
   $('ty-reset').addEventListener('click', async () => {
     if (layout.text) delete layout.text[selected];
+    markDirty(); await render(); showType(selected);
+  });
+}
+
+// The style popover: the catalogue as rows (click applies), then the ops
+// that make sense for the selected text — save it as a new style, push its
+// look back into the style it wears, detach, rename, delete.
+function renderStylePop() {
+  const list = $('ty-stylelist');
+  list.innerHTML = '';
+  const ref = styleRefOf(selected);
+  Object.keys(namedStyles()).sort((a, b) => a.localeCompare(b)).forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'shp' + (name === ref ? ' on' : '');
+    b.dataset.style = name;
+    b.textContent = name;
+    b.title = cssFor(namedStyles()[name]).split(';').join('\n') || 'an empty style';
+    b.addEventListener('click', async () => {
+      $('ty-stylepop').hidden = true;
+      pushHistory();
+      applyNamedStyle(selected, name);
+      markDirty(); await render(); showType(selected);
+    });
+    list.appendChild(b);
+  });
+  $('ty-stylenone').hidden = !!Object.keys(namedStyles()).length;
+  $('ty-style-update').hidden = !(ref && styleHasLocal(selected));
+  $('ty-style-updname').textContent = ref || '';
+  ['ty-style-detach', 'ty-style-rename', 'ty-style-delete'].forEach(id => $(id).hidden = !ref);
+}
+function wireStylePop() {
+  const close = () => { $('ty-stylepop').hidden = true; };
+  const askName = async (title, value) => {
+    const r = await dsForm(title, [{ name: 'name', label: 'Name', value, required: true,
+                                     placeholder: 'Body, Heading, Caption…' }], {
+      okLabel: 'Save',
+      validate: v => {
+        const n = (v.name || '').trim();
+        if (!STYLE_NAME_RE.test(n)) return 'a name is 1–60 characters';
+        if (n !== value && namedStyles()[n]) return 'there is already a style called ' + n;
+        return '';
+      },
+    });
+    return r ? r.name.trim() : null;
+  };
+  $('ty-style-new').addEventListener('click', async () => {
+    close();
+    const name = await askName('New text style from this text');
+    if (!name) return;
+    pushHistory();
+    defineNamedStyle(name, effectiveStyle(selected));
+    applyNamedStyle(selected, name);
+    markDirty(); await render(); showType(selected);
+    $('stat').textContent = 'style ' + name + ' saved — apply it from the Style menu';
+  });
+  $('ty-style-update').addEventListener('click', async () => {
+    close();
+    const ref = styleRefOf(selected); if (!ref) return;
+    pushHistory();
+    defineNamedStyle(ref, effectiveStyle(selected));
+    applyNamedStyle(selected, ref);
+    markDirty(); await render(); showType(selected);
+    const n = styleUsers(ref).length;
+    $('stat').textContent = ref + ' updated — ' + n + (n === 1 ? ' element wears it' : ' elements wear it');
+  });
+  $('ty-style-detach').addEventListener('click', async () => {
+    close();
+    const ref = styleRefOf(selected); if (!ref) return;
+    pushHistory();
+    const merged = effectiveStyle(selected);
+    setStyle(selected, { ...merged, style: null });
+    markDirty(); await render(); showType(selected);
+  });
+  $('ty-style-rename').addEventListener('click', async () => {
+    close();
+    const ref = styleRefOf(selected); if (!ref) return;
+    const name = await askName('Rename style', ref);
+    if (!name || name === ref) return;
+    pushHistory();
+    renameNamedStyle(ref, name);
+    markDirty(); await render(); showType(selected);
+  });
+  $('ty-style-delete').addEventListener('click', async () => {
+    close();
+    const ref = styleRefOf(selected); if (!ref) return;
+    const n = styleUsers(ref).length;
+    const ok = await dsConfirm('Delete the style ' + ref + '? The ' + n
+      + (n === 1 ? ' element' : ' elements') + ' wearing it keep their look, but stop following it.',
+      { okLabel: 'Delete', danger: true });
+    if (!ok) return;
+    pushHistory();
+    removeNamedStyle(ref);
     markDirty(); await render(); showType(selected);
   });
 }
@@ -21112,12 +21317,64 @@ function _pilotValidateSetStyle(key, patch) {
   const isBox = (key || '').startsWith('text.') && boxOf(key);
   if (!isBox && !slotRe(key).test(source))
     return { ok: false, error: `no slot or text box '${key}' — check inventory()` };
+  // { style: 'Body' } wears a named style; null/'' detaches. Refuse a name the
+  // catalogue lacks here, where the message can list what it has.
+  if (patch.style != null && patch.style !== '' && !namedStyles()[patch.style]
+      && !(_pilotPendingStyles && _pilotPendingStyles.has(patch.style)))
+    return { ok: false, error: `no text style '${patch.style}' — styles() lists ${Object.keys(namedStyles()).join(', ') || 'none'}; defineStyle() makes one` };
   return { ok: true };
 }
+// Names an earlier op in the batch being validated will define — batch()
+// validates every op before applying any, so define-then-wear in one call
+// needs the validator told what is coming.
+let _pilotPendingStyles = null;
 function _pilotApplySetStyle(key, patch) {
-  setStyle(key, patch);
-  return { key, style: styleOf(key) };
+  // Wearing a style replaces local formatting, as the Style menu does; any
+  // other key in the same patch lands as an override on top of it.
+  if (typeof patch.style === 'string' && patch.style) {
+    const { style: name, ...rest } = patch;
+    applyNamedStyle(key, name);
+    if (Object.keys(rest).length) setStyle(key, rest);
+  } else if ('style' in patch && styleRefOf(key)) {
+    // Detach, as the menu does: the look stays, written inline; the link goes.
+    const { style: _s, ...rest } = patch;
+    setStyle(key, { ...effectiveStyle(key), ...rest, style: null });
+  } else setStyle(key, patch);
+  return { key, style: styleOf(key), effective: effectiveStyle(key) };
 }
+
+// The catalogue of named styles: define (or redefine) one, rename, remove.
+// Validated by the engine's own _check_text through Pyodide, so a font or
+// weight a load would refuse cannot be written.
+function _pilotValidateDefineStyle(name, props) {
+  if (typeof name !== 'string' || !STYLE_NAME_RE.test(name))
+    return { ok: false, error: 'a style name is 1–60 characters, no leading space' };
+  if (!props || typeof props !== 'object' || Array.isArray(props))
+    return { ok: false, error: 'props must be a style object, e.g. { font: "Barlow", size: 30 }' };
+  if (props.style != null) return { ok: false, error: 'a named style cannot be based on another — one level only' };
+  const clean = {};
+  Object.entries(props).forEach(([k, v]) => { if (v !== '' && v != null) clean[k] = v; });
+  const err = styleError(clean);
+  return err ? { ok: false, error: err } : { ok: true };
+}
+function _pilotApplyDefineStyle(name, props) {
+  const existed = !!namedStyles()[name];
+  const st = defineNamedStyle(name, props);
+  return { name, style: st, redefined: existed, users: styleUsers(name) };
+}
+function _pilotValidateRemoveStyle(name) {
+  if (!namedStyles()[name]) return { ok: false, error: `no text style '${name}'` };
+  return { ok: true };
+}
+function _pilotApplyRemoveStyle(name) { return { name, inlined: removeNamedStyle(name) }; }
+function _pilotValidateRenameStyle(from, to) {
+  if (!namedStyles()[from]) return { ok: false, error: `no text style '${from}'` };
+  if (typeof to !== 'string' || !STYLE_NAME_RE.test(to))
+    return { ok: false, error: 'a style name is 1–60 characters, no leading space' };
+  if (to !== from && namedStyles()[to]) return { ok: false, error: `there is already a style '${to}'` };
+  return { ok: true };
+}
+function _pilotApplyRenameStyle(from, to) { return { from, to, users: renameNamedStyle(from, to) }; }
 
 // A text box's words live in layout.json (b.md), not content.md — setSlot
 // cannot reach them, which left a pilot able to CREATE a box but never to
@@ -21231,6 +21488,9 @@ const PILOT_BATCH_VERBS = {
   addSection: { validate: (p, sl) => _pilotValidateAddSection(p, sl),
                 apply: (p, sl, md) => _pilotApplyAddSection(p, sl, md) },
   setStyle: { validate: (k, p) => _pilotValidateSetStyle(k, p), apply: (k, p) => _pilotApplySetStyle(k, p) },
+  defineStyle: { validate: (n, p) => _pilotValidateDefineStyle(n, p), apply: (n, p) => _pilotApplyDefineStyle(n, p) },
+  removeStyle: { validate: n => _pilotValidateRemoveStyle(n), apply: n => _pilotApplyRemoveStyle(n) },
+  renameStyle: { validate: (a, b) => _pilotValidateRenameStyle(a, b), apply: (a, b) => _pilotApplyRenameStyle(a, b) },
   setBoxText: { validate: (id, m) => _pilotValidateSetBoxText(id, m), apply: (id, m) => _pilotApplySetBoxText(id, m) },
   rotate: { validate: id => _pilotValidatePlace(id), apply: (id, deg) => _pilotApplyRotate(id, deg) },
   // Existence only — place()'s validate also refuses LOCKED elements, which
@@ -21339,7 +21599,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
                index: i, elements, slots };
     });
     return { ok: true, project: M.id, pageOrder: pageOrder(), pages,
-             sources: parseSources(), ...docsync.api.status() };
+             sources: parseSources(), styles: docsync.api.styles().styles,
+             ...docsync.api.status() };
   },
 
   /** A slot's current markdown, exactly as content.md holds it. */
@@ -21491,6 +21752,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     };
     const defined = new Set();
     const deferred = new Set();          // op indexes whose validate waits for apply
+    _pilotPendingStyles = new Set();
+    try {
     for (let i = 0; i < ops.length; i++) {
       const op = ops[i];
       const spec = op && PILOT_BATCH_VERBS[op.verb];
@@ -21510,9 +21773,11 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       } else {
         const v = spec.validate(...args);
         if (!v.ok) return { ok: false, error: `op ${i} (${op.verb}): ${v.error}` };
+        if (op.verb === 'defineStyle') _pilotPendingStyles.add(args[0]);
       }
       if (op.as) defined.add(String(op.as));
     }
+    } finally { _pilotPendingStyles = null; }
     pushHistory();
     const named = {};
     const applied = [];
@@ -21571,6 +21836,52 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     if (!v.ok) return v;
     pushHistory();
     const r = _pilotApplySetStyle(key, patch);
+    markDirty();
+    await render();
+    return { ...docsync.api.status(), ...r };
+  },
+
+  /** The named text styles: { name: {style, users:[ids]} }. Read-only. */
+  styles() {
+    const out = {};
+    Object.entries(namedStyles()).forEach(([n, st]) => { out[n] = { style: st, users: styleUsers(n) }; });
+    return { ok: true, styles: out };
+  },
+
+  /** Define — or redefine, which moves every element wearing it — a named
+   *  text style. props is the same object setStyle takes (font, size, weight,
+   *  color, tracking, leading, italic, underline, align, case, effect). Wear
+   *  it with setStyle(key, { style: name }). */
+  async defineStyle(name, props) {
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    const v = _pilotValidateDefineStyle(name, props);
+    if (!v.ok) return v;
+    pushHistory();
+    const r = _pilotApplyDefineStyle(name, props);
+    markDirty();
+    await render();
+    return { ...docsync.api.status(), ...r };
+  },
+
+  /** Drop a named style. Everything wearing it keeps its look (the values are
+   *  written into each element) and stops following the name. */
+  async removeStyle(name) {
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    const v = _pilotValidateRemoveStyle(name);
+    if (!v.ok) return v;
+    pushHistory();
+    const r = _pilotApplyRemoveStyle(name);
+    markDirty();
+    await render();
+    return { ...docsync.api.status(), ...r };
+  },
+
+  async renameStyle(from, to) {
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    const v = _pilotValidateRenameStyle(from, to);
+    if (!v.ok) return v;
+    pushHistory();
+    const r = _pilotApplyRenameStyle(from, to);
     markDirty();
     await render();
     return { ...docsync.api.status(), ...r };

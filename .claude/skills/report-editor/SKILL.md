@@ -200,7 +200,8 @@ ids it returns:
 | `audit()` | **every mechanical layout problem as data** — see below |
 | `getSlot(key)` / `setSlot(key, md)` | a slot's markdown, read / replaced (renderer's grammar applies) |
 | `setBoxText(id, md)` | a TEXT BOX's words — they live in layout.json, so `setSlot` cannot reach them |
-| `setStyle(key, patch)` | typography for a slot key or `'text.N'`: `{size, font, weight, color, tracking, leading, italic, underline, align, case}`; `null` clears one |
+| `setStyle(key, patch)` | typography for a slot key or `'text.N'`: `{size, font, weight, color, tracking, leading, italic, underline, align, case}`; `null` clears one. `{style: 'Body'}` makes the text WEAR a named style (replacing its local formatting; other keys in the same patch ride on top as overrides); `{style: null}` detaches, keeping the look inline |
+| `styles()` / `defineStyle(name, props)` / `renameStyle(from, to)` / `removeStyle(name)` | the catalogue of **named text styles** (`layout.json` `styles`). `defineStyle` on an existing name REDEFINES it and every element wearing it moves — set body copy once, not per box. `removeStyle` writes the values into each wearer first, so nothing on the page changes. One level only: a named style cannot be based on another |
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
 | `rotate(id, deg)` / `lock(id, on?)` | rotate about the centre (0 clears) / lock out dragging and `place()` |
@@ -222,7 +223,7 @@ assuming the request landed verbatim. `remove`/`duplicate`/`addPage`/
 batch; call them singly.
 
 **`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`,
-`setStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
+`setStyle`, `defineStyle`, `renameStyle`, `removeStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
 `addTextBox`, `addShape`, `addSource`. Name an op with `as` and later ops can say `'@name'`
 wherever an id goes, so create-then-place is ONE call:
 
@@ -279,6 +280,14 @@ The Appleseed house style is DATA, not lore: `docsync.templates.style_guide()`
 returns the fonts, page metrics, colour schemes and every pattern — section
 heading, hairline, body, callout, pull-quote, figure caption, footer — as the
 exact `style` dicts `addTextBox`/`setStyle` accept and `addShape` arguments.
+For a report of any length, turn the patterns you will reuse into NAMED
+styles first — `defineStyle('Body', style_guide.patterns.body.style)` and so
+on — then have each box wear one (`addTextBox({..., style: {style: 'Body'}})`
+or `setStyle(id, {style: 'Body'})`). A later `defineStyle('Body', …)` then
+restyles the whole report in one undo step, where copied dicts would need a
+verb per box. The Type strip's **Style** button is the same catalogue for a
+person: save the selected text as a style, apply one from the list, "Update
+‹name› to match this text", rename, delete (wearers keep their look).
 It rides along on `GET /__templates`, and the MCP server serves it as
 `style_guide`. Read it first; never invent fonts or sizes.
 

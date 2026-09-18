@@ -499,6 +499,60 @@ check_eq("a style aimed at an unstyleable slot is reported",
          _layout({"text": {"cip.body": {"size": 12}}}).unknown_text_keys({"a.b"}),
          ["cip.body"])
 
+# ---------------------------------------------------------- named styles
+# "styles" is the catalogue; a text style's "style" key points into it, local
+# keys win over the base, and the reference never reaches CSS.
+from docsync.layout import resolve_text                     # noqa: E402
+
+_cat = {"Body": {"font": "Source Sans 3", "size": 15, "color": "#464646"},
+        "Head": {"font": "Barlow", "weight": 800, "size": 30}}
+_named = _layout({
+    "styles": _cat,
+    "text": {"a.b": {"style": "Body"},
+             "a.c": {"style": "Body", "size": 12}},
+    "boxes": [{"id": 1, "page": 1, "x": 1, "y": 1, "w": 2, "md": "x",
+               "style": {"style": "Head", "color": "#FF0000"}}],
+    "tables": [{"id": 2, "page": 1, "x": 1, "y": 1, "w": 2, "rows": [["a"]],
+                "style": {"style": "Body"}}],
+})
+check_eq("a slot wearing a style renders the style's values",
+         _named.text_style("a.b"),
+         "font-family:'Source Sans 3';font-size:15px;color:#464646")
+check("a local key overrides the named base", _named.text_style("a.c"), "font-size:12px")
+check("the named base still supplies what the local did not",
+      _named.text_style("a.c"), "font-family:'Source Sans 3'")
+check_eq("the reference itself never reaches CSS", "style" in _named.text_style("a.b"), False)
+check("a text box resolves its reference too", _named.text_boxes(1), "font-family:'Barlow'")
+check("a text box's local colour wins over the base", _named.text_boxes(1), "color:#FF0000")
+check("a table resolves its reference too", _named.tables_html(1), "font-family:'Source Sans 3'")
+check_eq("style_users lists every wearer, by kind",
+         _named.style_users("Body"), ["a.b", "a.c", "table.2"])
+check_eq("style_users of an unused name is empty", _named.style_users("Nope"), [])
+check("a font that arrives through a named style is fetched",
+      _named.font_link(), "family=Barlow:wght@800;900")
+check("styled(key) is true for a bare reference", str(_named.styled("a.b")), "True")
+check_eq("resolve_text is total: an unknown name resolves to the local keys",
+         resolve_text({"style": "Ghost", "size": 12}, {}), {"size": 12})
+check_eq("resolve_text of nothing is nothing", resolve_text({}, _cat), {})
+
+check("a reference to a style that does not exist is refused at load",
+      _layout_error({"text": {"a.b": {"style": "Ghost"}}}), "names a style 'Ghost'")
+check("the refusal names the styles that do exist",
+      _layout_error({"styles": _cat, "text": {"a.b": {"style": "Ghost"}}}), "Body, Head")
+check("a named style is validated like any other",
+      _layout_error({"styles": {"Bad": {"size": 4}}}), "style 'Bad'")
+check("a named style cannot chain to another",
+      _layout_error({"styles": {"A": {"style": "B"}, "B": {}}}), "one level only")
+check("a local weight is checked against the NAMED font",
+      _layout_error({"styles": {"H": {"font": "Barlow"}},
+                     "text": {"a.b": {"style": "H", "weight": 350}}}), "Barlow has no weight 350")
+check("an empty style name is refused",
+      _layout_error({"styles": {"": {}}}), "not a style name")
+check("a non-string reference is refused",
+      _layout_error({"text": {"a.b": {"style": 3}}}), "'style' must name a style")
+check_eq("no styles: an unstyled report's CSS is byte-identical",
+         _layout({"text": {"a.b": {"size": 12}}}).text_style("a.b"), "font-size:12px")
+
 # ------------------------------------------------------- legibility floors
 from docsync.layout import (MIN_TEXT_PX, MIN_TEXT_PT, MIN_SUBLABEL_IN,   # noqa: E402
                             chart_svg, text_css, _check_text)

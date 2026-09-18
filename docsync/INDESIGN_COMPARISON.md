@@ -27,7 +27,7 @@ Chrome) rather than features waiting to be added, so the honest framing is
 | Images | Adequate | Medium |
 | Shapes & drawing | Five primitives | Large |
 | Typography | Basic character controls | Large |
-| Paragraph & style system | None | Large (structural) |
+| Paragraph & style system | Named text styles (2026-09-18); no paragraph-level or object styles | Medium |
 | Pages, spreads, masters | Single pages only | Large |
 | Long-document automation | Endnotes only | Large |
 | Tables | Good | Small |
@@ -88,15 +88,19 @@ self-update with rollback, and a full pilot API over HTTP and MCP.
 
 ## The gaps, ranked by how much they matter for Appleseed's reports
 
-### 1. No style system (paragraph, character, object styles)
-InDesign's core productivity feature. Here every box carries its own style
-dict; changing "all body copy to 10.5pt" means touching every box, or
-`applyScheme` for colours only. The nearest things are the three text-box
-presets, table presets, and `style_guide()` patterns that are copied at
-insert time, not linked afterwards. Consequence: house-style drift across a
-40-page report, and no "redefine style" to fix it.
-*Feasibility: medium. A named-style layer in layout.json that boxes reference
-by id, resolved in `text_css()`, fits the existing overrides model.*
+### 1. Style system — named text styles now exist; object styles do not
+*Closed in part on 2026-09-18.* `layout.json` carries a `styles` catalogue;
+a slot, text box or table style wears one by reference with local overrides
+on top, and redefining the style moves every wearer (engine: `resolve_text`
+in `layout.py`; editor: the Type strip's Style button; pilot:
+`defineStyle`/`setStyle({style})`; spec `tests/editor/text-styles.spec.js`).
+What remains against InDesign: no object styles (fill, stroke, shadow of
+shapes and boxes), no style inheritance ("based on"), no next-style, no
+nested or GREP styles, and the shipped templates still copy style dicts into
+each box instead of wearing named ones. Character-level styles inside a
+paragraph are also absent, since inline marks are only bold, italic, link.
+*Next: have the templates define Body/Heading/Caption and wear them, then
+object styles on the same reference model.*
 
 ### 2. No text flow: no threaded frames, no overset, no text wrap
 A text box is an island. Long prose either lives in the renderer's flow
@@ -193,7 +197,8 @@ the templates point.
 If effort goes into closing gaps, the order that buys the most for
 Appleseed's actual output is:
 
-1. Named text styles applied by reference (gap 1).
+1. ~~Named text styles applied by reference (gap 1).~~ Done 2026-09-18; the
+   templates should be moved onto them next.
 2. Cheap typography wins: paragraph space before/after, indents, small caps,
    hyphenation toggle, subscript (gap 3).
 3. Repeat-on-every-page elements with a page-number token, and a generated

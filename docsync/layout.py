@@ -395,6 +395,39 @@ def _hex(v, where: str) -> str:
     return v
 
 
+# Named text styles. layout.json may carry
+#
+#     "styles": {"Body": {"font": "Source Sans 3", "size": 15, ...}, ...}
+#
+# and any text style — a slot's (layout.text[key]), a text box's (b.style) or
+# a table's (t.style) — may say "style": "Body" to take those values as its
+# base, with whatever else it carries laid over the top as local overrides.
+# Redefining "Body" then moves every paragraph that wears it, which is the
+# one thing per-box style dicts could never do: a forty-page report's body
+# copy is one entry, not forty. The resolved (merged) style is what every
+# consumer downstream sees; the reference itself never reaches CSS.
+STYLE_REF = "style"
+STYLE_NAME_RE = re.compile(r"^[^\s][^\n]{0,59}$")
+
+
+def resolve_text(st: dict, styles: dict | None) -> dict:
+    """A text style with its named base folded in — local keys win.
+
+    Pure and total: an unknown name resolves to the local keys alone (the
+    loader has already refused that case), so the live-preview path can call
+    it mid-drag without ever throwing.
+    """
+    if not st:
+        return {}
+    name = st.get(STYLE_REF)
+    base = (styles or {}).get(name) if name else None
+    if not base:
+        return {k: v for k, v in st.items() if k != STYLE_REF}
+    out = dict(base)
+    out.update({k: v for k, v in st.items() if k != STYLE_REF})
+    return out
+
+
 def text_css(st: dict) -> str:
     """One text style -> the CSS declarations it means.
 
@@ -453,6 +486,10 @@ def text_css(st: dict) -> str:
 def _check_text(st: dict, where: str) -> None:
     """A bad style must fail here, at load, like a bad layer does — not reach
     the page as a silently ignored declaration."""
+    ref = st.get(STYLE_REF)
+    if ref is not None and (not isinstance(ref, str) or not ref):
+        raise LayoutError(f"{where}: 'style' must name a style from \"styles\", "
+                          f"like \"Body\"")
     fam = st.get("font")
     if fam is not None:
         if fam not in FONTS:
@@ -1460,6 +1497,9 @@ class Layout:
         self.positions = raw.get("positions") or {}
         self.shapes = raw.get("shapes") or []
         self.text = raw.get("text") or {}
+        # Named text styles (see resolve_text). Loaded before anything that
+        # can reference one, and validated first for the same reason.
+        self.styles = raw.get("styles") or {}
         self.boxes = raw.get("boxes") or []
         self.tables = raw.get("tables") or []
         self.fills = raw.get("fill") or {}
@@ -1605,10 +1645,22 @@ class Layout:
         for el, p in self.positions.items():
             if "z" in p and not isinstance(p["z"], int):
                 raise LayoutError(f"position '{el}': z {p['z']!r} is not a layer number")
+        if not isinstance(self.styles, dict):
+            raise LayoutError("styles: expected an object of named text styles")
+        for name, st in self.styles.items():
+            if not isinstance(name, str) or not STYLE_NAME_RE.match(name):
+                raise LayoutError(f"styles: {name!r} is not a style name "
+                                  f"(1–60 characters, no leading space)")
+            if not isinstance(st, dict):
+                raise LayoutError(f"style '{name}': expected a style object")
+            if st.get(STYLE_REF) is not None:
+                raise LayoutError(f"style '{name}': a named style cannot itself "
+                                  f"be based on another — one level only")
+            _check_text(st, f"style '{name}'")
         for key, st in self.text.items():
             if not isinstance(st, dict):
                 raise LayoutError(f"text '{key}': expected a style object")
-            _check_text(st, f"text '{key}'")
+            self._check_text_use(st, f"text '{key}'")
         for el, c in self.fills.items():
             _fill(c, f"fill '{el}'")
         if not isinstance(self.locked, list) or any(
@@ -1759,7 +1811,7 @@ class Layout:
             if b.get("shadow") is not None:
                 _check_shadow(b["shadow"], f"{where}.shadow")
             if b.get("style"):
-                _check_text(b["style"], f"{where}.style")
+                self._check_text_use(b["style"], f"{where}.style")
 
         for i, t in enumerate(self.tables):
             where = f"table #{i + 1}"
@@ -1796,8 +1848,40 @@ class Layout:
             if t.get("alpha") is not None:
                 _alpha(t["alpha"], f"{where}.alpha")
             if t.get("style"):
-                _check_text(t["style"], f"{where}.style")
+                self._check_text_use(t["style"], f"{where}.style")
             _check_table_look(t, where, len(rows), width)
+
+    def _check_text_use(self, st: dict, where: str) -> None:
+        """One USE of a text style: its reference must name a style that
+        exists, and the merged result must pass every rule a plain style
+        does — a local weight over a named font is checked against THAT
+        font, not in isolation."""
+        if not isinstance(st, dict):
+            raise LayoutError(f"{where}: expected a style object")
+        _check_text(st, where)
+        ref = st.get(STYLE_REF)
+        if ref is not None and ref not in self.styles:
+            raise LayoutError(
+                f"{where}: names a style {ref!r} that \"styles\" does not "
+                f"define" + (f" — one of: {', '.join(sorted(self.styles))}"
+                             if self.styles else ""))
+        if ref is not None:
+            _check_text(self.resolve(st), where + f" (as '{ref}')")
+
+    def resolve(self, st: dict | None) -> dict:
+        """A text style with this layout's named base folded in."""
+        return resolve_text(st or {}, self.styles)
+
+    def style_users(self, name: str) -> list[str]:
+        """Every slot key / box id / table id wearing a named style — what a
+        rename must re-point and a delete must inline."""
+        out = [k for k, st in self.text.items()
+               if isinstance(st, dict) and st.get(STYLE_REF) == name]
+        out += [f"text.{b.get('id')}" for b in self.boxes
+                if (b.get("style") or {}).get(STYLE_REF) == name]
+        out += [f"table.{t.get('id')}" for t in self.tables
+                if (t.get("style") or {}).get(STYLE_REF) == name]
+        return out
 
     # ---- positions -------------------------------------------------------
 
@@ -2082,7 +2166,7 @@ class Layout:
 
     def text_style(self, key: str) -> str:
         """The CSS for one slot's text, or "" when it was never styled."""
-        return text_css(self.text.get(key) or {})
+        return text_css(self.resolve(self.text.get(key)))
 
     def text_attr(self, key: str) -> str:
         """ style="…" for a slot, or "" — never style="", which would change
@@ -2117,7 +2201,11 @@ class Layout:
         # (b["style"]), not in self.text, and skipping those meant a font a
         # box asked for was silently faked in the published page — right in
         # the editor (which loads every family), wrong everywhere else.
-        styles = list(self.text.values()) + [b.get("style") or {} for b in self.boxes]
+        # Resolved, so a font that arrives through a named style is fetched
+        # like one written inline; tables too, which this once skipped.
+        styles = [self.resolve(st) for st in self.text.values()]
+        styles += [self.resolve(b.get("style")) for b in self.boxes]
+        styles += [self.resolve(t.get("style")) for t in self.tables]
         for st in styles:
             fam = st.get("font")
             if not fam:
@@ -2424,7 +2512,7 @@ class Layout:
                 css += f';opacity:{b["alpha"]:g}'
             if b.get("shadow"):
                 css += f';box-shadow:{shadow_css(b["shadow"])}'
-            style = text_css(b.get("style") or {})
+            style = text_css(self.resolve(b.get("style")))
             # Style FIRST, geometry second — the geometry must win their one
             # collision: align's inline-slot compensation appends width:100%
             # (right for a span with no box of its own), and written after the
@@ -2558,7 +2646,7 @@ class Layout:
                 css += f';transform:rotate({t["rot"]}deg)'
             if t.get("alpha") is not None:
                 css += f';opacity:{t["alpha"]:g}'
-            style = text_css(t.get("style") or {})
+            style = text_css(self.resolve(t.get("style")))
             tag = f' data-el="table.{t["id"]}"' if edit else ""
             header = bool(t.get("header"))
             rows = t.get("rows", [])

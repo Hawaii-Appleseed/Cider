@@ -72,6 +72,15 @@ the "Claude edited this" chip can rewind the whole change. Editing the files
 withOUT announcing still gets adopted but surfaces as an anonymous
 "edited outside the editor" chip — always announce.
 
+**Named text styles** (2026-09): `layout.json` may carry `"styles": {name:
+styleDict}`; any slot/box/table style may say `"style": "Body"` to wear one,
+local keys override, `docsync.layout.resolve_text()` merges (one level, no
+chaining; a name that does not exist fails at load). Editor: the Type strip's
+Style button (`#ty-stylebtn`, save/apply/update/rename/delete); pilot:
+`styles`/`defineStyle`/`renameStyle`/`removeStyle` and `setStyle(k, {style})`.
+Redefining a style moves every wearer — reach for it before copying a style
+dict into a second box. Spec: `tests/editor/text-styles.spec.js`.
+
 Full verb list and contract: `pilot-api.spec.js` is the executable spec;
 the `report-editor` skill documents it. Reserve clicking/dragging for what
 the API doesn't cover, and screenshots for visual judgement calls only.

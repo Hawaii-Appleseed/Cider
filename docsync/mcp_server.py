@@ -288,7 +288,8 @@ TOOLS = [
     {"name": "pilot", "fn": t_pilot,
      "description": "CHANGE a report: run one window.docsync.api verb in the open "
                     "editor. Verbs: inventory, status, audit, getSlot, setSlot, "
-                    "setStyle, setBoxText, place, recolor, rotate, lock, group, "
+                    "setStyle, styles, defineStyle, renameStyle, removeStyle, "
+                    "setBoxText, place, recolor, rotate, lock, group, "
                     "ungroup, remove, duplicate, addTextBox, addShape, addPage, "
                     "addSource, addEndnotesSection, applyScheme, batch, undo, "
                     "redo, save. Geometry is in "

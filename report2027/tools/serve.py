@@ -1213,6 +1213,9 @@ class Handler(SimpleHTTPRequestHandler):
             "blanks": [x.get("id") for x in (pages.get("blanks") or [])],
             "slots": slots, "sources": sources, "placed": placed,
             "fill": layout.get("fill") or {},
+            # Named text styles: {name: styleDict}. A slot/box/table style
+            # that says {"style": name} wears one (docsync.layout.resolve_text).
+            "styles": layout.get("styles") or {},
             "hidden": layout.get("hidden") or [],
             "locked": layout.get("locked") or [],
             "groups": layout.get("groups") or [],
