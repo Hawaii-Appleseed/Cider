@@ -573,6 +573,54 @@ check("a non-numeric indent is refused",
       _layout_error({"text": {"a.b": {"indent": "big"}}}), "indent")
 check_eq("false toggles emit nothing", text_css({"smallcaps": False, "hyphens": False}), "")
 
+# ------------------------------------------------------ repeated elements
+# "every": true draws a box/shape/table on every mounted page from one store
+# entry; {page}/{pages} resolve to the ordinal and count of the final order.
+_rep = _layout({
+    "pages": {"order": [1, 3, 2]},
+    "boxes": [{"id": 1, "page": 1, "x": 0.5, "y": 10.4, "w": 7.5, "every": True,
+               "skip": [3], "md": "Page {page} of {pages}"},
+              {"id": 2, "page": 2, "x": 1, "y": 1, "w": 2, "md": "only here"}],
+    "shapes": [{"id": "rule", "page": 1, "kind": "rect", "x": 0.5, "y": 10.3,
+                "w": 7.5, "h": 0.02, "fill": "#000", "every": True}],
+    "tables": [{"id": 7, "page": 1, "x": 1, "y": 2, "w": 3, "rows": [["a"]], "every": True}],
+})
+_rep.page_order(3)
+check("a repeated box renders on its home page", _rep.text_boxes(1), "Page 1 of 3")
+check("… and on another page, with that page's ordinal", _rep.text_boxes(2), "Page 3 of 3")
+check_eq("… but not on a page in its skip list", "Page" in _rep.text_boxes(3), False)
+check_eq("a one-page box stays on its page", "only here" in _rep.text_boxes(1), False)
+check("a repeated shape draws on another page", _rep.layer(2), 'data-shape="rule"')
+check("a repeated table draws on another page", _rep.tables_html(2), "<table")
+check_eq("page_ordinal follows the final order, not the id", _rep.page_ordinal(2), (3, 3))
+check_eq("page_ordinal of a page outside the order falls back to the id",
+         _rep.page_ordinal(9), (9, 3))
+check("every must be a boolean",
+      _layout_error({"boxes": [{"id": 1, "page": 1, "x": 1, "y": 1, "w": 1, "md": "x", "every": "yes"}]}),
+      "every: expected true/false")
+check("skip must be a list of page ids",
+      _layout_error({"shapes": [{"id": "r", "page": 1, "kind": "rect", "x": 1, "y": 1, "w": 1, "h": 1, "skip": 2}]}),
+      "skip: expected a list")
+_prev = os.environ.get("DOCSYNC_EDIT")
+os.environ["DOCSYNC_EDIT"] = "1"
+try:
+    check("edit mode: the home instance is live (data-el)", _rep.text_boxes(1), 'data-el="text.1"')
+    _away = _rep.text_boxes(2)
+    check("edit mode: an off-home instance is an inert copy (data-repeat)", _away, 'data-repeat="text.1"')
+    check_eq("… with no data-el of its own", 'data-el="text.1"' in _away, False)
+    check("… and no pointer events", _away, "pointer-events:none")
+    check("edit mode: a repeated shape's copy loses its data-shape hook",
+          _rep.layer(2), 'data-repeat="rule" pointer-events="none"')
+    check_eq("… while the home page keeps it", 'data-shape="rule"' in _rep.layer(1), True)
+    check_eq("edit mode: a repeated table's copy has no cell hooks",
+             "data-cell" in _rep.tables_html(2), False)
+    check("… while the home page has them", _rep.tables_html(1), "data-cell")
+finally:
+    if _prev is None:
+        del os.environ["DOCSYNC_EDIT"]
+    else:
+        os.environ["DOCSYNC_EDIT"] = _prev
+
 # ------------------------------------------------------- legibility floors
 from docsync.layout import (MIN_TEXT_PX, MIN_TEXT_PT, MIN_SUBLABEL_IN,   # noqa: E402
                             chart_svg, text_css, _check_text)

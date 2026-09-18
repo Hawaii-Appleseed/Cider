@@ -205,6 +205,7 @@ ids it returns:
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
 | `rotate(id, deg)` / `lock(id, on?)` | rotate about the centre (0 clears) / lock out dragging and `place()` |
+| `repeat(id, on?, skip?)` | draw a text box, shape or table on EVERY page from its one store entry — the master-page answer for running footers and folios. `skip` = page ids that opt out (the cover). A box's words may say `{page}` / `{pages}` (ordinal in the final order, page count). Only the home-page instance is live in the editor (`data-el`); copies render inert as `data-repeat`, so move/retext the home one and all follow. `addTextBox({every:true, skip:[1]})` creates one directly. Menus: right-click the element → "Show on every page"; right-click a page → "Hide repeated items on this page" |
 | `group(ids)` / `ungroup(id)` | tie 2+ elements so they move as one (membership is exclusive) / dissolve |
 | `remove(ids)` / `duplicate(ids)` | the UI's own Delete and Duplicate, selection handled for you |
 | `addTextBox({page,x,y,w,h,md,style,fill})` | returns `'text.<n>'` for further verbs |
@@ -223,7 +224,7 @@ assuming the request landed verbatim. `remove`/`duplicate`/`addPage`/
 batch; call them singly.
 
 **`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`,
-`setStyle`, `defineStyle`, `renameStyle`, `removeStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
+`setStyle`, `defineStyle`, `renameStyle`, `removeStyle`, `place`, `recolor`, `rotate`, `lock`, `repeat`, `group`, `ungroup`,
 `addTextBox`, `addShape`, `addSource`. Name an op with `as` and later ops can say `'@name'`
 wherever an id goes, so create-then-place is ONE call:
 

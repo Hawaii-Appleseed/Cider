@@ -289,7 +289,7 @@ TOOLS = [
      "description": "CHANGE a report: run one window.docsync.api verb in the open "
                     "editor. Verbs: inventory, status, audit, getSlot, setSlot, "
                     "setStyle, styles, defineStyle, renameStyle, removeStyle, "
-                    "setBoxText, place, recolor, rotate, lock, group, "
+                    "setBoxText, place, recolor, rotate, lock, repeat, group, "
                     "ungroup, remove, duplicate, addTextBox, addShape, addPage, "
                     "addSource, addEndnotesSection, applyScheme, batch, undo, "
                     "redo, save. Geometry is in "

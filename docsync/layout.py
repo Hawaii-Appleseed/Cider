@@ -1589,6 +1589,38 @@ class Layout:
         self.sections = raw.get("sections") or {}
         self._validate()
 
+    # ---- repeated elements ("on every page") ------------------------------
+    # A box, shape or table may say "every": true — it is drawn on every page
+    # the renderer mounts (except ids in its "skip" list), from the ONE store
+    # entry, so moving or retexting it moves it everywhere: the editor's
+    # answer to a master page, for running footers and folios. Its markdown
+    # may carry {page} and {pages} — the page's ordinal in the final order
+    # and the page count — which the render substitutes. In edit mode only
+    # the home-page instance is live (data-el); the others render as inert
+    # copies stamped data-repeat, so there is exactly one thing to select.
+
+    def _on_page(self, items: list, page) -> list:
+        return [i for i in items if i.get("page") == page
+                or (i.get("every") and page not in (i.get("skip") or []))]
+
+    @staticmethod
+    def _ghost(item: dict, page) -> bool:
+        return bool(item.get("every")) and item.get("page") != page
+
+    def page_ordinal(self, page) -> tuple[int, int]:
+        """(ordinal, count) of a page in the final order — page_order() must
+        have run (every renderer calls it first); otherwise the id itself."""
+        order = getattr(self, "_order", None)
+        if order and page in order:
+            return order.index(page) + 1, len(order)
+        return (int(page) if isinstance(page, int) else 0), (len(order) if order else 0)
+
+    def page_tokens(self, md: str, page) -> str:
+        if "{page" not in md:
+            return md
+        n, total = self.page_ordinal(page)
+        return md.replace("{pages}", str(total or "?")).replace("{page}", str(n or "?"))
+
     def endnote_order(self) -> list:
         """The editor's endnote order override (ids), or [] for none."""
         return [e for e in self.endnotes if isinstance(e, str)]
@@ -1616,6 +1648,7 @@ class Layout:
         seen = set()
         for i, s in enumerate(self.shapes):
             where = f"shape #{i + 1}"
+            self._check_every(s, where)
             sid = s.get("id")
             if not sid:
                 raise LayoutError(f"{where}: needs an 'id'")
@@ -1775,6 +1808,7 @@ class Layout:
                         raise LayoutError(f"{where}.crop.{k} cannot be negative")
         for i, b in enumerate(self.boxes):
             where = f"box #{i + 1}"
+            self._check_every(b, where)
             bid = b.get("id")
             if not bid:
                 raise LayoutError(f"{where}: needs an 'id'")
@@ -1841,6 +1875,7 @@ class Layout:
 
         for i, t in enumerate(self.tables):
             where = f"table #{i + 1}"
+            self._check_every(t, where)
             if t.get("anim") is not None:
                 _anim_check(t["anim"], where)
             tid = t.get("id")
@@ -1876,6 +1911,15 @@ class Layout:
             if t.get("style"):
                 self._check_text_use(t["style"], f"{where}.style")
             _check_table_look(t, where, len(rows), width)
+
+    @staticmethod
+    def _check_every(item: dict, where: str) -> None:
+        if item.get("every") is not None and not isinstance(item["every"], bool):
+            raise LayoutError(f"{where}.every: expected true/false")
+        skip = item.get("skip")
+        if skip is not None and (not isinstance(skip, list)
+                                 or any(not isinstance(x, (int, str)) for x in skip)):
+            raise LayoutError(f"{where}.skip: expected a list of page ids")
 
     def _check_text_use(self, st: dict, where: str) -> None:
         """One USE of a text style: its reference must name a style that
@@ -2281,11 +2325,13 @@ class Layout:
         """
         order = self.pages.get("order")
         if not order:
-            return list(range(1, designed + 1))
+            self._order = list(range(1, designed + 1))
+            return list(self._order)
         for pid in order:
             if isinstance(pid, int) and not 1 <= pid <= designed:
                 raise LayoutError(f"pages.order: this report has pages "
                                   f"1–{designed}, not {pid}")
+        self._order = list(order)
         return list(order)
 
     def blank_ids(self) -> list:
@@ -2413,7 +2459,7 @@ class Layout:
         editor) but never clips — if the words are taller than `h`, the box
         grows past it. A box with no `h` is auto-height, as before.
         """
-        mine = [b for b in self.boxes if b.get("page") == page]
+        mine = self._on_page(self.boxes, page)
         edit = bool(os.environ.get("DOCSYNC_EDIT"))
         # WHERE a new element may land, and under which number. Only the
         # Primer's own renderer stamps data-page on its sections; demo-report,
@@ -2546,7 +2592,15 @@ class Layout:
             # spanned the whole page — and the drag math, anchored to the box
             # it MEANT to draw, flung it to the left margin.
             full = f'{style + ";" if style else ""}{css}'
-            tag = f' data-el="text.{b["id"]}"' if edit else ""
+            ghost = edit and self._ghost(b, page)
+            if ghost:
+                # Inert, and faintly marked so the canvas says why a click
+                # here selects nothing: edit it on its home page.
+                tag = f' data-repeat="text.{b["id"]}" title="Repeated from its home page — edit it there"'
+                full += ";pointer-events:none;outline:1px dashed rgba(47,62,70,.28);outline-offset:2px"
+            else:
+                tag = f' data-el="text.{b["id"]}"' if edit else ""
+            md = self.page_tokens(b["md"], page)
             if act == "endnotes":
                 # The endnotes SECTION, placed by the editor rather than built
                 # into a report's renderer (see Footnotes.endnotes_html). The
@@ -2565,7 +2619,7 @@ class Layout:
                         else Footnotes.MOUNT if self._fn is not None else "")
                 out.append(f'<div class="ds-textbox ds-endnotes-sec"{tag}{an}{PLACED} '
                            f'style="{full}">'
-                           f'{block_html(b["md"])}{body}</div>')
+                           f'{block_html(md)}{body}</div>')
                 continue
             if act == "toggle" and not edit:
                 # Published: a real button whose click flips the target's
@@ -2627,9 +2681,11 @@ class Layout:
             # to recolour it. Shut-side (pointing down), because that is the
             # state a reader meets the button in.
             arrow = self.tgl_arrow(b["id"], edit) if act == "toggle" else ""
+            if ghost:
+                extra = ""          # one toggle target id per document
             out.append(f'<div class="{klass}"{extra}{tag}{an}{PLACED} '
                        f'style="{tglFull}">'
-                       f'{block_html(b["md"])}{arrow}</div>')
+                       f'{block_html(md)}{arrow}</div>')
         return "".join(out)
 
     def box(self, box_id: str) -> dict | None:
@@ -2660,7 +2716,7 @@ class Layout:
         of cell markdown; `header` makes the first row a <th> band. Each cell
         carries a data-cell hook in edit mode so the editor can edit it in
         place."""
-        mine = [t for t in self.tables if t.get("page") == page]
+        mine = self._on_page(self.tables, page)
         if not mine:
             return ""
         edit = bool(os.environ.get("DOCSYNC_EDIT"))
@@ -2668,12 +2724,16 @@ class Layout:
         for t in mine:
             css = (f'position:absolute;left:{t["x"]}in;top:{t["y"]}in;'
                    f'width:{t["w"]}in;z-index:{int(t.get("z", 2))}')
+            ghost = edit and self._ghost(t, page)
+            if ghost:
+                css += ";pointer-events:none;outline:1px dashed rgba(47,62,70,.28);outline-offset:2px"
             if t.get("rot"):
                 css += f';transform:rotate({t["rot"]}deg)'
             if t.get("alpha") is not None:
                 css += f';opacity:{t["alpha"]:g}'
             style = text_css(self.resolve(t.get("style")))
-            tag = f' data-el="table.{t["id"]}"' if edit else ""
+            tag = (f' data-repeat="table.{t["id"]}"' if ghost
+                   else f' data-el="table.{t["id"]}"' if edit else "")
             header = bool(t.get("header"))
             rows = t.get("rows", [])
             ncols = len(rows[0]) if rows else 0
@@ -2696,7 +2756,7 @@ class Layout:
                 for ci, c in enumerate(row):
                     th = header and ri == 0
                     name = "th" if th else "td"
-                    hook = f' data-cell="{ri},{ci}"' if edit else ""
+                    hook = f' data-cell="{ri},{ci}"' if edit and not ghost else ""
                     # Each edge picks the outer rule on the grid's rim and the
                     # inner rule between cells, so "outer only" and "inner
                     # only" both fall out of the same per-cell emit. Emitted
@@ -2877,16 +2937,23 @@ class Layout:
         for the page-size override, which has to reach the document even on a
         page that holds no shapes."""
         head = self._mobile_css_once() + self._page_style_once()
-        mine = [s for s in self.shapes if s.get("page") == page]
+        mine = self._on_page(self.shapes, page)
         if not mine:
             return head
         by_z: dict[int, list] = {}
         for s in mine:
             by_z.setdefault(_z(s), []).append(s)
-        return head + "".join(self._svg(by_z[z], z) for z in sorted(by_z))
+        edit = bool(os.environ.get("DOCSYNC_EDIT"))
+        ghosts = {s["id"] for s in mine if edit and self._ghost(s, page)}
+        return head + "".join(self._svg(by_z[z], z, ghosts) for z in sorted(by_z))
 
-    def _svg(self, shapes: list, z: int) -> str:
-        body = "".join(self._shape(s) for s in shapes)
+    def _svg(self, shapes: list, z: int, ghosts: set = frozenset()) -> str:
+        # A repeated shape's off-home instance loses its data-shape hook (and
+        # its pointer events) so the editor has one thing to grab, as above.
+        body = "".join(
+            self._shape(s).replace(f'data-shape="{s["id"]}"',
+                                   f'data-repeat="{s["id"]}" pointer-events="none"')
+            if s["id"] in ghosts else self._shape(s) for s in shapes)
         # One <defs> per layer, holding any gradient definitions and — as before —
         # the arrowhead marker. With no gradient and no arrow the list is empty
         # and defs is "", so a plain shape layer is byte-for-byte unchanged; with

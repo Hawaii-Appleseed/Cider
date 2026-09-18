@@ -28,7 +28,7 @@ Chrome) rather than features waiting to be added, so the honest framing is
 | Shapes & drawing | Five primitives | Large |
 | Typography | Character controls plus paragraph spacing, indents, small caps, hyphenation (2026-09-18) | Medium–Large |
 | Paragraph & style system | Named text styles (2026-09-18); no paragraph-level or object styles | Medium |
-| Pages, spreads, masters | Single pages only | Large |
+| Pages, spreads, masters | Single pages; repeat-on-every-page elements with page-number tokens (2026-09-18) | Medium–Large |
 | Long-document automation | Endnotes only | Large |
 | Tables | Good | Small |
 | Charts | Better than InDesign | None (advantage) |
@@ -128,13 +128,18 @@ than InDesign's paragraph composer on justified columns.
 OpenType toggles are one CSS property each and cheap. Kerning/H&J/baseline
 grid/paragraph composer are not realistically reachable.*
 
-### 4. No master pages, spreads, sections or auto page numbers
-No parent pages for repeated running heads and footers; the template's
-footer is a text box duplicated per page and edited by hand. No facing-page
-spreads, so gutters and crossovers cannot be judged. No section numbering,
-no auto page-number variable, no "continued on" text variables.
-*Feasibility: medium for masters and page numbers (a per-report "on every
-page" box list plus a `{page}` token); hard for spreads.*
+### 4. Master pages and page numbers — partly closed; spreads and sections open
+*Partly closed 2026-09-18:* any text box, shape or table can be marked
+"Show on every page" (`every: true`, per-page opt-out via `skip`), drawn
+from one store entry so a move or edit on its home page moves every copy,
+and `{page}` / `{pages}` in its words become the page's ordinal and the
+page count. That covers running footers, folios and hairlines, which is
+what Appleseed's reports use masters for. Still absent against InDesign:
+several named masters with per-page assignment, override-then-detach of a
+single instance, facing-page spreads (gutters, crossovers), section
+numbering with restarts and prefixes, and "continued on" text variables.
+*Next: templates should ship their footer as a repeated box; the shipped
+templates still duplicate it per page.*
 
 ### 5. Long-document automation
 No generated table of contents (the template's contents page is typed by
@@ -207,8 +212,8 @@ Appleseed's actual output is:
    hyphenation); drop caps and OpenType figure toggles remain cheap and open.
    Previously listed as: cheap typography wins: paragraph space before/after, indents, small caps,
    hyphenation toggle, subscript (gap 3).
-3. Repeat-on-every-page elements with a page-number token, and a generated
-   contents page (gaps 4, 5).
+3. ~~Repeat-on-every-page elements with a page-number token~~ Done
+   2026-09-18; a generated contents page (gap 5) remains.
 4. Find and replace, then spell check via the browser's own checker (gap 8).
 5. Alt text on images and a heading-order pass toward tagged PDF (gap 6).
 6. Raise or make configurable the 2000px upload cap for print-bound reports.

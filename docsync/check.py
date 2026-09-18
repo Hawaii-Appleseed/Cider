@@ -484,7 +484,10 @@ class _Coverage(HTMLParser):
         # C() trap alike. It does NOT excuse a sentence drawn inside an SVG —
         # a caption is prose wherever its numbers came from.
         slot = "data-slot" in a
-        covered = slot or "data-fixed" in a
+        # data-repeat: an off-home instance of an element drawn on every page
+        # (Layout._on_page) — an inert copy of something editable on its home
+        # page, so it is covered exactly as that element is.
+        covered = slot or "data-fixed" in a or "data-repeat" in a
         el = "data-el" in a
         trap = (el and not (a.get("data-el") or "").startswith(_PANEL_EDITED)
                 and "ds-textbox" not in classes)

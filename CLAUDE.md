@@ -84,6 +84,15 @@ schema also carries paragraph keys — `before`/`after` (space in px, emitted
 as PADDING so a box never leaves its coordinate), `indent` (first-line px,
 negative = hanging), `smallcaps`, `hyphens` — under the Spacing popover.
 
+**Repeat on every page** (2026-09): a box/shape/table with `"every": true`
+(optional `"skip": [pageIds]`) is drawn on every mounted page from its ONE
+store entry — `Layout._on_page()`; `{page}`/`{pages}` in a box's words become
+the ordinal in the final order (set by `page_order()`) and the count. In edit
+mode only the home-page instance carries `data-el`; copies are inert
+`data-repeat` (the editability check counts them covered). Pilot `repeat(id,
+on, skip)`, `addTextBox({every})`; element menu "Show on every page"; page
+menu "Hide repeated items on this page". Spec: `tests/editor/repeat.spec.js`.
+
 Full verb list and contract: `pilot-api.spec.js` is the executable spec;
 the `report-editor` skill documents it. Reserve clicking/dragging for what
 the API doesn't cover, and screenshots for visual judgement calls only.

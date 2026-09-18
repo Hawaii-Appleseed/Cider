@@ -4604,6 +4604,15 @@ function pageMenu(d, pg, e) {
     await render();
   }, !!(pageClip || pageStyleClip));
   item('Duplicate page', () => duplicatePage(pid));
+  if (repeatedIds().length) {
+    const hidden = pageSkipsRepeats(pid);
+    item(hidden ? 'Show repeated items on this page' : 'Hide repeated items on this page', async () => {
+      pushHistory();
+      setPageSkipsRepeats(pid, !hidden);
+      markDirty();
+      await render();
+    });
+  }
   sep();
   submenuRow(d, m, 'Page colour ▸', sub => fillRow(d, sub, pageFillId(pid)));
   d.body.appendChild(m);
@@ -4822,6 +4831,16 @@ function layerMenu(d, el, e) {
       markDirty();
       paintSel(d);
     });
+    if (_pilotStoreOf(id)) {
+      item(isRepeated(id) ? 'Show on this page only' : 'Show on every page', async () => {
+        pushHistory();
+        setRepeated(id, !isRepeated(id));
+        markDirty();
+        await render();
+        if (isRepeated(id)) $('stat').textContent =
+          'drawn on every page — move or edit it here and every copy follows; {page} and {pages} in its text become the page number and count';
+      });
+    }
     // Opacity, live while sliding, committed through the renderer on release.
     const orow = d.createElement('label');
     orow.className = 'ds-menu-slider';
@@ -21241,6 +21260,45 @@ function _pilotApplySetSlot(key, md) { writeSlot(key, md); return { key }; }
 // an op can name a box/shape an earlier op just created, which exists only in
 // the layout store until the batch's own render runs. Both count as existing.
 const _pilotStoreOf = id => layout.shapes.find(s => s.id === id) || boxOf(id) || tableOf(id);
+
+// "On every page": a box, shape or table with every:true is drawn on every
+// page the report mounts, from its ONE store entry — the editor's master
+// page. Its off-home copies render inert (data-repeat, no data-el), so the
+// home-page instance is the one thing to select, move and retext, and every
+// copy follows. skip[] names pages that opt out (a cover). {page}/{pages} in
+// a box's words become the page's ordinal and the page count at render.
+const isRepeated = id => !!((_pilotStoreOf(id) || {}).every);
+function setRepeated(id, on, skip) {
+  const st = _pilotStoreOf(id);
+  if (!st) return null;
+  if (on) st.every = true; else { delete st.every; delete st.skip; }
+  if (on && Array.isArray(skip)) { if (skip.length) st.skip = [...skip]; else delete st.skip; }
+  return { id, every: !!st.every, skip: st.skip || [] };
+}
+const repeatedIds = () => [...layout.shapes, ...boxes().map(b => ({ ...b, id: 'text.' + b.id })),
+                           ...tables().map(t => ({ ...t, id: 'table.' + t.id }))]
+  .filter(x => x.every).map(x => x.id);
+/** Are the repeated items hidden on this page (every one of them skips it)? */
+const pageSkipsRepeats = pid => {
+  const ids = repeatedIds();
+  return ids.length > 0 && ids.every(id => ((_pilotStoreOf(id) || {}).skip || []).some(p => String(p) === String(pid)));
+};
+function setPageSkipsRepeats(pid, hide) {
+  repeatedIds().forEach(id => {
+    const st = _pilotStoreOf(id);
+    const skip = (st.skip || []).filter(p => String(p) !== String(pid));
+    if (hide) skip.push(typeof pid === 'string' && /^\d+$/.test(pid) ? +pid : pid);
+    if (skip.length) st.skip = skip; else delete st.skip;
+  });
+}
+function _pilotValidateRepeat(id) {
+  const v = _pilotValidateExists(id);
+  if (!v.ok) return v;
+  if (!_pilotStoreOf(id))
+    return { ok: false, error: `'${id}' is a designed element — only a text box, shape or table can repeat` };
+  return { ok: true };
+}
+function _pilotApplyRepeat(id, on, skip) { return setRepeated(id, on !== false, skip); }
 function _pilotValidateExists(id) {
   const d = $('out').contentDocument;
   const el = d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`);
@@ -21307,7 +21365,7 @@ function _pilotMeasure(id) {
 // generic layout.fill[id] entry) — true before batch() existed, unchanged.
 function _pilotApplyRecolor(id, fill) { fillTargets(id).set(fill); return { id, fill }; }
 
-function _pilotApplyAddTextBox({ page, x, y, w = 3, h, md = 'Your text here', style, fill } = {}) {
+function _pilotApplyAddTextBox({ page, x, y, w = 3, h, md = 'Your text here', style, fill, every, skip } = {}) {
   const pid = page != null ? page : visiblePageId();
   const id = freeBoxId();
   const box = { id, page: pid, x: x != null ? +x : placeX(w), y: y != null ? +y : 2,
@@ -21315,6 +21373,7 @@ function _pilotApplyAddTextBox({ page, x, y, w = 3, h, md = 'Your text here', st
   if (h != null) box.h = +h;      // same field place()'s h writes — one call, not two
   if (style && Object.keys(style).length) box.style = { ...style };
   if (fill) box.fill = fill;
+  if (every) { box.every = true; if (Array.isArray(skip) && skip.length) box.skip = [...skip]; }
   boxes().push(box);
   return { id: 'text.' + id, page: pid };
 }
@@ -21533,6 +21592,7 @@ const PILOT_BATCH_VERBS = {
   // Existence only — place()'s validate also refuses LOCKED elements, which
   // here would make unlocking impossible.
   lock: { validate: id => _pilotValidateExists(id), apply: (id, on) => _pilotApplyLock(id, on) },
+  repeat: { validate: id => _pilotValidateRepeat(id), apply: (id, on, skip) => _pilotApplyRepeat(id, on, skip) },
   group: { validate: ids => _pilotValidateGroup(ids), apply: ids => _pilotApplyGroup(ids) },
   ungroup: { validate: id => _pilotValidateUngroup(id), apply: id => _pilotApplyUngroup(id) },
 };
@@ -21608,6 +21668,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
             : id.startsWith('para.') ? 'prose' : 'designed',
           box,
           locked: isLocked(id),
+          every: isRepeated(id) || undefined,
           text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80),
         });
       });
@@ -21959,6 +22020,22 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     const r = _pilotApplyLock(id, on);
     markDirty();
     paintSel($('out').contentDocument);   // lock is chrome, not content — no render
+    return { ...docsync.api.status(), ...r };
+  },
+
+  /** Draw a text box, shape or table on EVERY page (the master-page answer:
+   *  a running footer, a folio). on=false returns it to its home page only.
+   *  skip: page ids that opt out (a cover). A box's words may say {page}
+   *  and {pages}. Moving or editing the home-page instance moves every copy;
+   *  the copies themselves are inert in the editor. */
+  async repeat(id, on = true, skip) {
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    const v = _pilotValidateRepeat(id);
+    if (!v.ok) return v;
+    pushHistory();
+    const r = _pilotApplyRepeat(id, on, skip);
+    markDirty();
+    await render();
     return { ...docsync.api.status(), ...r };
   },
 
