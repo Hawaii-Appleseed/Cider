@@ -136,9 +136,16 @@ test('a move in A lands in B\'s layout and geometry', async () => {
     const l = await b.evaluate('layout.positions["cover.logo"]');
     return l && l.x;
   }, { timeout: 20_000 }).toBeCloseTo(1.25, 1);
-  const inv = await api(b, 'inventory()');
-  const logo = inv.pages[0].elements.find(e => e.id === 'cover.logo');
-  expect(logo.box.x).toBeCloseTo(1.25, 1);
+  // The DRAWING, not just the data. B adopts the layout and THEN renders, so
+  // the measured box catches up about a quarter-second behind — and this read
+  // it once, immediately, which measured the render BEFORE this one: the logo
+  // still at the 0.62in layout.json puts it at. Polled, like every other
+  // assertion in this file, so it waits for the thing it is actually claiming.
+  await expect.poll(async () => {
+    const inv = await api(b, 'inventory()');
+    const logo = inv.pages[0].elements.find(e => e.id === 'cover.logo');
+    return logo && logo.box && logo.box.x;
+  }, { timeout: 20_000 }).toBeCloseTo(1.25, 1);
 });
 
 test('a remote edit to ANOTHER slot lands in B\'s source while B\'s paragraph editor is open, and paints when it closes', async () => {
@@ -281,8 +288,11 @@ test('presence: a person with nothing in hand is still somewhere - the page they
   await expect(av).toHaveAttribute('title', new RegExp(`^ada · reading page ${pages}\\. Click to go there`), { timeout: 10_000 });
   await b.evaluate('document.getElementById("out").contentWindow.scrollTo(0, 0)');
   await av.click();
-  await expect.poll(() => b.evaluate('document.getElementById("out").contentWindow.scrollY'), { timeout: 10_000 }).toBeGreaterThan(0);
+  // #stat before scrollY, not after: the click sets both, but #stat is the
+  // one status line the whole editor shares and the next render's "unsaved
+  // changes" takes it back. Asserted after a poll, this sampled whatever won.
   await expect(b.locator('#stat')).toHaveText(new RegExp(`ada is reading on page ${pages}`));
+  await expect.poll(() => b.evaluate('document.getElementById("out").contentWindow.scrollY'), { timeout: 10_000 }).toBeGreaterThan(0);
   // Back at the top with something in hand, the sentence changes with her.
   await a.evaluate(`(() => { const d = document.getElementById('out').contentDocument; d.defaultView.scrollTo(0, 0);
     setSel(d, ['cover.logo']); })()`);
@@ -387,6 +397,11 @@ test('a text box two people edited at once is settled by a person, not by whoeve
     return b.id; })()`);
   const boxOf = page => page.evaluate(`((layout.boxes || []).find(x => x.id === ${JSON.stringify(id)}) || {}).md`);
   await expect.poll(() => boxOf(b), { timeout: 10_000 }).toBe('Words we both mean to change');
+  // ...and wait for B to have DRAWN it. The line above waits on the data; B
+  // renders a couple of hundred milliseconds behind that, and editBox() reads
+  // el.dataset off whatever querySelector returns — null, here, which threw.
+  await expect(b.frameLocator('#out').locator(`[data-el="text.${id}"]`))
+    .toHaveCount(1, { timeout: 10_000 });
 
   // B opens it and types. While that editor is open B is `busy`: nothing
   // remote lands.
@@ -445,6 +460,13 @@ test('a text box two people edited at once is settled by a person, not by whoeve
 
   await a.evaluate(`(async () => { layout.boxes = (layout.boxes || []).filter(x => x.id !== ${JSON.stringify(id)});
     markDirty(); await render(); })()`);
+  // ...and wait for B to have DRAWN the deletion, not just adopted it. The
+  // comment above is only true when both sides are done: the next test grabs
+  // a [data-slot] node in B, and B's adopt-render was still in flight, so the
+  // node detached between resolving it and acting on it ("Element is not
+  // attached to the DOM", ~2 runs in 3).
+  await expect(b.frameLocator('#out').locator(`[data-el="text.${id}"]`))
+    .toHaveCount(0, { timeout: 10_000 });
 });
 
 test('typing in a paragraph reaches A while B\'s editor is still open, with B\'s caret; Escape takes it back', async () => {
