@@ -233,6 +233,19 @@ editor  <--onFiles(files)-- shadow Y.Doc  <--update--  net Y.Doc  <--ws--  room
   blocks that moved (longest-in-order run kept). That is what lets two people
   edit one paragraph at once — the Playwright spec proves the same-slot merge
   through the real editor.
+  Two more doors, added 2026-09-20 after a drop that never arrived:
+  `markDirty()` flushes as well (`collabFlushDirty`), because a drag's drop
+  and an arrow-key nudge commit their inches and call it without rendering —
+  the move lived in one tab's `layout` until the next render, and a
+  collaborator's update arriving first put the piece back. And `beforeRemote`
+  flushes everything the editor holds, not only an open paragraph: a cell or
+  a box committed while a render was still running sat in `layout` waiting
+  for the queued render, and the remote update replaced it wholesale, its
+  undo step already taken. The one thing this flush must not do is overlay
+  the open paragraph's live words (`collabParaNeutralFiles` takes that slot
+  from the shadow): the host can be behind the shadow by a collaborator's
+  words, and writing it back would delete them and hand the merge a
+  duplicate — the same-paragraph spec catches exactly that.
 - **In.** A collaborator's change reaches the editor as the whole document
   (`onFiles`), which sets `source`/`layout` and renders — never while the
   editor is *busy*: an inline text editor open, a pointer held down (a drag),

@@ -351,13 +351,44 @@ test('presence: while A moves something, B sees it where A has it - not where th
   await b.evaluate(`(() => { const d = document.getElementById('out').contentDocument;
     setSel(d, [${JSON.stringify(id)}]); collabWarnHeld(${JSON.stringify(id)}); })()`);
   await expect(b.locator('#stat')).toHaveText(/ada has this selected too — a move is not merged/);
-  // The drop: the document moves, and the box stays where the shape now is.
-  await a.evaluate(`(async () => { collabPointerAt = 0; markDirty(); await render(); })()`);
+  // The drop, as the real one ends: commit() writes the inches and calls
+  // markDirty() - no render. That has to be enough to reach the room; it
+  // once was not, and the move lived in A's tab alone until the next render,
+  // where a collaborator's update arriving first put the piece back.
+  await a.evaluate(`(() => { collabPointerAt = 0; markDirty(); })()`);
   await expect.poll(() => b.evaluate(`(layout.shapes.find(s => s.id === ${JSON.stringify(id)}) || {}).x`), { timeout: 10_000 }).toBe(3.5);
+  await a.evaluate('render()');
   await expect(box).toHaveAttribute('data-peer', 'ada', { timeout: 10_000 });
   await a.evaluate(`(async () => { layout.shapes = layout.shapes.filter(s => s.id !== ${JSON.stringify(id)});
     clearSel(document.getElementById('out').contentDocument); markDirty(); await render(); })()`);
   await b.evaluate(`clearSel(document.getElementById('out').contentDocument)`);
+});
+
+test('a commit waiting on a busy render is not lost to a collaborator\'s update landing first', async () => {
+  // A cell or a box committed while a render is still running sits in
+  // `layout` until the queued render flushes it. A remote update in that
+  // window used to replace `layout` wholesale - the edit gone, its undo step
+  // already taken. beforeRemote now flushes everything this editor holds, so
+  // the two are concurrent edits and both survive.
+  const id = await a.evaluate(`(async () => {
+    pushHistory();
+    const id = freeShapeId('rect');
+    layout.shapes.push({ id, page: visiblePageId(), kind: 'rect', x: 1, y: 1, w: 1, h: 1, z: 3, fill: '#333' });
+    markDirty(); await render(); return id; })()`);
+  await expect.poll(() => b.evaluate(`(layout.shapes.find(s => s.id === ${JSON.stringify(id)}) || {}).x`), { timeout: 10_000 }).toBe(1);
+  // B's commit: the value is in `layout`, the render that would flush it has
+  // not run (as when it is queued behind one in flight).
+  await b.evaluate(`layout.shapes.find(s => s.id === ${JSON.stringify(id)}).x = 6`);
+  // A's edit arrives at B meanwhile.
+  const before = await slot(a);
+  await a.evaluate(`(async () => { writeSlot(${JSON.stringify(SLOT)}, ${JSON.stringify(before + ' Landed first.')}); markDirty(); await render(); })()`);
+  await expect.poll(() => slot(b), { timeout: 10_000 }).toBe(before + ' Landed first.');
+  // B's commit survived the landing, on both sides.
+  expect(await b.evaluate(`layout.shapes.find(s => s.id === ${JSON.stringify(id)}).x`)).toBe(6);
+  await expect.poll(() => a.evaluate(`(layout.shapes.find(s => s.id === ${JSON.stringify(id)}) || {}).x`), { timeout: 10_000 }).toBe(6);
+  await a.evaluate(`(async () => { writeSlot(${JSON.stringify(SLOT)}, ${JSON.stringify(before)});
+    layout.shapes = layout.shapes.filter(s => s.id !== ${JSON.stringify(id)}); markDirty(); await render(); })()`);
+  await expect.poll(() => slot(b), { timeout: 10_000 }).toBe(before);
 });
 
 test('presence: a tab nobody has touched goes away - dimmed, named as idle, and out of the count', async () => {
