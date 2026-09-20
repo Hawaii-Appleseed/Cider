@@ -61,6 +61,61 @@ test.describe('movable headings', () => {
     expect(await frame.locator('.ds-spacer').count()).toBeGreaterThanOrEqual(1);
   });
 
+  // Pin a prose block by dragging it, the way a person does. Returns the id.
+  async function pin(page, frame, key, dy = 40) {
+    await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    const id = 'para.' + key;
+    const el = frame.locator(`[data-el="${id}"]`);
+    await el.click();
+    const box = await el.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + dy, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    return id;
+  }
+  const grow = (page, key, times) => page.evaluate(async ({ key, times }) => {
+    const t = readSlot(key);
+    writeSlot(key, Array.from({ length: times }, () => t).join(' '));
+    markDirty(); await render();
+  }, { key, times });
+
+  test('a moved flow element follows the text it came out of when that text grows', async ({ page }) => {
+    // Its inch used to be fixed while the flow was not: a sentence added
+    // above moved the strut and everything after it, and the pinned block
+    // stayed, over whatever had flowed under it. The drop anchors it to its
+    // own vacated slot, so it keeps its distance from the prose it left.
+    const frame = page.frameLocator('#out');
+    const id = await pin(page, frame, 'basics.p2');
+    const pos = await page.evaluate(id => layout.positions[id], id);
+    expect(pos.anchor).toEqual(expect.objectContaining({ to: 'spacer:' + id }));
+    const el = frame.locator(`[data-el="${id}"]`);
+    const spacer = frame.locator(`.ds-spacer[data-spacer-for="${id}"]`);
+    const before = (await el.boundingBox()).y, spBefore = (await spacer.boundingBox()).y;
+    await grow(page, 'basics.p1', 3);          // the paragraph ABOVE the slot it left
+    await page.waitForTimeout(400);
+    const after = (await el.boundingBox()).y, spAfter = (await spacer.boundingBox()).y;
+    expect(spAfter - spBefore).toBeGreaterThan(20);           // the flow moved...
+    expect(Math.abs((after - before) - (spAfter - spBefore))).toBeLessThan(3);   // ...and it went along
+  });
+
+  test('the strut holds the height the moved element has now, not the height it had when moved', async ({ page }) => {
+    // `reserve` was written once, at the first move, so a block that later
+    // grew a line left the flow holding the old gap forever.
+    const frame = page.frameLocator('#out');
+    const id = await pin(page, frame, 'basics.p2');
+    const r0 = await page.evaluate(id => layout.positions[id].reserve, id);
+    expect(r0).toBeGreaterThan(0);
+    await grow(page, 'basics.p2', 3);
+    await page.waitForTimeout(600);
+    const r1 = await page.evaluate(id => layout.positions[id].reserve, id);
+    expect(r1).toBeGreaterThan(r0 + 0.2);
+    const h = await frame.locator(`.ds-spacer[data-spacer-for="${id}"]`).evaluate(e => e.style.height);
+    expect(h).toBe(r1 + 'in');
+  });
+
   test('a resize handle sets a width override', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
