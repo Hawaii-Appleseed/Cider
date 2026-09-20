@@ -136,4 +136,42 @@ test.describe('duplicate page', () => {
       // and the copy is what is now selected
       expect(after.newPid).toBe(await page.evaluate(() => selPage));
     });
+  test('the copy gets its own toggle, and no anchor to the old page\'s text',
+    async ({ page }) => {
+      await gotoEditor(page);
+      await page.waitForTimeout(900);
+      await page.evaluate(() => addBlankPage());
+      await page.waitForTimeout(2000);
+      const bid = await page.evaluate(() => pageBlanks()[pageBlanks().length - 1].id);
+      await page.evaluate(pid => {
+        pushHistory();
+        boxes().push({ id: 'tgt1', page: pid, x: 1, y: 3, w: 3, md: 'Details' });
+        boxes().push({ id: 'btn1', page: pid, x: 1, y: 1, w: 3, md: 'Show',
+                       act: 'toggle', target: 'tgt1' });
+        boxes().push({ id: 'anc1', page: pid, x: 5, y: 1, w: 2, md: 'Figure',
+                       anchor: { to: 'cover.title', dy: 0.2 } });
+        markDirty();
+      }, bid);
+      await page.evaluate(() => render());
+      await page.waitForTimeout(2500);
+
+      await page.evaluate(pid => duplicatePage(pid), bid);
+      await page.waitForTimeout(3000);
+
+      const copies = await page.evaluate(() =>
+        boxes().filter(b => String(b.page) === String(selPage)));
+      expect(copies).toHaveLength(3);
+      const btn = copies.find(b => b.act === 'toggle');
+      const tgt = copies.find(b => b.md === 'Details');
+      // The button opens the content it was copied WITH, not the original's.
+      expect(btn.target).toBe(tgt.id);
+      expect(btn.target).not.toBe('tgt1');
+      // And nothing on the copy claims to follow a paragraph on another page.
+      expect(copies.find(b => b.md === 'Figure').anchor).toBeUndefined();
+      // The original is untouched: still its own button, its own content.
+      const src = await page.evaluate(pid =>
+        boxes().filter(b => String(b.page) === String(pid)), bid);
+      expect(src.find(b => b.act === 'toggle').target).toBe('tgt1');
+      expect(src.find(b => b.md === 'Figure').anchor.to).toBe('cover.title');
+    });
 });

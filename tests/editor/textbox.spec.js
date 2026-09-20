@@ -45,4 +45,41 @@ test.describe('text boxes', () => {
     expect(h).toBeGreaterThan(0.4);
     await expect(box).toHaveCSS('min-height', /.+/);
   });
+
+  test('a filled box does not grow by its own padding on every resize',
+    async ({ page }) => {
+      const box = await addTextBox(page);
+      const frame = page.frameLocator('#out');
+      // A fill makes the renderer pad the box, and the stored w is the rect
+      // the editor MEASURED — so the padding has to sit inside it. This
+      // primer's own stylesheet says `* { box-sizing: border-box }` and hid
+      // the bug; a project whose CSS does not is what content-box below
+      // stands for. The renderer's own inline declaration must beat it, or
+      // picking the box up writes back a rect .24in wider, every time.
+      await page.evaluate(async () => {
+        layout.boxes[0].fill = '#EEEEEE'; markDirty(); await render();
+      });
+      await page.waitForTimeout(800);
+      const unset = () => page.evaluate(() => {
+        const d = document.getElementById('out').contentDocument;
+        if (d.getElementById('no-border-box')) return;
+        const s = d.createElement('style');
+        s.id = 'no-border-box';
+        s.textContent = '.ds-textbox{box-sizing:content-box}';
+        d.head.appendChild(s);
+      });
+      await unset();
+      await box.click();
+      const before = await page.evaluate(() => layout.boxes[0].w);
+      for (let i = 0; i < 3; i++) {
+        await unset();                    // a render would drop it
+        const h = await frame.locator('.ds-handles .ds-h-e').boundingBox();
+        await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+        await page.mouse.down();
+        await page.mouse.up();            // a pick-up with no move: same size
+        await page.waitForTimeout(300);
+      }
+      const after = await page.evaluate(() => layout.boxes[0].w);
+      expect(Math.abs(after - before)).toBeLessThan(0.05);
+    });
 });

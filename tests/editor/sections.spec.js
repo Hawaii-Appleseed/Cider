@@ -69,4 +69,39 @@ test.describe('section editing', () => {
 
     await expect(frame.locator(`[data-slot="${key}"]`)).toHaveCount(0);
   });
+
+  test('a section moved to another page takes the layout with it',
+    async ({ page }) => {
+      await addSection(page, 'travels');
+      const frame = page.frameLocator('#out');
+      const key = 'extra.basics.travels';
+      const moved = 'extra.process.travels';
+
+      // Everything the layout can say about a slot, said about this one: a
+      // type from the panel, a hidden paragraph inside it, that paragraph's
+      // own pinned position, and a figure told to follow the section.
+      await page.evaluate(k => {
+        layout.text = layout.text || {};
+        layout.text[k] = { size: 22 };
+        layout.hidden = [`para.${k}`];
+        layout.positions[`para.${k}`] = { x: 1, y: 2, reserve: 0.5 };
+        layout.positions.fig = { x: 3, y: 4, anchor: { to: k } };
+        layout.positions.fig2 = { x: 3, y: 5, anchor: { to: `spacer:para.${k}` } };
+      }, key);
+
+      await frame.locator(`[data-slot="${key}"] .ds-xtools button[aria-label="Move to another page"]`)
+        .dispatchEvent('click');
+      await fillDialog(page, { page: 'process' });
+      await submitDialog(page);
+      await expect(frame.locator(`[data-slot="${moved}"]`)).toHaveCount(1);
+
+      const after = await page.evaluate(() => JSON.parse(JSON.stringify(layout)));
+      expect(after.text[moved]).toEqual({ size: 22 });
+      expect(after.text[key]).toBeUndefined();
+      expect(after.hidden).toEqual([`para.${moved}`]);
+      expect(after.positions[`para.${moved}`]).toBeTruthy();
+      expect(after.positions[`para.${key}`]).toBeUndefined();
+      expect(after.positions.fig.anchor.to).toBe(moved);
+      expect(after.positions.fig2.anchor.to).toBe(`spacer:para.${moved}`);
+    });
 });
