@@ -94,4 +94,28 @@ test.describe('corner rotation', () => {
     await expect(frame.locator('.ds-handles .ds-rot')).toHaveCount(1);
     await expect(frame.locator('.ds-handles .ds-rot-corner')).toHaveCount(0);
   });
+  test('a callout wearing a class transform turns without jumping',
+    async ({ page }) => {
+      // .lc-right / .lc-left carry `transform: translateY(-50%)` from the
+      // report's own stylesheet (report2027/web/primer.css). One inline
+      // `transform` REPLACES that, so a rotation of a hundredth of a degree
+      // used to drop the translate and move the callout half its own height —
+      // live and on the published page. Rotation has its own property now.
+      const frame = page.frameLocator('#out');
+      const el = frame.locator('[data-el="lc.jan"]');
+      const read = () => el.evaluate(e => {
+        const r = e.getBoundingClientRect();
+        return { mid: r.top + r.height / 2, h: r.height,
+                 tf: getComputedStyle(e).transform };
+      });
+      const before = await read();
+      expect(before.tf).not.toBe('none');           // the class transform is on
+      await page.evaluate(() => {
+        layout.positions['lc.jan'].rot = 0.001; markDirty(); return render();
+      });
+      await page.waitForTimeout(2200);
+      const after = await read();
+      expect(after.tf).toBe(before.tf);             // still wearing it
+      expect(Math.abs(after.mid - before.mid)).toBeLessThan(1);
+    });
 });

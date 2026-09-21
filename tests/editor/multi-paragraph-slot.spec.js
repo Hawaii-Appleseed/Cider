@@ -63,4 +63,37 @@ test.describe('a slot rendered as several paragraphs', () => {
     // Exactly one editor opened, not one per paragraph.
     await expect(frame.locator('.ds-edit')).toHaveCount(1);
   });
+  test('an emptied slot keeps an element, so the words can be typed back',
+    async ({ page }) => {
+      const frame = page.frameLocator('#out');
+
+      // Delete every word of the slot — what selecting a paragraph and
+      // pressing Backspace does. The block stays in content.md; the page used
+      // to render nothing for it, which left no element to click and no way
+      // back in short of editing content.md by hand.
+      await page.evaluate(async slot => {
+        writeSlot(slot, '');
+        await render();
+      }, SLOT);
+
+      const para = frame.locator(`[data-slot="${SLOT}"]`);
+      await expect(para).toHaveCount(1);
+      await expect(para).toContainText('empty');
+
+      await para.scrollIntoViewIfNeeded();
+      await para.dblclick({ force: true });
+      await expect(frame.locator('.ds-edit')).toBeVisible();
+      expect(await page.evaluate(() => editing)).toBe(true);
+      // The placeholder is page furniture, never content: the editor reads
+      // the slot from content.md, so it opens empty.
+      expect(await page.evaluate(s => readSlot(s), SLOT)).toBe('');
+
+      // and typing puts real words back in — blur commits (Escape discards)
+      await page.keyboard.type('BACKAGAIN');
+      await page.evaluate(() =>
+        document.getElementById('out').contentDocument
+          .querySelector('.ds-edit').blur());
+      await page.waitForTimeout(1500);
+      expect(await page.evaluate(s => readSlot(s), SLOT)).toContain('BACKAGAIN');
+    });
 });

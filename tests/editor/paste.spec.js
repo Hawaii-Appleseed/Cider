@@ -81,6 +81,29 @@ test.describe('paste', () => {
     expect(out).not.toContain('span');
   });
 
+  test('a Google Doc pastes as its own paragraphs, with its bold and italic',
+    async ({ page }) => {
+      const ta = await openSection(page);
+      await ta.evaluate(el => { el.innerHTML = '<p></p>'; });
+      // What Google Docs actually puts on the clipboard: the whole copied
+      // range inside a <b style="font-weight:normal"> marker, every paragraph
+      // nested in it, and weight/slant written on <span style> rather than as
+      // <b>/<i>. Taken literally that was one paragraph, entirely bold, with
+      // no emphasis of its own.
+      const DOC =
+        '<meta charset="utf-8"><b style="font-weight:normal" id="docs-internal-guid-1">' +
+        '<p dir="ltr"><span style="font-weight:400;font-style:normal;' +
+        'text-decoration:none">Plain then </span>' +
+        '<span style="font-weight:700;text-decoration:none">bold</span>' +
+        '<span style="font-weight:400;font-style:italic">, then slanted</span></p>' +
+        '<p dir="ltr"><span style="font-weight:400;text-decoration:underline">' +
+        'A second paragraph</span></p></b>';
+      await pasteHtml(page, DOC, true);
+
+      expect(await md(page)).toBe(
+        'Plain then **bold***, then slanted*\n\n__A second paragraph__');
+    });
+
   test('a pasted list stays a list, and a pasted heading stays a heading', async ({ page }) => {
     const ta = await openSection(page);
     await ta.evaluate(el => { el.innerHTML = '<p></p>'; });

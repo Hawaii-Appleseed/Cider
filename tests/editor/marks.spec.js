@@ -73,7 +73,9 @@ test.describe('bold / italic (no execCommand)', () => {
     await selectChars(page, 6, 9);             // "wor" inside the bold run
     await clickTool(page, 'Bold');
 
-    expect(await md(page)).toBe('**hello **wor**ld**');
+    // The space the split left at the end of the first run rides OUTSIDE
+    // its markers — same two bold runs, markdown that cannot be misread.
+    expect(await md(page)).toBe('**hello** wor**ld**');
     expect(await ta.locator('b').count()).toBe(2);
   });
 
@@ -89,6 +91,23 @@ test.describe('bold / italic (no execCommand)', () => {
     expect(await md(page)).toBe('**one two three**');
     expect(await ta.evaluate(el => el.querySelectorAll('b b').length)).toBe(0);
   });
+
+  test('a mark wraps the word, not the space a double-click came with',
+    async ({ page }) => {
+      const ta = await openSection(page);
+      await ta.evaluate(el => { el.innerHTML = '<p>alpha beta gamma</p>'; });
+
+      // Chromium hands a double-click the word AND its trailing space. Left
+      // inside the markers that is `*beta *`, which md_inline refuses — the
+      // rule wants no space beside the marker — so the asterisks reached the
+      // page as asterisks and the words were never italic.
+      await selectChars(page, 6, 11);            // "beta "
+      await clickTool(page, 'Italic');
+      expect(await md(page)).toBe('alpha *beta* gamma');
+
+      // and it is really a mark, not two literal asterisks
+      expect(await ta.locator('i').count()).toBe(1);
+    });
 
   test('the button shows whether the selection is already marked', async ({ page }) => {
     const ta = await openSection(page);
