@@ -217,6 +217,7 @@ ids it returns:
 | `addShape({page,kind,x,y,w,h,fill,stroke,sw,z,rx})` | a Shapes-panel shape (`rect\|ellipse\|line\|triangle\|arrow`) on ANY page — the way a hairline rule or panel lands on a page `duplicate()` can't reach |
 | `applyScheme(idOrHex)` | retint the report to another house scheme ('slate' or a hex) — every use of the current topic colour swaps, one undo step; the Colors rail panel's Apply |
 | `addPage(at?)` | blank page; returns its id |
+| `duplicatePage(page)` | the strip's Duplicate page: a new page right after it, carrying the movable layer AND — for a designed page or a copy of one — the page's content as its own `copy.<id>.*` slots and elements (see `docsync/pagecopy.py`). Returns `{page, copied}`. Own history step; not a batch verb |
 | `addSource(id, text, url)` / `addEndnotesSection()` | declare a source (cite via `[^id]` in slot text) / the synced endnotes section |
 | `batch(ops)` | `[{verb, args, as?}]` — one history entry, one render. See below |
 | `undo()` / `redo()` | the same history a human's ⌘Z walks |
@@ -379,13 +380,23 @@ left with none):
   that is what `C.derived` exists to avoid.
 - **frozen prose** — sentences drawn inside an SVG. The graphic moves; the
   sentence can only be changed by editing the renderer. Captions and notes
-  render as slots BESIDE the graphic (`C.html`), never inside it.
+  render as slots BESIDE the graphic (`C.html`), never inside it — and any
+  WORDS that must sit inside the drawing (a legend entry, a step name, a
+  bar's caption) go through `blocks.svg_text()`, below, so they edit in place.
 
 Two conversion rules that prevent the warnings in the first place:
 
-1. **Only data-derived marks live inside a chart** (values, axis ticks,
-   legend swatched labels). Anything a person would rephrase — captions,
-   takeaway lines, method notes — is a slot outside the `<svg>`.
+1. **Only data-derived marks live inside a chart as literals** (axis ticks,
+   tick values). Anything a person would rephrase — a legend entry, a step
+   label, a bar caption — is drawn with
+   `svg_text(C, "<chart>.<what>", "<the renderer's wording>", x, y, size, fill,
+   weight=, anchor=)`: `data-slot` on the `<text>`, words read through
+   `C.text_or(key, default)` so a document that never listed the label still
+   renders the renderer's wording and publishing does not raise. The editor
+   floats a field over the glyphs on double-click (`editSvgSlot`). Captions,
+   takeaway lines and method notes stay slots OUTSIDE the `<svg>` (`C.html`).
+   A value label may be an `svg_text` too, defaulted from the DATA constant —
+   say at handoff that retyping it changes the label and not the bar.
 2. **Match the chart to its nature.** A *presentational* chart (numbers the
    user may legitimately retype) should be a native editor chart — a
    layout.json shape `kind:"chart"` (bar/column/pie/donut), fully editable in

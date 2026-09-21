@@ -331,6 +331,25 @@ Rules that bite:
   new selection-summary field, keep that rule.
 - **Page strip folds and remembers per project**
   (`localStorage['primer-rail-folded:'+M.id]`, restored in `boot()`).
+- **Duplicate page copies a DESIGNED page's content (2026-09).** The
+  renderer owns designed content, so the editor snapshots the page's pristine
+  edit-mode markup (a render with none of the document's overrides on that
+  page), moves every hook under `copy.<bid>.` and stores it on the blank
+  page's entry (`layout.pages.blanks[].copy.html`), writing each slot's words
+  into content.md under the new key. `docsync/pagecopy.py` redraws it from
+  `Layout.layer()` — the one call every renderer emits inside every sheet —
+  so no renderer changed. Rules: a new `docsync/*.py` module must be added
+  to `stage.PACKAGE` or the draft dies with ModuleNotFoundError while the
+  published build is fine (this one bit); `copy.` is a reserved id/key
+  prefix; `Content` binds itself to its Layout (`bind_content`), which is
+  how the layer reaches the words. **Words inside a chart are slots now**:
+  `blocks.svg_text()` puts `data-slot` on the `<text>` and reads through
+  `C.text_or(key, default)` (the renderer's wording stands when the document
+  lacks the slot — a seeded hub room never shows a "new slot" marker in a
+  chart); the editor edits an SVG slot in a floated field (`editSvgSlot`),
+  and `edit()` seeds a slot the document has not got from the words on the
+  page. rxkids-fiscal is the worked example (38 chart labels, the benefit
+  pills as one list slot).
 - **A rewritten test that only asserts a CSS declaration (`justify-content:
   center`, a class name, a boundingBox read right after a CSS transition
   starts) can pass against the exact bug it's meant to catch.** This bit us

@@ -199,6 +199,26 @@ written to, and the whole import is a single undo. Clicking the report itself di
 except the ones that describe your current selection (Table/Chart/Colour),
 which stay open so you can keep working while they're up.
 
+**Duplicate page copies the page** — all of it. A designed page's content is
+the renderer's (Python draws it from `content.md`), so a duplicate takes a
+snapshot of the page's pristine markup, moves every id and slot key under
+`copy.<page>.`, writes each slot's words into `content.md` under the new key,
+and files the markup on the new page's entry in `layout.json`
+(`pages.blanks[].copy`). `docsync/pagecopy.py` redraws it from the current
+words and layout on every render, so the copy's headings, cards and chart
+labels edit, move, hide and recolour exactly like the original's, and the
+published build carries it too. What a copy is not: the renderer — a chart in
+the copy keeps the numbers it was drawn with, and a copied endnote list is
+text, not the numbered endnotes.
+
+**Labels inside a chart edit on the page.** A renderer draws a chart's legend
+entries, step names and bar captions with `docsync.blocks.svg_text()` —
+`data-slot` on the SVG `<text>`, words read through `C.text_or(key, default)`
+so the renderer's own wording stands until someone rephrases it. Double-click
+a label and a field floats over the glyphs; Enter writes the slot. A
+document that never listed the label (a hub room seeded before it existed)
+opens on the words the page shows, and the first edit writes the block.
+
 ## Architecture: one editor, many reports
 
 The editor knows nothing about any particular report. Everything specific — the

@@ -34,7 +34,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button   # noqa: E402
+from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
@@ -200,21 +200,21 @@ def payment_timeline() -> str:
 
     # legend — always present for >= 2 series
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{FED}"/>')
-    p.append(f'<text x="17" y="9.5" font-size="{LABEL_U}" fill="{SLATE}">'
-             f'Federal TANF can cover</text>')
+    p.append(svg_text(C, "chart.timeline.legend.fed", "Federal TANF can cover",
+                      17, 9.5, LABEL_U, SLATE))
     p.append(f'<rect x="168" y="0" width="11" height="11" rx="2.5" fill="{NONFED}"/>')
-    p.append(f'<text x="185" y="9.5" font-size="{LABEL_U}" fill="{SLATE}">'
-             f'State / county / philanthropy</text>')
+    p.append(svg_text(C, "chart.timeline.legend.nonfed", "State / county / philanthropy",
+                      185, 9.5, LABEL_U, SLATE))
     p.append(f'<rect x="392" y="0" width="11" height="11" rx="2.5" fill="{NONFED}" '
              f'opacity="0.45"/>')
-    p.append(f'<text x="409" y="9.5" font-size="{LABEL_U}" fill="{SLATE}">'
-             f'…contingent on available funds</text>')
+    p.append(svg_text(C, "chart.timeline.legend.contingent", "…contingent on available funds",
+                      409, 9.5, LABEL_U, SLATE))
 
     # value labels
-    p.append(f'<text x="{x(0) + BW/2}" y="24" font-size="{LABEL_U}" font-weight="700" '
-             f'fill="{INK}" text-anchor="middle">$1,500</text>')
-    p.append(f'<text x="{x(6) + BW/2}" y="58" font-size="{LABEL_U}" font-weight="700" '
-             f'fill="{INK}" text-anchor="middle">$500 per month</text>')
+    p.append(svg_text(C, "chart.timeline.prenatal", "$1,500",
+                      x(0) + BW/2, 24, LABEL_U, INK, weight=700, anchor="middle"))
+    p.append(svg_text(C, "chart.timeline.monthly", "$500 per month",
+                      x(6) + BW/2, 58, LABEL_U, INK, weight=700, anchor="middle"))
 
     bars = [(0, 1500, FED, 1.0)]
     for m in range(1, 13):
@@ -233,9 +233,13 @@ def payment_timeline() -> str:
         p.append(f'<path d="M {x(i)} {BASE} V {y + 4} a4 4 0 0 1 4 -4 '
                  f'H {x(i) + BW - 4} a4 4 0 0 1 4 4 V {BASE} Z" '
                  f'fill="{fill}" opacity="{op}"/>')
-        lab = "Pregnancy" if i == 0 else str(i)
-        p.append(f'<text x="{x(i) + BW/2}" y="{BASE + 14}" font-size="{LABEL_U}" '
-                 f'fill="{MUTE}" text-anchor="middle">{lab}</text>')
+        if i == 0:
+            p.append(svg_text(C, "chart.timeline.axis.prenatal", "Pregnancy",
+                              x(i) + BW/2, BASE + 14, LABEL_U, MUTE, anchor="middle"))
+        else:
+            # The month numbers are axis ticks — data marks, not words.
+            p.append(f'<text x="{x(i) + BW/2}" y="{BASE + 14}" font-size="{LABEL_U}" '
+                     f'fill="{MUTE}" text-anchor="middle">{i}</text>')
 
     p.append(f'<line x1="{X0}" y1="{BASE}" x2="{x(12) + BW}" y2="{BASE}" '
              f'stroke="{ASH}" stroke-width="1"/>')
@@ -245,14 +249,12 @@ def payment_timeline() -> str:
     split = x(3) + BW + 6
     p.append(f'<rect x="{X0}" y="{by}" width="{split - X0 - 2}" height="{bh}" '
              f'rx="5" fill="{FED}"/>')
-    p.append(f'<text x="{(X0 + split) / 2}" y="{by + 16}" font-size="{LABEL_U}" '
-             f'font-weight="700" fill="#fff" text-anchor="middle">'
-             f'4 payments · $3,000 max</text>')
+    p.append(svg_text(C, "chart.timeline.band.fed", "4 payments · $3,000 max",
+                      (X0 + split) / 2, by + 16, LABEL_U, "#fff", weight=700, anchor="middle"))
     p.append(f'<rect x="{split}" y="{by}" width="{x(12) + BW - split}" '
              f'height="{bh}" rx="5" fill="{NONFED}"/>')
-    p.append(f'<text x="{(split + x(12) + BW) / 2}" y="{by + 16}" font-size="{LABEL_U}" '
-             f'font-weight="700" fill="#fff" text-anchor="middle">'
-             f'every remaining payment</text>')
+    p.append(svg_text(C, "chart.timeline.band.rest", "every remaining payment",
+                      (split + x(12) + BW) / 2, by + 16, LABEL_U, "#fff", weight=700, anchor="middle"))
 
     # The caption ("Numbered bars are months after birth.") is a slot rendered
     # under the graphic, not drawn in here — a sentence inside an SVG is
@@ -281,11 +283,14 @@ def funding_split() -> str:
     BARMAX = W - X0 - 8
     scale = BARMAX / COST_FULL
 
+    # Every label keyed by screen (s1, s2 …) and row (core, full), so the
+    # words a person edits stay filed under the same bar when the chart
+    # is redrawn.
     rows = []
-    for label, tanf, _births in TANF_SCREENS:
-        rows.append(("hdr", label, 0, 0))
-        rows.append(("bar", "Core · through 6 mo", tanf, COST_CORE))
-        rows.append(("bar", "Full · through 12 mo", tanf, COST_FULL))
+    for n, (label, tanf, _births) in enumerate(TANF_SCREENS, 1):
+        rows.append(("hdr", label, 0, 0, f"chart.funding.s{n}.title"))
+        rows.append(("bar", "Core · through 6 mo", tanf, COST_CORE, f"chart.funding.s{n}.core"))
+        rows.append(("bar", "Full · through 12 mo", tanf, COST_FULL, f"chart.funding.s{n}.full"))
 
     H = 20 + sum(ROW + GAP if k == "bar" else 16 for k, *_ in rows) + GRPGAP + 2
 
@@ -294,25 +299,23 @@ def funding_split() -> str:
          f'non-federal dollars, by program length and needy-family screen">']
 
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{FED}"/>')
-    p.append(f'<text x="17" y="9.5" font-size="{LABEL_U}" fill="{SLATE}">Federal TANF</text>')
+    p.append(svg_text(C, "chart.funding.legend.fed", "Federal TANF", 17, 9.5, LABEL_U, SLATE))
     p.append(f'<rect x="112" y="0" width="11" height="11" rx="2.5" fill="{NONFED}"/>')
-    p.append(f'<text x="129" y="9.5" font-size="{LABEL_U}" fill="{SLATE}">'
-             f'State / county / philanthropy</text>')
-    p.append(f'<text x="{W}" y="9.5" font-size="{LABEL_U}" fill="{MUTE}" '
-             f'text-anchor="end">all bars share one scale</text>')
+    p.append(svg_text(C, "chart.funding.legend.nonfed", "State / county / philanthropy",
+                      129, 9.5, LABEL_U, SLATE))
+    p.append(svg_text(C, "chart.funding.scale", "all bars share one scale",
+                      W, 9.5, LABEL_U, MUTE, anchor="end"))
 
     y = 20
-    for kind, label, tanf, total in rows:
+    for kind, label, tanf, total, key in rows:
         if kind == "hdr":
             if y > 24:            # extra air before a 2nd group
                 y += GRPGAP
-            p.append(f'<text x="0" y="{y + 10}" font-size="{LABEL_U}" font-weight="700" '
-                     f'fill="{INK}">{label}</text>')
+            p.append(svg_text(C, key, label, 0, y + 10, LABEL_U, INK, weight=700))
             y += 16
             continue
 
-        p.append(f'<text x="0" y="{y + 14}" font-size="{LABEL_U}" '
-                 f'fill="{SLATE}">{label}</text>')
+        p.append(svg_text(C, f"{key}.label", label, 0, y + 14, LABEL_U, SLATE))
 
         tw = tanf * scale
         rest = total - tanf
@@ -325,14 +328,15 @@ def funding_split() -> str:
                  f'H {X0 + tw + 2} Z" fill="{NONFED}"/>')
 
         # federal value in the gutter, in the federal colour
-        p.append(f'<text x="{X0 - 10}" y="{y + 14}" font-size="{LABEL_U}" '
-                 f'font-weight="700" fill="{FED}" text-anchor="end">'
-                 f'{money_m(tanf)}</text>')
+        # Value labels default from the DATA, so they track the model until
+        # someone retypes one; a retyped label does not move its bar.
+        p.append(svg_text(C, f"{key}.fed", money_m(tanf),
+                          X0 - 10, y + 14, LABEL_U, FED, weight=700, anchor="end"))
         # Kept short deliberately: the narrowest non-federal segment is ~230px,
         # and the long form ("needed from non-federal sources") overflows it.
         # The legend and the section heading carry the rest of the sentence.
-        p.append(f'<text x="{X0 + tw + 12}" y="{y + 14}" font-size="{LABEL_U}" '
-                 f'font-weight="700" fill="#fff">{money_m(rest)} to raise</text>')
+        p.append(svg_text(C, f"{key}.rest", f"{money_m(rest)} to raise",
+                          X0 + tw + 12, y + 14, LABEL_U, "#fff", weight=700))
         y += ROW + GAP
 
     p.append("</svg>")
@@ -355,18 +359,18 @@ def medicaid_split() -> str:
     p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
          f'role="img" aria-label="Births served, split by Medicaid '
          f'eligibility">']
-    p.append(f'<text x="0" y="10" font-size="{LABEL_U}" fill="{MUTE}">'
-             f'{total:,} births served each year</text>')
+    p.append(svg_text(C, "chart.medicaid.caption", f"{total:,} births served each year",
+                      0, 10, LABEL_U, MUTE))
 
     p.append(f'<rect x="{X0}" y="{Y}" width="{mw - 2}" height="{BH}" rx="5" '
              f'fill="{MEDI}"/>')
     p.append(f'<rect x="{X0 + mw}" y="{Y}" width="{BW - mw}" height="{BH}" '
              f'rx="5" fill="{NONFED}" opacity="0.75"/>')
 
-    p.append(f'<text x="10" y="{Y + 19}" font-size="{EMPH_U}" font-weight="700" '
-             f'fill="#fff">{BIRTHS_MEDICAID:,} on Medicaid  ·  60%</text>')
-    p.append(f'<text x="{X0 + mw + 10}" y="{Y + 19}" font-size="{EMPH_U}" '
-             f'font-weight="700" fill="#fff">{BIRTHS_NONMEDICAID:,}  ·  40%</text>')
+    p.append(svg_text(C, "chart.medicaid.left", f"{BIRTHS_MEDICAID:,} on Medicaid  ·  60%",
+                      10, Y + 19, EMPH_U, "#fff", weight=700))
+    p.append(svg_text(C, "chart.medicaid.right", f"{BIRTHS_NONMEDICAID:,}  ·  40%",
+                      X0 + mw + 10, Y + 19, EMPH_U, "#fff", weight=700))
 
     # The takeaway line lives in a slot under the graphic (see payment_timeline
     # for why), so H stops at the bar plus its inside labels.
@@ -379,16 +383,17 @@ def medicaid_split() -> str:
 def how_it_works_chart() -> str:
     """Five-step horizontal flow: sign up → $1,500 → birth → $500/mo → birthday.
 
-    Step labels sit above each circle; brief descriptions below. Dollar amounts
-    are data marks, not prose — they live inside the SVG alongside the axis-
-    style step labels. Captions that a person might rephrase are in a slot
-    rendered beside the graphic, not in here.
+    Step labels sit above each circle; brief descriptions below. Every label
+    is a slot drawn in place (svg_text), so the words edit on the page; the
+    circles and connectors are the drawing.
     """
     W, H = VB_W, 112
     CY = 55.0
     R = 18.0
     CXS = [82.0, 246.0, 410.0, 574.0, 738.0]
 
+    # Keyed s1..s5 so a rewording stays with its circle. Every one of these
+    # is a word a person might rephrase, so every one is a slot (svg_text).
     steps = [
         ("Sign up",       "during pregnancy", TEAL),
         ("$1,500",        "prenatal payment",  FED),
@@ -415,14 +420,13 @@ def how_it_works_chart() -> str:
         p.append(f'<circle cx="{cx:.1f}" cy="{CY:.1f}" r="{R:.1f}" fill="{fill}"/>')
         # step label above the circle
         above_y = CY - R - 5
-        p.append(f'<text x="{cx:.1f}" y="{above_y:.1f}" '
-                 f'font-size="{LABEL_U}" font-weight="700" fill="{INK}" '
-                 f'text-anchor="middle">{label}</text>')
+        p.append(svg_text(C, f"chart.how.s{i + 1}.label", label,
+                          f"{cx:.1f}", f"{above_y:.1f}", LABEL_U, INK,
+                          weight=700, anchor="middle"))
         # description below the circle
         below_y = CY + R + LABEL_U + 3
-        p.append(f'<text x="{cx:.1f}" y="{below_y:.1f}" '
-                 f'font-size="{LABEL_U}" fill="{MUTE}" '
-                 f'text-anchor="middle">{desc}</text>')
+        p.append(svg_text(C, f"chart.how.s{i + 1}.desc", desc,
+                          f"{cx:.1f}", f"{below_y:.1f}", LABEL_U, MUTE, anchor="middle"))
 
     p.append("</svg>")
     return "".join(p)
@@ -556,9 +560,11 @@ INNER2 = f"""
         </div>
       </div>
       <h2{L.attr("p2.benefits.title")}>{C.t("p2.benefits.title")}</h2>
-      <div class="benefit-row"{L.attr("p2.benefit.row")}>
-        {"".join(f'<span class="benefit-pill">{item}</span>'
-                 for item in C.list("p2.benefits.items"))}
+      <div class="benefit-wrap"{L.attr("p2.benefit.row")}>
+        <ul class="benefit-row"{C.ul_attr("p2.benefits.items")}>
+          {"".join(f'<li class="benefit-pill">{item}</li>'
+                   for item in C.list("p2.benefits.items"))}
+        </ul>
       </div>
     </div>
     <div class="p2-mid-right">
@@ -720,7 +726,12 @@ html = f"""<!DOCTYPE html>
              font-size:0.875rem; font-weight:700; color:{DEEP}; margin:0 0 2px; }}
   .why-b {{ font-size:0.82rem; color:{SLATE}; line-height:1.3; margin:0; }}
 
-  .benefit-row {{ display:flex; flex-wrap:wrap; gap:5px; margin:5px 0 0; }}
+  /* The pills are the items of ONE list slot (p2.benefits.items), so the
+     row is a <ul> the editor opens as a bullet list; the wrapper carries
+     the movable hook, since a tag cannot hold both a data-el and a
+     data-slot style. */
+  .benefit-row {{ display:flex; flex-wrap:wrap; gap:5px; margin:5px 0 0;
+                  padding:0; list-style:none; }}
   .benefit-pill {{ background:{SLATE}; color:#fff; border-radius:20px;
                    padding:3px 11px; font-size:0.81rem; font-weight:700; }}
 

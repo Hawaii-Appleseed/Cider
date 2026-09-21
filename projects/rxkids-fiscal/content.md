@@ -84,6 +84,94 @@ Where the non-federal share comes from
 [[endnotes.h2]]
 Sources
 
+<!-- Chart labels, drawn in place (svg_text). Words, not data: retyping one
+     changes the label and nothing else — the bars come from the DATA
+     constants in render_report.py. -->
+
+[[chart.timeline.legend.fed]]
+Federal TANF can cover
+
+[[chart.timeline.legend.nonfed]]
+State / county / philanthropy
+
+[[chart.timeline.legend.contingent]]
+…contingent on available funds
+
+[[chart.timeline.prenatal]]
+$1,500
+
+[[chart.timeline.monthly]]
+$500 per month
+
+[[chart.timeline.axis.prenatal]]
+Pregnancy
+
+[[chart.timeline.band.fed]]
+4 payments · $3,000 max
+
+[[chart.timeline.band.rest]]
+every remaining payment
+
+[[chart.funding.legend.fed]]
+Federal TANF
+
+[[chart.funding.legend.nonfed]]
+State / county / philanthropy
+
+[[chart.funding.scale]]
+all bars share one scale
+
+[[chart.funding.s1.title]]
+Medicaid enrollment — Michigan's actual approach
+
+[[chart.funding.s1.core.label]]
+Core · through 6 mo
+
+[[chart.funding.s1.core.fed]]
+$20.7M
+
+[[chart.funding.s1.core.rest]]
+$31.5M to raise
+
+[[chart.funding.s1.full.label]]
+Full · through 12 mo
+
+[[chart.funding.s1.full.fed]]
+$20.7M
+
+[[chart.funding.s1.full.rest]]
+$67.2M to raise
+
+[[chart.funding.s2.title]]
+Hawaiʻi's current TANF test (net income, ~30% FPL)
+
+[[chart.funding.s2.core.label]]
+Core · through 6 mo
+
+[[chart.funding.s2.core.fed]]
+$1.4M
+
+[[chart.funding.s2.core.rest]]
+$50.7M to raise
+
+[[chart.funding.s2.full.label]]
+Full · through 12 mo
+
+[[chart.funding.s2.full.fed]]
+$1.4M
+
+[[chart.funding.s2.full.rest]]
+$86.4M to raise
+
+[[chart.medicaid.caption]]
+13,228 births served each year
+
+[[chart.medicaid.left]]
+7,969 on Medicaid  ·  60%
+
+[[chart.medicaid.right]]
+5,259  ·  40%
+
 [[sources]]
 [model]: Rx Kids Hawaiʻi cost model, TY2028 universal scenario — Medicaid split computed per family, not a national average. — https://github.com/dtomkatsu/Census-Forecaster/blob/main/forecast_rxkids_2028.py
 [births]: Census-Forecaster methodology — births anchored to CDC NVSR and Hawaiʻi DOH. — https://github.com/dtomkatsu/Census-Forecaster/blob/main/RXKIDS_METHODOLOGY.md
@@ -195,3 +283,33 @@ Rx Keiki is a proposed program of Hawaiʻi Appleseed, modeled on Rx Kids (Michig
 
 [[p2.sources.note]]
 Sources: Hanna & Shaefer, "Playbook for Replicating Rx Kids," MSU Poverty Solutions, 2024 · Rx Kids program data, City of Flint, MI · Stanczyk (2016), Washington Center for Equitable Growth · Hawaiʻi DBEDT cost-of-living reporting
+
+[[chart.how.s1.label]]
+Sign up
+
+[[chart.how.s1.desc]]
+during pregnancy
+
+[[chart.how.s2.label]]
+$1,500
+
+[[chart.how.s2.desc]]
+prenatal payment
+
+[[chart.how.s3.label]]
+Baby arrives
+
+[[chart.how.s3.desc]]
+deposits start
+
+[[chart.how.s4.label]]
+$500/month
+
+[[chart.how.s4.desc]]
+no re-enrollment
+
+[[chart.how.s5.label]]
+1st birthday
+
+[[chart.how.s5.desc]]
+family chooses
