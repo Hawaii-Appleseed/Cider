@@ -42,7 +42,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button   # noqa: E402
+from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
@@ -206,8 +206,10 @@ def _legend(items, y=9.5, x0=0):
     for label, fill, op in items:
         out.append(f'<rect x="{x:.0f}" y="{y - 9.5:.0f}" width="11" height="11" '
                    f'rx="2.5" fill="{fill}" opacity="{op}"/>')
-        out.append(f'<text x="{x + 17:.0f}" y="{y:.1f}" font-size="{LABEL_U}" '
-                   f'fill="{BODY}">{label}</text>')
+        # A legend entry is words: a slot, keyed by its own wording.
+        slug = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")
+        out.append(svg_text(C, f"legend.{slug}", label, f"{x + 17:.0f}", f"{y:.1f}",
+                            LABEL_U, BODY))
         x += 17 + len(label) * 6.4 + 26
     return "".join(out)
 
@@ -264,9 +266,8 @@ def historical_chart() -> str:
     my = BASE - SIX_YEAR_MEAN * unit
     p.append(f'<line x1="{X0}" y1="{my:.1f}" x2="{W}" y2="{my:.1f}" '
              f'stroke="{ROSE}" stroke-width="1.6" stroke-dasharray="7 4"/>')
-    p.append(f'<text x="{X0 + 8}" y="{my - 7:.1f}" font-size="{LABEL_U}" '
-             f'font-weight="700" fill="{ROSE}">Six-year mean '
-             f'${SIX_YEAR_MEAN:.1f}M</text>')
+    p.append(svg_text(C, "chart.history.mean", f"Six-year mean ${SIX_YEAR_MEAN:.1f}M",
+                      X0 + 8, f"{my - 7:.1f}", LABEL_U, ROSE, weight=700))
 
     p.append("</svg>")
     return "".join(p)
@@ -297,9 +298,9 @@ def savings_chart() -> str:
     sx = X0 + 6 + 3 * SLOT
     p.append(f'<rect x="{sx:.1f}" y="{TOP - 24}" width="{W - sx:.1f}" '
              f'height="{BASE - TOP + 24:.1f}" fill="{INK}" opacity="0.045"/>')
-    p.append(f'<text x="{(sx + W) / 2:.1f}" y="{TOP - 10}" font-size="{LABEL_U}" '
-             f'font-weight="700" fill="{BODY}" text-anchor="middle">'
-             f'no new credits after 2029</text>')
+    p.append(svg_text(C, "chart.sunset.note", "no new credits after 2029",
+                      f"{(sx + W) / 2:.1f}", TOP - 10, LABEL_U, BODY, weight=700,
+                      anchor="middle"))
 
     for v in (25, 50, 75, 100):
         gy = BASE - v * unit
@@ -345,16 +346,17 @@ def agi_chart() -> str:
          f'role="img" aria-label="Individual RETITC claims by adjusted gross '
          f'income bracket, tax year 2023; the top bracket holds 45 percent of '
          f'all individual claims">']
-    p.append(f'<text x="0" y="9.5" font-size="{LABEL_U}" fill="{MUTED}">'
-             f'Individual RETITC claims, Tax Year 2023 · ${TY23_IND:.1f}M '
-             f'total</text>')
+    p.append(svg_text(C, "chart.agi.caption",
+                      f"Individual RETITC claims, Tax Year 2023 · ${TY23_IND:.1f}M total",
+                      0, 9.5, LABEL_U, MUTED))
 
     y = 22
     for i, (label, claim, elig) in enumerate(AGI_BINS):
         w = claim * scale
         p.append(f'<text x="{X0 - 10}" y="{y + ROW / 2 + 4.5:.1f}" '
                  f'font-size="{LABEL_U}" font-weight="700" fill="{INK}" '
-                 f'text-anchor="end">{label}</text>')
+                 f'text-anchor="end"{C.derived("AGI_BINS in render_report.py, from DOTAX tables")}>'
+                 f'{label}</text>')
         p.append(f'<rect x="{X0}" y="{y}" width="{w:.1f}" height="{ROW}" '
                  f'rx="3" fill="{shades[i]}"/>')
         # Where the AGI limit bites, the ineligible remainder is hatched off
@@ -365,9 +367,8 @@ def agi_chart() -> str:
             p.append(f'<line x1="{X0 + cut:.1f}" y1="{y - 3}" '
                      f'x2="{X0 + cut:.1f}" y2="{y + ROW + 3}" stroke="{WARM}" '
                      f'stroke-width="2.2"/>')
-            p.append(f'<text x="{X0 + cut + 6:.1f}" y="{y + ROW + 17}" '
-                     f'font-size="{LABEL_U}" fill="{WARM}" font-weight="700">'
-                     f'{(1 - elig) * 100:.0f}% cut by the AGI limit</text>')
+            p.append(svg_text(C, "chart.agi.cut", f"{(1 - elig) * 100:.0f}% cut by the AGI limit",
+                              f"{X0 + cut + 6:.1f}", y + ROW + 17, LABEL_U, WARM, weight=700))
         p.append(f'<text x="{X0 + w + 10:.1f}" y="{y + ROW / 2 + 4.5:.1f}" '
                  f'font-size="{EMPH_U}" font-weight="700" fill="{INK}">'
                  f'${claim:.1f}M</text>')
@@ -404,7 +405,8 @@ def burden_chart() -> str:
         tot_m = il_m + cl_m
         p.append(f'<text x="{X0 - 10}" y="{y + ROW / 2 + 4.5:.1f}" '
                  f'font-size="{LABEL_U}" font-weight="700" fill="{INK}" '
-                 f'text-anchor="end">{label}</text>')
+                 f'text-anchor="end"{C.derived("QUINTILES in render_report.py, from ITEP")}>'
+                 f'{label}</text>')
         il_w = (il_m / tot_m) * per_hh * scale if tot_m else 0
         cl_w = (cl_m / tot_m) * per_hh * scale if tot_m else 0
         if il_w > 0.5:

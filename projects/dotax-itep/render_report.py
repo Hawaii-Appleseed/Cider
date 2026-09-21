@@ -53,7 +53,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content                            # noqa: E402
 from docsync.layout import Layout                              # noqa: E402
-from docsync.blocks import graphic, pdf_button                 # noqa: E402
+from docsync.blocks import graphic, pdf_button, svg_text       # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css      # noqa: E402
 from docsync.okina import OKINA_FACES                          # noqa: E402
 
@@ -220,6 +220,13 @@ DOTAX_ACT24_CREDITS = DOTAX_ACT24_ALL - DOTAX_ACT24       # +188.1, credit sunse
 #    ITEP's own figure, ITEP bar label, content.md slot with WHY the rest is
 #    missing — a full sentence, so it lives in a slot the editor can edit,
 #    drawn in place via C.slot_attr on the SVG <text>)
+def _u(s: str) -> str:
+    """The row strings below carry entities for the SVG; svg_text escapes its
+    own, so a slot's default is handed the plain characters."""
+    return (s.replace("&#8212;", "\u2014").replace("&#8722;", "\u2212")
+             .replace("&#183;", "\u00b7").replace("&amp;", "&"))
+
+
 SCOPE_ROWS = [
     (f"Act 46 &#8212; DOTAX: ${abs(DOTAX_ACT46_FY[_TY2026_FY]):,.1f}M a year in 2026, "
      f"rising to ${abs(DOTAX_ACT46_FY[_TY2031_FY]):,.1f}M by 2031",
@@ -354,18 +361,21 @@ def scope_chart() -> str:
          f'sunsets">']
 
     p.append(f'<rect x="0" y="4" width="11" height="11" rx="2.5" fill="{DOTAX}"/>')
-    p.append(f'<text x="17" y="13.5" font-size="13" fill="{SLATE}">DOTAX</text>')
+    p.append(svg_text(C, "chart.scope.legend.dotax", "DOTAX", 17, 13.5, 13, SLATE))
     p.append(f'<rect x="72" y="4" width="11" height="11" rx="2.5" fill="{ITEP}"/>')
-    p.append(f'<text x="89" y="13.5" font-size="13" fill="{SLATE}">ITEP</text>')
-    p.append(f'<text x="{W}" y="13.5" font-size="11.5" fill="{MUTE}" '
-             f'text-anchor="end">$M a year at full phase-in in 2031 &#183; '
-             f'one scale</text>')
+    p.append(svg_text(C, "chart.scope.legend.itep", "ITEP", 89, 13.5, 13, SLATE))
+    p.append(svg_text(C, "chart.scope.scale", "$M a year at full phase-in in 2031 · one scale",
+                      W, 13.5, 11.5, MUTE, anchor="end"))
 
     y = TOP + LEG
-    for title, total, seen, seen_lab, rest_lab, itep_v, itep_lab, why_key in SCOPE_ROWS:
+    # Every label is a slot keyed by row (r1, r2): the words edit on the page,
+    # the renderer's own (data-built) wording is the default. svg_text escapes,
+    # so the entity-bearing row strings are unescaped on the way in (_u).
+    for n, (title, total, seen, seen_lab, rest_lab, itep_v, itep_lab, why_key) \
+            in enumerate(SCOPE_ROWS, 1):
         rest = total - seen
-        p.append(f'<text x="0" y="{y + 14}" font-size="13.5" font-weight="700" '
-                 f'fill="{INK}">{title}</text>')
+        rk = f"chart.scope.r{n}"
+        p.append(svg_text(C, f"{rk}.title", _u(title), 0, y + 14, 13.5, INK, weight=700))
         y += HDR
 
         bw, sw, iw = total * scale, seen * scale, itep_v * scale
@@ -381,12 +391,11 @@ def scope_chart() -> str:
         if sw > 220:      # labels fit inside both segments
             p.append(f'<text x="14" y="{y + 19}" font-size="13.5" '
                      f'font-weight="700" fill="#fff">${seen:,.1f}M</text>')
-            p.append(f'<text x="14" y="{y + 35}" font-size="13" fill="#fff" '
-                     f'opacity="0.92">{seen_lab}</text>')
+            p.append(svg_text(C, f"{rk}.seen", _u(seen_lab), 14, y + 35, 13, "#fff",
+                              extra=' opacity="0.92"'))
             p.append(f'<text x="{sw + 14}" y="{y + 19}" font-size="13.5" '
                      f'font-weight="700" fill="{INK}">${rest:,.1f}M</text>')
-            p.append(f'<text x="{sw + 14}" y="{y + 35}" font-size="13" '
-                     f'fill="{SLATE}">{rest_lab}</text>')
+            p.append(svg_text(C, f"{rk}.rest", _u(rest_lab), sw + 14, y + 35, 13, SLATE))
         else:             # bar too short to hold labels; one line beside it,
                           # at bar centre — two stacked lines beside a 24-unit
                           # bar collided with the title above and the ITEP
@@ -396,13 +405,18 @@ def scope_chart() -> str:
             lx = bw + 16
             p.append(f'<rect x="{lx}" y="{y + 7}" width="11" height="11" '
                      f'rx="2.5" fill="{DOTAX}"/>')
+            # Value and label share one line here; the value is the DATA and
+            # the words ride it, so the pair is declared derived (C.derived)
+            # rather than split into a slot that would lose the number.
             p.append(f'<text x="{lx + 17}" y="{y + 16}" font-size="13" '
-                     f'fill="{SLATE}"><tspan font-weight="700" fill="{INK}">'
+                     f'fill="{SLATE}"{C.derived("SCOPE_ROWS in render_report.py")}>'
+                     f'<tspan font-weight="700" fill="{INK}">'
                      f'${seen:,.1f}M</tspan> {seen_lab}</text>')
             p.append(f'<rect x="{lx}" y="{y + 26}" width="11" height="11" '
                      f'rx="2.5" fill="{DOTAX_PALE}"/>')
             p.append(f'<text x="{lx + 17}" y="{y + 35}" font-size="13" '
-                     f'fill="{SLATE}"><tspan font-weight="700" fill="{INK}">'
+                     f'fill="{SLATE}"{C.derived("SCOPE_ROWS in render_report.py")}>'
+                     f'<tspan font-weight="700" fill="{INK}">'
                      f'${rest:,.1f}M</tspan> {rest_lab}</text>')
         y += BH + BGAP
 
@@ -414,9 +428,8 @@ def scope_chart() -> str:
         # just short of the dashed line in both rows, so a label placed only
         # relative to the bar landed ON the guide and read as a stray colon
         # before the word "ITEP".
-        p.append(f'<text x="{max(iw + 12, sw + 14)}" y="{y + 16}" '
-                 f'font-size="13.5" font-weight="700" fill="{ITEP}">'
-                 f'{itep_lab}</text>')
+        p.append(svg_text(C, f"{rk}.itep", _u(itep_lab), max(iw + 12, sw + 14), y + 16,
+                          13.5, ITEP, weight=700))
 
         # Dashed guide through the slice boundary, spanning both bars.
         p.append(f'<line x1="{sw}" y1="{y - BH - BGAP - 4}" x2="{sw}" '
@@ -512,16 +525,18 @@ def ratio_chart() -> str:
          f'124,329 filers against ITEP\'s 391,937, and prices it at $13.1M '
          f'against ITEP\'s $46.2M — about a third on both measures">']
 
-    p.append(f'<text x="{W}" y="12" font-size="11.5" fill="{MUTE}" '
-             f'text-anchor="end">each row scaled to its own ITEP bar</text>')
+    p.append(svg_text(C, "chart.disagree.scale", "each row scaled to its own ITEP bar",
+                      W, 12, 11.5, MUTE, anchor="end"))
 
     y = TOP
-    for title, dv, iv, fmt, comp in DISAGREE_ROWS:
+    for n, (title, dv, iv, fmt, comp) in enumerate(DISAGREE_ROWS, 1):
         share = dv / iv
-        p.append(f'<text x="0" y="{y + 11}" font-size="12.5" font-weight="700" '
-                 f'fill="{INK}">{title}</text>')
+        p.append(svg_text(C, f"chart.disagree.r{n}.title", title, 0, y + 11, 12.5, INK,
+                          weight=700))
+        # A computed share with its comparative — derived data, declared.
         p.append(f'<text x="{W}" y="{y + 11}" font-size="12.5" '
-                 f'font-weight="700" fill="{DOTAX}" text-anchor="end">'
+                 f'font-weight="700" fill="{DOTAX}" text-anchor="end"'
+                 f'{C.derived("DISAGREE_ROWS in render_report.py")}>'
                  f'DOTAX: {share * 100:.0f}% {comp}</text>')
         y += HDR
 
@@ -532,7 +547,8 @@ def ratio_chart() -> str:
             # Series name rides with the value, so identity never needs a
             # legend lookup and the row reads as a sentence.
             p.append(f'<text x="{bw + 10}" y="{y + 11}" font-size="12.5" '
-                     f'fill="{SLATE}">{name} <tspan font-weight="700" '
+                     f'fill="{SLATE}"{C.derived("DISAGREE_ROWS in render_report.py")}>'
+                     f'{name} <tspan font-weight="700" '
                      f'fill="{INK}">{fmt(val)}</tspan></text>')
             y += BH + BGAP
         y += GRP - BGAP

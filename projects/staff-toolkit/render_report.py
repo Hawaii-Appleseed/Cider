@@ -28,7 +28,7 @@ if str(REPO) not in sys.path:
 from docsync.content import Content                                # noqa: E402
 from docsync.layout import Layout                                  # noqa: E402
 from docsync.blocks import (card, chart_scroll, chart_scroll_css,   # noqa: E402
-                            graphic, pdf_button)
+                            graphic, pdf_button, svg_text)
 from docsync.okina import OKINA_FACES                              # noqa: E402
 
 # Same env contract as every renderer: the editor and the export endpoint
@@ -68,18 +68,43 @@ LABEL_U = 11
 SANS = "OkinaManrope, Manrope, system-ui, sans-serif"
 
 
+# Every diagram label is a SLOT (blocks.svg_text): the words live in
+# content.md under `<figure>.<slug of the wording>` and edit on the page; the
+# renderer's wording is the default until someone rephrases one. The key is
+# the wording's slug, so adding a label never renames its neighbours — a
+# reworded label is a new slot, and the old edit is simply left behind. The
+# scope is set at the top of each diagram builder (_scope), and a wording
+# that repeats within one diagram takes -2, -3 … in drawing order.
+_SCOPE = "fig"
+_SEEN: dict[str, int] = {}
+
+
+def _scope(name: str) -> str:
+    global _SCOPE
+    _SCOPE = name
+    _SEEN.clear()
+    return ""
+
+
+def _key(s: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:48] or "label"
+    n = _SEEN.get(slug, 0) + 1
+    _SEEN[slug] = n
+    return f"{_SCOPE}.{slug}" + (f"-{n}" if n > 1 else "")
+
+
 def _t(x, y, s, *, size=LABEL_U, fill=INK, weight="400", anchor="start",
        track=0, family=SANS, opacity=None) -> str:
-    """One SVG label. Every diagram string goes through here so no label can
-    be written below the legibility floor by accident."""
+    """One SVG label — a slot the person can rephrase on the page. Every
+    diagram string goes through here so no label can be written below the
+    legibility floor by accident, and none can be frozen into the drawing."""
     if size < LABEL_U:
         raise SystemExit(f"diagram label {s!r} at {size}u is under the "
                          f"{LABEL_U}u floor — it would render below 10.5px")
     op = f' opacity="{opacity}"' if opacity else ""
     tr = f' letter-spacing="{track}"' if track else ""
-    return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" '
-            f'font-weight="{weight}" fill="{fill}" text-anchor="{anchor}"'
-            f'{tr}{op}>{s}</text>')
+    return svg_text(C, _key(s), s, x, y, size, fill, weight=weight, anchor=anchor,
+                    extra=f' font-family="{family}"{tr}{op}')
 
 
 def _box(x, y, w, h, *, fill=WHITE, stroke="", r=8, opacity=None) -> str:
@@ -172,6 +197,7 @@ def _effort_panel(x, title, claim, source, rows, takeaway) -> str:
 
 
 def diagram_models() -> str:
+    _scope("fig.models")
     return f"""<svg viewBox="0 0 720 366" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="Three Claude models with their prices and what each is \
 for: Fable 5.1 at ten and fifty dollars per million tokens for demanding \
@@ -252,6 +278,7 @@ def fig_repos() -> str:
 
 
 def diagram_github() -> str:
+    _scope("fig.github")
     return f"""<svg viewBox="0 0 720 248" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="Claude Code works in a local checkout and pushes to \
 the Hawaiʻi Appleseed repositories on GitHub. There are sixteen, eight public \
@@ -305,6 +332,7 @@ which is what the hub's Library is built from.">
 # arrows. Nesting says "these are all one provider" in a way six more arrows
 # would only have made harder to read.
 def diagram_cloudflare() -> str:
+    _scope("fig.cloudflare")
     return f"""<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="A browser and a staff member's own Claude both reach \
 the hub through one gate, Cloudflare Access, which checks a Google sign-in \
@@ -378,6 +406,7 @@ of them, and a Durable Object is the room where live co-editing happens.">
 
 # ── Figure 4: the notes pipeline ────────────────────────────────────────────
 def diagram_notes() -> str:
+    _scope("fig.notes")
     return f"""<svg viewBox="0 0 720 172" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="An edit to the all-staff notes doc is picked up by \
 Apps Script, which both commits it to GitHub and mirrors it live into \
@@ -452,6 +481,7 @@ def _chips(x0, y, parts) -> str:
 
 
 def diagram_stack() -> str:
+    _scope("fig.stack")
     return f"""<svg viewBox="0 0 720 344" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="One MCP server with two doors onto it. claude.ai \
 reaches it through a Connector added in Settings; Claude Code, the CLI, \
@@ -546,6 +576,7 @@ def _lane(y, a1, a2, b1, b2, c1, c2) -> str:
 
 
 def diagram_routes() -> str:
+    _scope("fig.routes")
     return f"""<svg viewBox="0 0 720 268" xmlns="http://www.w3.org/2000/svg" \
 role="img" aria-label="Two routes from the Claude app to GitHub. The reading \
 route: a Connector, added with the plus button and Add from GitHub, brings \

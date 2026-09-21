@@ -211,7 +211,11 @@ published build carries it too. What a copy is not: the renderer — a chart in
 the copy keeps the numbers it was drawn with, and a copied endnote list is
 text, not the numbered endnotes.
 
-**Labels inside a chart edit on the page.** A renderer draws a chart's legend
+**Labels inside a chart edit on the page — and cannot be anything else.**
+`graphic()` refuses, at build time, any SVG text with words that is not a
+slot, a declared derived value (`C.derived`) or a graphic declared frozen with
+a reason; the draft does not render until it is fixed, and `docsync.check`
+fails the push. A renderer draws a chart's legend
 entries, step names and bar captions with `docsync.blocks.svg_text()` —
 `data-slot` on the SVG `<text>`, words read through `C.text_or(key, default)`
 so the renderer's own wording stands until someone rephrases it. Double-click

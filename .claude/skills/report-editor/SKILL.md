@@ -61,6 +61,25 @@ from docsync.blocks import graphic, card, is_light_bg, pdf_button
 through `graphic()`** — never a bare `<svg>` in the markup. Glyphs that live
 inside another element and shouldn't move on their own stay inline.
 
+**And no words go into a drawing as literals — the build refuses them.**
+`graphic()` scans the SVG in edit mode (the editor's draft, and
+`docsync.check`'s edit-mode pass) and raises `SvgLiteralError` for any
+`<text>` that carries words and no hook. Every word inside a drawing is one
+of exactly three things:
+
+| The words are… | Write | The person gets |
+|---|---|---|
+| something they might rephrase (a legend entry, a step name, a bar caption, a note) | `svg_text(C, "<chart>.<what>", "<the wording>", x, y, size, fill, weight=, anchor=)` | double-click edits it on the page; the wording is the default until they do |
+| a category or series name that comes from DATA (a department, a bill number, an income bracket) | `<text … {C.derived("<the command that remakes it>")}>` | click tells them where it comes from; it is never retyped |
+| the drawing itself (a wordmark, a logo lockup) | `graphic(…, frozen="<why>")` — one declaration per graphic, with the reason | nothing; `docsync.check` lists every such declaration so it stays visible |
+
+Data marks pass on their own: numbers, currency, percentages, a tick such as
+`FY26`, `TY23`, `$5M`, `1st`, a month's three letters (`blocks.is_data_mark`).
+A whole sentence never passes, not even under `C.derived` — a caption is prose
+wherever its numbers came from; put it in a slot (`svg_text` inside, `C.html`
+beside). Do not reach for `frozen=` to get past the error on a chart: the
+error is the point, and the answer is `svg_text`.
+
 ## Making other elements editable
 
 Everything editable shares one hook: `{L.spacer(el_id)}` before the element +

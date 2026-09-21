@@ -257,7 +257,8 @@ def pie(slices, size=400, r=158, cls="", width_in=3.6, label_pt=14.0, start=0.0,
         # a label sitting inside a dark slice needs reversed (white) text
         lab_fill = ' fill="#fff"' if (big and not is_light_bg(color)) else ''
         labels.append(f'<text x="{lx:.0f}" y="{ty:.0f}" text-anchor="{anchor}" '
-                      f'class="pie-lab"{lab_fill} font-size="{lab_u:.1f}">{t}</text>')
+                      f'class="pie-lab"{lab_fill} font-size="{lab_u:.1f}"'
+                      f'{C.derived("make -C report2027 data")}>{t}</text>')
         a += sweep
     return (f'<svg viewBox="0 0 {size} {size}" class="chart pie {cls}"{attrs} '
             f'preserveAspectRatio="xMidYMid meet" role="img">'
@@ -378,7 +379,8 @@ def fig2_svg(rows, attrs=""):
         total = sum(seg.values())
         dept_attr = f' data-dept="{code}"' if code else ""
         out.append(f'<text x="{LEFT-8}" y="{y+RH-4}" text-anchor="end" '
-                   f'class="ylab{" lk" if code else ""}"{dept_attr}>{esc(label)}</text>')
+                   f'class="ylab{" lk" if code else ""}"{dept_attr}'
+                   f'{C.derived("make -C report2027 data")}>{esc(label)}</text>')
         x = LEFT
         for key in ("operating", "capital", "one_time", "emergency"):
             v = seg[key]

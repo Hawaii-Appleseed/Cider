@@ -26,7 +26,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button   # noqa: E402
+from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
@@ -90,11 +90,14 @@ def diverging_chart() -> str:
 
     # legend — always present for two series
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{OPP}"/>')
-    p.append(f'<text x="17" y="9.5" font-size="12.5" fill="{SLATE}">Opposed</text>')
+    p.append(svg_text(C, "chart.bills.legend.opposed", "Opposed", 17, 9.5, 12.5, SLATE))
     p.append(f'<rect x="86" y="0" width="11" height="11" rx="2.5" fill="{SUP}"/>')
-    p.append(f'<text x="103" y="9.5" font-size="12.5" fill="{SLATE}">Supported</text>')
-    p.append(f'<text x="{W}" y="9.5" font-size="12" fill="#7C8A80" '
-             f'text-anchor="end">bars share one scale</text>')
+    p.append(svg_text(C, "chart.bills.legend.supported", "Supported", 103, 9.5, 12.5, SLATE))
+    p.append(svg_text(C, "chart.bills.scale", "bars share one scale",
+                      W, 9.5, 12, "#7C8A80", anchor="end"))
+    # Bill numbers, campaign names, tallies and outcomes are the corpus's,
+    # remade by TALLY — declared derived, never retyped.
+    fixed = C.derived(TALLY)
 
     p.append(f'<line x1="{CX}" y1="{TOP - 8}" x2="{CX}" y2="{H - 4}" '
              f'stroke="{ASH}" stroke-width="1"/>')
@@ -105,27 +108,27 @@ def diverging_chart() -> str:
         passed = outcome == "PASSED"
 
         p.append(f'<text x="0" y="{mid + 4}" font-size="13" font-weight="600" '
-                 f'fill="{INK}">{bill}</text>')
-        p.append(f'<text x="58" y="{mid + 4}" font-size="12" fill="#7C8A80">{camp}</text>')
+                 f'fill="{INK}"{fixed}>{bill}</text>')
+        p.append(f'<text x="58" y="{mid + 4}" font-size="12" fill="#7C8A80"{fixed}>{camp}</text>')
 
         # opposed — grows left; radius on the data end only
         ow = max(opp * scale, 2)
         p.append(f'<path d="M {CX - 2} {y} H {CX - 2 - ow + 4} '
                  f'a4 4 0 0 0 -4 4 V {y + 14} a4 4 0 0 0 4 4 H {CX - 2} Z" fill="{OPP}"/>')
         p.append(f'<text x="{CX - 8 - ow}" y="{mid + 4}" font-size="12" '
-                 f'fill="{SLATE}" text-anchor="end">{opp}</text>')
+                 f'fill="{SLATE}" text-anchor="end"{fixed}>{opp}</text>')
 
         # supported — grows right
         sw = max(sup * scale, 2)
         p.append(f'<path d="M {CX + 2} {y} H {CX + 2 + sw - 4} '
                  f'a4 4 0 0 1 4 4 V {y + 14} a4 4 0 0 1 -4 4 H {CX + 2} Z" fill="{SUP}"/>')
         p.append(f'<text x="{CX + 8 + sw}" y="{mid + 4}" font-size="12" '
-                 f'fill="{SLATE}">{sup}</text>')
+                 f'fill="{SLATE}"{fixed}>{sup}</text>')
 
         badge = SUP if passed else "#9AA79E"
         weight = "700" if passed else "500"
         p.append(f'<text x="{W}" y="{mid + 4}" font-size="12" font-weight="{weight}" '
-                 f'fill="{badge}" text-anchor="end">{outcome}</text>')
+                 f'fill="{badge}" text-anchor="end"{fixed}>{outcome}</text>')
 
     p.append("</svg>")
     return "".join(p)

@@ -350,6 +350,18 @@ Rules that bite:
   and `edit()` seeds a slot the document has not got from the words on the
   page. rxkids-fiscal is the worked example (38 chart labels, the benefit
   pills as one list slot).
+- **Words inside a drawing are refused at the build (2026-09-21).**
+  `blocks.graphic()` raises `SvgLiteralError` in edit mode for any `<text>`
+  with words and no hook — so the editor's draft does not render and
+  `docsync.check` fails until each label is `svg_text` (a slot), carries
+  `C.derived(…)` (a category/series name from data; never a sentence), or
+  the graphic is declared `frozen="<why>"` (listed by the check, always
+  visible). `is_data_mark` / `is_sentence` in blocks.py are the one rule,
+  shared with check.py. Publishing never refuses. This exists because the
+  check's old sentence-only warning let 224 labels across five reports
+  ship frozen; all five now pass with zero literals. The staff toolkit's
+  `_t()` helper routes every diagram label through a slot keyed by the
+  wording's slug — the pattern for any renderer with a label helper.
 - **A rewritten test that only asserts a CSS declaration (`justify-content:
   center`, a class name, a boundingBox read right after a CSS transition
   starts) can pass against the exact bug it's meant to catch.** This bit us
