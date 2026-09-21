@@ -67,6 +67,38 @@ test.describe('sources panel', () => {
     await expect(row.locator('.srcdel')).toBeDisabled();
   });
 
+  test('a source can have no link at all, and the endnote prints without one',
+    async ({ page }) => {
+      // A book, an interview, a document somebody handed over: citing one used
+      // to mean inventing a URL, because every form and the line grammar
+      // itself demanded one.
+      await addSourceViaUi(page, 'no-link-src', 'A Book Nobody Put Online, 2026.', '');
+
+      const line = await page.evaluate(() => readSlot('sources'))
+        .then(s => s.split('\n').find(l => l.startsWith('[no-link-src]')));
+      expect(line).toBe('[no-link-src]: "A Book Nobody Put Online, 2026."');
+      expect(line).not.toContain('—');
+
+      await openSources(page);
+      const row = page.locator('#srcpanel .srcrow',
+        { has: page.locator('.srcid', { hasText: '[no-link-src]' }) });
+      await expect(row.locator('input').nth(1)).toHaveValue('');
+      await expect(row.locator('.srcuse')).toContainText('cited 1');
+    });
+
+  test('an em dash inside a citation is not mistaken for its link',
+    async ({ page }) => {
+      await page.evaluate(() => {
+        pushHistory();
+        addSource('dash-src', 'Smith — Jones, an interview', '');
+        markDirty();
+      });
+      const parsed = await page.evaluate(() =>
+        parseSources().find(s => s.id === 'dash-src'));
+      expect(parsed.text).toBe('Smith — Jones, an interview');
+      expect(parsed.url).toBe('');
+    });
+
   test('editing the text/url fields commits via updateSource', async ({ page }) => {
     await addSourceViaUi(page, 'test-src-2', 'Original text.', 'https://example.com/orig');
     await openSources(page);

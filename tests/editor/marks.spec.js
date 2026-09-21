@@ -159,5 +159,27 @@ test.describe('bold / italic (no execCommand)', () => {
     // rides along with it.
     const stored = await page.evaluate(() => layout.tables[0].rows[1][0]);
     expect(stored).toBe('top\nbottom');
+
+    // ...and the rendered cell shows it. A cell is one string with no soft
+    // wrapping, so its newline can only be the break that was typed — it used
+    // to reach layout.json and then render as an ordinary space.
+    await page.waitForTimeout(1200);
+    expect(await frame.locator('table.ds-table td').first()
+      .evaluate(el => el.querySelector('br') ? 1 : 0)).toBe(1);
   });
+
+  test('Shift+Enter in prose is refused, rather than written where nothing shows it',
+    async ({ page }) => {
+      const ta = await openSection(page);
+      await ta.evaluate(el => { el.innerHTML = '<p>alpha beta</p>'; });
+      await selectChars(page, 10, 10);           // caret at the end
+      await page.keyboard.press('Shift+Enter');
+
+      // No break in the editor, and none in the markdown it commits: content.md
+      // soft-wraps, so paragraphs() closes a newline up to a space and the file
+      // would have carried a break the page never shows.
+      expect(await ta.locator('br').count()).toBe(0);
+      expect(await md(page)).toBe('alpha beta');
+      await expect(page.locator('#stat')).toContainText('paragraphs, not line breaks');
+    });
 });

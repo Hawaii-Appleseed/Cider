@@ -759,8 +759,10 @@ def endnote_link(n, sid, txt, url):
     # parking it somewhere absolute, so no spacer is needed — an endnote
     # never leaves the flow. Keyed by source id, not by n: the number is
     # whatever the current order says, but the identity has to stay put.
-    return (f'<li id="en{n}"{L.attr(f"endnote.{sid}")}>{txt} '
-            f'<a href="{url}">{url}</a></li>')
+    # The link is optional: a source can be a book or an interview, and an
+    # empty url would draw <a href="">, a link back to this page.
+    link = f' <a href="{url}">{url}</a>' if url else ""
+    return f'<li id="en{n}"{L.attr(f"endnote.{sid}")}>{txt}{link}</li>'
 
 ONE_TIME_BULLETS = C.list("onetime.cards.onetime.bullets")
 EMERG_BULLETS = C.list("onetime.cards.emergency.bullets")
