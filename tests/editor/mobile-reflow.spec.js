@@ -148,3 +148,31 @@ test.describe('the published report on a phone', () => {
     expect(pinned).toBeGreaterThan(0);
   });
 });
+
+// A figure placed by INCH, on a report whose page really does narrow. The
+// primer's own graphics are small, so the case needs a report that sets one
+// at column width — the staff toolkit's are 7.26in. Its CSS used to carry the
+// release by hand; docsync.blocks emits it now, so every report that places a
+// figure by inch gets it rather than only the one that noticed.
+test.describe('a graphic at phone width', () => {
+  test('narrows to the page instead of being clipped by it', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto(
+      'file://' + require('path').resolve(__dirname, '../../projects/staff-toolkit/index.html'));
+    await page.locator('.page').first().waitFor();
+    await page.waitForTimeout(400);
+
+    const seen = await page.evaluate(() => {
+      const pg = document.querySelector('.page').getBoundingClientRect();
+      return [...document.querySelectorAll('.ds-graphic')].map(g => {
+        const r = g.getBoundingClientRect();
+        return { over: Math.round(r.right - pg.right), w: Math.round(r.width) };
+      });
+    });
+    expect(seen.length).toBeGreaterThan(0);
+    // Not one of them past the right-hand edge: .page is overflow:hidden, so
+    // a figure wider than it is simply cut off, with nothing to scroll to it.
+    expect(seen.filter(s => s.over > 1)).toEqual([]);
+    expect(seen.every(s => s.w > 0)).toBe(true);
+  });
+});

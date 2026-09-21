@@ -953,15 +953,9 @@ html = f"""<!DOCTYPE html>
     .page {{ width:100%; min-height:0; margin:0; box-shadow:none;
              padding:26px 20px; }}
     .cover-h1 {{ font-size:38px; letter-spacing:-.9px; }}
-    /* graphic() pins a figure at its inch width on an inline-block span, and
-       Layout.mobile_css() cannot reach it: that release matches [data-placed]
-       and position:absolute, and an un-dragged graphic is neither. So a 7.26in
-       figure stayed 697px wide inside a 375px page and .page's overflow:hidden
-       ate the right-hand third of it — clipped, with nothing to scroll. Handing
-       the width back lets chart_scroll's own scroller do its job: the wrapper
-       narrows to the page, the svg keeps its 687px min-width, and the figure
-       scrolls at full size instead of shrinking under the legibility floor. */
-    .ds-graphic {{ width:auto !important; max-width:100% !important; }}
+    /* The .ds-graphic release this used to carry by hand now comes from
+       docsync.blocks itself (_graphic_mobile_once), so every report that
+       places a figure by inch gets it — not just the one that noticed. */
     /* pdf_button() pins itself top-right, which on a desktop floats over the
        grey gutter beside the sheet. At 375px there is no gutter and it sat on
        top of the page title. Bottom-right corner instead — !important because
