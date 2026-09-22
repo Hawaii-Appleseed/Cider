@@ -25,7 +25,7 @@ test.describe('movable headings', () => {
     // A heading is a single-slot text object, so one click puts the TYPE
     // controls in hand (Canva behaviour) — arrange stays on the mini toolbar.
     await expect(page.locator('#type')).toBeVisible();
-    await expect(page.locator('#ty-key')).toHaveText('basics.h1');
+    await expect(page.locator('#ty-key')).toHaveAttribute('title', 'basics.h1');
     // A heading takes the full text-box handle set: it IS a text box the
     // renderer happened to place, and its height is written as a floor
     // (layout.py's hmin) so the extra edges cannot clip the words. Cornered,
@@ -166,7 +166,8 @@ test.describe('movable headings', () => {
       await el.scrollIntoViewIfNeeded();
       await el.click();
       await expect(frame.locator('.ds-edit')).toHaveCount(0);   // selects, not text-edit
-      await expect(page.locator('#ty-key')).toHaveText(id);     // single-slot text: type controls
+      await expect(page.locator('#ty-key'))                     // single-slot text: type controls
+        .toHaveAttribute('title', id);
 
       const box = await el.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

@@ -129,7 +129,9 @@ test.describe('contextual toolbar', () => {
     await page.waitForTimeout(300);
     await slot.dblclick({ force: true });
     await frame.locator('.ds-edit').waitFor({ state: 'visible' });
-    const key = await page.evaluate(() => document.getElementById('ty-key').textContent);
+    // The strip NAMES the thing now ("paragraph"); the key it stands for is on
+    // the title, which is where anything needing the slot id reads it.
+    const key = await page.evaluate(() => document.getElementById('ty-key').title);
 
     // The wedge's exact path: interact with the font control mid-edit.
     await page.dispatchEvent('#ty-font', 'pointerdown');

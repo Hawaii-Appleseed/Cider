@@ -157,3 +157,75 @@ test.describe('a figure description', () => {
       await cancelDialog(page);
     });
 });
+
+// The context menu, reachable without knowing right-click exists. Nineteen
+// actions lived only behind that gesture — including editing a figure's
+// description — and nothing on screen said so. Local mode.
+test.describe('a way into the menu that is not right-click', () => {
+  const selectLogo = page =>
+    page.evaluate(() => setSel($('out').contentDocument, ['cover.logo']));
+
+  test.beforeEach(async ({ page }) => { await gotoEditor(page); });
+
+  test('the strip button opens the same menu, and its tooltip teaches the gesture',
+    async ({ page }) => {
+      const frame = page.frameLocator('#out');
+      await selectLogo(page);
+      await expect(page.locator('#ar-more')).toBeVisible();
+      await expect(page.locator('#ar-more'))
+        .toHaveAttribute('aria-label', /right-click/);
+      await expect(frame.locator('.ds-menu')).toHaveCount(0);
+      await page.click('#ar-more');
+      await page.waitForTimeout(400);
+      await expect(frame.locator('.ds-menu')).toHaveCount(1);
+      const l = await labels(page, '.ds-menu button');
+      expect(l).toContain('Lock');
+      expect(l).toContain('Bring to front');
+    });
+
+  // Regression: pageBar hides the object-only controls by id, and nothing put
+  // them back — select a page once and Position, Group, Ungroup, Duplicate,
+  // Lock and Delete were gone from the strip until a reload.
+  test('the object controls come back after a page has been selected',
+    async ({ page }) => {
+      const hidden = () => page.evaluate(() =>
+        ['ar-pos', 'ar-group', 'ar-ungroup', 'ar-dup', 'ar-lock', 'ar-del', 'ar-more']
+          .filter(id => $(id).hidden));
+      await selectLogo(page);
+      expect(await hidden()).toEqual([]);
+      await page.evaluate(() => { const d = $('out').contentDocument;
+        setSel(d, []); setSelPage(d, pageOrder()[0]); });
+      await page.waitForTimeout(400);
+      await selectLogo(page);
+      await page.waitForTimeout(400);
+      expect(await hidden()).toEqual([]);
+    });
+});
+
+// The type strip says WHAT is selected, not the slot key — the rule the
+// arrange strip (ar-count) already followed for objects. The key stays on the
+// title, where anything that needs it still reads it.
+test.describe('the type strip names the thing', () => {
+  test.beforeEach(async ({ page }) => { await gotoEditor(page); });
+
+  test('a heading reads as a heading, with its key one hover away',
+    async ({ page }) => {
+      const frame = page.frameLocator('#out');
+      const h = frame.locator('[data-el="basics.h1"]');
+      await h.scrollIntoViewIfNeeded();
+      await h.click();
+      await expect(page.locator('#ty-key')).toHaveText('heading');
+      await expect(page.locator('#ty-key')).toHaveAttribute('title', 'basics.h1');
+    });
+
+  // Selected, not being typed in: while the inline editor is open the slot's
+  // element IS the editor's own <div>, so the strip says the honest "text".
+  test('a paragraph reads as a paragraph', async ({ page }) => {
+    const frame = page.frameLocator('#out');
+    const p = frame.locator('[data-el="para.basics.p1"]');
+    await p.scrollIntoViewIfNeeded();
+    await p.click();
+    await expect(page.locator('#ty-key')).toHaveText('paragraph');
+    await expect(page.locator('#ty-key')).toHaveAttribute('title', 'basics.p1');
+  });
+});

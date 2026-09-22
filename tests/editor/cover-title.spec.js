@@ -55,7 +55,8 @@ test.describe('editable cover title', () => {
     // A single-slot text object: one click brings up the type controls,
     // selection and dragging still work exactly as before.
     await expect(page.locator('#type')).toBeVisible();
-    await expect(page.locator('#ty-key')).toHaveText('cover.title');
+    await expect(page.locator('#ty-key')).toHaveText('heading');
+    await expect(page.locator('#ty-key')).toHaveAttribute('title', 'cover.title');
     // The font dropdown NAMES the rendered font even with no override set —
     // the cover title is Barlow, so the picker says so rather than a blank.
     await expect(page.locator('#ty-font')).toHaveValue('Barlow');
