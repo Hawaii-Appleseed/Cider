@@ -42,7 +42,8 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
+from docsync.blocks import chart, describe, graphic, pdf_button  # noqa: E402
+from docsync.blocks import svg_text                              # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
@@ -387,46 +388,39 @@ def agi_chart() -> str:
 
 # --- Graphic 4: who pays (page 4) --------------------------------------------
 
-def burden_chart() -> str:
+def burden_spec() -> dict:
     """Average tax increase per household in TY2027, by income quintile, split
-    by which of Act 24's two screens takes the money."""
-    W = VB_W
-    X0, ROW, GAP = 150, 26, 9
-    BARMAX = W - X0 - 96
-    x_max = max(q[3] for q in QUINTILES)
-    scale = BARMAX / x_max
-    H = 22 + len(QUINTILES) * (ROW + GAP) + 8
+    by which of Act 24's two screens takes the money.
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
-         f'{describe(C, "chart.quintile.desc", "Average RETITC tax increase "
-                    "per household in tax year 2027 by income quintile, from "
-                    "19 dollars in the second quintile to 201 dollars in the "
-                    "top")}>']
-    p.append(_legend([("Lost to the income limit", PRIMARY_DARK, 1.0),
-                      ("Lost to the $40M cap", PRIMARY_LIGHT, 1.0)]))
-
-    y = 22
-    for label, il_m, cl_m, per_hh in QUINTILES:
-        tot_m = il_m + cl_m
-        p.append(f'<text x="{X0 - 10}" y="{y + ROW / 2 + 4.5:.1f}" '
-                 f'font-size="{LABEL_U}" font-weight="700" fill="{INK}" '
-                 f'text-anchor="end"{C.derived("QUINTILES in render_report.py, from ITEP")}>'
-                 f'{label}</text>')
-        il_w = (il_m / tot_m) * per_hh * scale if tot_m else 0
-        cl_w = (cl_m / tot_m) * per_hh * scale if tot_m else 0
-        if il_w > 0.5:
-            p.append(f'<rect x="{X0}" y="{y}" width="{il_w:.1f}" height="{ROW}" '
-                     f'fill="{PRIMARY_DARK}"/>')
-        p.append(f'<rect x="{X0 + il_w:.1f}" y="{y}" width="{cl_w:.1f}" '
-                 f'height="{ROW}" fill="{PRIMARY_LIGHT}"/>')
-        p.append(f'<text x="{X0 + il_w + cl_w + 10:.1f}" '
-                 f'y="{y + ROW / 2 + 4.5:.1f}" font-size="{EMPH_U}" '
-                 f'font-weight="700" fill="{INK}">'
-                 f'+${round(per_hh / 10) * 10:,.0f}</text>')
-        y += ROW + GAP
-
-    p.append("</svg>")
-    return "".join(p)
+    A CHART, not a drawing: the numbers live in the spec, so the Chart panel
+    edits them and the bars follow. Hand-drawn, the bar was the renderer's and
+    only its words could be changed — retype "$201" and the bar stayed where
+    it was. Each quintile's per-household dollars are split in the ratio the
+    two screens take, which is the split the legend names.
+    """
+    income_limit, cap = [], []
+    for _label, il_m, cl_m, per_hh in QUINTILES:
+        tot = il_m + cl_m
+        income_limit.append(round((il_m / tot) * per_hh) if tot else 0)
+        cap.append(round((cl_m / tot) * per_hh) if tot else 0)
+    return {
+        "type": "stacked-row",
+        "labels": [q[0] for q in QUINTILES],
+        "series": [
+            {"name": "Lost to the income limit", "data": income_limit,
+             "color": PRIMARY_DARK},
+            {"name": "Lost to the $40M cap", "data": cap,
+             "color": PRIMARY_LIGHT},
+        ],
+        "legend": True, "legendPos": "top",
+        # Values on the bars and no gridlines: the figure is read as five
+        # amounts, not off an axis — which is what the hand-drawn one did with
+        # a total beside each bar. Here each SEGMENT says its own dollars, so
+        # the split the legend promises is legible without a ruler.
+        "values": True, "grid": False,
+        "format": {"prefix": "$", "decimals": 0},
+        "labelColor": INK,
+    }
 
 
 
@@ -566,7 +560,10 @@ page = f"""
   {C.html("pays.agi.note", "note-b")}
 
   <h2{L.attr("pays.burden.h")}>{C.t("pays.burden.h")}</h2>
-  {graphic(L, "chart.burden", chart_scroll(burden_chart(), smallest_label=LABEL_U), w=CHART_W_IN)}
+  {chart(L, "chart.burden", burden_spec(), w=CHART_W_IN, h=2.1,
+          desc=describe(C, "chart.quintile.desc", "Average RETITC tax "
+               "increase per household in tax year 2027 by income quintile, "
+               "from 19 dollars in the second quintile to 201 dollars in the top"))}
   {C.html("pays.burden.note", "note-b")}
   {foot("pays.foot", 3)}
 {C.extras("page3")} {L.layer(3)}{L.text_boxes(3)}{L.tables_html(3)}
