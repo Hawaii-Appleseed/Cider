@@ -130,7 +130,11 @@ Rules that bite:
   citation integrity, unrendered markdown, chart content outside its viewBox,
   text below the legibility floor — plus an `edit-mode draft` pass per binding
   that builds with DOCSYNC_EDIT=1 and warns on DEAD TEXT (visible strings with
-  no data-slot/data-el hook) and FROZEN PROSE (sentences drawn inside an SVG).
+  no data-slot/data-el hook) and FROZEN PROSE (sentences drawn inside an SVG),
+  plus: words in a `<foreignObject>`, empty `data-fixed`/`data-restates`
+  declarations, slot hooks the renderer never read or that hold words the
+  slot never served (held to `DOCSYNC_SLOTLOG`), and text only the PUBLISH
+  build has (it builds both modes and diffs them).
   A conversion/ingestion is not done until that line is clean AND its binding
   says `editability: strict` (findings become ERRORS, so CI fails a push that
   regresses; deliberate exceptions go in `editability_ok`, one exact string
