@@ -251,7 +251,11 @@ test.describe('entrance animations', () => {
       const seen = await page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;
         const g = d.querySelector('[data-ds-anim="bars"]');
-        const bs = [...d.querySelectorAll('.ds-cbar')];
+        // Scoped to the animated group, not the document: the report itself
+        // draws bar charts (the income-quintile figure on this very page has
+        // seven bars), so counting .ds-cbar across the draft tallied those too
+        // and read 10 where the shape under test has 3.
+        const bs = [...g.querySelectorAll('.ds-cbar')];
         return { playing: g.classList.contains('ds-anim-in'),
                  n: bs.length,
                  delays: bs.map(b => d.defaultView.getComputedStyle(b).animationDelay),

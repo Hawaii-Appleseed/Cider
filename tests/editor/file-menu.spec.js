@@ -24,8 +24,12 @@ test.describe('File menu', () => {
     // rows that act on the report.
     // The two Google Doc rows are local-only as well (see google-doc.spec.js),
     // and Import is hidden until a doc IS linked — both are always in the DOM.
+    // Find & Change sits above the report rows, under its own Document heading
+    // — it acts on the words in the draft, not on the report as a file. Its own
+    // flow is find-change.spec.js; what it owes this list is being IN it.
     await expect(page.locator('#filepop button')).toHaveText(
-      ['Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
+      ['Find & Change…',
+       'Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
        'Sources…', 'Share…',
        /^Google Doc/, 'Import text from the Doc…', 'Download…',
        'Restore deleted…', 'Token…', 'Force quit']);
