@@ -26,7 +26,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
+from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
@@ -85,8 +85,9 @@ def diverging_chart() -> str:
     H = TOP + len(DATA) * ROW + 4
     scale = RIGHT_MAX / max(d[2] for d in DATA)     # px per submission
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Support and opposition by bill, with outcome">']
+    desc = describe(C, "chart.desc",
+                    "Support and opposition by bill, with outcome")
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"{desc}>']
 
     # legend — always present for two series
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{OPP}"/>')

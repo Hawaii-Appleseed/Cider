@@ -19,6 +19,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
+from docsync.blocks import slot_descriptions     # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
@@ -64,6 +65,15 @@ if EDIT:
                    "prefers-color-scheme:ds-edit-light-only", STYLE, flags=re.I)
 
 BODY = (HERE / "body.slotted.html").read_text()
+# Every bar in this page is drawn in CSS with role="img" and an aria-label
+# spelling out its tally — which is the WHOLE figure for a reader who cannot
+# see the bar, and was a literal in the markup that nobody could edit. They
+# are slotted (desc.1 … desc.N, document order) BEFORE the markers below, so
+# the pass only ever sees the body's own attributes and never an aria-label
+# that arrived inside a slot's words. content.md's note about the three
+# hand-maintained places that must agree — the counts, the widths and these
+# labels — still applies; this makes the third of them editable.
+BODY = slot_descriptions(C, BODY, "desc")
 # marker substitution: A=slot attr, T=slot text, S=movable spacer,
 # E=movable attr, B=resizable background band
 BODY = re.sub("\u27e6A:([a-z0-9_.-]+)\u27e7", lambda m: C.slot_attr(m.group(1)), BODY)

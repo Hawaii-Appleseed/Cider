@@ -34,7 +34,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
+from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
@@ -63,6 +63,14 @@ MUTE = "#7C8A80"
 FED = "#00907A"       # federal TANF can cover this
 NONFED = "#C4602F"    # state / county / philanthropic dollars
 MEDI = "#3D5A98"      # Medicaid-eligible births (third validated slot)
+
+# Where a figure DRAWN ON A CHART comes from. svg_text(restates=…) takes one
+# of these: the label is editable and the bar under it is not, so each figure
+# says how it is remade rather than leaving a person to discover by retyping
+# that the two have parted.
+SRC_COST = "uv run python forecast_rxkids_2028.py  (~/Census-Forecaster)"
+SRC_SPLIT = "uv run python rxkids_tanf_split.py  (~/Census-Forecaster)"
+SRC_PROGRAM = "the modelled program structure — see this file's docstring"
 
 # --- The modeled program -----------------------------------------------------
 # TY2028, universal eligibility, take-up 0.90 newborn / 0.83 prenatal.
@@ -194,9 +202,10 @@ def payment_timeline() -> str:
         return X0 + i * SLOT
 
     # slot 0 = prenatal; slots 1..12 = months 1..12
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Payment schedule by funding source: federal '
-         f'TANF can cover the first four payments only">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.timeline.desc", "Payment schedule by funding "
+                    "source: federal TANF can cover the first four payments "
+                    "only")}>']
 
     # legend — always present for >= 2 series
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{FED}"/>')
@@ -212,9 +221,11 @@ def payment_timeline() -> str:
 
     # value labels
     p.append(svg_text(C, "chart.timeline.prenatal", "$1,500",
-                      x(0) + BW/2, 24, LABEL_U, INK, weight=700, anchor="middle"))
+                      x(0) + BW/2, 24, LABEL_U, INK, weight=700, anchor="middle",
+                      restates=SRC_PROGRAM))
     p.append(svg_text(C, "chart.timeline.monthly", "$500 per month",
-                      x(6) + BW/2, 58, LABEL_U, INK, weight=700, anchor="middle"))
+                      x(6) + BW/2, 58, LABEL_U, INK, weight=700, anchor="middle",
+                      restates=SRC_PROGRAM))
 
     bars = [(0, 1500, FED, 1.0)]
     for m in range(1, 13):
@@ -250,7 +261,8 @@ def payment_timeline() -> str:
     p.append(f'<rect x="{X0}" y="{by}" width="{split - X0 - 2}" height="{bh}" '
              f'rx="5" fill="{FED}"/>')
     p.append(svg_text(C, "chart.timeline.band.fed", "4 payments · $3,000 max",
-                      (X0 + split) / 2, by + 16, LABEL_U, "#fff", weight=700, anchor="middle"))
+                      (X0 + split) / 2, by + 16, LABEL_U, "#fff", weight=700,
+                      anchor="middle", restates=SRC_PROGRAM))
     p.append(f'<rect x="{split}" y="{by}" width="{x(12) + BW - split}" '
              f'height="{bh}" rx="5" fill="{NONFED}"/>')
     p.append(svg_text(C, "chart.timeline.band.rest", "every remaining payment",
@@ -294,9 +306,10 @@ def funding_split() -> str:
 
     H = 20 + sum(ROW + GAP if k == "bar" else 16 for k, *_ in rows) + GRPGAP + 2
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Annual cost split between federal TANF and '
-         f'non-federal dollars, by program length and needy-family screen">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.funding.desc", "Annual cost split between "
+                    "federal TANF and non-federal dollars, by program length "
+                    "and needy-family screen")}>']
 
     p.append(f'<rect x="0" y="0" width="11" height="11" rx="2.5" fill="{FED}"/>')
     p.append(svg_text(C, "chart.funding.legend.fed", "Federal TANF", 17, 9.5, LABEL_U, SLATE))
@@ -311,7 +324,8 @@ def funding_split() -> str:
         if kind == "hdr":
             if y > 24:            # extra air before a 2nd group
                 y += GRPGAP
-            p.append(svg_text(C, key, label, 0, y + 10, LABEL_U, INK, weight=700))
+            p.append(svg_text(C, key, label, 0, y + 10, LABEL_U, INK,
+                              weight=700, restates=SRC_SPLIT))
             y += 16
             continue
 
@@ -327,16 +341,19 @@ def funding_split() -> str:
                  f'a4 4 0 0 1 4 4 V {y + ROW - 4} a4 4 0 0 1 -4 4 '
                  f'H {X0 + tw + 2} Z" fill="{NONFED}"/>')
 
-        # federal value in the gutter, in the federal colour
+        # federal value in the gutter, in the federal colour.
         # Value labels default from the DATA, so they track the model until
-        # someone retypes one; a retyped label does not move its bar.
+        # someone retypes one; a retyped label does not move its bar, which is
+        # what restates= declares.
         p.append(svg_text(C, f"{key}.fed", money_m(tanf),
-                          X0 - 10, y + 14, LABEL_U, FED, weight=700, anchor="end"))
+                          X0 - 10, y + 14, LABEL_U, FED, weight=700,
+                          anchor="end", restates=SRC_SPLIT))
         # Kept short deliberately: the narrowest non-federal segment is ~230px,
         # and the long form ("needed from non-federal sources") overflows it.
         # The legend and the section heading carry the rest of the sentence.
         p.append(svg_text(C, f"{key}.rest", f"{money_m(rest)} to raise",
-                          X0 + tw + 12, y + 14, LABEL_U, "#fff", weight=700))
+                          X0 + tw + 12, y + 14, LABEL_U, "#fff", weight=700,
+                          restates=SRC_SPLIT))
         y += ROW + GAP
 
     p.append("</svg>")
@@ -356,11 +373,11 @@ def medicaid_split() -> str:
     total = BIRTHS_MEDICAID + BIRTHS_NONMEDICAID
     mw = BW * BIRTHS_MEDICAID / total
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Births served, split by Medicaid '
-         f'eligibility">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.medicaid.desc", "Births served, split by "
+                    "Medicaid eligibility")}>']
     p.append(svg_text(C, "chart.medicaid.caption", f"{total:,} births served each year",
-                      0, 10, LABEL_U, MUTE))
+                      0, 10, LABEL_U, MUTE, restates=SRC_COST))
 
     p.append(f'<rect x="{X0}" y="{Y}" width="{mw - 2}" height="{BH}" rx="5" '
              f'fill="{MEDI}"/>')
@@ -368,9 +385,10 @@ def medicaid_split() -> str:
              f'rx="5" fill="{NONFED}" opacity="0.75"/>')
 
     p.append(svg_text(C, "chart.medicaid.left", f"{BIRTHS_MEDICAID:,} on Medicaid  ·  60%",
-                      10, Y + 19, EMPH_U, "#fff", weight=700))
+                      10, Y + 19, EMPH_U, "#fff", weight=700, restates=SRC_COST))
     p.append(svg_text(C, "chart.medicaid.right", f"{BIRTHS_NONMEDICAID:,}  ·  40%",
-                      X0 + mw + 10, Y + 19, EMPH_U, "#fff", weight=700))
+                      X0 + mw + 10, Y + 19, EMPH_U, "#fff", weight=700,
+                      restates=SRC_COST))
 
     # The takeaway line lives in a slot under the graphic (see payment_timeline
     # for why), so H stops at the bar plus its inside labels.
@@ -402,10 +420,10 @@ def how_it_works_chart() -> str:
         ("1st birthday",  "family chooses",    TEAL),
     ]
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="How Rx Keiki works: sign up during pregnancy, '
-         f'receive a $1,500 prenatal payment, then $500 per month through '
-         f'the first birthday">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.how.desc", "How Rx Keiki works: sign up during "
+                    "pregnancy, receive a $1,500 prenatal payment, then $500 "
+                    "per month through the first birthday")}>']
 
     # connector lines between circles
     for i in range(len(steps) - 1):
@@ -422,7 +440,7 @@ def how_it_works_chart() -> str:
         above_y = CY - R - 5
         p.append(svg_text(C, f"chart.how.s{i + 1}.label", label,
                           f"{cx:.1f}", f"{above_y:.1f}", LABEL_U, INK,
-                          weight=700, anchor="middle"))
+                          weight=700, anchor="middle", restates=SRC_PROGRAM))
         # description below the circle
         below_y = CY + R + LABEL_U + 3
         p.append(svg_text(C, f"chart.how.s{i + 1}.desc", desc,

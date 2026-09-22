@@ -362,6 +362,30 @@ Rules that bite:
   ship frozen; all five now pass with zero literals. The staff toolkit's
   `_t()` helper routes every diagram label through a slot keyed by the
   wording's slug — the pattern for any renderer with a label helper.
+- **A figure's DESCRIPTION is content, and a figure INSIDE a drawing is data
+  (2026-09-21).** Two shapes the hook-counting could not see, both now
+  editability findings that follow `editability: strict`.
+  `aria-label` / `alt` / an SVG `<title>` are words in an ATTRIBUTE, so no
+  slot on the element's text reaches them — and under `role="img"` a screen
+  reader is told the description and nothing inside, so it is the WHOLE
+  figure for anyone not looking at it. `blocks.describe(C, key, default)`
+  makes it a slot (`data-desc`, read through `C.text_or`, so published bytes
+  are unchanged until somebody edits one and no room needs reseeding);
+  `blocks.slot_descriptions(C, html, prefix)` does a whole static body at
+  once, keyed in document order — tfc-2027-priorities' 38 CSS bars go
+  through it. Brand art and site nav are declared in the binding's
+  `editability_ok`, not wired.
+  The second: making a chart's labels slots made a NEW failure possible —
+  retype `$3.0M` to `$4.1M` and the bar keeps its height, so the drawing
+  disagrees with itself silently. `blocks.is_quantity` (the one rule, shared
+  with check.py) flags a slotted `<text>` that states a figure;
+  `svg_text(…, restates="<how it is remade>")` declares where the number
+  comes from, exactly as `C.derived` does, and a SENTENCE is exempt — a
+  caption is prose wherever its numbers came from. Worked examples:
+  rxkids-fiscal (17), staff-toolkit (15), retitc and dotax-itep.
+  **Still open:** a `data-desc` slot has no click target in the editor
+  (an attribute carries no element to float a field over), so a description
+  is edited through content.md or the MCP connector, not on the page.
 - **A rewritten test that only asserts a CSS declaration (`justify-content:
   center`, a class name, a boundingBox read right after a CSS transition
   starts) can pass against the exact bug it's meant to catch.** This bit us

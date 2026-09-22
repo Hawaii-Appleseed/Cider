@@ -42,7 +42,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, pdf_button, svg_text   # noqa: E402
+from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css  # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
@@ -209,7 +209,7 @@ def _legend(items, y=9.5, x0=0):
         # A legend entry is words: a slot, keyed by its own wording.
         slug = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")
         out.append(svg_text(C, f"legend.{slug}", label, f"{x + 17:.0f}", f"{y:.1f}",
-                            LABEL_U, BODY))
+                            LABEL_U, BODY, restates="generate_reec_report.py --cd 1  (~/Census-Forecaster)"))
         x += 17 + len(label) * 6.4 + 26
     return "".join(out)
 
@@ -229,9 +229,10 @@ def historical_chart() -> str:
     y_max = 118.0
     unit = (BASE - TOP) / y_max
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="RETITC claims by taxpayer type, tax years 2018 '
-         f'through 2023, stacked; totals range from 60 to 113 million dollars">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.history.desc", "RETITC claims by taxpayer type, "
+                    "tax years 2018 through 2023, stacked; totals range from "
+                    "60 to 113 million dollars")}>']
     p.append(_legend([("Individual", PRIMARY, 1.0),
                       ("Corporate", PRIMARY_DARK, 1.0),
                       ("Other / financial corp.", WARM, 1.0)]))
@@ -267,7 +268,8 @@ def historical_chart() -> str:
     p.append(f'<line x1="{X0}" y1="{my:.1f}" x2="{W}" y2="{my:.1f}" '
              f'stroke="{ROSE}" stroke-width="1.6" stroke-dasharray="7 4"/>')
     p.append(svg_text(C, "chart.history.mean", f"Six-year mean ${SIX_YEAR_MEAN:.1f}M",
-                      X0 + 8, f"{my - 7:.1f}", LABEL_U, ROSE, weight=700))
+                      X0 + 8, f"{my - 7:.1f}", LABEL_U, ROSE, weight=700,
+                      restates="generate_reec_report.py --cd 1  (~/Census-Forecaster)"))
 
     p.append("</svg>")
     return "".join(p)
@@ -289,10 +291,11 @@ def savings_chart() -> str:
     y_max = 118.0
     unit = (BASE - TOP) / y_max
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Revenue the State keeps each year: 58, 59 '
-         f'and 63 million dollars through 2029, then 100 and 105 million in '
-         f'2030 and 2031 once new credits stop.">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.sunset.desc", "Revenue the State keeps each "
+                    "year: 58, 59 and 63 million dollars through 2029, then "
+                    "100 and 105 million in 2030 and 2031 once new credits "
+                    "stop.")}>']
 
     # The sunset wash goes down first, so the bars and rules sit over it.
     sx = X0 + 6 + 3 * SLOT
@@ -342,13 +345,13 @@ def agi_chart() -> str:
     shades = [PRIMARY_PALE, PRIMARY_LIGHT, PRIMARY_LIGHT,
               PRIMARY, PRIMARY, PRIMARY_DARK]
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Individual RETITC claims by adjusted gross '
-         f'income bracket, tax year 2023; the top bracket holds 45 percent of '
-         f'all individual claims">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.agi.desc", "Individual RETITC claims by "
+                    "adjusted gross income bracket, tax year 2023; the top "
+                    "bracket holds 45 percent of all individual claims")}>']
     p.append(svg_text(C, "chart.agi.caption",
                       f"Individual RETITC claims, Tax Year 2023 · ${TY23_IND:.1f}M total",
-                      0, 9.5, LABEL_U, MUTED))
+                      0, 9.5, LABEL_U, MUTED, restates="generate_reec_report.py --cd 1  (~/Census-Forecaster)"))
 
     y = 22
     for i, (label, claim, elig) in enumerate(AGI_BINS):
@@ -368,7 +371,8 @@ def agi_chart() -> str:
                      f'x2="{X0 + cut:.1f}" y2="{y + ROW + 3}" stroke="{WARM}" '
                      f'stroke-width="2.2"/>')
             p.append(svg_text(C, "chart.agi.cut", f"{(1 - elig) * 100:.0f}% cut by the AGI limit",
-                              f"{X0 + cut + 6:.1f}", y + ROW + 17, LABEL_U, WARM, weight=700))
+                              f"{X0 + cut + 6:.1f}", y + ROW + 17, LABEL_U, WARM,
+                              weight=700, restates="generate_reec_report.py --cd 1  (~/Census-Forecaster)"))
         p.append(f'<text x="{X0 + w + 10:.1f}" y="{y + ROW / 2 + 4.5:.1f}" '
                  f'font-size="{EMPH_U}" font-weight="700" fill="{INK}">'
                  f'${claim:.1f}M</text>')
@@ -393,10 +397,11 @@ def burden_chart() -> str:
     scale = BARMAX / x_max
     H = 22 + len(QUINTILES) * (ROW + GAP) + 8
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="Average RETITC tax increase per household in '
-         f'tax year 2027 by income quintile, from 19 dollars in the second '
-         f'quintile to 201 dollars in the top">']
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"'
+         f'{describe(C, "chart.quintile.desc", "Average RETITC tax increase "
+                    "per household in tax year 2027 by income quintile, from "
+                    "19 dollars in the second quintile to 201 dollars in the "
+                    "top")}>']
     p.append(_legend([("Lost to the income limit", PRIMARY_DARK, 1.0),
                       ("Lost to the $40M cap", PRIMARY_LIGHT, 1.0)]))
 

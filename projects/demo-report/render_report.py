@@ -18,7 +18,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import graphic, card         # noqa: E402
+from docsync.blocks import describe, graphic, card   # noqa: E402
 
 # Same env contract as every renderer: the editor and the export endpoint
 # override these to render a draft from temp files; unset -> the working tree.
@@ -30,8 +30,8 @@ L = Layout(_LAYOUT)
 C = Content(_CONTENT, styles=L)
 
 TEAL, DEEP = "#6B9E78", "#52796F"
-DIAGRAM = ('<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" '
-           'role="img" aria-label="demo diagram">'
+DIAGRAM = ('<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"'
+           f'{describe(C, "diagram.desc", "demo diagram")}>'
            f'<circle cx="60" cy="60" r="56" fill="{DEEP}"/>'
            '<path d="M30 78 L52 54 L68 66 L92 38" fill="none" stroke="#fff" '
            'stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'

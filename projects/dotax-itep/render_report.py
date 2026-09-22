@@ -53,7 +53,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content                            # noqa: E402
 from docsync.layout import Layout                              # noqa: E402
-from docsync.blocks import graphic, pdf_button, svg_text       # noqa: E402
+from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
 from docsync.blocks import chart_scroll, chart_scroll_css      # noqa: E402
 from docsync.okina import OKINA_FACES                          # noqa: E402
 
@@ -353,12 +353,12 @@ def scope_chart() -> str:
     scale = W / max(t for _, t, *_ in SCOPE_ROWS)
     r = 4
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="DOTAX and ITEP headlines drawn to one scale: '
-         f'ITEP\'s $705M covers only the 2026-to-2031 rise in Act 46\'s '
-         f'$1,453.2M a year, and its $83M covers only the rate slice of Act '
-         f'24\'s $297.3M a year — ITEP has no estimate for the credit '
-         f'sunsets">']
+    desc = describe(C, "chart.scope.desc",
+                    "DOTAX and ITEP headlines drawn to one scale: ITEP\'s $705M "
+                    "covers only the 2026-to-2031 rise in Act 46\'s $1,453.2M a "
+                    "year, and its $83M covers only the rate slice of Act 24\'s "
+                    "$297.3M a year — ITEP has no estimate for the credit sunsets")
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"{desc}>']
 
     p.append(f'<rect x="0" y="4" width="11" height="11" rx="2.5" fill="{DOTAX}"/>')
     p.append(svg_text(C, "chart.scope.legend.dotax", "DOTAX", 17, 13.5, 13, SLATE))
@@ -375,7 +375,8 @@ def scope_chart() -> str:
             in enumerate(SCOPE_ROWS, 1):
         rest = total - seen
         rk = f"chart.scope.r{n}"
-        p.append(svg_text(C, f"{rk}.title", _u(title), 0, y + 14, 13.5, INK, weight=700))
+        p.append(svg_text(C, f"{rk}.title", _u(title), 0, y + 14, 13.5, INK,
+                          weight=700, restates="SCOPE_ROWS in render_report.py"))
         y += HDR
 
         bw, sw, iw = total * scale, seen * scale, itep_v * scale
@@ -429,7 +430,7 @@ def scope_chart() -> str:
         # relative to the bar landed ON the guide and read as a stray colon
         # before the word "ITEP".
         p.append(svg_text(C, f"{rk}.itep", _u(itep_lab), max(iw + 12, sw + 14), y + 16,
-                          13.5, ITEP, weight=700))
+                          13.5, ITEP, weight=700, restates="SCOPE_ROWS in render_report.py"))
 
         # Dashed guide through the slice boundary, spanning both bars.
         p.append(f'<line x1="{sw}" y1="{y - BH - BGAP - 4}" x2="{sw}" '
@@ -520,10 +521,11 @@ def ratio_chart() -> str:
     H = TOP + len(DISAGREE_ROWS) * (HDR + BH + BGAP + BH + GRP) + 4
     r = 4
 
-    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
-         f'role="img" aria-label="On the bracket 2 and 3 cut, DOTAX reaches '
-         f'124,329 filers against ITEP\'s 391,937, and prices it at $13.1M '
-         f'against ITEP\'s $46.2M — about a third on both measures">']
+    desc = describe(C, "chart.disagree.desc",
+                    "On the bracket 2 and 3 cut, DOTAX reaches 124,329 filers "
+                    "against ITEP\'s 391,937, and prices it at $13.1M against "
+                    "ITEP\'s $46.2M — about a third on both measures")
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg"{desc}>']
 
     p.append(svg_text(C, "chart.disagree.scale", "each row scaled to its own ITEP bar",
                       W, 12, 11.5, MUTE, anchor="end"))

@@ -92,6 +92,15 @@ bindings:
     # rather than rank; the two expandable-section buttons are slots too.
     # Findings are errors from here on.
     editability: strict
+    # Brand and decorative art: the cover lockup, the hero photo and the two
+    # spot icons. Their alt text names an ASSET, not words on the page — a
+    # person editing this report cannot change what the picture is. Swapping
+    # the image itself is the editor's "Replace image…".
+    editability_ok:
+      - "RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies"
+      - "RxKids Hero Image"
+      - "Love"
+      - "Childcare Center"
     # Also re-stages the editor, unlike budget-primer's `make ... pub` (whose
     # Makefile target already depends on `editor` -> docsync.stage) — without
     # this, the watcher rebuilds the PUBLISHED page but leaves the staged
@@ -172,6 +181,12 @@ bindings:
     # build (python3 -m docsync.check --id our-mission to re-derive).
     editability: strict
     editability_ok:
+      # Squarespace nav aria-labels, same provenance as the link text below.
+      - "Social"
+      - "Open menu"
+      - "Previous section"
+      - "Next section"
+      - "How we work"
       - "Home"
       - "Issues"
       - "News"
@@ -351,6 +366,9 @@ bindings:
     hub: false            # off the staff hub (docsync/hub.py): a scratch project from "+ New report"
     content: projects/my-report/content.md
     editability: strict
+    # The Appleseed logo lockup: brand art, not words on the page.
+    editability_ok:
+      - "Hawaiʻi Appleseed"
     build: python3 projects/my-report/render_report.py && python3 -m docsync.stage --id my-report
     outputs:
       - projects/my-report/web/index.html
@@ -367,6 +385,12 @@ bindings:
     name: "Eviction Code Guide"
     content: projects/eviction-code-guide/content.md
     editability: strict
+    # Brand art. "Cover texture" is decorative and would be better as alt=""
+    # (a screen reader announces it for nothing) — a published-bytes change,
+    # left for whoever next touches that cover.
+    editability_ok:
+      - "Cover texture"
+      - "Hawaiʻi Appleseed"
     build: python3 projects/eviction-code-guide/render_report.py && python3 -m docsync.stage --id eviction-code-guide
     outputs:
       - projects/eviction-code-guide/web/index.html

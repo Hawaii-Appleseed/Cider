@@ -28,7 +28,7 @@ if str(REPO) not in sys.path:
 from docsync.content import Content                                # noqa: E402
 from docsync.layout import Layout                                  # noqa: E402
 from docsync.blocks import (card, chart_scroll, chart_scroll_css,   # noqa: E402
-                            graphic, pdf_button, svg_text)
+                            describe, graphic, pdf_button, svg_text)
 from docsync.okina import OKINA_FACES                              # noqa: E402
 
 # Same env contract as every renderer: the editor and the export endpoint
@@ -94,7 +94,7 @@ def _key(s: str) -> str:
 
 
 def _t(x, y, s, *, size=LABEL_U, fill=INK, weight="400", anchor="start",
-       track=0, family=SANS, opacity=None) -> str:
+       track=0, family=SANS, opacity=None, restates=None) -> str:
     """One SVG label — a slot the person can rephrase on the page. Every
     diagram string goes through here so no label can be written below the
     legibility floor by accident, and none can be frozen into the drawing."""
@@ -104,7 +104,17 @@ def _t(x, y, s, *, size=LABEL_U, fill=INK, weight="400", anchor="start",
     op = f' opacity="{opacity}"' if opacity else ""
     tr = f' letter-spacing="{track}"' if track else ""
     return svg_text(C, _key(s), s, x, y, size, fill, weight=weight, anchor=anchor,
-                    extra=f' font-family="{family}"{tr}{op}')
+                    extra=f' font-family="{family}"{tr}{op}', restates=restates)
+
+
+def _desc(text: str) -> str:
+    """The figure's accessible description, keyed off the diagram's scope.
+
+    role="img" on these diagrams means a screen reader is told THIS and
+    nothing inside — so it is the whole figure for anyone not looking at it,
+    and it belongs in a slot for the same reason every label here does.
+    """
+    return describe(C, f"{_SCOPE}.desc", text)
 
 
 def _box(x, y, w, h, *, fill=WHITE, stroke="", r=8, opacity=None) -> str:
@@ -138,6 +148,11 @@ def _marker(mid, fill) -> str:
 # recognises — not what the marketing says. "The best combination of speed and
 # intelligence" told nobody when to pick Sonnet. Two lines, and the widths are
 # checked against the 200-unit card interior at 5.6 units a character.
+# What a FIGURE in this diagram restates, for svg_text(restates=…): the label
+# is editable and the bar behind it is not, so a retyped percentage would slide
+# off its own track silently.
+SRC_MODELS = "MODELS / CODING / RESEARCH in render_report.py — see the note above them"
+
 MODELS = [
     (6, "Claude Fable 5.1", "$10 / $50 per MTok", "slower",
      "The hardest problems, and", "work that runs for hours", False),
@@ -167,7 +182,7 @@ def _model_card(x, name, price, speed, use1, use2, default) -> str:
     return "".join([
         box,
         _t(tx, 58, name, size=12.5, fill=ink, weight="700"),
-        _t(tx, 78, price, size=11, fill=body),
+        _t(tx, 78, price, size=11, fill=body, restates=SRC_MODELS),
         _t(tx, 94, speed, size=11, fill=mute),
         _t(tx, 116, use1, size=11, fill=use),
         _t(tx, 132, use2, size=11, fill=use),
@@ -189,26 +204,33 @@ def _effort_panel(x, title, claim, source, rows, takeaway) -> str:
             _box(track_x, y, 152, 18, fill=WHITE, r=4),
             _box(track_x, y, 152 * pct / 100.0, 18,
                  fill=DEEP if is_default else TEAL, r=4),
-            _t(track_x + 166, y + 13, pct_s, size=11, fill=INK),
-            _t(x + 338, y + 13, cost, size=11, fill=MUTE_INK, anchor="end"),
+            # The bar's own value, beside a track whose width IS pct.
+            _t(track_x + 166, y + 13, pct_s, size=11, fill=INK,
+               restates=SRC_MODELS),
+            _t(x + 338, y + 13, cost, size=11, fill=MUTE_INK, anchor="end",
+               restates=SRC_MODELS),
         ]
-    out.append(_t(tx, 338, takeaway, size=11, fill=DEEP, weight="700"))
+    out.append(_t(tx, 338, takeaway, size=11, fill=DEEP, weight="700",
+                  restates=SRC_MODELS))
     return "".join(out)
 
 
 def diagram_models() -> str:
     _scope("fig.models")
-    return f"""<svg viewBox="0 0 720 366" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="Three Claude models with their prices and what each is \
-for: Fable 5.1 at ten and fifty dollars per million tokens for demanding \
-reasoning and long-horizon agentic work, Opus 5 at five and twenty-five for \
-complex agentic coding and the place to start for most work, and Sonnet 5 at \
-two and ten for the best combination of speed and intelligence. Below, two \
-panels show what raising the effort level buys. On long coding work, Opus 5 \
-scores 84.0 percent at low effort for 25 cents a task and 91.7 percent at the \
-default for a dollar one — eight points and four times the cost. On research \
-work, Fable 5.1 scores about 66 percent at low, medium and high alike while \
-the cost per task rises from 4 dollars 66 to 7 dollars 12.">
+    desc = _desc(
+        'Three Claude models with their prices and what each is for: Fable '
+        '5.1 at ten and fifty dollars per million tokens for demanding '
+        'reasoning and long-horizon agentic work, Opus 5 at five and '
+        'twenty-five for complex agentic coding and the place to start for '
+        'most work, and Sonnet 5 at two and ten for the best combination of '
+        'speed and intelligence. Below, two panels show what raising the '
+        'effort level buys. On long coding work, Opus 5 scores 84.0 percent '
+        'at low effort for 25 cents a task and 91.7 percent at the default '
+        'for a dollar one — eight points and four times the cost. On '
+        'research work, Fable 5.1 scores about 66 percent at low, medium '
+        'and high alike while the cost per task rises from 4 dollars 66 to '
+        '7 dollars 12.')
+    return f"""<svg viewBox="0 0 720 366" xmlns="http://www.w3.org/2000/svg"{desc}>
 
 {_t(6, 16, "THE THREE MODELS", size=12, fill=DEEP, weight="700", track=1.3)}
 {"".join(_model_card(*m) for m in MODELS)}
@@ -279,13 +301,15 @@ def fig_repos() -> str:
 
 def diagram_github() -> str:
     _scope("fig.github")
-    return f"""<svg viewBox="0 0 720 248" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="Claude Code works in a local checkout and pushes to \
-the Hawaiʻi Appleseed repositories on GitHub. There are sixteen, eight public \
-and eight private, and the private half is the half with our own work in it, \
-starting with staff-updates-internal. Hawaii-Appleseed-website is public, and \
-GitHub Pages serves its publications.json and news.json to anyone, nightly, \
-which is what the hub's Library is built from.">
+    desc = _desc(
+        'Claude Code works in a local checkout and pushes to the Hawaiʻi '
+        'Appleseed repositories on GitHub. There are sixteen, eight public '
+        'and eight private, and the private half is the half with our own '
+        'work in it, starting with staff-updates-internal. '
+        'Hawaii-Appleseed-website is public, and GitHub Pages serves its '
+        'publications.json and news.json to anyone, nightly, which is what '
+        "the hub's Library is built from.")
+    return f"""<svg viewBox="0 0 720 248" xmlns="http://www.w3.org/2000/svg"{desc}>
 <defs>{_marker("f1a", INK)}{_marker("f1b", DEEP)}</defs>
 
 {_t(6, 18, "CLAUDE", size=12, fill=DEEP, weight="700", track=1.3)}
@@ -333,13 +357,15 @@ which is what the hub's Library is built from.">
 # would only have made harder to read.
 def diagram_cloudflare() -> str:
     _scope("fig.cloudflare")
-    return f"""<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="A browser and a staff member's own Claude both reach \
-the hub through one gate, Cloudflare Access, which checks a Google sign-in \
-before anything is answered. Behind it Cloudflare Pages serves the pages, \
-Pages Functions answer everything under slash api, KV keeps the checkboxes, \
-tasks, comms board and live notes, R2 keeps the documents and every version \
-of them, and a Durable Object is the room where live co-editing happens.">
+    desc = _desc(
+        "A browser and a staff member's own Claude both reach the hub "
+        'through one gate, Cloudflare Access, which checks a Google sign-in '
+        'before anything is answered. Behind it Cloudflare Pages serves the '
+        'pages, Pages Functions answer everything under slash api, KV keeps '
+        'the checkboxes, tasks, comms board and live notes, R2 keeps the '
+        'documents and every version of them, and a Durable Object is the '
+        'room where live co-editing happens.')
+    return f"""<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg"{desc}>
 <defs>{_marker("f2a", DEEP)}</defs>
 
 {_t(6, 14, "WHO IS ASKING", size=12, fill=DEEP, weight="700", track=1.3)}
@@ -407,10 +433,11 @@ of them, and a Durable Object is the room where live co-editing happens.">
 # ── Figure 4: the notes pipeline ────────────────────────────────────────────
 def diagram_notes() -> str:
     _scope("fig.notes")
-    return f"""<svg viewBox="0 0 720 172" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="An edit to the all-staff notes doc is picked up by \
-Apps Script, which both commits it to GitHub and mirrors it live into \
-Cloudflare KV. The Updates page reads whichever arrives first.">
+    desc = _desc(
+        'An edit to the all-staff notes doc is picked up by Apps Script, '
+        'which both commits it to GitHub and mirrors it live into '
+        'Cloudflare KV. The Updates page reads whichever arrives first.')
+    return f"""<svg viewBox="0 0 720 172" xmlns="http://www.w3.org/2000/svg"{desc}>
 <defs>{_marker("f3a", DEEP)}</defs>
 
 {_box(6, 56, 132, 58, fill=SAGE, r=8)}
@@ -482,17 +509,19 @@ def _chips(x0, y, parts) -> str:
 
 def diagram_stack() -> str:
     _scope("fig.stack")
-    return f"""<svg viewBox="0 0 720 344" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="One MCP server with two doors onto it. claude.ai \
-reaches it through a Connector added in Settings; Claude Code, the CLI, \
-reaches the same server with claude mcp add --transport http. Both arrows \
-point at a single box: the MCP server, one address and one protocol, which \
-for this hub is slash api slash mcp. Signing in to Claude Code with a \
-claude.ai account makes your connectors appear there too. Underneath, a \
-plugin is drawn as a container rather than a third door: it is Claude Code \
-only, installed from a marketplace, and it bundles skills, agents, hooks, \
-commands, an .mcp.json, LSP servers and monitors — the .mcp.json inside it \
-being itself an MCP server.">
+    desc = _desc(
+        'One MCP server with two doors onto it. claude.ai reaches it '
+        'through a Connector added in Settings; Claude Code, the CLI, '
+        'reaches the same server with claude mcp add --transport http. Both '
+        'arrows point at a single box: the MCP server, one address and one '
+        'protocol, which for this hub is slash api slash mcp. Signing in to '
+        'Claude Code with a claude.ai account makes your connectors appear '
+        'there too. Underneath, a plugin is drawn as a container rather '
+        'than a third door: it is Claude Code only, installed from a '
+        'marketplace, and it bundles skills, agents, hooks, commands, an '
+        '.mcp.json, LSP servers and monitors — the .mcp.json inside it '
+        'being itself an MCP server.')
+    return f"""<svg viewBox="0 0 720 344" xmlns="http://www.w3.org/2000/svg"{desc}>
 <defs>{_marker("f5a", INK)}{_marker("f5b", DEEP)}</defs>
 
 {_t(6, 16, "ONE SERVER, AND TWO DOORS ONTO IT", size=12, fill=DEEP,
@@ -577,15 +606,17 @@ def _lane(y, a1, a2, b1, b2, c1, c2) -> str:
 
 def diagram_routes() -> str:
     _scope("fig.routes")
-    return f"""<svg viewBox="0 0 720 268" xmlns="http://www.w3.org/2000/svg" \
-role="img" aria-label="Two routes from the Claude app to GitHub. The reading \
-route: a Connector, added with the plus button and Add from GitHub, brings \
-the files of a repository — names and contents only — into a chat or a \
-Project, where you can ask questions about the code. That route is read-only: \
-no commit history, no issues and no pull requests. The changing route: Claude \
-Code in the Code tab works in your checkout, where it branches, commits and \
-pushes, and opens a pull request with gh pr create. The pull request is then \
-reviewed and merged, and merging is a person's act.">
+    desc = _desc(
+        'Two routes from the Claude app to GitHub. The reading route: a '
+        'Connector, added with the plus button and Add from GitHub, brings '
+        'the files of a repository — names and contents only — into a chat '
+        'or a Project, where you can ask questions about the code. That '
+        'route is read-only: no commit history, no issues and no pull '
+        'requests. The changing route: Claude Code in the Code tab works in '
+        'your checkout, where it branches, commits and pushes, and opens a '
+        'pull request with gh pr create. The pull request is then reviewed '
+        "and merged, and merging is a person's act.")
+    return f"""<svg viewBox="0 0 720 268" xmlns="http://www.w3.org/2000/svg"{desc}>
 <defs>{_marker("f6a", INK)}{_marker("f6b", DEEP)}</defs>
 
 {_t(6, 14, "READING — A CONNECTOR", size=12, fill=DEEP, weight="700",
@@ -647,7 +678,7 @@ def contents_rows() -> str:
         f'<span class="cnum">{n}</span>'
         f'<span class="ctxt">{C.t(f"cover.contents.{n}")}</span></div>'
         for n in ("02", "03", "04", "05", "06", "07", "08", "09", "10",
-                  "11", "12", "13", "14"))
+        "11", "12", "13", "14"))
 
 
 PAGE1 = f"""
