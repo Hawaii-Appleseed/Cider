@@ -68,9 +68,25 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          # Both lockfiles, because two npm projects are installed below and a
+          # change to either one has to miss the cache.
+          cache-dependency-path: |
+            package-lock.json
+            collab/package-lock.json
 
       - name: Install Node dependencies
         run: npm ci
+
+      # collab/ is its own npm project and the root `npm ci` does not reach it.
+      # The two collab specs boot `wrangler dev` (collab/devserver.mjs) inside a
+      # 90-second beforeAll; wrangler is a devDependency THERE, so without this
+      # step `npx wrangler` on the runner fell through to fetching it from the
+      # registry and the hook died before it could serve — with Playwright's own
+      # "beforeAll hook timeout" rather than startDev's message, because the two
+      # budgets are both 90s. Same shape as pymupdf above: present on every
+      # machine that had ever run it by hand, never installed on CI.
+      - name: Install the collab relay's dependencies
+        run: npm ci --prefix collab
 
       - name: Install Playwright's Chromium
         run: npx playwright install --with-deps chromium
