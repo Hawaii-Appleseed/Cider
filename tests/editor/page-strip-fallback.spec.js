@@ -57,17 +57,39 @@ test.describe('page strip: renderer declares no pages', () => {
   });
 
   test('clicking a chip scrolls to that page', async ({ page }) => {
+    // The chip scrolls with behavior:'smooth', and this runner will not finish
+    // that animation: headless Chromium starts it, moves about five pixels and
+    // abandons it. The sheet never arrives, so railSyncActive is then RIGHT to
+    // leave the highlight on page 1 — the failure was the runner's, not the
+    // strip's. emulateMedia({reducedMotion:'reduce'}) does NOT help, because an
+    // explicit behavior argument outranks both the CSS property and the media
+    // query; the only lever is the argument itself. Patched in the preview
+    // frame alone, and only the behavior — the call, the target it is called
+    // on, and everything the click does to find that target are still the
+    // code's own, which is the part worth testing.
+    await page.evaluate(() => {
+      const w = document.getElementById('out').contentWindow;
+      const real = w.Element.prototype.scrollIntoView;
+      w.Element.prototype.scrollIntoView = function (arg) {
+        return real.call(this, arg && typeof arg === 'object'
+          ? Object.assign({}, arg, { behavior: 'auto' }) : arg);
+      };
+    });
+
     const frame = page.frameLocator('#out');
     const second = frame.locator('section.page').nth(1);
     const top = () => second.evaluate(el => el.getBoundingClientRect().top);
     const before = await top();
+    expect(before).toBeGreaterThan(200);       // page 2 starts well off-screen
 
     await page.locator('#rail-list .chip').nth(1).click();
-    await page.waitForTimeout(900);            // smooth scroll
 
-    // The lookup used to be by data-page, which this report does not stamp, so
-    // the click found nothing and scrolled nowhere.
-    expect(await top()).toBeLessThan(before);
+    // ARRIVED, not merely moved. This was `toBeLessThan(before)`, which a few
+    // stray pixels satisfy — which is exactly what an abandoned smooth scroll
+    // leaves behind, so the one assertion that noticed anything was wrong was
+    // the class below. The lookup used to be by data-page, which this report
+    // does not stamp, so the click found nothing and scrolled nowhere.
+    await expect.poll(top).toBeLessThan(40);
     await expect(page.locator('#rail-list .chip').nth(1)).toHaveClass(/\bon\b/);
   });
 
