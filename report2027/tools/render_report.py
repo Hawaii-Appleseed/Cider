@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from docsync.content import Content, ContentError  # noqa: E402
 from docsync.blocks import chart, chart_scroll, chart_scroll_css  # noqa: E402
+from docsync.blocks import describe                              # noqa: E402
 from docsync.layout import (Layout, LayoutError, check_icon_svg,  # noqa: E402
                             fill_css, fill_repr, icon_color)
 
@@ -1016,7 +1017,7 @@ pages.append(f"""
   {card(C.t("onetime.cards.onetime.title"), ONE_TIME_BULLETS, DARK, key="onetime.cards.onetime.bullets")}
   {card(C.t("onetime.cards.emergency.title"), EMERG_BULLETS, DARKEST, key="onetime.cards.emergency.bullets")}
  </div>
- {L.spacer("onetime.demo.box")}<div class="ds-demo-box"{L.attr("onetime.demo.box", "display:inline-block;padding:4px;border:1px solid #ccc")}>{graphic("onetime.demo.graphic", '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="demo graphic"><circle cx="60" cy="60" r="56" fill="#52796F"/><path d="M30 78 L52 54 L68 66 L92 38" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="92" cy="38" r="8" fill="#fff"/></svg>', w=0.8)}</div>
+ {L.spacer("onetime.demo.box")}<div class="ds-demo-box"{L.attr("onetime.demo.box", "display:inline-block;padding:4px;border:1px solid #ccc")}>{graphic("onetime.demo.graphic", f'<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"{describe(C, "onetime.demo.graphic.desc", "demo graphic")}><circle cx="60" cy="60" r="56" fill="#52796F"/><path d="M30 78 L52 54 L68 66 L92 38" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="92" cy="38" r="8" fill="#fff"/></svg>', w=0.8)}</div>
 {C.extras("onetime")} {L.layer(8)}{L.text_boxes(8)}{L.tables_html(8)}{folio(8)}
 </section>""")
 
