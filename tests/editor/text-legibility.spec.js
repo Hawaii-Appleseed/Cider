@@ -179,21 +179,23 @@ const REPORTS = discoverReports();
 // self-contained pages; nothing about a font SIZE depends on the origin.
 const targetFor = (r) => (r.id === 'budget-primer' ? '/primer/' : `file://${r.file}`);
 
-// Pages carrying sub-floor text when this spec was widened to cover them.
-// Each entry is a REAL defect in that page, not a false positive — a reader
-// gets type below the floor there today. They are marked expected-to-fail so
-// the widening does not turn the suite red for work nobody has scheduled,
-// and `test.fail()` (not skip) is deliberate: if someone fixes the page, the
-// test "unexpectedly passes" and Playwright says so, which is the prompt to
-// delete the line. Fix the page and remove its entry. NEVER add an entry to
-// silence a new failure — that is the whole defect this file exists to stop.
+// Known sub-floor text: page:context -> the EXACT offenders ("9.0px
+// div.px-brand-tag"), as report() prints them without their text.
+//
+// Each entry is a real defect a reader gets today, listed so the suite stays
+// green for work nobody has scheduled. It used to be a test.fail() per page,
+// and that let a worse defect through: a page expected to fail passes for
+// failing for ANY reason, so tax-testimony's chart collapsing to 5px labels on
+// a phone and tablet rode in under an entry that only named a 9.9px "Sources"
+// label (found 2026-09-22). Now an entry excuses exactly what it names:
+//
+//   * anything NOT named fails the test, as on a page with no entry;
+//   * a named offender that is gone fails too — the page was fixed, so delete
+//     the name. The list only ever shrinks.
+//
+// NEVER add a name to silence a new failure — that is the defect this file
+// exists to stop. Empty since 2026-09-22: every entry was fixed.
 const KNOWN_SUB_FLOOR = new Map([
-  ['our-mission:desktop', '9.0px div.px-brand-tag'],
-  ['our-mission:print', '6.8pt div.px-brand-tag'],
-  ['tax-testimony:phone', '9.9px span.srch'],
-  ['tax-testimony:tablet', '9.9px span.srch'],
-  ['tax-testimony:desktop', '9.9px span.srch'],
-  ['tax-testimony:print', '7.4pt span.srch; 7.7pt span.enn, a'],
 ]);
 
 test('every bound report was discovered and built', () => {
@@ -217,8 +219,7 @@ for (const ctx of CONTEXTS) {
       });
 
       test('no text falls below the legibility floor', async ({ page }) => {
-        const known = KNOWN_SUB_FLOOR.get(`${rep.id}:${ctx.name}`);
-        if (known) test.fail(true, `known sub-floor text, not yet fixed: ${known}`);
+        const known = KNOWN_SUB_FLOOR.get(`${rep.id}:${ctx.name}`) || [];
 
         const all = await runs(page);
         // A page with no measurable text means the harness broke, not that the
@@ -238,9 +239,16 @@ for (const ctx of CONTEXTS) {
           .filter((r) => r.size < floor - 0.05)
           .filter((r) => !isIconGlyph(r.text));
 
-        expect(bad.length === 0 ||
+        const named = (r) => `${r.size.toFixed(1)}${unit} ${r.what}`;
+        const fresh = bad.filter((r) => !known.includes(named(r)));
+        const fixed = known.filter((k) => !bad.some((r) => named(r) === k));
+
+        expect(fresh.length === 0 ||
           `text below the ${floor}${unit} floor in ${rep.id} at ${ctx.name} `
-          + `(${ctx.width}px viewport):\n${report(bad, unit)}`).toBe(true);
+          + `(${ctx.width}px viewport):\n${report(fresh, unit)}`).toBe(true);
+        expect(fixed.length === 0 ||
+          `fixed, so delete from KNOWN_SUB_FLOOR['${rep.id}:${ctx.name}']: `
+          + fixed.join('; ')).toBe(true);
       });
     });
   }

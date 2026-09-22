@@ -45,6 +45,12 @@ STYLE = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", _head_src, re.S | re.
 # the system UI font. okinafy() rewrites the inherited stacks rather than
 # hand-editing original.html, which stays a pristine copy of the live page.
 STYLE = okinafy(STYLE)
+# The one size in the imported sheet below the engine's floor: the brand
+# tagline under the logo, 9px (6.8pt printed) against MIN_TEXT_PX's 10.5px
+# (7.875pt). Raised here, after the import's own rule, for the same reason
+# okinafy() works here — original.html stays the live page's pristine copy.
+# Its .26em tracking is what makes a small tagline read as one; that stays.
+FLOOR_CSS = "\n  .px-nav .px-brand-tag{font-size:10.5px;}"
 
 BODY = (HERE / "body.slotted.html").read_text()
 # marker substitution: A=slot attr, T=slot text, S=movable spacer,
@@ -93,7 +99,7 @@ html = f"""<!DOCTYPE html>
   body {{ margin:0; background:#EDF1EE; }}
   .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
-  {STYLE}
+  {STYLE}{FLOOR_CSS}
   {EDIT_CSS}
 </style>
 </head>

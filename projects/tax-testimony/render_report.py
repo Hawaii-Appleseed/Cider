@@ -27,6 +27,7 @@ if str(REPO) not in sys.path:
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.blocks import describe, graphic, pdf_button, svg_text  # noqa: E402
+from docsync.blocks import chart_scroll, chart_scroll_css      # noqa: E402
 from docsync.okina import OKINA_FACES            # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
@@ -70,6 +71,13 @@ TALLY = FIGURES["source"]["command"]
 # bill, campaign short, support, oppose, outcome
 DATA = [(b["bill"], b["short"], b["support"], b["oppose"], b["outcome"])
         for b in FIGURES["bills"]]
+
+
+# The smallest font-size the chart draws, in its own user units (the tallies,
+# the campaign names and the scale note are all 12). chart_scroll() stops the
+# chart shrinking where this reaches the legibility floor and scrolls it
+# instead: unwrapped, it went down with the sheet on a phone, to 5px.
+CHART_SMALLEST = 12
 
 
 def diverging_chart() -> str:
@@ -441,7 +449,7 @@ page = f"""
   </div>
 
   <h2{L.attr("chart.title")}>{C.t("chart.title")}</h2>
-  {graphic(L, "chart.diverging", diverging_chart(), w=7.0)}
+  {graphic(L, "chart.diverging", chart_scroll(diverging_chart(), smallest_label=CHART_SMALLEST), w=7.0)}
   {C.html("chart.note", "note")}
 
   <div class="cols">
@@ -595,10 +603,13 @@ html = f"""<!DOCTYPE html>
   .arg a, .arg-f a, .arg-m a {{ color:{DEEP}; text-decoration:none;
                                 border-bottom:1px solid {ASH}; }}
   /* Sources: one dense numbered run. An <ol> of spelled-out URLs would cost
-     several times the height for the same information on a printed page. */
-  .srch {{ font-size:0.62rem; font-weight:700; letter-spacing:.07em;
+     several times the height for the same information on a printed page.
+     Dense, but not below the floor: .srch was 0.62rem (9.9px, 7.4pt printed)
+     and the run 0.645rem (10.3px); 0.66rem is the smallest size above
+     MIN_TEXT_PX (10.5px, 7.875pt) — text-legibility.spec.js holds it there. */
+  .srch {{ font-size:0.66rem; font-weight:700; letter-spacing:.07em;
            text-transform:uppercase; color:{SLATE}; margin-right:5px; }}
-  .endnotes {{ margin:5px 0 0; font-size:0.645rem; line-height:1.3;
+  .endnotes {{ margin:5px 0 0; font-size:0.66rem; line-height:1.3;
                color:#7C8A80; }}
   .enn {{ font-weight:700; color:{DEEP}; }}
   .ensep {{ color:{ASH}; }}
@@ -610,6 +621,7 @@ html = f"""<!DOCTYPE html>
 </head>
 <body>
 {pdf_button(L, bg=DEEP)}
+{chart_scroll_css()}
 {body}
 </body>
 </html>
