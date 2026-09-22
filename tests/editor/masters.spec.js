@@ -77,11 +77,11 @@ test('a master is made from a page, given to a second page, and edited once for 
     // Select the instance: the strip says where it lives, and Delete refuses.
     await page.evaluate(id => docsync.api.select(id), folioA);
     await page.waitForTimeout(500);
-    await expect(page.locator('#ty-key')).toContainText('master');
+    await expect(page.locator('#ty-key')).toContainText('shared layout');
     await page.keyboard.press('Backspace');
     await page.waitForTimeout(600);
     expect(await page.evaluate(() => layout.masters.Section.boxes.length)).toBe(1);
-    await expect(page.locator('#stat')).toContainText('on the master');
+    await expect(page.locator('#stat')).toContainText('on the shared layout');
 
     // Detach page B: its own numbered copies, and no master.
     const dt = await page.evaluate(b => docsync.api.detachMaster(b), ids.b);
