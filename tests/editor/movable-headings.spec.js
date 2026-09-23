@@ -158,6 +158,31 @@ test.describe('movable headings', () => {
     await expect(ta).toHaveText(/BUDGET BASICS/i);
   });
 
+  test('a moved element with a margin lands where it was dropped — live, and after the render', async ({ page }) => {
+    // A margin on a placed element is ADDED to its left and top. The renderer
+    // puts margin:0 on anything placed (layout.py _style); the drag did not,
+    // so the cover title (33.6px of top margin) was drawn that far below the
+    // pointer for the whole drag and jumped back up on the render after the
+    // drop — and the live Budget Primer's lifecycle ring, 0.28in.
+    const frame = page.frameLocator('#out');
+    const el = frame.locator('[data-el="cover.title"]');
+    await el.scrollIntoViewIfNeeded();
+    const b = await el.boundingBox();
+    await page.mouse.move(b.x + 10, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 25, b.y + b.height / 2 + 30, { steps: 4 });
+    await page.mouse.move(b.x + 40, b.y + b.height / 2 + 60, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => layout.positions['cover.title'])).toBeTruthy();
+    const live = await page.evaluate(() => _pilotMeasure('cover.title'));
+    await page.evaluate(() => render());
+    await page.waitForTimeout(800);
+    const drawn = await page.evaluate(() => _pilotMeasure('cover.title'));
+    expect(Math.abs(drawn.y - live.y), `live ${live.y} vs drawn ${drawn.y}`).toBeLessThan(0.03);
+    expect(Math.abs(drawn.x - live.x), `live ${live.x} vs drawn ${drawn.x}`).toBeLessThan(0.03);
+  });
+
   test('an unmoved heading publishes with no position scaffolding (published bytes unchanged)', async ({ page }) => {
     // Sanity: moving is opt-in — a heading nobody touched must render exactly
     // as it always did (verified at the Python level in the render script;
