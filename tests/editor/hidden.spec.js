@@ -19,7 +19,12 @@ const ID = 'basics.h1';
 async function selectH1(page, frame) {
   await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
-  await frame.locator(`[data-el="${ID}"]`).click();
+  // Shift-click selects the box without typing in it. A plain click types
+  // where it lands (click-to-type), and with the heading's words open, Delete
+  // deletes a character instead of resetting or hiding the element: on CI the
+  // move then never reset, whenever the editor was still open at the keypress.
+  await frame.locator(`[data-el="${ID}"]`).click({ modifiers: ['Shift'] });
+  await expect.poll(() => page.evaluate(() => editing)).toBe(false);
 }
 
 test.describe('deleting a designed element hides it, reversibly', () => {
