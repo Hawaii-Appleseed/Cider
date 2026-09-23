@@ -95,6 +95,7 @@ layout.json position/size override.
 | Editable prose paragraph | `C.html(key, cls)` — stamps `data-slot` AND wraps a movable `para.<key>` | click types (caret where clicked); drag; resize |
 | Editable heading / inline text | a slot: `C.t(key)`, or `C.slot_attr`/`C.slot_span` on a tag you build — AND `L.attr` on that tag or on the block holding it | click types; drag; width resize |
 | A list (or any block) of one slot's words you build yourself | `C.movable(key, f'<ul{C.ul_attr(key)}>…</ul>')` — the same `para.<key>` block C.html uses | click types; drag; width resize |
+| A thing with no single element of its own — a table or paragraph drawn once per year with one hidden, a figure sharing a frame with its callouts | `L.wrap(el_id, markup)` — a movable block that exists only while editing or once moved | the whole block moves and resizes as one |
 | An imported page's fields (propose's `⟦A⟧/⟦T⟧/⟦E⟧/⟦S⟧/⟦B⟧` markers) | `blocks.fill_markers(C, L, BODY)` — never your own re.subs | every field (or the unit it is a piece of: a stat's figure + label) moves and resizes |
 
 **A slot is not a box.** `C.t`/`C.slot_attr`/`C.slot_span`/`C.ul_attr` make
