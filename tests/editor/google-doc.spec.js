@@ -8,15 +8,35 @@
 // batch — which is the whole reason it goes through batch rather than a loop
 // of setSlot calls.
 const { test, expect, gotoEditor, openFileMenu, dialog, fillDialog,
-        submitDialog } = require('./fixtures/editor-test');
+        submitDialog, PING, EVENTS } = require('./fixtures/editor-test');
 
 const FAKE_DOC = 'FAKEDOCID_0123456789';
 
-/** Pretend a doc is linked, without writing one into this repo's docsync.yml.
- *  DOC is fed by the /__ping payload in real use; setting it directly is the
- *  same state without a server round trip. */
-const linkDoc = (page, id = FAKE_DOC) =>
-  page.evaluate(v => { DOC = v; }, id);
+/** The server's word on which doc is linked, faked where the editor reads it.
+ *  The editor takes DOC from every /__ping and /__events payload (the server
+ *  is the truth, so a doc linked in one tab shows in all of them), and the
+ *  suite's server has none linked. Setting DOC in the page alone was undone by
+ *  the next heartbeat whenever one landed before the menu was read: "Google
+ *  Doc…" where "Google Doc: linked" was due, a flake on CI. So each ping says
+ *  what the test has linked, and the event stream is refused, leaving the
+ *  editor's own poll as its one source. Installed before the editor boots. */
+async function fakeServerDoc(page) {
+  let linked = '';
+  await page.route(PING, async route => {
+    const r = await route.fetch();
+    const j = await r.json();
+    await route.fulfill({ response: r, json: linked ? { ...j, doc: linked } : j });
+  });
+  await page.route(EVENTS, route => route.abort());
+  return { link: id => { linked = id; } };
+}
+
+/** Pretend a doc is linked, without writing one into this repo's docsync.yml:
+ *  the server says so from now on, and the page is told at once. */
+const linkDoc = async (page, server, id = FAKE_DOC) => {
+  server.link(id);
+  await page.evaluate(v => { DOC = v; }, id);
+};
 
 /** A slot with enough words in it to be worth replacing, read from the report
  *  itself so this spec does not pin the fixture's key names. */
@@ -25,7 +45,8 @@ const aSlotKey = (page) => page.evaluate(() =>
     .flatMap(p => p.slots).find(s => (s.text || '').length > 30).key);
 
 test.describe('Google Doc link', () => {
-  test.beforeEach(async ({ page }) => { await gotoEditor(page); });
+  let server;
+  test.beforeEach(async ({ page }) => { server = await fakeServerDoc(page); await gotoEditor(page); });
 
   test('the link row is offered, and Import only once a doc is linked', async ({ page }) => {
     await openFileMenu(page);
@@ -38,7 +59,7 @@ test.describe('Google Doc link', () => {
     await page.click('#file');
     await expect(page.locator('#filepop')).toBeHidden();
 
-    await linkDoc(page);
+    await linkDoc(page, server);
     await openFileMenu(page);
     await expect(page.locator('#file-doc .shp-t')).toHaveText('Google Doc: linked');
     await expect(page.locator('#file-docimport')).toBeVisible();
@@ -48,6 +69,7 @@ test.describe('Google Doc link', () => {
     let sent = null;
     await page.route(/\/__doc(\?|$)/, route => {
       sent = route.request().postDataJSON();
+      server.link(FAKE_DOC);          // as the real one would, from here on
       return route.fulfill({ contentType: 'application/json',
         body: JSON.stringify({ ok: true, doc: FAKE_DOC }) });
     });
@@ -77,7 +99,8 @@ test.describe('Google Doc link', () => {
 });
 
 test.describe('importing the doc’s text', () => {
-  test.beforeEach(async ({ page }) => { await gotoEditor(page); });
+  let server;
+  test.beforeEach(async ({ page }) => { server = await fakeServerDoc(page); await gotoEditor(page); });
 
   /** Answer /__doc/import with proposals aimed at a real slot of this report. */
   async function stubImport(page, rows, extra = {}) {
@@ -86,7 +109,7 @@ test.describe('importing the doc’s text', () => {
       body: JSON.stringify({ ok: true, doc: FAKE_DOC, mode: 'prose',
                              unknown: [], slots: rows.map(r => r.key).filter(Boolean),
                              rows, ...extra }) }));
-    await linkDoc(page);
+    await linkDoc(page, server);
   }
 
   test('an approved import lands, and is ONE undo step', async ({ page }) => {
@@ -174,7 +197,7 @@ test.describe('importing the doc’s text', () => {
       contentType: 'application/json',
       body: JSON.stringify({ ok: true, doc: FAKE_DOC, mode: 'prose',
                              unknown: [], slots: [], rows: [] }) }));
-    await linkDoc(page);
+    await linkDoc(page, server);
     await openFileMenu(page);
     await page.click('#file-docimport');
     const d = await dialog(page);
@@ -185,7 +208,7 @@ test.describe('importing the doc’s text', () => {
     await page.route(/\/__doc\/import(\?|$)/, route => route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ ok: false, error: 'Google would not hand over that doc.' }) }));
-    await linkDoc(page);
+    await linkDoc(page, server);
     await openFileMenu(page);
     await page.click('#file-docimport');
     await expect(page.locator('#stat')).toContainText('Google would not hand over');
