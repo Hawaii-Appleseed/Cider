@@ -388,7 +388,7 @@ def org_column(rows, accent: str, head_key: str) -> str:
     # could be retyped but the list never moved.
     list_id = f"{head_key}.list"
     return (f'<div class="col">'
-            f'<h3 style="color:{accent}"{L.attr(head_key)}>{C.t(head_key)}</h3>'
+            f'<h3{L.attr(head_key, f"color:{accent}")}>{C.t(head_key)}</h3>'
             f'{L.spacer(list_id)}<ol class="orgs"{L.attr(list_id)}>{items}</ol></div>')
 
 

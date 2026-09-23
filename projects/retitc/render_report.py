@@ -432,8 +432,8 @@ def fig(key: str, cls: str = "") -> str:
 
 
 def change_card(key: str, accent: str) -> str:
-    return (f'<div class="ccard" style="border-top-color:{accent}"'
-            f'{L.attr(f"about.card.{key}")}>'
+    return (f'<div class="ccard"'
+            f'{L.attr(f"about.card.{key}", f"border-top-color:{accent}")}>'
             f'<div class="ccard-n" style="color:{accent}">'
             f'{C.t(f"about.card.{key}.n")}</div>'
             f'<div class="ccard-l">{C.t(f"about.card.{key}.l")}</div>'
@@ -542,12 +542,12 @@ page = f"""
   {graphic(L, "chart.historical", chart_scroll(historical_chart(), smallest_label=LABEL_U), w=CHART_W_IN)}
   {C.html("hist.note", "note-b")}
 
-  <div class="slabel" style="color:{WARM}"{L.attr("about.change.h")}>{C.t("about.change.h")}</div>
+  <div class="slabel"{L.attr("about.change.h", "color:" + WARM)}>{C.t("about.change.h")}</div>
   {C.html("about.change.p", "body")}
   <div class="ccards"{L.attr("about.cards")}>
     {change_card("a", WARM)}{change_card("b", PRIMARY)}{change_card("c", GREEN)}
   </div>
-  <div class="slabel" style="color:{PRIMARY_DARK}"{L.attr("eo.h")}>{C.t("eo.h")}</div>
+  <div class="slabel"{L.attr("eo.h", "color:" + PRIMARY_DARK)}>{C.t("eo.h")}</div>
   {C.html("eo.p", "body")}
   {foot("about.foot", 2)}
 {C.extras("page2")} {L.layer(2)}{L.text_boxes(2)}{L.tables_html(2)}

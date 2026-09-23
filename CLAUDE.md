@@ -134,7 +134,13 @@ Rules that bite:
   plus: words in a `<foreignObject>`, empty `data-fixed`/`data-restates`
   declarations, slot hooks the renderer never read or that hold words the
   slot never served (held to `DOCSYNC_SLOTLOG`), and text only the PUBLISH
-  build has (it builds both modes and diffs them).
+  build has (it builds both modes and diffs them); and, an ERROR in any
+  binding, a start tag that names an attribute twice — the browser keeps the
+  first, so a renderer's own `style="…"` beside `L.attr`'s drops a MOVE, and
+  beside a slot's text style drops one or the other. Only an edit makes
+  those, so a third build (`stress_layout`: every `data-el` moved, every
+  `data-slot` styled) is scanned too. Give a tag its style through
+  `L.attr(id, extra)`, or join attribute strings with `merge_attrs`.
   A conversion/ingestion is not done until that line is clean AND its binding
   says `editability: strict` (findings become ERRORS, so CI fails a push that
   regresses; deliberate exceptions go in `editability_ok`, one exact string
