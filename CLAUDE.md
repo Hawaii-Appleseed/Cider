@@ -118,7 +118,20 @@ Rules that bite:
   `card(detachable=…)`, `is_light_bg`) — zero-stylesheet, importable by any
   project renderer, staged into the browser engine automatically. Add new
   reusable capabilities there, not in one report's renderer.
-- **Tests:** `npx playwright test` (editor behaviour; ~425 specs),
+- **Run the tests your change needs, not the suite: `npm run test:affected`.**
+  It runs the specs whose code the change touches, each with the reason, plus
+  `boot-errors.spec.js` and the Python checks below when the change calls for
+  them (`--since origin/main` for unpushed commits, `--list` to only look).
+  It picks from an impact map — per spec, the `edit.html` functions its tests
+  called and the engine functions the renderer called in Pyodide — which
+  `npm run test:full` records into `.impact/` (local, gitignored) while running
+  the whole suite. Run the whole suite when the picker says to, when the map is
+  missing or many commits old, or before calling a broad refactor done; CI runs
+  it on every push regardless. A new spec that drives no editor code (reads a
+  published page, spawns its own server) says what it depends on with a
+  `// affected-by: <glob> …` comment, or the picker can only find it by name.
+  How it decides: README, "Test it".
+- **Tests:** `npx playwright test` (editor behaviour; ~780 tests, ~20 min),
   `python3 docsync/test_docsync.py` (engine round-trip),
   `python3 report2027/tools/test_render.py` (render tolerances + edit.html
   syntax guard),

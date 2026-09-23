@@ -170,14 +170,47 @@ the browser, so an edit shows in ~1s. **Save** writes the files and commits
 ```
 npm ci
 npx playwright install chromium   # the browser itself — npm ci does not fetch it
-npx playwright test               # the full editor suite (276 specs)
+npm run test:affected             # the specs and checks YOUR change needs
+npm run test:full                 # the whole editor suite, recording the impact map
 python3 docsync/test_docsync.py       # the engine's own self-test
 python3 report2027/tools/test_render.py   # render tolerances + edit.html syntax
 ```
 
 The suite starts its own throwaway `serve.py` on port 8199 and mocks GitHub
 entirely — it never touches the network or your real repo. It also regenerates
-`docs/` on startup, so it works on a clone that has never been built.
+`docs/` on startup, so it works on a clone that has never been built, and
+stages the default project's editor from the working tree before any test runs
+(a machine whose `docs/primer/projects.json` points budget-primer at another
+checkout otherwise tested whatever `edit.html` was staged last).
+
+**Between pushes, run `npm run test:affected`, not the whole suite.** The full
+suite is ~780 tests and ~20 minutes; most changes touch one feature.
+`tools/affected.mjs` picks specs by what they *run*: `npm run test:full` records,
+per spec, every `edit.html` function its tests called (V8 coverage) and every
+engine function the renderer called inside Pyodide (`sys.monitoring`), into
+`.impact/` (machine-local, gitignored). A change is carried into that run's line
+numbers through a diff of the snapshot it kept, and selects the specs that ran
+the function it is in. It prints each spec with the reason, and what no spec
+exercises at all. `--since origin/main` covers unpushed commits, `--list` runs
+nothing, and anything after a second `--` goes to Playwright. The rules, in
+order of how often they fire:
+
+| Changed | Runs |
+|---|---|
+| code inside a function | the specs that called it |
+| a function no spec calls | nothing, and says so |
+| a top-level `const`/`function` | the specs calling code that reads it |
+| other top-level code, a fixture, the config | everything |
+| editor CSS or markup | specs that name the selector or run code that does |
+| `serve.py` | specs that use the route the change sits under |
+| a comment, a docstring | nothing |
+
+`boot-errors.spec.js` runs whenever something that boots the editor changed, and
+the Python checks (seconds, all of them) run for any engine or report change. A
+spec that drives no editor code declares what it depends on in a comment —
+`// affected-by: docsync/layout.py projects/**` — and is picked by that. CI
+still runs everything on every push. Rebuild the map (`npm run test:full`) when
+the selections get broad; the picker prints how many commits old it is.
 
 ## The editor
 

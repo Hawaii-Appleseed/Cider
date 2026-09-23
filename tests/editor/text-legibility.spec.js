@@ -24,6 +24,9 @@
 //
 // Floors live in docsync/layout.py (MIN_TEXT_PT and friends) so the renderer's
 // clamps, docsync.check and this spec can never disagree about the line.
+//
+// It drives no editor code, so tools/affected.mjs cannot see what it runs:
+// affected-by: docsync/layout.py docsync/blocks.py docsync/content.py docsync.yml report2027/tools/*.py report2027/web/primer.css projects/**
 const { test, expect } = require('@playwright/test');
 
 // The four contexts, in the unit the reader's eye is in. Screen widths are

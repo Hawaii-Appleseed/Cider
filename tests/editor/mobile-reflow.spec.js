@@ -10,6 +10,9 @@
 // riding out with the first layer() — are pinned in docsync/test_docsync.py.
 // This is the end-to-end half: whatever those emit, does the real report
 // actually lay out on a phone.
+//
+// It drives no editor code, so tools/affected.mjs cannot see what it runs:
+// affected-by: docsync/layout.py docsync/blocks.py docsync/content.py report2027/tools/*.py report2027/web/primer.css projects/staff-toolkit/**
 const { test, expect } = require('@playwright/test');
 
 const PHONE = { width: 375, height: 812 };

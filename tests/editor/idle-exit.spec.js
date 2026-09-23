@@ -10,6 +10,9 @@
 // the suite's shared webServer runs with PRIMER_LINGER=0 precisely so spec
 // traffic can never reap it, which also means it cannot be used to test the
 // reaper. No browser needed: hello/bye are plain POSTs.
+//
+// It drives no editor code, so tools/affected.mjs cannot see what it runs:
+// affected-by: report2027/tools/serve.py
 const { test, expect } = require('@playwright/test');
 const { spawn } = require('child_process');
 const path = require('path');

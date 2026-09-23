@@ -1,6 +1,9 @@
 node_modules/
 test-results/
 playwright-report/
+# The impact map tools/affected.mjs picks specs from: one full run's coverage
+# on this checkout (`npm run test:full` rewrites it). A cache, not a source.
+.impact/
 __pycache__/
 *.pyc
 .pytest_cache/

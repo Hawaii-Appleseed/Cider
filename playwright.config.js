@@ -8,6 +8,12 @@ const PORT = process.env.PRIMER_TEST_PORT || 8199;
 
 module.exports = defineConfig({
   testDir: 'tests/editor',
+  // Stages the default project's editor from this working tree (see the
+  // file: on a machine whose registry points budget-primer elsewhere, the
+  // suite was otherwise testing a stale edit.html), and brackets an impact-map
+  // run (`npm run test:full`; tools/affected.mjs reads the map).
+  globalSetup: './tests/editor/fixtures/global-setup.js',
+  globalTeardown: './tests/editor/fixtures/global-teardown.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

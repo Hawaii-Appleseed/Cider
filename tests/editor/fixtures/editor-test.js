@@ -24,6 +24,7 @@
 // any page or navigation exists, so nothing can outrace them.
 const base = require('@playwright/test');
 const { FakeGitHub } = require('./fake-github');
+const { impactFixtures } = require('./impact');
 
 // Match /__ping WITH OR WITHOUT its query string. The editor appends
 // ?project=<id> to every live-reload call, and a glob of '**/__ping' matches
@@ -103,6 +104,7 @@ const test = base.test.extend({
     await blockDangerousLocalEndpoints(context);
     await use(context);
   },
+  ...impactFixtures,
 });
 
 // Hosted editor test: forces local=false (blocks /__ping, exactly what
@@ -126,6 +128,7 @@ const hostedTest = base.test.extend({
     });
     await use(context);
   },
+  ...impactFixtures,
 });
 
 /** Download and Token live in the File menu now, so reaching either means
