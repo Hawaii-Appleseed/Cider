@@ -70,8 +70,15 @@ test.describe('headings behave like text boxes', () => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
-    await frame.locator('[data-el="basics.h1"]').click();
+    // Shift-click: select the box WITHOUT typing in it. A plain click types
+    // where it lands (since click-to-type), and a render never swaps over an
+    // open editor: its twin frame waits for the words to close. On a CI run
+    // that failed (twice, the retry too), the trace had the inline editor open
+    // after the click, and the render after the drag sitting in the hidden twin
+    // frame while the heading on screen kept the drag's preview style.
+    await frame.locator('[data-el="basics.h1"]').click({ modifiers: ['Shift'] });
     await page.waitForTimeout(600);
+    expect(await page.evaluate(() => editing)).toBe(false);
     for (const dir of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
       await expect(frame.locator(`.ds-handles .ds-h-${dir}`)).toHaveCount(1);
     }
@@ -88,12 +95,14 @@ test.describe('headings behave like text boxes', () => {
     expect(pos.hmin).toBe(true);
 
     await page.evaluate(() => render());
-    await page.waitForTimeout(2500);
-    const css = await page.evaluate(() => document.getElementById('out')
+    // Wait for the render to be what is ON SCREEN, rather than reading once
+    // after a fixed sleep: until the swap, #out is still the dragged document,
+    // whose inline style is the preview's (a height, no floor).
+    const css = () => page.evaluate(() => document.getElementById('out')
       .contentDocument.querySelector('[data-el="basics.h1"]').getAttribute('style'));
     // a floor, not a clip
-    expect(css).toContain('min-height:');
-    expect(css).not.toMatch(/(^|;)height:/);
+    await expect.poll(css, { timeout: 15_000 }).toContain('min-height:');
+    expect(await css()).not.toMatch(/(^|;)height:/);
   });
 });
 
