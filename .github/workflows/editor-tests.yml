@@ -41,6 +41,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Four machines, a quarter of the suite each. One runner has two cores
+    # and ran all ~780 tests in ~45 minutes, every push; sharded, the wall
+    # time is the slowest quarter. fullyParallel splits by test, not by file,
+    # so the quarters come out even.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    name: test (${{ matrix.shard }}/4)
     steps:
       - uses: actions/checkout@v4
 
@@ -56,17 +65,22 @@ jobs:
         run: pip install --quiet pyyaml pymupdf
 
       - name: Self-test the docsync engine
+        if: matrix.shard == 1
         run: python3 docsync/test_docsync.py
 
       # Also guards edit.html's inline script: its stylesheet is a JS template
       # literal, so a stray backtick anywhere in it kills the whole editor with
       # no console error. Cheap, and catches a whole class of silent breakage.
       - name: Render tolerances + edit.html syntax guard
+        if: matrix.shard == 1
         run: python3 report2027/tools/test_render.py
 
+      # 22, not 20: the collab relay's wrangler and miniflare require it.
+      # Under 20, `wrangler dev` never came up, and both collab specs died in
+      # their 90-second beforeAll on every run.
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           # Both lockfiles, because two npm projects are installed below and a
           # change to either one has to miss the cache.
@@ -92,12 +106,12 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run the editor test suite
-        run: npx playwright test
+        run: npx playwright test --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14
