@@ -41,9 +41,19 @@ async function waitLive(page) {
 
 /** edit() opens a paragraph with all of it selected; put the caret at one
  *  end instead, so typing adds words rather than replacing them. */
+// The caret to the start or the end of the open words. Explicitly: opening
+// used to select every word, so collapsing that selection was enough — a
+// click now puts the caret where it landed (caretAt), and a double-click's
+// second click selects the word under it.
 const collapse = (page, where) => page.evaluate(w => {
-  const sel = document.getElementById('out').contentDocument.getSelection();
-  if (w === 'end') sel.collapseToEnd(); else sel.collapseToStart();
+  const d = document.getElementById('out').contentDocument;
+  const host = d.querySelector('.ds-edit');
+  const r = d.createRange();
+  r.selectNodeContents(host);
+  r.collapse(w !== 'end');
+  const sel = d.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(r);
 }, where);
 
 async function open(browser, as) {
@@ -170,6 +180,11 @@ test('a remote edit to ANOTHER slot lands in B\'s source while B\'s paragraph ed
 
   await b.keyboard.press('Escape');               // close the editor, keep nothing
   await expect.poll(() => b.evaluate('editing'), { timeout: 10_000 }).toBe(false);
+  // Leaving the words keeps the box selected (a click opened them, and the
+  // box is the selection); a second Escape lets go of it, so B holds no
+  // selection for the presence tests below to find as a ring in A.
+  await b.keyboard.press('Escape');
+  await expect.poll(() => b.evaluate('selIds.size'), { timeout: 10_000 }).toBe(0);
   await expect(b.frameLocator('#out').locator(`[data-slot="${SLOT}"]`)).toContainText('Landed while', { timeout: 20_000 });
   expect(await slot(b)).toBe(text);
 });

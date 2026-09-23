@@ -521,11 +521,11 @@ INNER = f"""
   <div class="cols">
     <div class="col">
       <h3 class="h-warn"{L.attr("risk.h")}>{C.t("risk.h")}</h3>
-      <ul{C.ul_attr("risk.points")}>{bullets("risk.points")}</ul>
+      {C.movable("risk.points", f'<ul{C.ul_attr("risk.points")}>{bullets("risk.points")}</ul>')}
     </div>
     <div class="col">
       <h3 class="h-fed"{L.attr("ask.h")}>{C.t("ask.h")}</h3>
-      <ul{C.ul_attr("ask.points")}>{bullets("ask.points")}</ul>
+      {C.movable("ask.points", f'<ul{C.ul_attr("ask.points")}>{bullets("ask.points")}</ul>')}
     </div>
   </div>
 

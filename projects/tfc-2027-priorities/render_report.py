@@ -19,7 +19,7 @@ if str(REPO) not in sys.path:
 
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import slot_descriptions     # noqa: E402
+from docsync.blocks import slot_descriptions, fill_markers  # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
@@ -74,13 +74,12 @@ BODY = (HERE / "body.slotted.html").read_text()
 # hand-maintained places that must agree — the counts, the widths and these
 # labels — still applies; this makes the third of them editable.
 BODY = slot_descriptions(C, BODY, "desc")
-# marker substitution: A=slot attr, T=slot text, S=movable spacer,
-# E=movable attr, B=resizable background band
-BODY = re.sub("\u27e6A:([a-z0-9_.-]+)\u27e7", lambda m: C.slot_attr(m.group(1)), BODY)
-BODY = re.sub("\u27e6T:([a-z0-9_.-]+)\u27e7", lambda m: C(m.group(1)), BODY)
-BODY = re.sub("\u27e6S:([a-z0-9_.-]+)\u27e7", lambda m: L.spacer(m.group(1)), BODY)
-BODY = re.sub("\u27e6E:([a-z0-9_.-]+)\u27e7", lambda m: L.attr(m.group(1)), BODY)
-BODY = re.sub("\u27e6B:([a-z0-9_.-]+)\u27e7", lambda m: L.sec(m.group(1)), BODY)
+# The markers (A=slot attr, T=slot text, S=movable spacer, E=movable attr,
+# B=resizable background band) are the engine's to fill. fill_markers is what
+# makes every field on this page movable and resizable: the five re.subs that
+# used to stand here gave each one a slot and nothing else, so none of the
+# page's 141 fields could be dragged or given a width.
+BODY = fill_markers(C, L, BODY)
 
 # The one component this report has that original.html never had: the stacked
 # family bar. Its CSS lives here rather than in original.html, which stays the
@@ -258,6 +257,34 @@ PRINT_CSS = """
 }
 """
 
+# Every sheet, in order: this page, then any blank page added in the editor.
+# Going through L.page_order() plus L.pagemeta() is what lets the page strip
+# offer "+ Page" and reordering — the editor withholds both from a renderer
+# that never declared its pages. The same shape docsync.propose writes now;
+# this renderer predates it.
+DESIGNED_PAGES = 1
+
+
+def sheet(pid):
+    """One <section class="page">: this report's markup for the designed page,
+    empty for a blank page added in the editor. data-page is the page's
+    IDENTITY, which stops matching its position once the order can change."""
+    inner = f"\n{BODY}\n" if pid == DESIGNED_PAGES else ""
+    return (f'<section class="page" data-page="{pid}"{L.fill_attr(f"page.{pid}")}>'
+            f'{inner}'
+            # INSIDE the section. The shapes, text boxes and tables added in
+            # the editor used to be written after </section>, so they were
+            # positioned against <body> while every drag measured them against
+            # the page: a text box dropped at 6.18in drew at 5.76in on a
+            # 1280px-wide window — the sheet's centring margin — and somewhere
+            # else again on any other width, published page included.
+            f'{L.layer(pid)}{L.text_boxes(pid)}{L.tables_html(pid)}'
+            f'</section>')
+
+
+SHEETS = ("".join(sheet(pid) for pid in L.page_order(DESIGNED_PAGES))
+          + L.pagemeta(range(1, DESIGNED_PAGES + 1)))
+
 html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -276,10 +303,7 @@ html = f"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<section class="page">
-{BODY}
-</section>
-{L.layer(1)}{L.text_boxes(1)}{L.tables_html(1)}
+{SHEETS}
 </body>
 </html>
 """

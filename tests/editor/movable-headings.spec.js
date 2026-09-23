@@ -12,14 +12,18 @@ test.describe('movable headings', () => {
     await gotoEditor(page);
   });
 
-  test('a single click selects the heading as a movable object, not text-edit', async ({ page }) => {
+  test('a click beside a heading\'s words selects it as an object; on the words it types', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
 
     const h1 = frame.locator('[data-el="basics.h1"]');
     await expect(h1).toHaveCount(1);
-    await h1.click();
+    await h1.scrollIntoViewIfNeeded();
+    // The heading's box runs the width of the column and its words do not:
+    // a click in the box beside them lands on no slot, so it selects.
+    const hb = await h1.boundingBox();
+    await page.mouse.click(hb.x + hb.width - 6, hb.y + hb.height / 2);
 
     await expect(frame.locator('.ds-edit')).toHaveCount(0);   // no text editor opened
     // A heading is a single-slot text object, so one click puts the TYPE
@@ -35,6 +39,13 @@ test.describe('movable headings', () => {
     }
     await expect(frame.locator('.ds-handles .ds-rot')).toHaveCount(0);
     await expect(frame.locator('.ds-handles .ds-rot-corner')).toHaveCount(4);
+
+    // On the words, the same click types — no double-click, nothing selected.
+    const wb = await frame.locator('[data-el="basics.h1"] [data-slot="basics.h1"]').boundingBox();
+    await page.mouse.click(wb.x + 3, wb.y + wb.height / 2);
+    await expect(frame.locator('.ds-edit')).toHaveCount(1);
+    expect(await page.evaluate(() =>
+      document.getElementById('out').contentDocument.getSelection().isCollapsed)).toBe(true);
   });
 
   test('dragging the heading records a position, and the flow below it stays put', async ({ page }) => {
@@ -43,7 +54,7 @@ test.describe('movable headings', () => {
     await page.waitForTimeout(300);
 
     const h1 = frame.locator('[data-el="basics.h1"]');
-    await h1.click();
+    await h1.scrollIntoViewIfNeeded();
     const box = await h1.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
@@ -67,7 +78,7 @@ test.describe('movable headings', () => {
     await page.waitForTimeout(300);
     const id = 'para.' + key;
     const el = frame.locator(`[data-el="${id}"]`);
-    await el.click();
+    await el.scrollIntoViewIfNeeded();
     const box = await el.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
@@ -164,11 +175,21 @@ test.describe('movable headings', () => {
       const el = frame.locator(`[data-el="${id}"]`);
       await expect(el).toHaveCount(1);
       await el.scrollIntoViewIfNeeded();
-      await el.click();
-      await expect(frame.locator('.ds-edit')).toHaveCount(0);   // selects, not text-edit
+      // A click on its WORDS types into them (the caret where it landed) with
+      // the line still the selection; Escape leaves the words and keeps it
+      // selected. On the words, not the line's middle: a caption's middle can
+      // be its "Figure 1." label, which is not a slot — a click there selects.
+      await frame.locator(`[data-el="${id}"] [data-slot], [data-el="${id}"][data-slot]`)
+        .first().click();
+      await expect(frame.locator('.ds-edit')).toHaveCount(1);
+      await page.keyboard.press('Escape');
+      await expect(frame.locator('.ds-edit')).toHaveCount(0);
+      await expect.poll(() => page.evaluate(() => [...selIds])).toEqual([id]);
       await expect(page.locator('#ty-key'))                     // single-slot text: type controls
         .toHaveAttribute('title', id);
 
+      // Leaving the words re-renders the page; find the line again.
+      await el.scrollIntoViewIfNeeded();
       const box = await el.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();

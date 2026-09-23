@@ -34,7 +34,7 @@ REPO = HERE.parent.parent                        # repo root, where docsync/ liv
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from docsync.content import Content, ContentError  # noqa: E402
+from docsync.content import Content, ContentError, merge_attrs  # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.okina import OKINA_FACES, okinafy  # noqa: E402
 
@@ -253,7 +253,7 @@ def benefits_widget() -> str:
             {L.spacer("benefits.h2")}<h2 class="tfc-section-title"{L.attr("benefits.h2")}>{C.t("benefits.h2")}</h2>
 
             <div class="tfc-benefits-layout">
-            <div class="tfc-benefits-tabs">
+            {L.spacer("benefits.tabs")}<div class="tfc-benefits-tabs"{L.attr("benefits.tabs")}>
                 {tabs}
             </div>
 
@@ -305,7 +305,7 @@ def flint_expandable() -> str:
             <div class="tfc-stat-desc">{C.t(f"{el}.desc")}</div>
         </div>""")
     return f"""<div class="tfc-expandable-section">
-    <button class="tfc-expand-btn" onclick="toggleFlintSection()">
+    {L.spacer("flint.button")}<button class="tfc-expand-btn" onclick="toggleFlintSection()"{L.attr("flint.button")}>
     {C.t("flint.button")} <span class="tfc-expand-icon">&#9660;</span>
 </button>
 <div id="flint-content" class="tfc-expand-content">
@@ -342,7 +342,7 @@ def stats_carousel() -> str:
                             <p class="tfc-quote-text">{C.t("carousel.poverty.quote")}</p>
                         </div>
 
-                        <h3 style="text-align: center; color: #2A3A4D; margin-bottom: 10px; margin-top: 40px; font-size: 1.5rem;">{C.t("carousel.poverty.chart.title")}</h3>
+                        {L.spacer("carousel.poverty.chart.title")}<h3{merge_attrs(' style="text-align: center; color: #2A3A4D; margin-bottom: 10px; margin-top: 40px; font-size: 1.5rem;"', L.attr("carousel.poverty.chart.title"))}>{C.t("carousel.poverty.chart.title")}</h3>
 
                         <div class="tfc-chart-container" style="margin-top: 80px;">
                             <div class="tfc-3d-chart">
@@ -350,12 +350,12 @@ def stats_carousel() -> str:
                                 {poverty_bar("singlefather", 113)}
                                 {poverty_bar("singlemother", 266)}
                             </div>
-                            <p class="tfc-chart-source"{C.slot_attr("carousel.poverty.source")}>{C("carousel.poverty.source")}</p>
+                            {L.spacer("carousel.poverty.source")}<p class="tfc-chart-source"{merge_attrs(C.slot_attr("carousel.poverty.source"), L.attr("carousel.poverty.source"))}>{C("carousel.poverty.source")}</p>
                         </div>
                     </div>
 
                     <div class="tfc-carousel-slide">
-                        <h3 style="text-align: center; color: #2A3A4D; margin-bottom: 10px; font-size: 1.5rem;">{C.t("carousel.childcare.title")}</h3>
+                        {L.spacer("carousel.childcare.title")}<h3{merge_attrs(' style="text-align: center; color: #2A3A4D; margin-bottom: 10px; font-size: 1.5rem;"', L.attr("carousel.childcare.title"))}>{C.t("carousel.childcare.title")}</h3>
                         <p class="tfc-section-subtitle"></p>
 
                         <div class="tfc-childcare-stats">
@@ -367,7 +367,7 @@ def stats_carousel() -> str:
                             </div>
 
                             <div class="tfc-income-comparison">
-                                <div class="tfc-income-bar-group">
+                                {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.single")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.single.label")}</span>
                                     <div class="tfc-bar-container">
                                         <div class="tfc-bar-fill single" id="bar-single">{C.t("carousel.childcare.bar.single.value")}</div>
@@ -375,7 +375,7 @@ def stats_carousel() -> str:
                                     <p style="font-size: 0.9rem; color: #718096; margin-top: 8px;">{C.t("carousel.childcare.bar.single.note")}</p>
                                 </div>
 
-                                <div class="tfc-income-bar-group">
+                                {L.spacer("carousel.childcare.bar.married")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.married")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.married.label")}</span>
                                     <div class="tfc-bar-container">
                                         <div class="tfc-bar-fill married" id="bar-married">{C.t("carousel.childcare.bar.married.value")}</div>
@@ -385,7 +385,7 @@ def stats_carousel() -> str:
                         </div>
 
                         <div class="tfc-flint-source">
-                            <p{C.slot_attr("carousel.childcare.source")}>{C("carousel.childcare.source")}</p>
+                            {L.spacer("carousel.childcare.source")}<p{merge_attrs(C.slot_attr("carousel.childcare.source"), L.attr("carousel.childcare.source"))}>{C("carousel.childcare.source")}</p>
                         </div>
                     </div>
                 </div>
@@ -427,7 +427,7 @@ def how_it_works() -> str:
                 {steps}
             </div>
 
-            <p class="tfc-steps-note">{C.t("steps.note")}</p>
+            {L.spacer("steps.note")}<p class="tfc-steps-note"{L.attr("steps.note")}>{C.t("steps.note")}</p>
 
             {cost_expandable()}
         </div>
@@ -479,14 +479,14 @@ def cost_expandable() -> str:
     # under both money columns — the same words each time, so a reword lands
     # in both headers at once (the tax-testimony label pattern).
     return f"""<div class="tfc-expandable-section">
-    <button class="tfc-expand-btn rxk-cost-btn" onclick="rxkToggle(this, 'cost-content')">
+    {L.spacer("cost.button")}<button class="tfc-expand-btn rxk-cost-btn" onclick="rxkToggle(this, 'cost-content')"{L.attr("cost.button")}>
     <span class="rxk-cost-btn-eyebrow"{C.slot_attr("cost.button.eyebrow")}>{C.text("cost.button.eyebrow")}</span>
     <span class="rxk-cost-btn-amt"{C.slot_attr("cost.button.amt")}>{C.text("cost.button.amt")}</span>
     <span class="rxk-cost-btn-foot"><span class="tfc-expand-icon">&#9660;</span></span>
 </button>
 <div id="cost-content" class="tfc-expand-content">
     <div class="tfc-expand-inner">
-        <div class="rxk-cost-wrap">
+        {L.spacer("cost.table")}<div class="rxk-cost-wrap"{L.attr("cost.table")}>
             <div class="rxk-cost-title"{C.slot_attr("cost.title")}>{C.text("cost.title")}</div>
             <table class="rxk-cost">
                 <thead><tr>
@@ -590,7 +590,7 @@ def tanf_section() -> str:
             {L.spacer("tanf.h2")}<h2 class="tfc-section-title"{L.attr("tanf.h2")}>{C.t("tanf.h2")}</h2>
             {C.html("tanf.intro", "tfc-section-subtitle")}
 
-            <h3 class="rxk-tanf-h3" style="text-align:center; font-size:1.5rem; margin: 0 0 28px;">{C.t("tanf.compare1.title")}</h3>
+            {L.spacer("tanf.compare1.title")}<h3 class="rxk-tanf-h3"{merge_attrs(' style="text-align:center; font-size:1.5rem; margin: 0 0 28px;"', L.attr("tanf.compare1.title"))}>{C.t("tanf.compare1.title")}</h3>
 
             <div class="tfc-tanf-compare">
                 {tanf_card("tanf.ongoing", good=False,
@@ -611,7 +611,7 @@ def tanf_section() -> str:
                 {tanf_timeline()}
             </div>
 
-            <h3 style="text-align:center; color:#2A3A4D; font-size:1.5rem; margin: 56px 0 16px;">{C.t("tanf.choice.title")}</h3>
+            {L.spacer("tanf.choice.title")}<h3{merge_attrs(' style="text-align:center; color:#2A3A4D; font-size:1.5rem; margin: 56px 0 16px;"', L.attr("tanf.choice.title"))}>{C.t("tanf.choice.title")}</h3>
             {C.html("tanf.choice.body", "tfc-section-subtitle tanf-choice-body")}
 
             <div class="tfc-tanf-compare">
@@ -662,10 +662,10 @@ def tanf_option_card(key: str, num_label: str, free: bool = False) -> str:
 def cta() -> str:
     return f"""
 <div class="tfc-cta-section tfc-reveal" style="margin-bottom: 0;">
-    <h2>{C.t("cta.title")}</h2>
-    <p>{C.t("cta.body")}</p>
-    <a href="https://rxkids.org/" target="_blank" class="tfc-btn">{C.t("cta.link1.label")}</a>
-    <a href="https://rxkids.org/about/" target="_blank" class="tfc-btn tfc-btn-outline">{C.t("cta.link2.label")}</a>
+    {L.spacer("cta.title")}<h2{L.attr("cta.title")}>{C.t("cta.title")}</h2>
+    {L.spacer("cta.body")}<p{L.attr("cta.body")}>{C.t("cta.body")}</p>
+    {L.spacer("cta.link1")}<a href="https://rxkids.org/" target="_blank" class="tfc-btn"{L.attr("cta.link1")}>{C.t("cta.link1.label")}</a>
+    {L.spacer("cta.link2")}<a href="https://rxkids.org/about/" target="_blank" class="tfc-btn tfc-btn-outline"{L.attr("cta.link2")}>{C.t("cta.link2.label")}</a>
 </div>"""
 
 

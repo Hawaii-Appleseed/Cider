@@ -268,8 +268,13 @@ def argument(pre: str, i: int, count: int) -> str:
         f'<ul{C.ul_attr(f"{pre}.{i}.f")}>'
         + "".join(f"<li>{f}</li>" for f in facts) +
         f'</ul></div>') if facts else ""
+    # The argument is ONE object: its heading, testimony and figures move and
+    # take a width together, as a card does. It had no data-el at all, so
+    # every word in it could be typed into and none of it could be moved
+    # (docsync.check: IMMOVABLE TEXT). Its words still open on a click.
+    el_id = f"{pre}.{i}"
     return (
-        f'<li class="arg">'
+        f'{L.spacer(el_id)}<li class="arg"{L.attr(el_id)}>'
         f'<span class="arg-r"{C.derived(TALLY)}>{i}</span>'
         f'<div class="arg-h">'
         f'<span class="arg-t"{C.slot_attr(f"{pre}.{i}.h")}>{C.text(f"{pre}.{i}.h")}</span>'
@@ -378,9 +383,13 @@ def org_column(rows, accent: str, head_key: str) -> str:
         f'{b} bill{"s" if b != 1 else ""}</span>'
         f'</li>'
         for i, (slug, n, b) in enumerate(rows, 1))
+    # The ranked list is one object, beside its heading (already its own):
+    # the names in it are slots, and without a data-el around them they
+    # could be retyped but the list never moved.
+    list_id = f"{head_key}.list"
     return (f'<div class="col">'
             f'<h3 style="color:{accent}"{L.attr(head_key)}>{C.t(head_key)}</h3>'
-            f'<ol class="orgs">{items}</ol></div>')
+            f'{L.spacer(list_id)}<ol class="orgs"{L.attr(list_id)}>{items}</ol></div>')
 
 
 def bullets(key: str) -> str:
@@ -455,11 +464,11 @@ page = f"""
   <div class="cols">
     <div class="col">
       <h3 class="h-sup"{L.attr("support.h")}>{C.t("support.h")}</h3>
-      <ul{C.ul_attr("support.themes")}>{bullets("support.themes")}</ul>
+      {C.movable("support.themes", f'<ul{C.ul_attr("support.themes")}>{bullets("support.themes")}</ul>')}
     </div>
     <div class="col">
       <h3 class="h-opp"{L.attr("oppose.h")}>{C.t("oppose.h")}</h3>
-      <ul{C.ul_attr("oppose.themes")}>{bullets("oppose.themes")}</ul>
+      {C.movable("oppose.themes", f'<ul{C.ul_attr("oppose.themes")}>{bullets("oppose.themes")}</ul>')}
     </div>
   </div>
 

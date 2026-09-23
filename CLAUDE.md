@@ -390,6 +390,33 @@ Rules that bite:
   **Still open:** a `data-desc` slot has no click target in the editor
   (an attribute carries no element to float a field over), so a description
   is edited through content.md or the MCP connector, not on the page.
+- **Every text box moves and resizes, and a click in text types there
+  (2026-09-22).** Reported on tfc-2027-priorities: a single click selected
+  every word in the field (edit() selected the host's contents), and not one
+  of its 141 fields could be moved — docsync.propose wired each as a slot and
+  never as an object. The interaction model is now a slide tool's: a press
+  that does not travel TYPES, with the caret where it landed (`caretAt`,
+  `typeOnClick` from startDrag's release); a press that travels MOVES; the
+  handles resize; Escape leaves the words and keeps the box selected (the way
+  to align, lock or delete it — shift-click also selects without typing);
+  and while the words are open, a grip under the box (`.ds-movegrip`) moves
+  it without closing them. Groups still take a click to select, a second to
+  drill in, a third to type; words inside a drawing keep their double-click.
+  The guarantee has three nets: `docsync.check`'s IMMOVABLE TEXT (a
+  `data-slot` with no `data-el` on it or above it — an error under
+  `editability: strict`), the editor's own `#immov` chip and `audit()`'s
+  `immovable-text` issues, and `tests/editor/text-boxes-move.spec.js`, which
+  opens every bound report and drags a field on each strict one. The fixes
+  that go with it: an imported page's markers are filled by
+  `blocks.fill_markers` (every field, or the unit it is a piece of, gets
+  `field.<key>`; published bytes unchanged until something moves), a list
+  the renderer builds goes in `C.movable(key, markup)` (the `para.<key>`
+  block C.html uses), and a moved flow element's strut holds its MARGIN box
+  (`reserveMargin`/`reserveInline`, `strut_extra`) — a border-box strut let
+  the line under a moved heading rise by the heading's margin. The live
+  Budget Primer in ~/BudgetPrimerFinal still has 23 such fields (legend,
+  table headers, the process ring's labels); its binding is `warn`, so they
+  show as a warning there until its renderer is wired.
 - **A rewritten test that only asserts a CSS declaration (`justify-content:
   center`, a class name, a boundingBox read right after a CSS transition
   starts) can pass against the exact bug it's meant to catch.** This bit us

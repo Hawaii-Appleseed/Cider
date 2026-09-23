@@ -1,10 +1,10 @@
 // Editable + movable cover title/year (report2027/content.md cover.title/
 // cover.year + render_report.py): the cover title and year now carry the
 // same data-el position-override hook as section headings (basics.h1 etc.)
-// — a single click selects the <h1>/<div> as a draggable/resizable object,
-// double-clicking its text opens the inline editor. Both are plain text (not
-// run through md_inline), so that editor offers no Bold/Italic/Link toolbar.
-// Local mode; editor opens on the cover.
+// — a click on the words types there with the heading still the selection,
+// a press that travels drags it, and Escape leaves the words with it
+// selected. Both are plain text (not run through md_inline), so that editor
+// offers no Bold/Italic/Link toolbar. Local mode; editor opens on the cover.
 const { test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('editable cover title', () => {
@@ -16,9 +16,8 @@ test.describe('editable cover title', () => {
     await expect(title).toHaveCount(1);
     await expect(title).toContainText('HAWAI');
 
-    // Nested inside [data-el="cover.title"] like any section heading, so a
-    // double-click (not single) opens the text editor — a single click
-    // selects the heading as a movable object instead (see below).
+    // Nested inside [data-el="cover.title"] like any section heading; a
+    // double-click still opens it (its first click already has).
     await title.dblclick({ force: true });
     const ta = frame.locator('.ds-edit');
     await ta.waitFor({ state: 'visible' });
@@ -43,15 +42,18 @@ test.describe('editable cover title', () => {
     await expect(frame.locator('.cover-year [data-slot="cover.year"]')).toHaveCount(1);
   });
 
-  test('a single click selects the cover title as a movable object, not text-edit', async ({ page }) => {
+  test('a single click types into the cover title, and Escape leaves it selected as an object', async ({ page }) => {
     await gotoEditor(page);
     const frame = page.frameLocator('#out');
 
     const h1 = frame.locator('[data-el="cover.title"]');
     await expect(h1).toHaveCount(1);
     await h1.click();
-
-    await expect(frame.locator('.ds-edit')).toHaveCount(0);   // no text editor opened
+    // One click, and the words are open — the caret where it landed.
+    await expect(frame.locator('.ds-edit')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(frame.locator('.ds-edit')).toHaveCount(0);   // out of the words…
+    await expect.poll(() => page.evaluate(() => [...selIds])).toEqual(['cover.title']);   // …still selected
     // A single-slot text object: one click brings up the type controls,
     // selection and dragging still work exactly as before.
     await expect(page.locator('#type')).toBeVisible();
@@ -68,7 +70,9 @@ test.describe('editable cover title', () => {
     await gotoEditor(page);
 
     const h1 = frame.locator('[data-el="cover.title"]');
-    await h1.click();
+    // No click first: a click opens the words, and a drag that starts in
+    // open words selects text. The press itself selects what it moves.
+    await h1.scrollIntoViewIfNeeded();
     const box = await h1.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
@@ -89,7 +93,7 @@ test.describe('editable cover title', () => {
 
     const yearEl = frame.locator('[data-el="cover.year"]');
     await expect(yearEl).toHaveCount(1);
-    await yearEl.click();
+    await yearEl.scrollIntoViewIfNeeded();
     const box = await yearEl.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();

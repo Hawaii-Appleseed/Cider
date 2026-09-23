@@ -125,8 +125,10 @@ test.describe('entrance animations', () => {
       });
       await page.waitForTimeout(1200);
 
-      // no animation yet: no play button on the floating mini bar
-      await frame.locator(`[data-el="${id}"]`).click();
+      // no animation yet: no play button on the floating mini bar. Selected
+      // without typing — a click on a text box opens its words now, and the
+      // floating bar stands down while they are open.
+      await page.evaluate(k => docsync.api.select(k), id);
       await page.waitForTimeout(400);
       await expect(frame.locator('.ds-mini button[aria-label^="Play"]')).toHaveCount(0);
 
@@ -148,7 +150,7 @@ test.describe('entrance animations', () => {
       expect(played.dur).toBe('0.6s');
 
       // and now the mini bar above it offers to play it again
-      await frame.locator(`[data-el="${id}"]`).click();
+      await page.evaluate(k => docsync.api.select(k), id);
       await page.waitForTimeout(400);
       const play = frame.locator('.ds-mini button[aria-label^="Play"]');
       await expect(play).toHaveCount(1);

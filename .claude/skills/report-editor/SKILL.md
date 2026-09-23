@@ -15,11 +15,13 @@ user can grab it.
 Two invariants govern everything this skill builds, and each has a mechanical
 gate — neither is satisfied by eyeballing:
 
-- **Every element is editable.** All text is a slot, every graphic goes
-  through `graphic()`, prose never bakes into an SVG. Gate:
+- **Every element is editable, and every text box moves and resizes.** All
+  text is a slot, every graphic goes through `graphic()`, prose never bakes
+  into an SVG — and every slot has a `data-el` on it or around it, so the box
+  it sits in can be dragged and given a width, not only typed into. Gate:
   `python3 -m docsync.check --id <slug>` shows a clean `edit-mode draft`
-  line and the binding says `editability: strict` (see "the editability
-  contract" below).
+  line (IMMOVABLE TEXT is one of its findings) and the binding says
+  `editability: strict` (see "the editability contract" below).
 - **No element clashes with another.** Flow first, measured placement,
   grouped composition. Gate: the pilot `audit` verb comes back with zero
   issues (see "Placement: nothing clashes" below).
@@ -90,8 +92,21 @@ layout.json position/size override.
 |---|---|---|
 | Free-standing SVG/graphic | `blocks.graphic(L, id, svg, w=)` | move, 4-corner proportional resize, rotate |
 | Coloured tile with text | `blocks.card(C, L, …, detachable=)` | recolour, move; pieces pull apart if detachable |
-| Editable prose paragraph | `C.html(key, cls)` — stamps `data-slot` AND wraps a movable `para.<key>` | click-to-edit text; drag; resize |
-| Editable heading / inline text | a slot: `C.t(key)`, or `C.slot_attr`/`C.slot_span` on a tag you build | click-to-edit text; drag; width resize |
+| Editable prose paragraph | `C.html(key, cls)` — stamps `data-slot` AND wraps a movable `para.<key>` | click types (caret where clicked); drag; resize |
+| Editable heading / inline text | a slot: `C.t(key)`, or `C.slot_attr`/`C.slot_span` on a tag you build — AND `L.attr` on that tag or on the block holding it | click types; drag; width resize |
+| A list (or any block) of one slot's words you build yourself | `C.movable(key, f'<ul{C.ul_attr(key)}>…</ul>')` — the same `para.<key>` block C.html uses | click types; drag; width resize |
+| An imported page's fields (propose's `⟦A⟧/⟦T⟧/⟦E⟧/⟦S⟧/⟦B⟧` markers) | `blocks.fill_markers(C, L, BODY)` — never your own re.subs | every field (or the unit it is a piece of: a stat's figure + label) moves and resizes |
+
+**A slot is not a box.** `C.t`/`C.slot_attr`/`C.slot_span`/`C.ul_attr` make
+words editable and nothing else; with no `data-el` on the element or on
+anything holding it, the words type and the box never moves —
+`docsync.check`'s IMMOVABLE TEXT, an error under `strict`. Give it one:
+`L.attr` on the tag or on the block it sits in (its card, its list, its
+table — a table cell is never its own box), `C.movable` for a block you
+build, `graphic()` for words in a drawing. Where the element has an inline
+style of its own, merge rather than add a second style attribute (the parser
+keeps only the first): `merge_attrs(' style="…"', L.attr(id))` from
+`docsync.content` — own style first, so the position's `margin:0` wins.
 
 **The `C()` trap — the #1 "why can't I edit this?" cause.** Bare `C(key)` (i.e.
 `Content.__call__`) and `C.text(key)` emit prose with **no `data-slot`**, so the
@@ -163,7 +178,9 @@ any other. The discipline, in order of preference:
    `overlap` (two placed movables sharing >20% of the smaller), `covers-flow`
    (a placed box/table/dragged element parked on flow prose or a flow
    graphic), `off-sheet`, `print-overflow` (Save refuses this one outright),
-   `rule-through-glyph`, `orphaned-group-member`, `uncited-source`. "Fix"
+   `rule-through-glyph`, `orphaned-group-member`, `uncited-source`,
+   `immovable-text` (words that type in a box nothing can move — a renderer
+   fix: give the slot a `data-el`, see "A slot is not a box"). "Fix"
    means move to clear space or group with intent — never shrink text under
    the legibility floor or hide an element to dodge a finding.
 
@@ -272,7 +289,8 @@ same truth `save()` refuses on), `off-sheet` (a placed element past the page
 edge — read from the layout store, because the page visually CLIPS exactly
 what you are looking for), `overlap` (>20% of the smaller element covered;
 grouped pairs are skipped, being composition not collision),
-`orphaned-group-member`, and `uncited-source` (blocks publish). Reserve
+`orphaned-group-member`, `uncited-source` (blocks publish), and
+`immovable-text` (a slot with no `data-el` on or around it, per page). Reserve
 screenshots for taste — and when you want one, `POST /__export` with
 `{fmt:'png', page:N, scale:0.25}` returns a single ~50KB page instead of a
 full-resolution zip of the whole document.
@@ -425,8 +443,11 @@ Two conversion rules that prevent the warnings in the first place:
    lie — but then SAY SO at handoff: tell the user those figures change by
    re-running the model, not by clicking.
 
-The handoff message itself must state what is editable how: double-click
-edits text, click selects/moves, which graphics are data-frozen and why.
+The handoff message itself must state what is editable how: a click in text
+types there (the caret goes where you click), a drag moves the box, the
+handles resize it, Escape (or shift-click) selects it without typing, a
+chart's labels open on a double-click, and which graphics are data-frozen
+and why.
 
 ## Where code lives
 

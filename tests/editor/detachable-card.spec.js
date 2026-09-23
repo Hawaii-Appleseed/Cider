@@ -117,7 +117,9 @@ test.describe('detachable content card', () => {
     await page.waitForTimeout(400);
     await page.keyboard.press('Escape');
     const t = frame.locator(`[data-el="${TITLE}"]`);
-    await t.click();
+    // Shift-click: select the title WITHOUT opening its words (a plain click
+    // types into them now), so the drag below grabs the object.
+    await t.click({ modifiers: ['Shift'] });
     const t0 = await t.boundingBox();
     await page.mouse.move(t0.x + t0.width / 2, t0.y + t0.height / 2);
     await page.mouse.down();
@@ -151,7 +153,9 @@ test.describe('detachable content card', () => {
     // now the title alone drags to its own position
     await page.keyboard.press('Escape');
     const t = frame.locator(`[data-el="${TITLE}"]`);
-    await t.click();
+    // Shift-click: select the title WITHOUT opening its words (a plain click
+    // types into them now), so the drag below grabs the object.
+    await t.click({ modifiers: ['Shift'] });
     expect(await page.evaluate(() => [...selIds])).toEqual([TITLE]);
     const tb = await t.boundingBox();
     await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2);

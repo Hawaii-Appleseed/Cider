@@ -20,6 +20,7 @@ if str(REPO) not in sys.path:
 from docsync.content import Content              # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.okina import OKINA_FACES, okinafy   # noqa: E402
+from docsync.blocks import fill_markers          # noqa: E402
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
@@ -53,13 +54,10 @@ STYLE = okinafy(STYLE)
 FLOOR_CSS = "\n  .px-nav .px-brand-tag{font-size:10.5px;}"
 
 BODY = (HERE / "body.slotted.html").read_text()
-# marker substitution: A=slot attr, T=slot text, S=movable spacer,
-# E=movable attr, B=resizable background band
-BODY = re.sub("\u27e6A:([a-z0-9_.-]+)\u27e7", lambda m: C.slot_attr(m.group(1)), BODY)
-BODY = re.sub("\u27e6T:([a-z0-9_.-]+)\u27e7", lambda m: C(m.group(1)), BODY)
-BODY = re.sub("\u27e6S:([a-z0-9_.-]+)\u27e7", lambda m: L.spacer(m.group(1)), BODY)
-BODY = re.sub("\u27e6E:([a-z0-9_.-]+)\u27e7", lambda m: L.attr(m.group(1)), BODY)
-BODY = re.sub("\u27e6B:([a-z0-9_.-]+)\u27e7", lambda m: L.sec(m.group(1)), BODY)
+# The markers (A=slot attr, T=slot text, S=movable spacer, E=movable attr,
+# B=resizable background band) are the engine's to fill: fill_markers also
+# makes every field movable and resizable, which five re.subs here never did.
+BODY = fill_markers(C, L, BODY)
 BODY = okinafy(BODY)                             # inline style= stacks too
 
 # Every sheet, in order: this page, then any blank page added in the editor.

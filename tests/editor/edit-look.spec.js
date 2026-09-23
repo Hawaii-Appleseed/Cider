@@ -56,7 +56,12 @@ test.describe('editing in place looks like the page', () => {
     const host = frame.locator('.ds-edit');
     await host.waitFor({ state: 'visible' });
     await expect(host).toHaveText('Key Points');
-    await page.keyboard.press('ArrowRight');   // collapse the open-on-select-all to the end (End scrolls on a Mac)
+    // The caret opens where the click landed; put it after the words (End
+    // scrolls on a Mac).
+    await host.evaluate(h => {
+      const r = h.ownerDocument.createRange(); r.selectNodeContents(h); r.collapse(false);
+      const s = h.ownerDocument.getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
     await page.keyboard.type(' X');
     await page.evaluate(() => document.querySelector('#out').contentDocument.querySelector('.ds-edit').blur());
     await frame.locator('.ds-edit').waitFor({ state: 'detached' });

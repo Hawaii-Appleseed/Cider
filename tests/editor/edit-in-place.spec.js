@@ -69,8 +69,8 @@ test.describe('editing a field in place', () => {
     await h1.click();
     const host = frame.locator('.ds-edit[data-slot="sheet.h1-1"]');
     await expect(host).toHaveJSProperty('tagName', 'H1');
-    // Opening selects the words (so typing replaces them, as a design tool
-    // does); put the caret after them instead.
+    // A click puts the caret where it landed (caretAt); put it after the
+    // words, so the probe appends.
     await page.evaluate(() => {
       const d = document.getElementById('out').contentDocument;
       const h = d.querySelector('.ds-edit[data-slot="sheet.h1-1"]');

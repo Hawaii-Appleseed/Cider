@@ -64,8 +64,9 @@ test.describe('download-pdf button', () => {
       return { x: bx.x, y: bx.y };
     }, b.id);
 
-    await el.click();
-    await page.waitForTimeout(300);
+    // Straight to the drag: a click would open the button's words, and a
+    // press in open words selects text. The press selects what it moves.
+    await el.scrollIntoViewIfNeeded();
     const bb = await el.boundingBox();
     await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
     await page.mouse.down();
