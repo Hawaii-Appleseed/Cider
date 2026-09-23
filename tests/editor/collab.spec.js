@@ -302,11 +302,21 @@ test('presence: a person with nothing in hand is still somewhere - the page they
   const av = b.locator('#collab i[title^="ada"]');
   await expect(av).toHaveAttribute('title', new RegExp(`^ada · reading page ${pages}\\. Click to go there`), { timeout: 10_000 });
   await b.evaluate('document.getElementById("out").contentWindow.scrollTo(0, 0)');
+  // #stat is the one status line the whole editor shares, and any render
+  // that lands after the click (the last test's shape removal reaching B, a
+  // collaborator's update) puts "unsaved changes" back over the sentence,
+  // which is what it is for. Sampling it afterwards raced that render: it
+  // lost about 1 run in 5. Record every value it takes from the click on,
+  // and ask whether the click said it.
+  await b.evaluate(() => {
+    const stat = document.getElementById('stat');
+    window.__statSaid = [stat.textContent];
+    new MutationObserver(() => window.__statSaid.push(stat.textContent))
+      .observe(stat, { childList: true, characterData: true, subtree: true });
+  });
   await av.click();
-  // #stat before scrollY, not after: the click sets both, but #stat is the
-  // one status line the whole editor shares and the next render's "unsaved
-  // changes" takes it back. Asserted after a poll, this sampled whatever won.
-  await expect(b.locator('#stat')).toHaveText(new RegExp(`ada is reading on page ${pages}`));
+  await expect.poll(() => b.evaluate(() => window.__statSaid.join('\n')), { timeout: 10_000 })
+    .toMatch(new RegExp(`ada is reading on page ${pages}`));
   await expect.poll(() => b.evaluate('document.getElementById("out").contentWindow.scrollY'), { timeout: 10_000 }).toBeGreaterThan(0);
   // Back at the top with something in hand, the sentence changes with her.
   await a.evaluate(`(() => { const d = document.getElementById('out').contentDocument; d.defaultView.scrollTo(0, 0);
