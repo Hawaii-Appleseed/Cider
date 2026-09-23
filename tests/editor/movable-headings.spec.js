@@ -5,7 +5,7 @@
 // resizable object (like any other element), while double-clicking its actual
 // text still opens the inline text editor — the same split already proven for
 // prose paragraphs and callout titles. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('movable headings', () => {
   test.beforeEach(async ({ page }) => {

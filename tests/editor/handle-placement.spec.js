@@ -2,7 +2,7 @@
 // .ds-h-* offsets). They used to straddle the edge — a 7-9px grip hung on
 // -4px — which painted 3-5px of white-and-green over the first and last
 // characters of every line. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('handle placement', () => {
   test.beforeEach(async ({ page }) => {

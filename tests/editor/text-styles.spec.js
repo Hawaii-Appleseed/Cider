@@ -7,7 +7,7 @@
 // those win, so a style is a starting point and never a cage. Resolution
 // lives in layout.py's resolve_style() and is mirrored in the editor only so
 // the toolbar can SHOW what the page does.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** Select a slot and open its type toolbar, the way a click does. */
 async function pickSlot(page, key) {

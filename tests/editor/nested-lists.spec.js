@@ -3,7 +3,7 @@
 // Creating a bullet already worked; INDENTING one did not — nothing built
 // nesting, htmlToMd flattened any that existed, and block_html stripped the
 // leading spaces on the way back out. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('nested bullets', () => {
   test.beforeEach(async ({ page }) => {

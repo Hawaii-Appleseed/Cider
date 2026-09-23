@@ -4,7 +4,7 @@
 // through the pilot is the DEFAULT way this thing is meant to be changed, so
 // "make every pull-quote match" was a thing a person could do and an agent
 // could not.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

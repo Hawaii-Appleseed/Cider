@@ -4,7 +4,7 @@
 // layout.shapes but the glyph never moved on screen: "I can't move icons."
 // The fixture repo has no icons, and picking one needs the network, so the
 // spec plants one exactly the way addIcon stores it.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const STAR = '<path fill="none" stroke="currentColor" stroke-width="2" '
   + 'd="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>';

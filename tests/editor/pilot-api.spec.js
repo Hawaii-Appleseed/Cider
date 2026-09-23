@@ -5,7 +5,7 @@
 // through pushHistory (⌘Z undoes a pilot like a human), lands through the one
 // render(), and returns plain data — geometry in page inches — so a pilot
 // never needs a screenshot to know what happened. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

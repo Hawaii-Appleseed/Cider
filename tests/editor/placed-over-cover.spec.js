@@ -12,7 +12,7 @@
 // The invariant this pins is deliberately not "cover-inner has z-index 1": it
 // is that a freshly placed box is the thing under the cursor at its own centre.
 // Any future chrome that outranks the editable layer fails here too.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('a text box placed over the cover', () => {
   test('is the element under the cursor, not buried by the cover', async ({ page }) => {

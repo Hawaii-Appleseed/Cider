@@ -11,7 +11,7 @@
 //
 // The other half: a line that is nothing but `[[something]]` is a marker
 // wherever it sits, so pasting one into a paragraph split the slot in two.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const DOC = tail => `[[a.b]]${tail}Words.\n\n[[sources]]\n[x]: A. — https://a.gov\n`;
 

@@ -3,7 +3,7 @@
 // colours, the report palette, a few dozen defaults, gradients, and a full
 // picker — so it opens the LEFT column, which stopped holding pages for
 // exactly this reason (they moved to the bottom strip). Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 async function addRect(page) {
   await page.evaluate(async () => {

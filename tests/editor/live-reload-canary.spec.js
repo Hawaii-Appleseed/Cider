@@ -18,7 +18,7 @@
 // checkout (see fixtures/editor-test.js), so the "change on disk" is served
 // by route interception instead — the same bytes the editor would have
 // fetched, altered. Everything downstream is the real code path.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const SLOT = 'basics.h1';
 

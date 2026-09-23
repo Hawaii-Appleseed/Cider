@@ -16,7 +16,7 @@
 //
 // The version is now consumed only on a pull that actually happened, so the
 // next 2s heartbeat retries and the change lands as soon as the editor closes.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const SLOT = 'basics.h1';
 

@@ -3,7 +3,7 @@
 // link. deafenStickyChrome() used to silence it along with the report's sticky
 // toolbar — every fixed child of <body> — so the pointer passed straight
 // through the card and it read as "closes before I can reach it". Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const popState = (page) => page.evaluate(() => {
   const f = document.getElementById('out').contentDocument.querySelector('#fnpop');

@@ -11,7 +11,7 @@
 //
 // rxkids-fiscal: two designed pages declared to the strip, every chart label
 // an svg_text slot, page 2's how-it-works chart the one with plain words.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const PROJECT = '?project=rxkids-fiscal';
 

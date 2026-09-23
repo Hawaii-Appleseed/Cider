@@ -4,7 +4,7 @@
 // is written into the project's repo, only the host's projects.json gains an
 // entry. The registry always commits to the HOST repo, even when the project
 // lives elsewhere.
-const { test, expect } = require('./fixtures/editor-test');
+const { warmTest: test, expect } = require('./fixtures/editor-test');
 
 // A gh() mock that serves one project's manifest from the Contents API and
 // captures whatever projects.json gets committed, per repo it was sent to.

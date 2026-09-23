@@ -3,7 +3,7 @@
 // source page's measured height), its own layout.json full of traced objects,
 // and a renderer that draws placed objects rather than flowing prose — the
 // scaffold's normal renderer would draw none of it.
-const { test, expect } = require('./fixtures/editor-test');
+const { warmTest: test, expect } = require('./fixtures/editor-test');
 
 test.describe('imported project scaffold', () => {
   test.beforeEach(async ({ page }) => {

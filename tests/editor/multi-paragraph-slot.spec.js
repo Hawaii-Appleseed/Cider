@@ -14,7 +14,7 @@
 // block with the key, replaces the first with one editor holding the whole
 // slot's markdown and drops the rest — so binding all of them is both safe
 // and idempotent.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const SLOT = 'whopays.p1';
 const PROBE = 'SECONDPARAPROBE this paragraph was added inside the slot.';

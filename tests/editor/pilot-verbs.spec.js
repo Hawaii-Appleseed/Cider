@@ -4,7 +4,7 @@
 // rotate/lock/group/ungroup/remove/duplicate — plus batch() cross-references
 // ({as:'name'} / '@name') and audit(), the mechanical eye that replaces
 // screenshot round-trips for geometry questions. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

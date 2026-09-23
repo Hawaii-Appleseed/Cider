@@ -3,7 +3,7 @@
 // point of the change — a validation error keeps typed input instead of
 // discarding it (the old sequential-prompt + alert flow lost everything), and
 // cancel/Escape are clean no-ops.
-const { test, expect, gotoEditor, dialog, fillDialog, cancelDialog, clickAddSection } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, dialog, fillDialog, cancelDialog, clickAddSection } = require('./fixtures/editor-test');
 
 test.describe('modal dialogs', () => {
   test.beforeEach(async ({ page }) => {

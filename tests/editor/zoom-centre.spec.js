@@ -5,7 +5,7 @@
 // the right — "the zoom skews left" — and on a window wider than the design
 // viewport the canvas floated in the middle, taking its scrollbar with it.
 // Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const snap = (page) => page.evaluate(() => {
   const out = document.getElementById('out'), stage = document.getElementById('stage');

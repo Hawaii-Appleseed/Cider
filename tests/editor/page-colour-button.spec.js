@@ -8,7 +8,7 @@
 // selIds; the two selections are one state, never both). So the button did
 // nothing: `els.length !== 1` returned before openColorPanel ever ran, and
 // nothing on screen told you why a visibly-enabled swatch was inert.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 async function bareSpot(page) {
   const pt = await page.evaluate(() => {

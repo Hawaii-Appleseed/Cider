@@ -2,7 +2,7 @@
 // toolbar button while editing a paragraph, then edit/rename/reorder/delete
 // it from the Sources panel (openSources/renderSources/addSource/
 // updateSource/renameSource/moveSource/deleteSource). Local-mode, no GitHub.
-const { test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection, openSources } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection, openSources } = require('./fixtures/editor-test');
 
 // toc.author (the "Author: …" byline). Like every movable text in the
 // report it now sits inside a [data-el] object, so a single click selects

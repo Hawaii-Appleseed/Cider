@@ -4,7 +4,7 @@
 // one — until the user Ungroups and pulls a piece out. The text still comes
 // from content.md. The fixture's Operating Budget card (page 5) is detachable.
 // Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const TILE = 'card.spent.cards.operating.bullets';
 const TITLE = 'spent.cards.operating.title';

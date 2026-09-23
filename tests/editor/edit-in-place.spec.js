@@ -12,7 +12,7 @@
 // A slot that is ONE element holding one paragraph's words is now edited as
 // that element (edit(): inPlace). What must still open in the stand-in is
 // pinned too: a C.html paragraph slot, where Enter makes a second paragraph.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 // Open a slot as a person would (click, or double-click inside a movable
 // object), measure it before and while open, then cancel.

@@ -3,7 +3,7 @@
 // THE SERVER — the party that actually pushes in local mode. GitHub itself is
 // a stand-in here: playwright.config points the server's PRIMER_GH_BASE/API
 // at the mock this file runs, so the whole loop is exercised without network.
-const { test, expect } = require('./fixtures/editor-test');
+const { warmTest: test, expect } = require('./fixtures/editor-test');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

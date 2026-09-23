@@ -15,7 +15,7 @@
 // its pages exercises the stamped path instead. If demo-report is ever
 // converted too, these tests would keep passing while testing nothing at all —
 // so the premise is asserted below rather than assumed.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const DEMO = '?project=demo-report';
 

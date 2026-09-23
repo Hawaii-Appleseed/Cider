@@ -2,7 +2,7 @@
 // the small square right at a corner still resizes, but dragging from the
 // ring just OUTSIDE it rotates. Implemented as an invisible .ds-rot-corner
 // zone painted behind (and larger than) its resize square. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 async function addShape(page) {
   await page.click('#shape');

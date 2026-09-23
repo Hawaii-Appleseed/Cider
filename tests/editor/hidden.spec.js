@@ -12,7 +12,7 @@
 // Delete goes through the KEYBOARD: for a single text object the toolbar row
 // shows the type controls, not the arrange strip, so #ar-del isn't on screen
 // — which is exactly the path a person deleting a heading takes.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const ID = 'basics.h1';
 

@@ -107,6 +107,44 @@ const test = base.test.extend({
   ...impactFixtures,
 });
 
+// Warm editor test: one browser context per WORKER instead of per test, so
+// the ~5.5MB Pyodide download and the engine files stay in that context's
+// HTTP cache and every boot after a worker's first is served from memory.
+// Each test still gets its own page, and the origin's storage (localStorage,
+// the warm-preview Cache Storage, IndexedDB) is wiped before it, so no draft,
+// zoom or cached render carries over — only the HTTP cache does.
+//
+// For specs that never touch `context` (no context.route, addInitScript,
+// exposeBinding, grantPermissions…): those would pile up on the shared
+// context and leak into the next test. Such a spec stays on `test`.
+// An impact-map run (DS_IMPACT) records per test through the context, so it
+// falls back to `test` there and the map stays exact.
+const warm = base.test.extend({
+  _warmContext: [async ({ browser }, use, workerInfo) => {
+    const { baseURL, serviceWorkers, viewport, userAgent, deviceScaleFactor,
+            isMobile, hasTouch, locale } = workerInfo.project.use;
+    const ctx = await browser.newContext({ baseURL, serviceWorkers, viewport, userAgent,
+                                           deviceScaleFactor, isMobile, hasTouch, locale });
+    await use(ctx);
+    await ctx.close();
+  }, { scope: 'worker' }],
+  context: async ({ _warmContext }, use) => {
+    await use(_warmContext);
+  },
+  page: async ({ _warmContext, baseURL }, use) => {
+    const page = await _warmContext.newPage();
+    const cdp = await _warmContext.newCDPSession(page);
+    await cdp.send('Storage.clearDataForOrigin', {
+      origin: new URL(baseURL).origin,
+      storageTypes: 'local_storage,cache_storage,indexeddb,service_workers',
+    });
+    await cdp.detach();
+    await use(page);
+    await page.close();
+  },
+});
+const warmTest = process.env.DS_IMPACT ? test : warm;
+
 // Hosted editor test: forces local=false (blocks /__ping, exactly what
 // detectLocal() treats as "no local server") and installs a fully in-memory
 // fake GitHub so Save draft / Share / Publish / sign-in exercise the REAL
@@ -195,7 +233,7 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 }
 
 module.exports = {
-  test, hostedTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickAddSection,
+  test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent,
 };

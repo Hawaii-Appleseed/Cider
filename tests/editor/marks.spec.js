@@ -3,7 +3,7 @@
 // same jobs on Ranges. The cases that matter are the ones execCommand used to
 // hide: a selection covering only PART of an existing mark, and re-applying a
 // mark that is already there (which must not nest and double the ** on save).
-const { test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
 
 let counter = 0;
 

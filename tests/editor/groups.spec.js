@@ -3,7 +3,7 @@
 // directly in layout.json, joined by a groups entry, must behave as one object
 // until the user Ungroups — then come apart into independent movables. This is
 // what lets a user detach text from the shape it sits on. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const SHAPE = 'demo.note.bg';
 const BOX = 'text.demo.note';

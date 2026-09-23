@@ -3,7 +3,7 @@
 // image, so the editor moves, resizes and rotates it — a bare <svg> in the
 // markup would be frozen. The fixture report puts one on page 8
 // (onetime.demo.graphic). Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const GID = 'onetime.demo.graphic';
 

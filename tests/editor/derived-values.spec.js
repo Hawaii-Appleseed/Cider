@@ -5,7 +5,7 @@
 // ignored you, which reads as broken rather than as "not yours to type". A
 // renderer now stamps measured values with the command that remakes them, and
 // the editor reports that command instead of staying silent.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const SRC = 'python -m spec stats';
 

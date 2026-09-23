@@ -6,7 +6,7 @@
 // same id. A designed (content.md-backed) page can only be HIDDEN, never
 // deleted — hiding preserves its content so it can be shown again; that's
 // intentional and unchanged. Local mode.
-const { test, expect, gotoEditor, submitDialog } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, submitDialog } = require('./fixtures/editor-test');
 
 test.describe('pages: create & delete', () => {
   test.beforeEach(async ({ page }) => {

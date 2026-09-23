@@ -6,7 +6,7 @@
 // floating text box — a second heading slot cannot exist, but the words,
 // loose and restylable, are what duplicating one means. Endnotes stay out:
 // their drag story is reordering, not copying. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** Select an element by id through the editor's own selection machinery,
  *  which also raises the mini toolbar beside it. */

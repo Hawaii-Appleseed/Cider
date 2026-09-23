@@ -3,7 +3,7 @@
 // right-clicking gives a MENU rather than dropping colour swatches straight in
 // — the page used to be the only surface in the editor whose right-click was a
 // picker. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** A point on a page where hitPlaced() finds nothing — the exact condition
  *  that routes a click to the page instead of to an object. */

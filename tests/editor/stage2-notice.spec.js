@@ -7,7 +7,7 @@
 // opened with no ring and no floating mini toolbar on anything but text, and
 // nothing had said that would happen. checkStage2() (edit.html) is the fix —
 // this spec is what stops it regressing silently.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('the stage-two notice', () => {
   test('shows for a project imported via scaffold + propose', async ({ page }) => {

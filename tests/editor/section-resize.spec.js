@@ -4,7 +4,7 @@
 // drags a min-height override into layout.sections. Dragging back down to
 // the content's natural height clears the override, so an untouched page
 // stays untouched. The primer fixture has no bands, so the spec plants one.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const ID = 'sec.test-band';
 

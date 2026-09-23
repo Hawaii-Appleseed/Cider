@@ -6,7 +6,7 @@
 //
 // Everything works on the AUTHORED text, not the rendered HTML, because that
 // is what a replace has to write back.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test('⌘F opens it, and a word is found where it actually lives',
   async ({ page }) => {

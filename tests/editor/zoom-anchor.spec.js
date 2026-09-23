@@ -3,7 +3,7 @@
 // each step re-anchors, and any drift compounds until the report lands
 // somewhere else entirely — reported as "it zooms in on the middle instead of
 // where I was". Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 // Where the middle of the pane is looking, in the report's own pixels —
 // independent of the scale, so it is comparable across zoom levels.

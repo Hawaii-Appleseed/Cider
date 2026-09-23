@@ -2,7 +2,7 @@
 // prose textarea opens a small menu with "Add endnote here…" (creates a source
 // and drops a [^id] ref at the caret) and a list of existing sources to cite.
 // Local mode; the menu is drawn inside the iframe document.
-const { test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
 
 // A multi-line prose block (a +Section overflow slot renders as a <textarea>);
 // inline single-line fields like a heading take no footnotes, so they keep the

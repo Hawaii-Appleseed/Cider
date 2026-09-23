@@ -3,7 +3,7 @@
 // flow space gets its spacer from the runtime when spacer() was not called),
 // and anything past the RIGHT edge (fitCheck looked only down; .page is
 // overflow:hidden on both sides). Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('struts and edges', () => {
   test.beforeEach(async ({ page }) => { await gotoEditor(page); });

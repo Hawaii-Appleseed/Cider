@@ -1,7 +1,7 @@
 // Canva-style "Add text" presets (docsync/editor/edit.html): the Text button
 // opens a popover offering Heading / Subheading / Body, each creating a text
 // box pre-styled with the right size/weight. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('add text presets', () => {
   test.beforeEach(async ({ page }) => {

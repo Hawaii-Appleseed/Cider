@@ -12,7 +12,7 @@
 // applies to it too. That has to stay a TAG choice, never hardcoded metrics:
 // `sup { font-size: 11px }` is report2027's own stylesheet, and every report
 // styles its superscripts differently.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 // The first slot whose rendered prose carries a citation marker.
 async function citedSlot(page) {

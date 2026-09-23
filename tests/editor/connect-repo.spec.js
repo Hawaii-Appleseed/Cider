@@ -3,7 +3,7 @@
 // this is what lets projects live in their own repos, set up from the editor.
 // The modal collects repo + deploy branch; createProject validates access and
 // the branch's existence up front, then records both in the registry.
-const { test, expect } = require('./fixtures/editor-test');
+const { warmTest: test, expect } = require('./fixtures/editor-test');
 
 test.describe('connect a repo', () => {
   test.beforeEach(async ({ page }) => {

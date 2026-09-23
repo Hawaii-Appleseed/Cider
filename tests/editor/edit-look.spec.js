@@ -16,7 +16,7 @@
 //    padding, rotation), and editBox()'s wrapper carried only the geometry:
 //    a 22px bold red centred note on a cream fill opened as 15px regular
 //    slate on white. The wrapper now wears the box's class and style.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const PROPS = ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight'];
 const look = (e, P) => {

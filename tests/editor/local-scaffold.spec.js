@@ -3,7 +3,7 @@
 // no repo access, and the editor opens straight into it. These tests hit the
 // REAL endpoint, so they write real files into this checkout — everything is
 // snapshotted before and restored after, pass or fail.
-const { test, expect } = require('./fixtures/editor-test');
+const { warmTest: test, expect } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

@@ -3,7 +3,7 @@
 // flows now go through native <dialog> modals (dsForm/dsConfirm), not
 // prompt()/confirm(). Local-mode: no GitHub, only in-memory `source` and the
 // Pyodide-rendered iframe.
-const { test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, fillDialog, submitDialog, clickAddSection } = require('./fixtures/editor-test');
 
 /** Add a section through the +Section dialog: pick a page and name it in one
  *  form, submit, then Escape out of the auto-opened editor so it re-renders

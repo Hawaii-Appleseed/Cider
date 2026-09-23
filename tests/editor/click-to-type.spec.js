@@ -18,7 +18,7 @@
 // handles resize it; Escape leaves the words with the box still selected; and
 // while the words are open, a grip under the box moves it without closing
 // them.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** The top-level point over `text` inside the first element matching `sel`
  *  in the report — `dx` CSS px into it (null: its middle). Where a person

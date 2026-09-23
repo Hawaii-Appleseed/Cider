@@ -6,7 +6,7 @@
 // prefix is the exemption: an editor-aware control declares itself with it and
 // stays live. These tests use REAL Playwright clicks, which do respect
 // pointer-events, so a regression here times out rather than false-passing.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('sticky-chrome deafening and its ds- exemption', () => {
   test.beforeEach(async ({ page }) => {

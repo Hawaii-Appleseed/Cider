@@ -3,7 +3,7 @@
 // plays immediately, presentation mode replays a slide's entrances on entry.
 // Published: observer-triggered, script-applied hiding, reduced-motion and
 // print always show content. Engine faces pinned in test_docsync.py. Local.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

@@ -4,7 +4,7 @@
 // loaded draft's content.md through mdToHtml -> htmlToMd and checks it
 // reaches a stable fixed point — the acceptance gate for the rich-text
 // rewrite, kept as permanent regression coverage.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('markdown <-> rich-text serializer', () => {
   test.beforeEach(async ({ page }) => {

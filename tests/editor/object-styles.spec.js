@@ -5,7 +5,7 @@
 // the page draws. The engine side — fold-in, validation, byte-identity — is
 // checked in docsync/test_docsync.py; this file is the editor's promise:
 // every verb writes ONE `use` or ONE style, and ⌘Z takes it back.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 

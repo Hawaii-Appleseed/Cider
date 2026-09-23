@@ -13,7 +13,7 @@
 //     navigation, with the order-editing controls deliberately absent, because
 //     layout.pages means nothing to a renderer that never reads page_order().
 // Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** How many chips show a real preview rather than the empty hatch. Reads the
  *  shadow root, which is where the cloned page actually lands — asserting on
