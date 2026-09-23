@@ -169,6 +169,20 @@ const hostedTest = base.test.extend({
   ...impactFixtures,
 });
 
+/** Select an element in the report WITHOUT opening its words. A plain click
+ *  on text selects on the press and, when that leaves it the one selection,
+ *  types on the release (click-to-type), so a test that meant "select it,
+ *  then press Delete / drag a handle / read the toolbar" was racing an open
+ *  editor: Delete ate a character, and a render never swaps over open words.
+ *  Shift-click selects without typing, but it TOGGLES, so an element already
+ *  selected would be deselected: clear the selection first. A group selects
+ *  whole, as a plain click would. */
+async function selectWithoutTyping(page, target) {
+  await page.evaluate(() => clearSel(document.getElementById('out').contentDocument));
+  await target.click({ modifiers: ['Shift'] });
+  await base.expect.poll(() => page.evaluate(() => editing)).toBe(false);
+}
+
 /** Download and Token live in the File menu now, so reaching either means
  *  opening it first — which is what a person does too. */
 async function openFileMenu(page) {
@@ -235,5 +249,5 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 module.exports = {
   test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
-  submitDialogIfPresent,
+  submitDialogIfPresent, selectWithoutTyping,
 };

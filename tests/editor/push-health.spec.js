@@ -12,7 +12,29 @@
 // The server now answers both questions on its background poll and carries
 // them in every ping/SSE beat; the editor wears the answer on the button and
 // asks before publishing across branches.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, PING, EVENTS } = require('./fixtures/editor-test');
+
+/** Push state, faked where the editor reads it: the server's ping. The editor
+ *  takes pushHealth and the ahead count from every /__ping and /__events beat
+ *  (setPushState(d.ahead) on each), and the suite's server has nothing to
+ *  push. Setting them in the page alone was undone by the next two-second
+ *  heartbeat whenever one landed before the button was read: the title came
+ *  back empty on CI. So each ping carries what the test set, the event stream
+ *  is refused, and the page is told at once. Call before gotoEditor; the
+ *  returned function sets the state. */
+async function fakePushState(page) {
+  let say = null;
+  await page.route(PING, async route => {
+    const r = await route.fetch();
+    const j = await r.json();
+    await route.fulfill({ response: r, json: say ? { ...j, ...say } : j });
+  });
+  await page.route(EVENTS, route => route.abort());
+  return async (push, ahead) => {
+    say = push === undefined ? { ahead } : { push, ahead };
+    await page.evaluate(([p, a]) => { if (p !== undefined) pushHealth = p; setPushState(a); }, [push, ahead]);
+  };
+}
 
 test.describe('push health, before the button is pressed', () => {
   test('the ping carries a push block the editor can act on', async ({ page }) => {
@@ -27,14 +49,12 @@ test.describe('push health, before the button is pressed', () => {
 
   test('a Push the server knows would fail wears the warning, and stays clickable',
     async ({ page }) => {
+      const setPush = await fakePushState(page);
       await gotoEditor(page);
       // The exact shape the LFS failure produces on the wire.
-      await page.evaluate(() => {
-        pushHealth = { ok: false, why: 'a Git LFS pre-push hook is refusing the push '
-          + '— git-lfs is not on this server’s PATH.', branch: 'counties',
-          deploy: 'main', deployAhead: 45 };
-        setPushState(3);
-      });
+      await setPush({ ok: false, why: 'a Git LFS pre-push hook is refusing the push '
+        + '— git-lfs is not on this server’s PATH.', branch: 'counties',
+        deploy: 'main', deployAhead: 45 }, 3);
       const b = page.locator('#push');
       await expect(b).toHaveClass(/warn/);
       await expect(b).toContainText('⚠');
@@ -46,11 +66,9 @@ test.describe('push health, before the button is pressed', () => {
     });
 
   test('with nothing to push there is nothing to warn about', async ({ page }) => {
+    const setPush = await fakePushState(page);
     await gotoEditor(page);
-    await page.evaluate(() => {
-      pushHealth = { ok: false, why: 'stale news' };
-      setPushState(0);               // clean tree
-    });
+    await setPush({ ok: false, why: 'stale news' }, 0);   // clean tree
     const b = page.locator('#push');
     await expect(b).toBeDisabled();
     await expect(b).not.toHaveClass(/warn/);
@@ -58,12 +76,10 @@ test.describe('push health, before the button is pressed', () => {
 
   test('a healthy push says where it lands when that is another branch',
     async ({ page }) => {
+      const setPush = await fakePushState(page);
       await gotoEditor(page);
-      await page.evaluate(() => {
-        pushHealth = { ok: true, why: '', branch: 'counties', deploy: 'main',
-                       deployAhead: 45 };
-        setPushState(3);
-      });
+      await setPush({ ok: true, why: '', branch: 'counties', deploy: 'main',
+        deployAhead: 45 }, 3);
       const t = await page.locator('#push').getAttribute('title');
       // The number that mattered: not the 3 just saved, but the 45 that
       // publishing would carry.
@@ -74,17 +90,16 @@ test.describe('push health, before the button is pressed', () => {
     });
 
   test('on the deploy branch itself it does not editorialise', async ({ page }) => {
+    const setPush = await fakePushState(page);
     await gotoEditor(page);
-    await page.evaluate(() => {
-      pushHealth = { ok: true, why: '', branch: 'main', deploy: 'main', deployAhead: 2 };
-      setPushState(2);
-    });
+    await setPush({ ok: true, why: '', branch: 'main', deploy: 'main', deployAhead: 2 }, 2);
     const t = await page.locator('#push').getAttribute('title');
     expect(t).not.toContain('fast-forward');
     expect(t).toContain('2 commits');
   });
 
   test('publishing across branches is asked, not assumed', async ({ page }) => {
+    const setPush = await fakePushState(page);
     await gotoEditor(page);
     // The server refuses the first time with needsConfirm; the editor must
     // put the number in front of the person rather than pushing anyway.
@@ -102,7 +117,7 @@ test.describe('push health, before the button is pressed', () => {
     });
 
     // Cancelling publishes NOTHING — the second call never happens.
-    await page.evaluate(() => setPushState(3));
+    await setPush(undefined, 3);
     await page.click('#push');
     const dlg = page.locator('dialog.dsdlg');
     await expect(dlg).toBeVisible();

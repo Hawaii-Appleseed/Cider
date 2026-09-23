@@ -12,7 +12,7 @@
 // leave those with two of everything. Two mousedown handlers is two
 // startDrags, two pushHistorys, and an undo that needs pressing twice — so
 // the tests count undo steps, which is where that would surface.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
 
 /** The report document's identity, as a token that changes when it reloads. */
 const docToken = (page) => page.evaluate(() => {
@@ -148,8 +148,9 @@ test.describe('incremental rendering', () => {
       await page.waitForTimeout(600);
 
       const frame = page.frameLocator('#out');
-      // selection works on the replaced section
-      await frame.locator(`[data-el="text.${id}"]`).click();
+      // selection works on the replaced section (without opening the box's
+      // words, which the dblclick below would first have to commit)
+      await selectWithoutTyping(page, frame.locator(`[data-el="text.${id}"]`));
       await page.waitForTimeout(300);
       expect(await page.evaluate(() => [...selIds])).toEqual([`text.${id}`]);
 

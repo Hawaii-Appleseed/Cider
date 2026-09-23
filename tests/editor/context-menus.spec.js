@@ -3,7 +3,7 @@
 // the common case ("a new source") was buried under a dozen existing ones.
 // Local mode.
 const { test, expect, gotoEditor, dialog, fillDialog, submitDialog,
-        cancelDialog } = require('./fixtures/editor-test');
+        cancelDialog, selectWithoutTyping } = require('./fixtures/editor-test');
 
 const labels = (page, sel) => page.evaluate(s => {
   const d = document.getElementById('out').contentDocument;
@@ -70,15 +70,13 @@ test.describe('headings behave like text boxes', () => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
-    // Shift-click: select the box WITHOUT typing in it. A plain click types
-    // where it lands (since click-to-type), and a render never swaps over an
-    // open editor: its twin frame waits for the words to close. On a CI run
-    // that failed (twice, the retry too), the trace had the inline editor open
-    // after the click, and the render after the drag sitting in the hidden twin
-    // frame while the heading on screen kept the drag's preview style.
-    await frame.locator('[data-el="basics.h1"]').click({ modifiers: ['Shift'] });
+    // Select it WITHOUT opening its words: a render never swaps over an open
+    // editor, and on a CI run that failed (twice, the retry too) the trace had
+    // the inline editor open after a plain click, and the render after the
+    // drag sitting in the hidden twin frame while the heading on screen kept
+    // the drag's preview style.
+    await selectWithoutTyping(page, frame.locator('[data-el="basics.h1"]'));
     await page.waitForTimeout(600);
-    expect(await page.evaluate(() => editing)).toBe(false);
     for (const dir of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
       await expect(frame.locator(`.ds-handles .ds-h-${dir}`)).toHaveCount(1);
     }

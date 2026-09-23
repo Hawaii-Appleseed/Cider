@@ -10,7 +10,7 @@
 // itself without leaving inline styles behind, and the speed control is
 // reachable exactly where the user asked for it — the mini toolbar, when the
 // group is selected.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
 
 async function addExpandableSection(page) {
   return page.evaluate(async () => {
@@ -47,7 +47,9 @@ test.describe('expandable section: preview and speed', () => {
     // the piece under the pointer so it can be resized on its own. A single
     // FRESH click — the group not already the whole selection — is what
     // selects the group; deselect first so this click is that fresh one.
-    await frame.locator('[data-el="basics.h1"]').click();
+    // (A click on a heading did the deselecting, and opened the heading's
+    // words on its release, which the next click then had to commit.)
+    await page.evaluate(() => clearSel(document.getElementById('out').contentDocument));
     await page.waitForTimeout(200);
     await frame.locator(`[data-el="text.${btnId}"]`).click();
     await page.waitForTimeout(300);
@@ -70,7 +72,7 @@ test.describe('expandable section: preview and speed', () => {
 
   test('a plain text box (no toggle) gets neither button', async ({ page }) => {
     const frame = page.frameLocator('#out');
-    await frame.locator('[data-el="basics.h1"]').click();
+    await selectWithoutTyping(page, frame.locator('[data-el="basics.h1"]'));
     await page.waitForTimeout(300);
     const labels = await page.evaluate(() => {
       const bar = document.getElementById('out').contentDocument.querySelector('.ds-mini');
