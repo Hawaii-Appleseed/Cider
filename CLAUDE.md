@@ -125,13 +125,23 @@ Rules that bite:
   It picks from an impact map — per spec, the `edit.html` functions its tests
   called and the engine functions the renderer called in Pyodide — which
   `npm run test:full` records into `.impact/` (local, gitignored) while running
-  the whole suite. Run the whole suite when the picker says to, when the map is
-  missing or many commits old, or before calling a broad refactor done; CI runs
-  it on every push regardless. A new spec that drives no editor code (reads a
-  published page, spawns its own server) says what it depends on with a
+  the whole suite. A new spec that drives no editor code (reads a published
+  page, spawns its own server) says what it depends on with a
   `// affected-by: <glob> …` comment, or the picker can only find it by name.
   How it decides: README, "Test it".
-- **Tests:** `npx playwright test` (editor behaviour; ~780 tests, ~20 min),
+- **The whole suite runs on GitHub, not here: `npm run test:ci`.** Locally it
+  is ~20 minutes and saturates the machine; `tools/ci-test.mjs` snapshots the
+  working tree (committed or not, without touching HEAD or the index), pushes
+  it to a throwaway `ci/…` branch, runs editor-tests.yml's 20 shards there
+  (a few minutes), prints each failing test with its error, and deletes the
+  branch. `test:affected` hands off to it by itself when a change needs
+  everything (`--local` keeps it here). The branch is public, so untracked
+  files outside the source directories are left out, and listed. Run it when
+  the picker says to, before calling a broad refactor done, and whenever you
+  would otherwise have run `npx playwright test`. CI runs the same 20 shards
+  on every push to main.
+- **Tests:** `npx playwright test` (editor behaviour; ~780 tests, ~20 min here —
+  `npm run test:ci` runs the same suite on GitHub),
   `python3 docsync/test_docsync.py` (engine round-trip),
   `python3 report2027/tools/test_render.py` (render tolerances + edit.html
   syntax guard),

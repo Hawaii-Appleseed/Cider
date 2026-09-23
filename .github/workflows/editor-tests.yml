@@ -36,20 +36,31 @@ on:
       - "tests/editor/**"
       - "playwright.config.js"
       - "package.json"
+  # `npm run test:ci` (tools/ci-test.mjs) pushes a snapshot of a working tree
+  # to a throwaway ci/… branch and dispatches this workflow on it.
   workflow_dispatch:
+
+# A newer push to the same branch supersedes a run still going: the org's free
+# plan runs 20 jobs at once across every repo, and this workflow is 20 jobs.
+concurrency:
+  group: editor-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Four machines, a quarter of the suite each. One runner has two cores
-    # and ran all ~780 tests in ~45 minutes, every push; sharded, the wall
-    # time is the slowest quarter. fullyParallel splits by test, not by file,
-    # so the quarters come out even.
+    # Twenty machines, a twentieth of the suite each. One runner took ~45
+    # minutes for all ~780 tests, and four took ~13; each shard costs ~50s of
+    # setup before its first test, and the rest is ~39 tests on two workers.
+    # fullyParallel splits by test, not by file, so the shares come out even.
+    # Minutes are free: the repo is public.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
-    name: test (${{ matrix.shard }}/4)
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: test (${{ matrix.shard }}/20)
+    # A wedged shard holds one of the org's 20 slots until it is killed.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -106,10 +117,11 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run the editor test suite
-        run: npx playwright test --shard=${{ matrix.shard }}/4
+        run: npx playwright test --shard=${{ matrix.shard }}/20
 
+      # Only a failing shard's: twenty green reports a run say nothing.
       - name: Upload Playwright report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.shard }}

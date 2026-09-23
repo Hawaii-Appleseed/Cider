@@ -6,6 +6,10 @@
 //   npm run test:affected -- --list       # say what would run, run nothing
 //   npm run test:affected -- --list --why # …with every spec's reason, even when that is all of them
 //   npm run test:affected -- -- --headed  # anything after a second -- goes to playwright
+//   npm run test:affected -- --local      # when it is the whole suite, run it here anyway
+//
+// When a change needs the whole suite, it goes to GitHub: tools/ci-test.mjs
+// pushes a snapshot of the working tree and runs it on twenty machines.
 //
 // The full editor suite is ~780 tests and ~20 minutes, and most changes touch
 // one feature. This picks specs by what they RUN, not by what they are named:
@@ -52,6 +56,7 @@ const passThrough = dd < 0 ? [] : argv.slice(dd + 1);
 const opt = (name, dflt) => { const i = own.indexOf(name); return i < 0 ? dflt : own[i + 1]; };
 const SINCE = opt('--since', 'HEAD');
 const LIST = own.includes('--list');
+const LOCAL = own.includes('--local');
 
 // --- git ---------------------------------------------------------------------
 const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
@@ -679,7 +684,7 @@ function namedRule(f) {
   if (!hits.length) notes.push(`${f} — no spec names it${f.endsWith('.py') ? '; the Python checks cover it' : ''}`);
 }
 
-const QUIET = [/\.md$/, /^LICENSE$/, /^\.claude\//, /^\.github\//, /^docs\/(?!primer\/)/, /\.gitignore$/, /^tools\/affected\.mjs$/,
+const QUIET = [/\.md$/, /^LICENSE$/, /^\.claude\//, /^\.github\//, /^docs\/(?!primer\/)/, /\.gitignore$/, /^tools\/(affected|ci-test)\.mjs$/,
   // Built output: the test server re-renders it at startup, so it changes
   // whenever its renderer does — and that change is what selects.
   /^report2027\/web\/index\.html$/, /^\.impact\//, /(^|\/)node_modules$/];
@@ -744,7 +749,8 @@ if (run.length && (!all || own.includes('--why'))) {
   const w = Math.max(...run.map(s => rel(s).length));
   for (const s of run) console.log(`  ${rel(s).padEnd(w)}  ${reasons(s)}`);
 }
-if (all) console.log(`\nRunning the whole suite: ${all}.${own.includes('--why') ? '' : ' (--why lists each spec\'s reason)'}`);
+if (all) console.log(`\nThe whole suite: ${all}.${own.includes('--why') ? '' : ' (--why lists each spec\'s reason)'}` +
+                    (LOCAL ? '' : '\nIt runs on GitHub (npm run test:ci, a few minutes); --local runs it here (~20).'));
 else if (!run.length) console.log('\nNo spec is affected.');
 if (notes.length) { console.log('\nNotes:'); for (const n of [...new Set(notes)]) console.log(`  ${n}`); }
 
@@ -762,9 +768,17 @@ let failed = 0;
 for (const [cmd, args] of checks) {
   console.log(`\n$ ${[cmd, ...args].join(' ')}`);
   const r = spawnSync(cmd, args, { cwd: ROOT, stdio: 'inherit' });
-  if (r.status !== 0) failed++;
+  // chart_parity reports what moved and leaves the verdict to a person (its
+  // docstring): a moved chart may be the fix, so it never fails the run.
+  if (r.status !== 0 && !args.includes('docsync.chart_parity')) failed++;
 }
-if (all || run.length) {
+if (all && !LOCAL) {
+  // The whole suite is ~20 minutes here and a few on GitHub's twenty machines;
+  // the checks above already ran, so the snapshot goes straight up.
+  console.log('\n$ npm run test:ci -- --skip-checks');
+  const r = spawnSync('node', [path.join(ROOT, 'tools/ci-test.mjs'), '--skip-checks'], { cwd: ROOT, stdio: 'inherit' });
+  if (r.status !== 0) failed++;
+} else if (all || run.length) {
   const args = ['playwright', 'test', ...(all ? [] : run.map(rel)), ...passThrough];
   console.log(`\n$ npx ${args.join(' ')}`);
   const r = spawnSync('npx', args, { cwd: ROOT, stdio: 'inherit' });

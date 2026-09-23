@@ -6,6 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "test:affected": "node tools/affected.mjs",
+    "test:ci": "node tools/ci-test.mjs",
     "test:full": "DS_IMPACT=map playwright test",
     "test:ui": "playwright test --ui",
     "test:collab": "node --test collab/serialize.test.mjs"

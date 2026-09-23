@@ -171,7 +171,8 @@ the browser, so an edit shows in ~1s. **Save** writes the files and commits
 npm ci
 npx playwright install chromium   # the browser itself — npm ci does not fetch it
 npm run test:affected             # the specs and checks YOUR change needs
-npm run test:full                 # the whole editor suite, recording the impact map
+npm run test:ci                   # the whole suite, on GitHub's twenty machines
+npm run test:full                 # the whole suite here (~20 min), recording the impact map
 python3 docsync/test_docsync.py       # the engine's own self-test
 python3 report2027/tools/test_render.py   # render tolerances + edit.html syntax
 ```
@@ -208,9 +209,27 @@ order of how often they fire:
 `boot-errors.spec.js` runs whenever something that boots the editor changed, and
 the Python checks (seconds, all of them) run for any engine or report change. A
 spec that drives no editor code declares what it depends on in a comment —
-`// affected-by: docsync/layout.py projects/**` — and is picked by that. CI
-still runs everything on every push. Rebuild the map (`npm run test:full`) when
-the selections get broad; the picker prints how many commits old it is.
+`// affected-by: docsync/layout.py projects/**` — and is picked by that.
+Rebuild the map (`npm run test:full`) when the selections get broad; the picker
+prints how many commits old it is.
+
+**The whole suite runs on GitHub: `npm run test:ci`.** Here it is ~20 minutes
+with the machine flat out (measured: 0% idle, load average 51 — every test
+boots the editor, and the tests got ~4 of 10 cores beside a video call), so
+neither more workers nor shorter sleeps move it. `editor-tests.yml` runs as 20
+shards of ~39 tests each; the repo is public, so the minutes are free, and the
+org's plan runs 20 jobs at once. `tools/ci-test.mjs` builds a commit of the
+working tree in a throwaway index — HEAD, every tracked file as it is on disk,
+what is staged, and untracked files under `docsync/`, `tests/`, `tools/`,
+`report2027/`, `collab/`, `projects/` and `.github/` (anything else untracked is
+listed and left out, because the branch is public) — pushes it to `ci/<time>-<sha>`,
+dispatches the workflow there, prints each failing test with its first error
+line, and deletes the branch. `--no-wait` returns once it has started,
+`--report <run id>` summarises any run of the workflow (a push to main's too),
+and `--clean` deletes leftover `ci/…` branches. `test:affected` hands off to it
+when a change needs the whole suite; `--local` runs it here instead. A newer
+push to the same branch cancels a run still going, and a shard is killed after
+15 minutes, so neither holds the org's slots.
 
 ## The editor
 
