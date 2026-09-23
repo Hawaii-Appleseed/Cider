@@ -8,11 +8,12 @@
 // Needs the hub checked out beside this repo (skipped otherwise), and boots
 // the same two processes collab/hub-check.mjs does: a `wrangler dev` holding
 // the Durable Object class, and a `wrangler pages dev` over the hub with the
-// class bound. The editor under test is vendored into that checkout FIRST
-// (python3 -m docsync.hub --into …), so what the hub serves is THIS tree's
-// edit.html, not whatever was committed there last. Same reasoning as
-// collab.spec.js for booting here rather than in playwright.config: only this
-// file pays for the two wranglers.
+// class bound. The editor under test is vendored FIRST (python3 -m docsync.hub
+// --into …), so what the hub serves is THIS tree's edit.html, not whatever was
+// committed there last — and vendored into a throwaway copy of that checkout,
+// never the checkout itself (see copyHub). Same reasoning as collab.spec.js
+// for booting here rather than in playwright.config: only this file pays for
+// the two wranglers.
 //
 // LOCALLY THE ACCESS HEADER IS FORGEABLE, and this spec forges it — the way
 // the edge does, by stamping it on the way in: each person gets a one-line
@@ -25,12 +26,17 @@
 // re-signs it — see functions/api/collab/[room].js in the hub.
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { test, expect, waitForFirstRender, openFileMenu, openShare } = require('./fixtures/editor-test');
 
 const REPO = path.resolve(__dirname, '../..');
-const HUB_DIR = process.env.PRIMER_HUB_DIR || path.resolve(REPO, '../staff-updates-internal');
+// PRIMER_HUB_DIR is used as it is: vendored into, then served. Unset, the
+// checkout beside this repo is only READ — copied by copyHub in beforeAll.
+const HUB_GIVEN = process.env.PRIMER_HUB_DIR || null;
+const HUB_SRC = HUB_GIVEN || path.resolve(REPO, '../staff-updates-internal');
+let HUB_DIR = HUB_GIVEN;
 // Its own ports: collab/'s relays sit on 8788/8789, collab.spec on 8792,
 // collab-drafts on 8793, hub-check on 8796/8797.
 const RELAY_PORT = 8794;
@@ -43,12 +49,33 @@ const hubAs = port => `http://127.0.0.1:${port}`;
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(300_000);
-test.skip(!fs.existsSync(path.join(HUB_DIR, 'functions/api/collab')),
-  `needs the staff hub checked out at ${HUB_DIR} (PRIMER_HUB_DIR points elsewhere)`);
+test.skip(!fs.existsSync(path.join(HUB_SRC, 'functions/api/collab')),
+  `needs the staff hub checked out at ${HUB_SRC} (PRIMER_HUB_DIR points elsewhere)`);
 
 let relay = null, pages = null;
 const proxies = [];
 let ctxA, ctxB, a, b, browser;
+
+/** The hub's files as its working tree holds them — tracked, and new files
+ *  git does not ignore — in a fresh temporary directory. Vendoring rewrites
+ *  primer/**, and pointed at the real checkout it left ~50 files of this
+ *  run's editor in the tree the hub deploys from, uncommitted, for whoever
+ *  commits there next to sweep up. The copy leaves out .git, node_modules,
+ *  .wrangler and the gitignored Apps Script keys, none of which the served
+ *  hub reads. */
+function copyHub(src) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'primer-hub-'));
+  const files = execFileSync('git', ['-C', src, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'])
+    .toString().split('\0').filter(Boolean);
+  for (const rel of files) {
+    const from = path.join(src, rel);
+    // Listed but deleted in the working tree, or a submodule's directory.
+    if (!fs.statSync(from, { throwIfNoEntry: false })?.isFile()) continue;
+    fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
+    fs.copyFileSync(from, path.join(dir, rel));
+  }
+  return dir;
+}
 
 /** The Access edge, in miniature: everything through `port` reaches the hub
  *  on HUB_PORT carrying `email` as the identity header — plain requests and
@@ -113,6 +140,7 @@ async function open(browser, port) {
 
 test.beforeAll(async ({ browser: b_ }) => {
   browser = b_;
+  if (!HUB_GIVEN) HUB_DIR = copyHub(HUB_SRC);
   execFileSync('python3', ['-m', 'docsync.hub', '--into', HUB_DIR], { cwd: REPO, stdio: 'inherit' });
   const { startDev } = await import('../../collab/devserver.mjs');
   const { startPages } = await import('../../collab/hub-check.mjs');
@@ -130,6 +158,9 @@ test.afterAll(async () => {
   for (const p of proxies) p.close();
   if (pages) await pages.stop();
   if (relay) await relay.stop();
+  if (!HUB_GIVEN && HUB_DIR) {
+    try { fs.rmSync(HUB_DIR, { recursive: true, force: true, maxRetries: 3 }); } catch (e) { /* a temp dir */ }
+  }
 });
 
 test('the hub lists the project and links into its editor', async () => {
@@ -1628,7 +1659,7 @@ test('suggestions: Accept all applies every one; the list page and the Editor ta
   const page = await fresh.newPage();
   await page.goto(`${hubAs(ADA_PORT)}/primer/index.html`);
   await expect(page.locator(`#list a.tile[href$="project=${PROJECT}"]`)).toContainText('2 suggested');
-  await expect(page.locator('#count')).toContainText('2 suggested');
+  await expect(page.locator('#meta')).toContainText('2 suggested');
   await page.goto(`${hubAs(ADA_PORT)}/resources.html`);
   await expect(page.locator('#primerBadge')).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('#primerBadge')).toHaveAttribute('title', /2 suggestions wait for your decision/);
@@ -1663,7 +1694,7 @@ test('the list says what changed since you looked, and the Editor tab counts it'
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
   await expect(tile.locator('.tag.t-changed')).toBeVisible();
   await expect(tile).toContainText('modified');   // the door says "modified <date, time> by" since the vendor stamp landed
-  await expect(page.locator('#count')).toContainText('changed since you looked');
+  await expect(page.locator('#meta')).toContainText('changed since you looked');
   // On another page of the hub the Editor tab wears the count.
   await page.goto(`${hubAs(GRACE_PORT)}/resources.html`);
   await expect(page.locator('#primerBadge')).toBeVisible({ timeout: 10_000 });
@@ -1687,7 +1718,7 @@ test('a comment that names you reaches the list page and the Editor tab, and res
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
   await expect(tile.locator('.tag.t-you')).toHaveText('1 for you');
   await expect(tile.locator('.tag.t-you')).toHaveClass(/is-new/);
-  await expect(page.locator('#count')).toContainText('1 for you');
+  await expect(page.locator('#meta')).toContainText('1 for you');
   // On another page of the hub the Editor tab's badge says why.
   await page.goto(`${hubAs(GRACE_PORT)}/resources.html`);
   await expect(page.locator('#primerBadge')).toBeVisible({ timeout: 10_000 });
@@ -1702,7 +1733,13 @@ test('a comment that names you reaches the list page and the Editor tab, and res
   await expect(page.locator('#cpanel-tab-you')).toHaveClass(/on/);
   await expect(cmtRow(page, 'Grace, your call')).toBeVisible({ timeout: 10_000 });
   // Looked at: the badge rests (the document is seen too, so nothing counts),
-  // and the list still says the thread is hers, only not new.
+  // and the list still says the thread is hers, only not new. The badge reads
+  // /api/docs through the hub's 90-second shelf (hubSession, assets/nav.js),
+  // which this tab filled a minute ago — emptied first, or the page decides
+  // without asking and there is no answer to wait for before looking.
+  await page.evaluate(() => {
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('hubc:')) sessionStorage.removeItem(k);
+  });
   const answered = page.waitForResponse(r => r.url().endsWith('/api/docs'));
   await page.goto(`${hubAs(GRACE_PORT)}/resources.html`);
   await answered;

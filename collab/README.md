@@ -683,8 +683,10 @@ What differs for an editor served there, and nothing else does:
   store's copy of that, and nothing flows back to git until step 05's export.
 
 Proof: `npx playwright test collab-hub.spec.js` vendors this tree's editor
-into the hub checkout beside this repo, boots the same two wranglers
-`hub-check.mjs` does (with local R2), and opens the editor in two browser
+into a temporary copy of the hub checkout beside this repo (never the
+checkout itself; `PRIMER_HUB_DIR` names a directory to use as it is), boots
+the same two wranglers `hub-check.mjs` does (with local R2), and opens the
+editor in two browser
 contexts carrying Access identities — the list page names the project, both
 are live in one room as the people Access says they are, an edit crosses, a
 Save lands in the store and the other editor learns the version, a fresh
