@@ -502,7 +502,7 @@ INNER = f"""
   {L.spacer("hero.h1")}<h1{L.attr("hero.h1")}>{C.t("hero.h1")}</h1>
   {C.html("hero.standfirst", "standfirst")}
 
-  <div class="stats"{L.attr("stats.strip")}>
+  <div class="stats"{L.frame("stats.strip")}>
     {stat("a")}{stat("b")}{stat("c")}{stat("d", " stat-fed")}
   </div>
 
@@ -519,11 +519,11 @@ INNER = f"""
   {C.html("medicaid.note", "cnote")}
 
   <div class="cols">
-    <div class="col">
+    <div class="col"{L.frame("col.risk")}>
       <h3 class="h-warn"{L.attr("risk.h")}>{C.t("risk.h")}</h3>
       {C.movable("risk.points", f'<ul{C.ul_attr("risk.points")}>{bullets("risk.points")}</ul>')}
     </div>
-    <div class="col">
+    <div class="col"{L.frame("col.ask")}>
       <h3 class="h-fed"{L.attr("ask.h")}>{C.t("ask.h")}</h3>
       {C.movable("ask.points", f'<ul{C.ul_attr("ask.points")}>{bullets("ask.points")}</ul>')}
     </div>
@@ -547,12 +547,12 @@ INNER2 = f"""
   {L.spacer("p2.hero.h1")}<h1{L.attr("p2.hero.h1")}>{C.t("p2.hero.h1")}</h1>
   {C.html("p2.hero.standfirst", "standfirst")}
 
-  <div class="stats"{L.attr("p2.stats.strip")}>
+  <div class="stats"{L.frame("p2.stats.strip")}>
     {stat_p2("a")}{stat_p2("b")}{stat_p2("c")}{stat_p2("d")}
   </div>
 
   <h2{L.attr("p2.evidence.title")}>{C.t("p2.evidence.title")}</h2>
-  <div class="ev-grid"{L.attr("p2.ev.grid")}>
+  <div class="ev-grid"{L.frame("p2.ev.grid")}>
     <div class="ev-card"{L.attr("p2.ev.a")}>{C.t("p2.ev.a")}</div>
     <div class="ev-card"{L.attr("p2.ev.b")}>{C.t("p2.ev.b")}</div>
     <div class="ev-card"{L.attr("p2.ev.c")}>{C.t("p2.ev.c")}</div>
@@ -564,15 +564,15 @@ INNER2 = f"""
     <div class="p2-mid-left">
       <h2{L.attr("p2.why.title")}>{C.t("p2.why.title")}</h2>
       <div class="why-cards">
-        <div class="why-card"{L.attr("p2.why.a")}>
+        <div class="why-card"{L.frame("p2.why.a")}>
           <div class="why-h"{L.attr("p2.why.a.h")}>{C.t("p2.why.a.h")}</div>
           <div class="why-b"{L.attr("p2.why.a.b")}>{C.t("p2.why.a.b")}</div>
         </div>
-        <div class="why-card"{L.attr("p2.why.b")}>
+        <div class="why-card"{L.frame("p2.why.b")}>
           <div class="why-h"{L.attr("p2.why.b.h")}>{C.t("p2.why.b.h")}</div>
           <div class="why-b"{L.attr("p2.why.b.b")}>{C.t("p2.why.b.b")}</div>
         </div>
-        <div class="why-card"{L.attr("p2.why.c")}>
+        <div class="why-card"{L.frame("p2.why.c")}>
           <div class="why-h"{L.attr("p2.why.c.h")}>{C.t("p2.why.c.h")}</div>
           <div class="why-b"{L.attr("p2.why.c.b")}>{C.t("p2.why.c.b")}</div>
         </div>
@@ -586,7 +586,7 @@ INNER2 = f"""
       </div>
     </div>
     <div class="p2-mid-right">
-      <blockquote class="pullquote"{L.attr("p2.quote")}>
+      <blockquote class="pullquote"{L.frame("p2.quote")}>
         {C.html("p2.quote.text", "qtext")}
         <cite{L.attr("p2.quote.attr")}>{C.t("p2.quote.attr")}</cite>
       </blockquote>

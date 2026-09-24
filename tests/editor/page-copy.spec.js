@@ -74,13 +74,18 @@ test.describe('duplicating a designed page', () => {
       expect(pl.box.x).toBeCloseTo(1, 1);
       expect(pl.box.y).toBeCloseTo(6, 1);
       await page.waitForTimeout(600);
+      // Where it DRAWS, in page inches — not its style's left/top: the stat
+      // sits in its strip, a frame (L.frame), so the coordinates it stores
+      // are the strip's, and the strip carries it if the strip moves.
       const placed = await page.evaluate(b => {
         const d = document.getElementById('out').contentDocument;
         const el = d.querySelector(`[data-el="copy.${b}.stat.a"]`);
-        return { abs: /position:absolute;left:1in;top:6in/.test(el.getAttribute('style')),
+        const at = _pilotMeasure(`copy.${b}.stat.a`);
+        return { abs: /position:absolute/.test(el.getAttribute('style')),
+                 at: [+at.x.toFixed(1), +at.y.toFixed(1)],
                  strut: !!d.querySelector(`.ds-spacer[data-spacer-for="copy.${b}.stat.a"]`) };
       }, bid);
-      expect(placed).toEqual({ abs: true, strut: true });
+      expect(placed).toEqual({ abs: true, at: [1, 6], strut: true });
 
       // The published build renders the copy too — with the edit, without
       // a single editing hook.

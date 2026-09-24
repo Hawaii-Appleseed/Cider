@@ -645,7 +645,7 @@ so do not wait for one.", size=11, fill=MUTE_INK)}
 # ── Sheet furniture ─────────────────────────────────────────────────────────
 def head(pre: str, page_no: int) -> str:
     """A content page's eyebrow, title and standfirst."""
-    return (f'<div class="phead">'
+    return (f'<div class="phead"{L.frame(f"phead.{pre}")}>'
             f'<div class="eyebrow"{L.attr(f"{pre}.eyebrow")}>'
             f'{C.t(f"{pre}.eyebrow")}</div>'
             f'{L.spacer(f"{pre}.h1")}<h1{L.attr(f"{pre}.h1")}>'
@@ -658,7 +658,7 @@ def foot(key: str, page_no: int) -> str:
     """The running folio. C.html, not C.t: these carry emphasis, and a bare
     C.t would ship the asterisks. The label beside the numeral is one slot
     shared by every page, so retitling the document moves all five at once."""
-    return (f'<div class="pfoot">{C.html(key, "pfoot-t")}'
+    return (f'<div class="pfoot"{L.frame(f"pfoot.{page_no}")}>{C.html(key, "pfoot-t")}'
             f'<span class="pnum"{L.attr(f"foot.pnum.{page_no}")}>'
             f'{page_no:02d} · {C.t("foot.running")}</span></div>')
 
@@ -685,7 +685,7 @@ PAGE1 = f"""
   <div class="eyebrow"{L.attr("cover.eyebrow")}>{C.t("cover.eyebrow")}</div>
   {L.spacer("cover.h1")}<h1 class="cover-h1"{L.attr("cover.h1")}>\
 {C.t("cover.h1")}</h1>
-  <div class="rule"></div>
+  <div class="rule"{L.attr("cover.rule")}></div>
   {C.html("cover.deck", "deck")}
   {C.html("cover.lead", "lead")}
   <div class="contents">
@@ -823,7 +823,7 @@ PAGE13 = f"""
 # fit on page 9, and the alternative was shaving real sentences to buy a
 # quarter inch — see primer/CLAUDE.md on measuring, not guessing.
 PAGE14 = f"""
-  <div class="endnotes endnotes-own">
+  <div class="endnotes endnotes-own"{L.frame("endnotes.box")}>
     <div class="klabel"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</div>
     {C.fn.MOUNT}
   </div>

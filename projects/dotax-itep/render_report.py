@@ -634,7 +634,7 @@ page = f"""
   {L.spacer("hero.h1")}<h1{L.attr("hero.h1")}>{C.t("hero.h1")}</h1>
   {C.html("hero.standfirst", "standfirst")}
 
-  <div class="stats"{L.attr("stats.strip")}>
+  <div class="stats"{L.frame("stats.strip")}>
     {stat("a", " stat-dotax")}{stat("b", " stat-itep")}{stat("c")}{stat("d")}
   </div>
 

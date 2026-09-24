@@ -206,6 +206,12 @@ bindings:
       # the nav's words above, drawings with no report content in them.
       - "svg in .px-brand-mark"
       - "svg in .px-social"
+      # ...and the nav bar, announcement strip and grain overlay themselves:
+      # the website's chrome around the report, painted surfaces with no
+      # report content (every-element-has-a-handle.spec.js reads these too).
+      - "nav.px-nav"
+      - "div.px-announce"
+      - "div.px-grain"
     build: python3 projects/our-mission/render_report.py
     outputs:
       - projects/our-mission/index.html

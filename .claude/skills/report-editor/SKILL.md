@@ -103,12 +103,21 @@ What each finding wants:
 - **An image or drawing** → `blocks.graphic` (drawing), `blocks.chart` /
   `blocks.meter` (chart), `L.attr` on the `<img>` or its figure, `L.wrap`
   round a composite. A glyph inside a link or button is exempt.
-- **A painted surface** → the handle that fits what it is: a full-width band
-  `L.sec(id)` (height grip); a strip whose colour matters `L.fill_attr(id)`
-  (recolour); a card or panel `L.attr(id)` (move, resize). Until the editor
-  keeps a card's fields independently movable inside a movable card, giving a
-  card `L.attr` glues its fields to it — see the open question in the KNOWN
-  list's comment before wrapping cards that hold fields.
+- **A painted surface** → the handle that fits what it is: a card, panel,
+  list, row or strip that holds fields `L.frame(id)` (⟦F:id⟧ in an imported
+  page's body); a full-width band `L.sec(id)` (⟦B:id⟧; height grip); a strip
+  whose colour matters `L.fill_attr(id)` (recolour); a bare decoration with
+  nothing inside `L.attr(id)`. A link's or button's own surface goes with the
+  control; hidden decoration inside a band is the band's.
+- **Frames, and what a click takes.** A movable inside a movable is its own
+  object whenever it holds words (a slot or a derived value) — the editor's
+  `ownObject`: a click on words takes the field, a click on the container's
+  padding takes the container, a rubber band round both takes the container.
+  So a container handle never glues its fields. It must be `L.frame`, not
+  `L.attr`: position:relative from birth, so a field moved inside it keeps
+  its place when the container moves later (the spec's "static frame"
+  finding). `⟦E⟧` is NOT a frame — its element swallows the slots inside it
+  into one field.
 - **Site chrome** copied from a website (a nav bar, a footer) is not report
   content: declare each string under `editability_ok`, one reviewable line.
 - **Endnotes** go through `C.fn.endnotes_html(L)` (or an editor-placed

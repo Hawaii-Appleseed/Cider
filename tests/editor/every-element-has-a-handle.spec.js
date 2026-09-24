@@ -22,6 +22,7 @@
 //              movable, unless it is a glyph inside a link or button
 //   surface  — a painted box (background, border, shadow, <hr>) is movable,
 //              or is a band (data-sec) or a recolourable surface (data-fill)
+//   frame    — a movable that holds movables is positioned (L.frame)
 //   css text — no words come from ::before/::after
 //
 // The exceptions a binding already declares in docsync.yml (editability_ok)
@@ -58,59 +59,11 @@ const discover = () => {
 const REPORTS = discover();
 
 // Known, not yet fixed: report -> the exact findings, as report() prints them.
-// Painted surfaces only, found by the audit of 2026-09-24. Each is a card, a
-// band or a strip of page furniture that the renderer draws with no handle.
-// The fix for each is a renderer change (L.attr on the card with its fields
-// kept independently movable, L.sec on a band, L.fill_attr on a strip) —
+// Empty since 2026-09-24, when the audit that wrote this file found 35 painted
+// surfaces with no handle and every one was given the handle that fits it
+// (L.frame for a card, list, row or strip; L.sec for a band). Keep it empty:
 // see the report-editor skill, "Every surface has a handle".
 const KNOWN = new Map([
-  ['rxkids-fiscal', [
-    'surface: div.col in .cols',
-  ]],
-  ['rxkids', [
-    'surface: button.tfc-carousel-arrow in .tfc-carousel-container',
-    'surface: div.tfc-benefits-display in .tfc-benefits-layout',
-    'surface: div.tfc-carousel-container in .tfc-section',
-    'surface: div.tfc-cta-section in .tfc-container',
-    'surface: div.tfc-flint-source in .tfc-carousel-slide',
-    'surface: div.tfc-full-width in .tfc-container',
-    'surface: div.tfc-hero in .tfc-container',
-  ]],
-  ['our-mission', [
-    'surface: a.px-donate-btn in .px-nav-right',
-    'surface: button.ha-five-arrow in .ha-five-nav',
-    'surface: div.ha-five-bg-white in .ha-five-bg',
-    'surface: div.ha-five-dot in .ha-five-dots',
-    'surface: div.ha-five-shell in .ha-five-shells',
-    'surface: div.ha-mission',
-    'surface: div.px-announce',
-    'surface: div.px-grain',
-    'surface: nav.px-nav',
-    'surface: section.ha-cta in .ha-mission',
-  ]],
-  ['tfc-2027-priorities', [
-    'surface: div.get-callout in .sheet',
-    'surface: div.group in .groups',
-    'surface: div.meta in .sheet',
-    'surface: div.tier-head in .tier',
-    'surface: footer in .sheet',
-    'surface: li in .items',
-    'surface: ol.items in .get-callout',
-    'surface: ol.items in .group',
-  ]],
-  ['retitc', [
-    'surface: div.cover-foot',
-    'surface: div.endnotes',
-    'surface: div.pfoot',
-    'surface: div.phead',
-    'surface: div.rule',
-  ]],
-  ['staff-toolkit', [
-    'surface: div.endnotes',
-    'surface: div.pfoot',
-    'surface: div.phead',
-    'surface: div.rule',
-  ]],
 ]);
 
 // Build the edit-mode draft beside the report's own output, so relative
@@ -180,8 +133,15 @@ async function findings(page) {
     for (const el of document.querySelectorAll('.page *')) {
       if (el.closest('svg') || !shown(el) || el.closest(MOVE)) continue;
       if (el.hasAttribute('data-sec') || el.hasAttribute('data-fill')) continue;
+      // Hidden decoration drawn inside a band (its background layers, a
+      // progress dot) is the band's own drawing, handled by the band's grip.
+      if (el.closest('[aria-hidden="true"]') && el.closest('[data-sec]')) continue;
       const cs = getComputedStyle(el);
       if (cs.display === 'inline') continue;          // text styling: text rules cover it
+      // A link's or button's own surface belongs to the control (a carousel
+      // arrow, a Donate button), as a glyph inside one does; its words are
+      // judged by the text rules like any others.
+      if (el.closest('a, button')) continue;
       const r = el.getBoundingClientRect();
       const bg = cs.backgroundColor;
       const painted = (!/rgba\(0, 0, 0, 0\)|transparent/.test(bg))
@@ -195,6 +155,14 @@ async function findings(page) {
       if (r.width <= 20 && r.height <= 20 && el.parentElement
           && el.parentElement.querySelector(TYPE)) continue;
       out.add(`surface: ${sig(el)}`);
+    }
+    // a container holding movables must be a positioned frame (L.frame):
+    // a field moved inside a static one saves coordinates that re-base the
+    // moment the container is first dragged, and the words leap.
+    for (const el of document.querySelectorAll('.page [data-el]')) {
+      if (!el.querySelector('[data-el]') || !shown(el)) continue;
+      if (el.matches('.ds-graphic, .ds-textbox')) continue;
+      if (getComputedStyle(el).position === 'static') out.add(`static frame: ${sig(el)}`);
     }
     // words drawn by CSS
     for (const el of document.querySelectorAll('.page *')) {

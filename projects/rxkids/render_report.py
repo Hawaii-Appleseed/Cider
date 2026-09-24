@@ -173,7 +173,7 @@ def hero() -> str:
     # the hero, which only produced a phantom white band above it.
     logo_src = data_uri(HERE / "assets" / "rxkeiki-logo.png")
     return f"""
-<div class="tfc-hero tfc-reveal">
+<div class="tfc-hero tfc-reveal"{L.sec("band.hero")}>
     {img_el("header.logo", "rxkeiki-logo", logo_src, esc(C.text("header.logo.alt")))}
     <div class="tfc-hero-content">
         <h1 class="tfc-hero-title"{L.attr("hero.title")}>{C.t("hero.title")}</h1>
@@ -189,12 +189,12 @@ def hero() -> str:
 # ---- what is rxkids ----------------------------------------------------------
 def what_is_rxkids() -> str:
     return f"""
-<div class="tfc-full-width tfc-bg-white tfc-reveal">
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.what")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("what.h2")}<h2 class="tfc-section-title"{L.attr("what.h2")}>{C.t("what.h2")}</h2>
             {L.spacer("para.what.body")}
-            <p class="tfc-section-subtitle tfc-subtitle-box"{L.attr("what.body")}><span class="tfc-subtitle-eyebrow"{L.attr("what.eyebrow")}>{C.t("what.eyebrow")}</span>{C.slot_span("what.body", C("what.body"))}</p>
+            <p class="tfc-section-subtitle tfc-subtitle-box"{L.frame("what.body")}><span class="tfc-subtitle-eyebrow"{L.attr("what.eyebrow")}>{C.t("what.eyebrow")}</span>{C.slot_span("what.body", C("what.body"))}</p>
 
             <div class="tfc-scene-container">
                 {img_el("what.heart.image", "tfc-floating-heart", "https://images.squarespace-cdn.com/content/63c215f8a268791349c9f04a/7e595665-8ca3-4621-b694-a787aa3f3965/floating+heart.png?content-type=image%2Fpng", esc(C.text("what.heart.alt")))}
@@ -247,7 +247,7 @@ def benefits_widget() -> str:
         for i, k in enumerate(BENEFIT_KEYS))
     panels = "\n".join(benefit_panel(k, i == 0) for i, k in enumerate(BENEFIT_KEYS))
     return f"""
-<div class="tfc-full-width tfc-bg-blue tfc-reveal">
+<div class="tfc-full-width tfc-bg-blue tfc-reveal"{L.sec("band.benefits")}>
     <div class="tfc-content-container">
         <div class="tfc-section tfc-benefits-widget-section" style="margin: 0 auto;">
             {L.spacer("benefits.h2")}<h2 class="tfc-section-title"{L.attr("benefits.h2")}>{C.t("benefits.h2")}</h2>
@@ -257,7 +257,7 @@ def benefits_widget() -> str:
                 {tabs}
             </div>
 
-            <div class="tfc-benefits-display">
+            <div class="tfc-benefits-display"{L.frame("panel.benefits")}>
                 {panels}
             </div>
             </div>
@@ -326,12 +326,12 @@ def flint_expandable() -> str:
 # ---- stats carousel (2 slides) -----------------------------------------------
 def stats_carousel() -> str:
     return f"""
-<div class="tfc-full-width tfc-bg-white tfc-reveal">
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.stats")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("carousel.h2")}<h2 class="tfc-section-title"{L.attr("carousel.h2")}>{C.t("carousel.h2")}</h2>
 
-            <div class="tfc-carousel-container">
+            <div class="tfc-carousel-container"{L.frame("panel.carousel")}>
                 <button class="tfc-carousel-arrow tfc-carousel-prev" onclick="moveCarousel(-1)">&#10094;</button>
                 <button class="tfc-carousel-arrow tfc-carousel-next" onclick="moveCarousel(1)">&#10095;</button>
 
@@ -384,7 +384,7 @@ def stats_carousel() -> str:
                             </div>
                         </div>
 
-                        <div class="tfc-flint-source">
+                        <div class="tfc-flint-source"{L.frame("panel.flint-source")}>
                             {L.spacer("carousel.childcare.source")}<p{merge_attrs(C.slot_attr("carousel.childcare.source"), L.attr("carousel.childcare.source"))}>{C("carousel.childcare.source")}</p>
                         </div>
                     </div>
@@ -411,7 +411,7 @@ def poverty_bar(key: str, height_px: int) -> str:
 def how_it_works() -> str:
     steps = "\n".join(step(i) for i in (1, 2, 3, 4))
     return f"""
-<div class="tfc-full-width rxk-hiw-bg tfc-reveal">
+<div class="tfc-full-width rxk-hiw-bg tfc-reveal"{L.sec("band.how")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("steps.h2")}<h2 class="tfc-section-title"{L.attr("steps.h2")}>{C.t("steps.h2")}</h2>
@@ -594,7 +594,7 @@ def tanf_timeline() -> str:
 # "How RxKids uses TANF".
 def tanf_section() -> str:
     return f"""
-<div class="tfc-full-width rxk-tanf-top tfc-reveal">
+<div class="tfc-full-width rxk-tanf-top tfc-reveal"{L.sec("band.tanf-top")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("tanf.h2")}<h2 class="tfc-section-title"{L.attr("tanf.h2")}>{C.t("tanf.h2")}</h2>
@@ -611,11 +611,11 @@ def tanf_section() -> str:
         </div>
     </div>
 </div>
-<div class="tfc-full-width tfc-bg-white tfc-reveal">
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.tanf")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("tanf.split.title")}
-            <div class="tfc-tanf-split"{L.attr("tanf.split.title")}>
+            <div class="tfc-tanf-split"{L.frame("tanf.split.title")}>
                 <h3>{C.t("tanf.split.title")}</h3>
                 <p>{C.t("tanf.split.body")}</p>
                 {tanf_timeline()}
@@ -671,7 +671,7 @@ def tanf_option_card(key: str, num_label: str, free: bool = False) -> str:
 # ---- CTA footer ---------------------------------------------------------------
 def cta() -> str:
     return f"""
-<div class="tfc-cta-section tfc-reveal" style="margin-bottom: 0;">
+<div class="tfc-cta-section tfc-reveal"{L.frame("panel.cta", "margin-bottom:0")}>
     {L.spacer("cta.title")}<h2{L.attr("cta.title")}>{C.t("cta.title")}</h2>
     {L.spacer("cta.body")}<p{L.attr("cta.body")}>{C.t("cta.body")}</p>
     {L.spacer("cta.link1")}<a href="https://rxkids.org/" target="_blank" class="tfc-btn"{L.attr("cta.link1")}>{C.t("cta.link1.label")}</a>
@@ -693,7 +693,7 @@ def endnote_link(n, sid, txt, url):
 def sources_section(entries) -> str:
     items = "".join(endnote_link(i + 1, sid, t, u) for i, (sid, t, u) in enumerate(entries))
     return f"""
-<div class="tfc-full-width tfc-bg-white tfc-reveal">
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.sources")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("endnotes.h2")}<h2 class="tfc-section-title"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</h2>

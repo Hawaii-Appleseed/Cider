@@ -489,7 +489,7 @@ def linkify_footnotes(markup: str, count: int) -> str:
 
 def head(pre: str, page_no: int) -> str:
     """The running header every interior page carries."""
-    return (f'<div class="phead">'
+    return (f'<div class="phead"{L.frame(f"phead.{pre}")}>'
             f'<div class="eyebrow"{L.attr(f"{pre}.eyebrow")}>'
             f'{C.t(f"{pre}.eyebrow")}</div>'
             f'{L.spacer(f"{pre}.h1")}<h1{L.attr(f"{pre}.h1")}>'
@@ -508,7 +508,7 @@ def foot(key: str, page_no: int) -> str:
     # moves every folio at once. Left bare, docsync.check's editability pass
     # reports all five as dead text — correctly: the report's own name was
     # sitting on the sheet with no way to change it.
-    return (f'<div class="pfoot">{C.html(key, "pfoot-t")}'
+    return (f'<div class="pfoot"{L.frame(f"pfoot.{page_no}")}>{C.html(key, "pfoot-t")}'
             f'<span class="pnum"{L.attr(f"foot.pnum.{page_no}")}>'
             f'{page_no:02d} · {C.t("foot.running")}</span></div>')
 
@@ -518,7 +518,7 @@ page = f"""
 <section class="page cover">
   <div class="pill"{L.attr("cover.pill")}>{C.t("cover.pill")}</div>
   {L.spacer("cover.h1")}<h1 class="cover-h1"{L.attr("cover.h1")}>{C.t("cover.h1")}</h1>
-  <div class="rule"></div>
+  <div class="rule"{L.attr("cover.rule")}></div>
   {C.html("cover.deck", "deck")}
 
   <div class="klabel"{L.attr("cover.figures.h")}>{C.t("cover.figures.h")}</div>
@@ -529,7 +529,7 @@ page = f"""
   <div class="klabel"{L.attr("cover.contents.h")}>{C.t("cover.contents.h")}</div>
   <div class="contents"{L.attr("cover.contents")}>{contents_rows()}</div>
 
-  <div class="cover-foot">
+  <div class="cover-foot"{L.frame("cover.foot")}>
     <div class="cfoot-l"{L.attr("cover.source")}>{C.t("cover.source")}</div>
     <div class="cfoot-l"{L.attr("cover.stamp")}>{C.t("cover.stamp")}</div>
   </div>
@@ -544,7 +544,7 @@ page = f"""
 
   <div class="slabel"{L.attr("about.change.h", "color:" + WARM)}>{C.t("about.change.h")}</div>
   {C.html("about.change.p", "body")}
-  <div class="ccards"{L.attr("about.cards")}>
+  <div class="ccards"{L.frame("about.cards")}>
     {change_card("a", WARM)}{change_card("b", PRIMARY)}{change_card("c", GREEN)}
   </div>
   <div class="slabel"{L.attr("eo.h", "color:" + PRIMARY_DARK)}>{C.t("eo.h")}</div>
@@ -573,8 +573,8 @@ page = f"""
   {head("saves", 4)}
   {graphic(L, "chart.savings", chart_scroll(savings_chart(), smallest_label=LABEL_U), w=CHART_W_IN)}
   {C.html("saves.chart.note", "note-b")}
-  <div class="stats"{L.attr("saves.stats")}>{stat("a")}{stat("b")}{stat("c")}</div>
-  <div class="endnotes"><span class="srch"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</span>{ENDNOTES_SLOT}</div>
+  <div class="stats"{L.frame("saves.stats")}>{stat("a")}{stat("b")}{stat("c")}</div>
+  <div class="endnotes"{L.frame("endnotes.box")}><span class="srch"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</span>{ENDNOTES_SLOT}</div>
   {foot("saves.foot", 4)}
 {C.extras("page4")} {L.layer(4)}{L.text_boxes(4)}{L.tables_html(4)}
 </section>

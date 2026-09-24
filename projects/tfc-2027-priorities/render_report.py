@@ -226,12 +226,12 @@ def ranked(bucket):
     for t in order:
         key = f"rank.name-{t}"
         rows.append(
-            f'<li><span class="idea"{merge_attrs(C.slot_attr(key), L.attr(key))}>{C.text(key)}</span>'
+            f'<li{L.frame(f"frame.rank-{t}")}><span class="idea"{merge_attrs(C.slot_attr(key), L.attr(key))}>{C.text(key)}</span>'
             f'<span class="gauge">'
             f'{derived_meter(f"bar.rank-{t}", COUNTS[t], f"this idea bar in the tier list above ({idea_id(t)})", w=9.0 if bucket == "get" else 2.5)}'
             f'{tally(f"tally.rank-{t}", COUNTS[t], f"this idea bar in the tier list above ({idea_id(t)})")}'
             f'</span></li>')
-    return f'<ol class="items">{"".join(rows)}</ol>'
+    return f'<ol class="items"{L.frame(f"frame.list-{bucket}")}>{"".join(rows)}</ol>'
 
 
 for _name, _b in RANKED.items():
@@ -256,7 +256,8 @@ BODY = re.sub(r"⟦X:([^⟧]+)⟧", _fill, BODY)
 # labels — still applies; this makes the third of them editable.
 BODY = slot_descriptions(C, BODY, "desc")
 # The markers (A=slot attr, T=slot text, S=movable spacer, E=movable attr,
-# B=resizable background band) are the engine's to fill. fill_markers is what
+# B=resizable background band, F=frame: a container that moves whole while its
+# fields stay their own) are the engine's to fill. fill_markers is what
 # makes every field on this page movable and resizable: the five re.subs that
 # used to stand here gave each one a slot and nothing else, so none of the
 # page's 141 fields could be dragged or given a width.
