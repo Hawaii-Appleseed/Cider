@@ -22,13 +22,13 @@ Coalition Priorities Survey
 Results of the Pol.is poll on 2027 legislative priorities: 14 ideas, voted agree / disagree / pass.
 
 [[num.span-2]]
-13
+16
 
 [[of.span-1]]
 /28
 
 [[lbl.span-1]]
-Members voted · 46%
+Members voted · 57%
 
 [[num.span-3]]
 7
@@ -43,25 +43,25 @@ Put up ideas
 Ideas on the table
 
 [[num.span-1]]
-115
+157
 
 [[lbl.span-4]]
 Votes cast
 
 [[num.span-5]]
-4
+5
 
 [[lbl.span-5]]
 Were "disagree"
 
 [[turnout.p-1]]
-**13 of 28** invited coalition members cast at least one vote (46% turnout).
+**16 of 28** invited coalition members cast at least one vote (57% turnout).
 
 [[sheet.h2-1]]
 14 ideas
 
 [[sub.p-1]]
-Each bar shows all 13 voters: agree / pass / disagree / no vote.
+Each bar shows all 16 voters: agree / pass / disagree / no vote.
 
 [[legend.span-1]]
 Agree
@@ -79,49 +79,49 @@ Didn't vote on it
 Settled
 
 [[note.span-1]]
-Broad agreement, few passes, zero opposition
+Broad agreement, few passes, almost no opposition
 
 [[gloss.span-1]]
 By reducing the proposed phase-out
 
 [[tally.span-1]]
-**7 of 8** votes agreed · 1 pass
+**7 of 11** votes agreed · 4 passes
 
 [[gloss.span-2]]
 
 
 [[tally.span-2]]
-**10 of 12** votes agreed · 2 passes
+**13 of 15** votes agreed · 2 passes
 
 [[idea.span-1]]
 Save the working family tax credits set to expire
 
 [[tally.span-3]]
-**7 of 8** votes agreed · 1 pass
+**10 of 11** votes agreed · 1 pass
 
 [[idea.span-2]]
 Tax capital gains at the same rate as ordinary income
 
 [[tally.span-4]]
-**7 of 8** votes agreed · 1 pass
+**9 of 11** votes agreed · 1 pass · 1 disagree
 
 [[idea.span-3]]
 Close the REIT tax loophole
 
 [[tally.span-5]]
-**7 of 8** votes agreed · 1 pass
+**10 of 11** votes agreed · 1 pass
 
 [[gloss.span-3]]
-Posted last — fewest people saw it
+Posted last — fewer people saw it
 
 [[tally.span-6]]
-**5 of 6** votes agreed · 1 pass
+**8 of 9** votes agreed · 1 pass
 
 [[idea.span-4]]
 Strengthen the caregiver tax credit for kūpuna caregivers
 
 [[tally.span-7]]
-**5 of 8** votes agreed · 3 passes
+**8 of 11** votes agreed · 3 passes
 
 [[tier-head.h3-2]]
 Agreement, with some passes
@@ -133,49 +133,49 @@ Little opposition, 1/3–1/2 passed
 Funding for first-year post-partum women, partly through TANF
 
 [[tally.span-8]]
-**6 of 9** votes agreed · 3 passes
+**6 of 12** votes agreed · 6 passes
 
 [[gloss.span-5]]
 Net effect: a more progressive system overall
 
 [[tally.span-9]]
-**5 of 10** votes agreed · 4 passes · 1 disagree
+**7 of 13** votes agreed · 5 passes · 1 disagree
 
 [[gloss.span-6]]
 Stops multinationals shifting profit offshore
 
 [[tally.span-10]]
-**4 of 8** votes agreed · 4 passes
+**4 of 11** votes agreed · 7 passes
 
 [[gloss.span-7]]
 City & County of Honolulu — a county issue
 
 [[tally.span-11]]
-**3 of 5** votes agreed · 2 passes
+**5 of 8** votes agreed · 3 passes
 
 [[tier-head.h3-3]]
 Unresolved
 
 [[note.span-3]]
-Passes > agrees; 3 of the 4 disagree votes landed here
+Passes > agrees; 3 of the 5 disagree votes landed here
 
 [[idea.span-5]]
 Fix the child and dependent care tax credit
 
 [[tally.span-12]]
-**2 of 8** votes agreed · 5 passes · 1 disagree
+**3 of 11** votes agreed · 7 passes · 1 disagree
 
 [[gloss.span-8]]
 Largest dissent
 
 [[tally.span-13]]
-**3 of 8** votes agreed · 4 passes · 1 disagree
+**4 of 11** votes agreed · 6 passes · 1 disagree
 
 [[idea.span-6]]
 Constitutional amendment to let the state tax high-value investment properties
 
 [[tally.span-14]]
-**2 of 9** votes agreed · 6 passes · 1 disagree
+**3 of 12** votes agreed · 8 passes · 1 disagree
 
 [[split.h2]]
 Tax credits vs revenue raisers
@@ -204,55 +204,55 @@ GET restructuring · 2 ideas
 -->
 
 [[famsplit.n1]]
-39
+54
 
 [[famsplit.n2]]
-58
+79
 
 [[famsplit.n3]]
-18
+24
 
 [[famsplit.cap]]
-Share of the 115 votes cast, by family. Revenue raisers took half the coalition's attention; the two GET questions took a sixth.
+Share of the 157 votes cast, by family. Revenue raisers took half the coalition's attention; the two GET questions took a sixth.
 
 [[fam.who-1]]
-5 ideas · 39 votes
+5 ideas · 54 votes
 
 [[fam.h3-1]]
 Tax credits & direct support
 
 [[fam.tally-1]]
-**25 of 39** votes agreed · 13 passes · 1 disagree
+**35 of 54** votes agreed · 18 passes · 1 disagree
 
 [[fam.p-1]]
-Saving the expiring working family credits, a state Child Tax Credit, the kūpuna caregiver credit, Keiki Rx, and the child & dependent care credit. Strongest at the top (6 of 7 on the expiring credits); the child & dependent care fix is the least agreed item.
+Saving the expiring working family credits, a state Child Tax Credit, the kūpuna caregiver credit, Keiki Rx, and the child & dependent care credit. Strongest at the top (10 of 11 on the expiring credits); the child & dependent care fix is the least agreed item.
 
 [[fam.who-2]]
-7 ideas · 58 votes
+7 ideas · 79 votes
 
 [[fam.h3-2]]
 Revenue raisers
 
 [[fam.tally-2]]
-**40 of 58** votes agreed · 17 passes · 1 disagree
+**51 of 79** votes agreed · 26 passes · 2 disagrees
 
 [[fam.p-2]]
 The renewable energy fix, conveyance tax, capital gains, the REIT loophole, worldwide combined reporting, the historic-home exemption, and the ConAm.
 
 [[fam.who-3]]
-2 ideas · 18 votes
+2 ideas · 24 votes
 
 [[fam.h3-3]]
 GET restructuring
 
 [[fam.tally-3]]
-**8 of 18** votes agreed · 8 passes · 2 disagrees
+**11 of 24** votes agreed · 11 passes · 2 disagrees
 
 [[fam.p-3]]
 Pairing a progressive raiser with a GET cut on food, and GET reform or replacement.
 
 [[split.note]]
-**Credits and raisers poll the same.** 64% agree on the credit side, 69% on the revenue side, one disagree vote each — no meaningful gap. However, GET restructuring polled at 44%, with more passes than agrees and now two disagree votes.
+**Credits and raisers poll the same.** 65% agree on the credit side, 65% on the revenue side, with one and two disagree votes respectively — no meaningful gap. However, GET restructuring polled at 46%, with as many passes as agrees and two disagree votes.
 
 [[bucket.h2]]
 Priorities by bucket
@@ -261,13 +261,13 @@ Priorities by bucket
 The same 14 ideas, grouped by the Coalition's three 2027 priority buckets: tax the wealthy, tax corporations, and tax credits and assistance.
 
 [[bucket.n1]]
-34
+46
 
 [[bucket.n2]]
-16
+22
 
 [[bucket.n3]]
-47
+65
 
 [[bucket.key-1]]
 Tax the wealthy · 4 ideas
@@ -279,16 +279,16 @@ Tax corporations · 2 ideas
 Tax credits and assistance · 6 ideas
 
 [[bucket.cap]]
-Share of the 97 votes cast on the 12 bucketed ideas. The two GET ideas (18 votes) aren't part of this split — see below.
+Share of the 133 votes cast on the 12 bucketed ideas. The two GET ideas (24 votes) aren't part of this split — see below.
 
 [[bkt.who-1]]
-4 ideas · 34 votes
+4 ideas · 46 votes
 
 [[bkt.h3-1]]
 Tax the wealthy
 
 [[bkt.tally-1]]
-**22 of 34** votes agreed · 11 passes · 1 disagree
+**30 of 46** votes agreed · 14 passes · 2 disagrees
 
 [[bkt.p-1]]
 The four ideas, ranked by votes agreed:
@@ -297,34 +297,34 @@ The four ideas, ranked by votes agreed:
 Conveyance tax reform
 
 [[bktw.tally-1]]
-**10 of 12** votes agreed · 2 passes
+**13 of 15** votes agreed · 2 passes
 
 [[bktw.idea-2]]
 Tax capital gains at the same rate as ordinary income
 
 [[bktw.tally-2]]
-**7 of 8** votes agreed · 1 pass
+**9 of 11** votes agreed · 1 pass · 1 disagree
 
 [[bktw.idea-3]]
 Reform the 2011 historic-home tax exemption
 
 [[bktw.tally-3]]
-**3 of 5** votes agreed · 2 passes
+**5 of 8** votes agreed · 3 passes
 
 [[bktw.idea-4]]
 Constitutional amendment to tax high-value investment properties (ConAm)
 
 [[bktw.tally-4]]
-**2 of 9** votes agreed · 6 passes · 1 disagree
+**3 of 12** votes agreed · 8 passes · 1 disagree
 
 [[bkt.who-2]]
-2 ideas · 16 votes
+2 ideas · 22 votes
 
 [[bkt.h3-2]]
 Tax corporations
 
 [[bkt.tally-2]]
-**11 of 16** votes agreed · 5 passes
+**14 of 22** votes agreed · 8 passes
 
 [[bkt.p-2]]
 The two ideas, ranked by votes agreed:
@@ -333,22 +333,22 @@ The two ideas, ranked by votes agreed:
 Close the REIT tax loophole
 
 [[bktc.tally-1]]
-**7 of 8** votes agreed · 1 pass
+**10 of 11** votes agreed · 1 pass
 
 [[bktc.idea-2]]
 Institute worldwide combined reporting
 
 [[bktc.tally-2]]
-**4 of 8** votes agreed · 4 passes
+**4 of 11** votes agreed · 7 passes
 
 [[bkt.who-3]]
-6 ideas · 47 votes
+6 ideas · 65 votes
 
 [[bkt.h3-3]]
 Tax credits and assistance
 
 [[bkt.tally-3]]
-**32 of 47** votes agreed · 14 passes · 1 disagree
+**42 of 65** votes agreed · 22 passes · 1 disagree
 
 [[bkt.p-3]]
 The six ideas, ranked by votes agreed:
@@ -357,46 +357,46 @@ The six ideas, ranked by votes agreed:
 Save the working family tax credits set to expire
 
 [[bkta.tally-1]]
-**7 of 8** votes agreed · 1 pass
+**10 of 11** votes agreed · 1 pass
 
 [[bkta.idea-2]]
-Fix last session's renewable energy tax cuts
-
-[[bkta.tally-2]]
-**7 of 8** votes agreed · 1 pass
-
-[[bkta.idea-3]]
-Keiki Rx
-
-[[bkta.tally-3]]
-**6 of 9** votes agreed · 3 passes
-
-[[bkta.idea-4]]
 Create a state-level Child Tax Credit
 
-[[bkta.tally-4]]
-**5 of 6** votes agreed · 1 pass
+[[bkta.tally-2]]
+**8 of 9** votes agreed · 1 pass
 
-[[bkta.idea-5]]
+[[bkta.idea-3]]
 Strengthen the caregiver tax credit for kūpuna caregivers
 
+[[bkta.tally-3]]
+**8 of 11** votes agreed · 3 passes
+
+[[bkta.idea-4]]
+Fix last session's renewable energy tax cuts
+
+[[bkta.tally-4]]
+**7 of 11** votes agreed · 4 passes
+
+[[bkta.idea-5]]
+Keiki Rx
+
 [[bkta.tally-5]]
-**5 of 8** votes agreed · 3 passes
+**6 of 12** votes agreed · 6 passes
 
 [[bkta.idea-6]]
 Fix the child and dependent care tax credit
 
 [[bkta.tally-6]]
-**2 of 8** votes agreed · 5 passes · 1 disagree
+**3 of 11** votes agreed · 7 passes · 1 disagree
 
 [[get.who-1]]
-2 ideas · 18 votes · not part of a bucket
+2 ideas · 24 votes · not part of a bucket
 
 [[get.h3-1]]
 GET on food
 
 [[get.tally-1]]
-**8 of 18** votes agreed · 8 passes · 2 disagrees
+**11 of 24** votes agreed · 11 passes · 2 disagrees
 
 [[get.p-1]]
 Not one of the Coalition's three buckets — its own track per the Charter. Ranked by votes agreed:
@@ -405,19 +405,19 @@ Not one of the Coalition's three buckets — its own track per the Charter. Rank
 Pair a progressive revenue raiser with cutting the GET on food
 
 [[getb.tally-1]]
-**5 of 10** votes agreed · 4 passes · 1 disagree
+**7 of 13** votes agreed · 5 passes · 1 disagree
 
 [[getb.idea-2]]
 GET reform or replacement
 
 [[getb.tally-2]]
-**3 of 8** votes agreed · 4 passes · 1 disagree
+**4 of 11** votes agreed · 6 passes · 1 disagree
 
 [[bucket.note]]
 Buckets aren't ranked by how much they agreed — they're how the Coalition organizes its 2027 ballot. See "Tax credits vs revenue raisers" above for the poll's own weight-of-attention split.
 
 [[sheet.span-1]]
-Source: Pol.is conversation [7bvwfhpf8x](https://pol.is/7bvwfhpf8x) · votes as of 25 August 2026 (opened 30 July) · 28 members invited, 13 voted
+Source: Pol.is conversation [7bvwfhpf8x](https://pol.is/7bvwfhpf8x) · votes as of 27 August 2026 (opened 30 July) · 28 members invited, 16 voted
 
 [[sheet.span-2]]
 Prepared for the Tax Fairness Coalition
