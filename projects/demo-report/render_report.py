@@ -16,7 +16,7 @@ REPO = HERE.parent.parent                        # repo root, where docsync/ liv
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from docsync.content import Content              # noqa: E402
+from docsync.content import Content, merge_attrs  # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.blocks import describe, graphic, card   # noqa: E402
 
@@ -48,10 +48,12 @@ page1 = f"""
 </section>"""
 
 body = C.fn.resolve(page1)
-notes = C.fn.endnotes()
-endnotes = "".join(
-    f'<li id="en{i + 1}">{txt} <a href="{url}">{url}</a></li>'
-    for i, (txt, url) in enumerate(notes))
+# The engine's list, not a hand-built one: each entry carries its
+# endnote.<id> hook (Sources panel), where the <li>s built here had none.
+endnotes = C.fn.endnotes_html(L)
+_eh = "endnotes.title"
+endnotes_title = (f'{L.spacer(_eh)}<h2{merge_attrs(C.slot_attr(_eh), L.attr(_eh))}>'
+                  f'{C.text_or(_eh, "Endnotes")}</h2>')
 
 html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -72,8 +74,8 @@ html = f"""<!DOCTYPE html>
 <body>
 {body}
 <section class="page">
- <h2>Endnotes</h2>
- <ol class="endnotes">{endnotes}</ol>
+ {endnotes_title}
+ <div class="endnotes">{endnotes}</div>
 </section>
 </body>
 </html>

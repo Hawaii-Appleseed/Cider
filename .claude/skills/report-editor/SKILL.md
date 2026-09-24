@@ -82,6 +82,40 @@ wherever its numbers came from; put it in a slot (`svg_text` inside, `C.html`
 beside). Do not reach for `frozen=` to get past the error on a chart: the
 error is the point, and the answer is `svg_text`.
 
+## Every surface has a handle — and what guards it
+
+"Editable" is checked in two places, because two kinds of gap exist:
+
+| Guard | Reads | Catches |
+|---|---|---|
+| `python3 -m docsync.check` (CI: report-checks.yml; an ERROR under `strict`) | the edit-mode MARKUP | text with no hook; a slot nothing can move; **any words** in a movable block with no slot (the C() trap — short labels too, since 2026-09-24); words inside a drawing; literal descriptions; bars drawn by hand; **an image or drawing nothing can move** |
+| `tests/editor/every-element-has-a-handle.spec.js` (CI: the editor suite) | the page a BROWSER draws, per strict report | **a painted surface** (card, band, rule, bordered panel) with no handle; **words drawn by CSS** (`::before`/`::after`); text or pictures a page's script adds |
+
+The spec keeps a shrink-only KNOWN list (the surfaces found on 2026-09-24):
+a new finding fails, a fixed one fails until its name is deleted. Never add a
+name to quiet a finding.
+
+What each finding wants:
+
+- **Words** → a slot (`C.t`, `C.html`, `C.slot_attr`; for a label the
+  renderer names, `C.text_or(key, "<its wording>")` inside `C.slot_attr` so
+  it renders unchanged until edited), or `C.derived` for a computed value.
+- **An image or drawing** → `blocks.graphic` (drawing), `blocks.chart` /
+  `blocks.meter` (chart), `L.attr` on the `<img>` or its figure, `L.wrap`
+  round a composite. A glyph inside a link or button is exempt.
+- **A painted surface** → the handle that fits what it is: a full-width band
+  `L.sec(id)` (height grip); a strip whose colour matters `L.fill_attr(id)`
+  (recolour); a card or panel `L.attr(id)` (move, resize). Until the editor
+  keeps a card's fields independently movable inside a movable card, giving a
+  card `L.attr` glues its fields to it — see the open question in the KNOWN
+  list's comment before wrapping cards that hold fields.
+- **Site chrome** copied from a website (a nav bar, a footer) is not report
+  content: declare each string under `editability_ok`, one reviewable line.
+- **Endnotes** go through `C.fn.endnotes_html(L)` (or an editor-placed
+  endnotes section), never a hand-built `<li>` list — the hand-built one had
+  no hooks, and the `docsync.new` template once added it after the last page
+  as a second, duplicate copy.
+
 ## Every bar is a chart
 
 **A bar that shows numbers is a chart the Chart panel opens — never sized

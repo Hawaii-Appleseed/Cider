@@ -115,6 +115,11 @@ Rules that bite:
   render engine…", no console error). After any edit: `npx playwright test
   boot-errors.spec.js`, or minimum `node --check` the inline script
   (`report2027/tools/test_render.py` does this).
+- **Everything visible has a handle.** `docsync.check` reads the markup
+  (words, slots, drawings, images); `every-element-has-a-handle.spec.js`
+  reads the drawn page (painted cards/bands/rules, CSS-drawn words, script-
+  added content) for every strict report. New bindings are `strict`. Fixes
+  per kind: the report-editor skill, "Every surface has a handle".
 - **Every bar is a chart.** A bar showing numbers is `blocks.meter` (one bar
   of parts) or `blocks.chart`, so it opens in the Chart panel — never sized
   divs with typed-in widths, which `docsync.check` refuses under strict. Text

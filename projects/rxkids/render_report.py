@@ -526,16 +526,26 @@ TANF_TIMELINE = [
 ]
 
 
+def label(key: str, default: str, cls: str, tag: str = "span", style: str = "") -> str:
+    """A short label the reader can retype: a slot defaulting to the renderer's
+    wording (C.text_or), so it renders exactly as before until someone edits
+    it. These sat in movable blocks as plain words — draggable, never
+    editable — until docsync.check's C() trap learned to count labels too."""
+    own = f' style="{style}"' if style else ""
+    words = C.text_or(key, default).replace("&", "&amp;").replace("<", "&lt;")
+    return f'<{tag} class="{cls}"{merge_attrs(own, C.slot_attr(key))}>{words}</{tag}>'
+
+
 def tanf_timeline() -> str:
     n = len(TANF_TIMELINE)
     n_tanf = sum(1 for _, _, tanf in TANF_TIMELINE if tanf)
     n_other = n - n_tanf
     cols = []
-    for month, amount, tanf in TANF_TIMELINE:
+    for i, (month, amount, tanf) in enumerate(TANF_TIMELINE):
         cls = "rxk-col rxk-col--tanf" if tanf else "rxk-col rxk-col--other"
-        tag = '<span class="rxk-col-tag">TANF</span>' if tanf else ""
+        tag = label("timeline.tag", "TANF", "rxk-col-tag") if tanf else ""
         cols.append(f"""<div class="{cls}">
-            <span class="rxk-col-month">{month}</span>
+            {label(f"timeline.month-{i}", month, "rxk-col-month")}
             <span class="rxk-col-amt">{amount}</span>
             {tag}
         </div>""")
@@ -565,7 +575,7 @@ def tanf_timeline() -> str:
         <div class="rxk-frame" style="clip-path:{poly}; -webkit-clip-path:{poly};"></div>
         <div class="rxk-inner" style="clip-path:{poly}; -webkit-clip-path:{poly};">
           <div class="rxk-green-fill" style="width:{green_w};"></div>
-          <div class="rxk-otherfunding" style="width:{banner_w}">OTHER FUNDING</div>
+          {label("timeline.other", "OTHER FUNDING", "rxk-otherfunding", "div", f"width:{banner_w}")}
           <div class="rxk-cols">
               {"".join(cols)}
           </div>
@@ -651,7 +661,7 @@ def tanf_option_card(key: str, num_label: str, free: bool = False) -> str:
     free_cls = " tfc-tanf-card--free" if free else ""
     tag_cls = "tfc-tanf-tag tfc-tanf-tag--good" if free else "tfc-tanf-tag"
     return f"""{L.spacer(key)}<div class="tfc-tanf-card{free_cls}"{L.attr(key)}>
-        <span class="tfc-tanf-option-num">{num_label}</span>
+        {label(f"{key}.num", num_label, "tfc-tanf-option-num")}
         <h3>{C.t(f"{key}.title")}</h3>
         <span class="{tag_cls}">{C.t(f"{key}.tag")}</span>
         <p>{C.t(f"{key}.body")}</p>
