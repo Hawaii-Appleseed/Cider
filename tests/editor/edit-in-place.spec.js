@@ -47,7 +47,7 @@ async function openAndMeasure(page, key) {
 test.describe('editing a field in place', () => {
   test('an ingested page\'s heading, stats and lede keep their size while open', async ({ page }) => {
     await gotoEditor(page, '?project=tfc-2027-priorities');
-    for (const key of ['sheet.h1-1', 'num.span-2', 'of.span-1', 'lbl.span-1', 'standfirst.p-1']) {
+    for (const key of ['sheet.h1-1', 'num.span-3', 'lbl.span-2', 'lbl.span-1', 'standfirst.p-1']) {
       const { before, open } = await openAndMeasure(page, key);
       expect(open, `${key} opened an editor`).not.toBeNull();
       expect(open.inPlace, `${key} is edited as its own element`).toBe(true);

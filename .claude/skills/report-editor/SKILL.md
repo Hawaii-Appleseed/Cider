@@ -82,6 +82,43 @@ wherever its numbers came from; put it in a slot (`svg_text` inside, `C.html`
 beside). Do not reach for `frozen=` to get past the error on a chart: the
 error is the point, and the answer is `svg_text`.
 
+## Every bar is a chart
+
+**A bar that shows numbers is a chart the Chart panel opens — never sized
+`<div>`/`<i>` elements with widths typed in.** A hand-drawn bar looks fine and
+is the worst kind of frozen: no panel opens it, retyping the tally beside it
+never moves it, and a refreshed count leaves it drawing the old number
+(tfc-2027-priorities shipped a bar disagreeing with its own figures this way).
+`docsync.check` refuses it under `strict` — "bar(s) drawn by hand".
+
+- **One bar of parts** (agree / pass / disagree, voted / didn't, a split of a
+  total): `blocks.meter_spec([(name, value, "#hex"), …], of=<whole>,
+  values=<numbers inside?>, label=<grid row name>)`, drawn with
+  `blocks.meter(C, L, el_id, spec, w=, h=)`. `of` is what the full bar stands
+  for; the rest shows as track (`--ds-meter-track` recolours every track, for
+  a dark theme). A meter with no numbers in it keeps its pixel height at any
+  width, so it never thins to a hairline on a phone.
+- **The words that restate a bar are computed from it.** Read the numbers the
+  bar will actually draw with `blocks.meter_values(L, el_id, spec)` — the
+  renderer's spec with any Chart-panel edit laid over it — and build the tally
+  ("7 of 11 votes agreed · 4 passes"), the totals and the headline counts from
+  those, stamped `C.derived("<which bar>")`. Built from the renderer's own
+  numbers instead, a panel edit would move the bar and leave the words behind.
+- **One editable chart per fact.** A number drawn twice (the same idea in a
+  tier list and again in its bucket card) or summed (a card's total, a split
+  bar) is `blocks.meter(…, derived="<where it comes from>")`: it draws the
+  same, moves and resizes, does not open in the panel, and clicking it names
+  its source. Otherwise two panels hold one fact and can disagree.
+- **Where the numbers start.** Keep them in a data file the renderer reads
+  (list it under the binding's `editor.engine:` so the browser has it), and
+  let a sync script write that file. A panel edit is an override in
+  layout.json `charts[el_id]`; the pilot's `setChart(id, {points: {Agree: 10}})`
+  is the same edit with undo, for a script or an agent.
+- A sentence of analysis that quotes the numbers ("65% agree on the credit
+  side") stays prose, and goes stale when the bars change. Prefer captions
+  that do not restate a figure the page already computes; say at handoff which
+  prose still quotes numbers so the author re-reads it after a data refresh.
+
 ## Making other elements editable
 
 Everything editable shares one hook: `{L.spacer(el_id)}` before the element +
@@ -91,6 +128,8 @@ layout.json position/size override.
 | Want | Use | The user gets |
 |---|---|---|
 | Free-standing SVG/graphic | `blocks.graphic(L, id, svg, w=)` | move, 4-corner proportional resize, rotate |
+| A bar of parts — a vote split, a turnout bar, a share of a whole | `blocks.meter(C, L, id, blocks.meter_spec(parts, of=))` | select it, open **Chart**, type the numbers; the bar redraws |
+| Any other chart in the flow of the page | `blocks.chart(L, id, spec, w=, h=)` | the full Chart panel |
 | Coloured tile with text | `blocks.card(C, L, …, detachable=)` | recolour, move; pieces pull apart if detachable |
 | Editable prose paragraph | `C.html(key, cls)` — stamps `data-slot` AND wraps a movable `para.<key>` | click types (caret where clicked); drag; resize |
 | Editable heading / inline text | a slot: `C.t(key)`, or `C.slot_attr`/`C.slot_span` on a tag you build — AND `L.attr` on that tag or on the block holding it | click types; drag; width resize |
@@ -435,7 +474,9 @@ Two conversion rules that prevent the warnings in the first place:
    takeaway lines and method notes stay slots OUTSIDE the `<svg>` (`C.html`).
    A value label may be an `svg_text` too, defaulted from the DATA constant —
    say at handoff that retyping it changes the label and not the bar.
-2. **Match the chart to its nature.** A *presentational* chart (numbers the
+2. **A bar is a chart** — see "Every bar is a chart": `blocks.meter`, with
+   every restating number computed from `blocks.meter_values`.
+3. **Match the chart to its nature.** A *presentational* chart (numbers the
    user may legitimately retype) should be a native editor chart — a
    layout.json shape `kind:"chart"` (bar/column/pie/donut), fully editable in
    the Chart panel. A *model-driven* chart (numbers reproduced from a

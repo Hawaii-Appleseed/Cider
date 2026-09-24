@@ -26,6 +26,7 @@ bounding box, then act by id:
 await docsync.api.setSlot('whopays.p1', '…new markdown…')
 await docsync.api.place('cover.logo', { x: 1, y: 4 })   // inches; clamps like a drag
 await docsync.api.recolor('page.3', '#FFF6D8')          // null = reset
+await docsync.api.setChart('bar.idea-4', { points: { Agree: 10 } })  // as the Chart panel
 await docsync.api.addTextBox({ page: 3, x: 1, y: 1, w: 2.5, md: 'Note' })
 await docsync.api.select('cover.logo')                  // as a click would; null clears
 docsync.api.save()      // presses the real Save; Push stays with the human
@@ -114,6 +115,11 @@ Rules that bite:
   render engine…", no console error). After any edit: `npx playwright test
   boot-errors.spec.js`, or minimum `node --check` the inline script
   (`report2027/tools/test_render.py` does this).
+- **Every bar is a chart.** A bar showing numbers is `blocks.meter` (one bar
+  of parts) or `blocks.chart`, so it opens in the Chart panel — never sized
+  divs with typed-in widths, which `docsync.check` refuses under strict. Text
+  restating a bar (tallies, totals) is computed from `blocks.meter_values` and
+  marked `C.derived`. The report-editor skill, "Every bar is a chart".
 - **Shared building blocks live in `docsync/blocks.py`** (`graphic()`,
   `card(detachable=…)`, `is_light_bg`) — zero-stylesheet, importable by any
   project renderer, staged into the browser engine automatically. Add new

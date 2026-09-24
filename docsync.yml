@@ -359,6 +359,7 @@ bindings:
         # virtual filesystem won't have them ("draft does not build").
         - projects/tfc-2027-priorities/original.html
         - projects/tfc-2027-priorities/body.slotted.html
+        - projects/tfc-2027-priorities/votes.json
 
   # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed policy brief" template.
   - id: my-report

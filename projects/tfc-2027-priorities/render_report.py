@@ -8,6 +8,7 @@ layout.json. Rename a slot by changing the key in BOTH files. Richer wiring
 belongs in this file — see the report-editor skill.
 """
 from pathlib import Path
+import json
 import os
 import re
 import sys
@@ -17,9 +18,10 @@ REPO = HERE.parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from docsync.content import Content              # noqa: E402
+from docsync.content import Content, merge_attrs  # noqa: E402
 from docsync.layout import Layout                # noqa: E402
-from docsync.blocks import slot_descriptions, fill_markers  # noqa: E402
+from docsync.blocks import (slot_descriptions, fill_markers,  # noqa: E402
+                            meter, meter_spec, meter_values)
 
 _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
@@ -65,6 +67,185 @@ if EDIT:
                    "prefers-color-scheme:ds-edit-light-only", STYLE, flags=re.I)
 
 BODY = (HERE / "body.slotted.html").read_text()
+
+# ---- the bars: charts the editor opens, and everything computed from them ----
+# Every bar on this page used to be <i style="width:43.8%"> typed by hand beside
+# a tally typed by hand, in two places that had to agree and once did not. Now
+# FIFTEEN bars are charts (blocks.meter) that open in the editor's Chart panel —
+# the turnout bar and one bar per Pol.is idea in the tier list — and every
+# other figure on the page is computed from what those fifteen draw: each
+# idea's second bar in its bucket card, the family and bucket totals and their
+# split bars, every tally, the headline counts. Change a number in the Chart
+# panel and all of them follow; click any computed one and it says which bar
+# it comes from. votes.json holds the Pol.is counts each chart starts from
+# (tax-fairness/scripts/polis-sync-primer.py --data refreshes it); an edit in
+# the panel is laid over it in layout.json, per chart, by blocks.meter_values.
+VOTES = json.loads((HERE / "votes.json").read_text())
+AGREE, PASS, AGAINST = "#52796F", "#C4A23E", "#A8603F"
+TIDS = sorted(int(t) for t in VOTES["ideas"])
+# Which ideas make up each family card and each Charter bucket — editorial, so
+# it lives here and not in the data. The tier each idea sits in, and its order
+# there, is the page's own markup (body.slotted.html).
+FAMILIES = {"1": [4, 13, 8, 2, 9], "2": [3, 0, 5, 6, 7, 12, 10], "3": [1, 11]}
+BUCKETS = {"1": [0, 5, 12, 10], "2": [6, 7], "3": [4, 13, 8, 3, 2, 9], "get": [1, 11]}
+RANKED = {"wealthy": "1", "corp": "2", "credits": "3", "get": "get"}
+FAM_FILLS = ["#52796F", "#8AA79E", "#C3CEC5"]
+BKT_FILLS = ["#3B6E8F", "#A65D3D", "#C99A3E"]
+
+TURNOUT = "bar.turnout"
+_turnout = meter_spec([("Voted", VOTES["voters"], AGREE),
+                       ("Didn't vote", VOTES["invited"] - VOTES["voters"], "#DCE3DC")],
+                      label="Members invited")
+_turnout["radius"] = 0.031
+_tv = meter_values(L, TURNOUT, _turnout)
+VOTERS = int(_tv["Voted"])
+INVITED = VOTERS + int(_tv["Didn't vote"])
+
+
+def idea_id(tid):
+    return f"bar.idea-{tid}"
+
+
+def idea_spec(tid):
+    v = VOTES["ideas"][str(tid)]
+    s = meter_spec([("Agree", v["agree"], AGREE), ("Pass", v["pass"], PASS),
+                    ("Disagree", v["disagree"], AGAINST)], of=VOTERS, label="Votes")
+    s["radius"] = 0.021
+    return s
+
+
+COUNTS = {}
+for _t in TIDS:
+    _c = meter_values(L, idea_id(_t), idea_spec(_t))
+    COUNTS[_t] = (int(_c.get("Agree", 0)), int(_c.get("Pass", 0)), int(_c.get("Disagree", 0)))
+
+
+def agg(tids):
+    return tuple(sum(COUNTS[t][k] for t in tids) for k in range(3))
+
+
+def plural(n, one, many):
+    return f"{n} {one if n == 1 else many}"
+
+
+def tally(el_id, apd, src):
+    """ "7 of 11 votes agreed · 4 passes" — built from what the bars draw,
+    so it can never disagree with them. Movable like any field; not typed."""
+    a, p, d = apd
+    bits = [f"<b>{a} of {a + p + d}</b> votes agreed",
+            "no passes" if p == 0 else plural(p, "pass", "passes")]
+    if d:
+        bits.append(plural(d, "disagree", "disagrees"))
+    return (f'<span class="tally"{L.attr(el_id)}{C.derived(src)}>'
+            f'{" · ".join(bits)}</span>')
+
+
+def derived_meter(el_id, apd, src, w=2.5):
+    s = meter_spec([("Agree", apd[0], AGREE), ("Pass", apd[1], PASS),
+                    ("Disagree", apd[2], AGAINST)])
+    s["radius"] = 0.021
+    return meter(C, L, el_id, s, w=w, derived=src)
+
+
+def split_meter(el_id, groups, names, fills, src):
+    s = meter_spec([(n, sum(sum(COUNTS[t]) for t in g), f)
+                    for n, g, f in zip(names, groups, fills)], values=True)
+    s["radius"] = 0.031
+    return meter(C, L, el_id, s, w=9.06, h=0.35, derived=src)
+
+
+def stat(el_id, value, lbl_key, src, extra=""):
+    return (f'<div class="stat"{L.attr(el_id)}><span class="num"{C.derived(src)}>'
+            f'{value}{extra}</span><span class="lbl"{C.slot_attr(lbl_key)}>'
+            f'{C.text(lbl_key)}</span></div>')
+
+
+FROM_IDEAS = "the idea bars in the tier list: open one in the Chart panel to change it"
+ALL_VOTES = sum(sum(v) for v in COUNTS.values())
+ALL_DIS = sum(v[2] for v in COUNTS.values())
+_pct = round(100 * VOTERS / INVITED) if INVITED else 0
+FILL = {
+    "stat-voted": (
+        f'<div class="stat"{L.attr("stat.voted")}><span class="num"'
+        f'{C.derived("the turnout bar: open it in the Chart panel to change it")}>'
+        f'{VOTERS}<span class="of">/{INVITED}</span></span><span class="lbl">'
+        f'<span{C.slot_attr("lbl.span-1")}>{C.text("lbl.span-1")}</span>'
+        f'<span{C.derived("the turnout bar")}> · {_pct}%</span>'
+        f'</span></div>'),
+    "turnout": (
+        f'{meter(C, L, TURNOUT, _turnout, w=5.33, h=0.0625)}'
+        f'<p{L.attr("turnout.line")}><strong{C.derived("the turnout bar above")}>'
+        f'{VOTERS} of {INVITED}</strong> <span{C.slot_attr("turnout.p-1")}>'
+        f'{C.text("turnout.p-1")}</span></p>'),
+    "famsplit": split_meter(
+        "bar.famsplit", [FAMILIES[k] for k in ("1", "2", "3")],
+        ["Tax credits & direct support", "Revenue raisers", "GET restructuring"],
+        FAM_FILLS, "the sum of each family's idea bars"),
+    "bucketsplit": split_meter(
+        "bar.bucketsplit", [BUCKETS[k] for k in ("1", "2", "3")],
+        ["Tax the wealthy", "Tax corporations", "Tax credits and assistance"],
+        BKT_FILLS, "the sum of each bucket's idea bars"),
+}
+for _lbl, _tok, _val in (("lbl.span-3", "stat-ideas", len(TIDS)),
+                         ("lbl.span-4", "stat-votes", ALL_VOTES),
+                         ("lbl.span-5", "stat-disagree", ALL_DIS)):
+    FILL[f"{_tok}:{_lbl}"] = stat(f"stat.{_tok[5:]}", _val, _lbl, FROM_IDEAS)
+for _t in TIDS:
+    FILL[f"tier:{_t}"] = (meter(C, L, idea_id(_t), idea_spec(_t), w=1.92)
+                          + tally(f"tally.idea-{_t}", COUNTS[_t],
+                                  f"the bar above it ({idea_id(_t)}): open it in the Chart panel"))
+for _k, _g in FAMILIES.items():
+    FILL[f"fam:{_k}"] = (derived_meter(f"bar.fam-{_k}", agg(_g), "the sum of this family's idea bars")
+                         + tally(f"tally.fam-{_k}", agg(_g), "the sum of this family's idea bars"))
+    FILL[f"who:fam:{_k}"] = (f'<span class="who"{L.attr(f"who.fam-{_k}")}'
+                             f'{C.derived("the idea bars in this family")}>'
+                             f'{plural(len(_g), "idea", "ideas")} · {plural(sum(agg(_g)), "vote", "votes")}</span>')
+for _k, _g in BUCKETS.items():
+    FILL[f"bucket:{_k}"] = (derived_meter(f"bar.bucket-{_k}", agg(_g), "the sum of this bucket's idea bars",
+                                          w=9.0 if _k == "get" else 2.5)
+                            + tally(f"tally.bucket-{_k}", agg(_g), "the sum of this bucket's idea bars"))
+    _who = f'{plural(len(_g), "idea", "ideas")} · {plural(sum(agg(_g)), "vote", "votes")}'
+    if _k == "get":
+        # The GET line is a count and a note ("· not part of a bucket"): the
+        # count is computed, the note is words — one movable line holding both.
+        FILL[f"who:bucket:{_k}"] = (
+            f'<span class="who"{L.attr("who.bucket-get")}>'
+            f'<span{C.derived("the idea bars in this bucket")}>{_who}</span> '
+            f'<span{C.slot_attr("get.who-note")}>{C.text("get.who-note")}</span></span>')
+    else:
+        FILL[f"who:bucket:{_k}"] = (f'<span class="who"{L.attr(f"who.bucket-{_k}")}'
+                                    f'{C.derived("the idea bars in this bucket")}>{_who}</span>')
+
+
+def ranked(bucket):
+    """A bucket card's ideas, ranked by votes agreed (then by share) — the
+    order follows the bars, so an edit that changes the ranking re-ranks."""
+    g = BUCKETS[bucket]
+    order = sorted(g, key=lambda t: (-COUNTS[t][0], -COUNTS[t][0] / max(1, sum(COUNTS[t])), t))
+    rows = []
+    for t in order:
+        key = f"rank.name-{t}"
+        rows.append(
+            f'<li><span class="idea"{merge_attrs(C.slot_attr(key), L.attr(key))}>{C.text(key)}</span>'
+            f'<span class="gauge">'
+            f'{derived_meter(f"bar.rank-{t}", COUNTS[t], f"this idea bar in the tier list above ({idea_id(t)})", w=9.0 if bucket == "get" else 2.5)}'
+            f'{tally(f"tally.rank-{t}", COUNTS[t], f"this idea bar in the tier list above ({idea_id(t)})")}'
+            f'</span></li>')
+    return f'<ol class="items">{"".join(rows)}</ol>'
+
+
+for _name, _b in RANKED.items():
+    FILL[f"ranked:{_name}"] = ranked(_b)
+
+
+def _fill(m):
+    k = m.group(1)
+    if k not in FILL:
+        raise SystemExit(f"body.slotted.html: no renderer fill for ⟦X:{k}⟧")
+    return FILL[k]
+
+
+BODY = re.sub(r"⟦X:([^⟧]+)⟧", _fill, BODY)
 # Every bar in this page is drawn in CSS with role="img" and an aria-label
 # spelling out its tally — which is the WHOLE figure for a reader who cannot
 # see the bar, and was a literal in the markup that nobody could edit. They
@@ -167,6 +348,9 @@ BUCKET_CSS = """
 .get-callout{margin-top:1.1rem; padding:.9rem 1.1rem; border:1px dashed var(--ink-faint);
   border-radius:6px;}
 .get-callout .who{display:block;}
+/* Every bar is a blocks.meter chart; its empty track is the page's own
+   recessed colour, which the dark palette redefines. */
+:root{ --ds-meter-track:var(--empty); }
 /* ol.items li's own grid-template-columns:1fr 11.5rem (original.html) assumes
    the full-width tier list; nested inside a ~15rem .group card or the
    .get-callout box it would push the tally column off the edge. Stack idea

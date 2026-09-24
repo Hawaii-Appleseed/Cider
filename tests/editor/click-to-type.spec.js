@@ -193,11 +193,13 @@ test.describe('a click types, a drag moves (tfc-2027-priorities)', () => {
   });
 
   test('a stat card moves as one, its figure and label together', async ({ page }) => {
-    const card = '[data-el="field.num.span-2"]';
+    // The voted card: its figure is computed from the turnout bar and its
+    // label is a slot, and the card still moves as one.
+    const card = '[data-el="stat.voted"]';
     await expect(page.frameLocator('#out').locator(`${card} [data-slot="lbl.span-1"]`)).toHaveCount(1);
     const from = await centreOf(page, card);
     await drag(page, from, 60, 40);
-    expect(await page.evaluate(() => layout.positions['field.num.span-2'])).toBeTruthy();
+    expect(await page.evaluate(() => layout.positions['stat.voted'])).toBeTruthy();
   });
 
   test('a text box added to the page lands ON it, and stays where it was put', async ({ page }) => {

@@ -8,7 +8,7 @@ const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test')
 
 // Mirrors CHART_KINDS in edit.html. A number here rather than a magic 13,
 // so adding a type is one edit and not a puzzle in a failing assertion.
-const CHART_KINDS = 15;
+const CHART_KINDS = 16;
 
 async function addChart(page) {
   const frame = page.frameLocator('#out');

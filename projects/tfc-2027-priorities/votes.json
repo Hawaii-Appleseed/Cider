@@ -1,0 +1,84 @@
+{
+  "_readme": "The vote counts this report draws, one entry per Pol.is idea (its comment id, tid). render_report.py reads it for every bar's starting numbers; an edit in the editor's Chart panel is laid over it (layout.json charts), and every tally and total on the page is computed from what the bars draw. Written by tax-fairness/scripts/polis-sync-primer.py --data; re-run that to refresh from Pol.is.",
+  "source": "https://pol.is/report/r3v45armukntdykxcyucd",
+  "conversation_id": "7bvwfhpf8x",
+  "fetched_at": "2026-09-24T18:42:35+00:00",
+  "votes_as_of": "27 August 2026",
+  "voters": 16,
+  "invited": 28,
+  "ideas": {
+    "0": {
+      "agree": 13,
+      "pass": 2,
+      "disagree": 0
+    },
+    "1": {
+      "agree": 7,
+      "pass": 5,
+      "disagree": 1
+    },
+    "2": {
+      "agree": 6,
+      "pass": 6,
+      "disagree": 0
+    },
+    "3": {
+      "agree": 7,
+      "pass": 4,
+      "disagree": 0
+    },
+    "4": {
+      "agree": 10,
+      "pass": 1,
+      "disagree": 0
+    },
+    "5": {
+      "agree": 9,
+      "pass": 1,
+      "disagree": 1
+    },
+    "6": {
+      "agree": 10,
+      "pass": 1,
+      "disagree": 0
+    },
+    "7": {
+      "agree": 4,
+      "pass": 7,
+      "disagree": 0
+    },
+    "8": {
+      "agree": 8,
+      "pass": 3,
+      "disagree": 0
+    },
+    "9": {
+      "agree": 3,
+      "pass": 7,
+      "disagree": 1
+    },
+    "10": {
+      "agree": 3,
+      "pass": 8,
+      "disagree": 1
+    },
+    "11": {
+      "agree": 4,
+      "pass": 6,
+      "disagree": 1
+    },
+    "12": {
+      "agree": 5,
+      "pass": 3,
+      "disagree": 0
+    },
+    "13": {
+      "agree": 8,
+      "pass": 1,
+      "disagree": 0
+    }
+  },
+  "excluded": {
+    "14": "a voter's note that submit had errored, not an idea"
+  }
+}
