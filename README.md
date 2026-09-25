@@ -1,4 +1,7 @@
-# primer-editor
+# Cider
+
+(The repo was called primer-editor until 2026-09; GitHub redirects the old
+name, and a checkout still installs to `~/primer-editor`.)
 
 The **docsync draft editor** — a single-file, browser-based WYSIWYG editor that
 runs a report's *real* Python renderer in the browser via Pyodide, so what you
@@ -27,7 +30,7 @@ One line. Requires **Python 3.10+**, **git**, and — only for PDF/PNG export �
 **Chrome**.
 
 ```
-curl -fsSL https://raw.githubusercontent.com/dtomkatsu/primer-editor/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Hawaii-Appleseed/Cider/main/install.sh | bash
 ```
 
 That clones the repo to `~/primer-editor`, puts its Python dependencies in a
@@ -45,7 +48,7 @@ beside it and register it on the start page:
 
 ```
 PRIMER_LIVE=dtomkatsu/BudgetPrimerFinal \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/dtomkatsu/primer-editor/main/install.sh)"
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/Hawaii-Appleseed/Cider/main/install.sh)"
 ```
 
 `PRIMER_LIVE_HOME`, `PRIMER_LIVE_ID` and `PRIMER_LIVE_NAME` override where it
@@ -131,7 +134,7 @@ the same from a terminal.
 ### Or by hand
 
 ```
-git clone https://github.com/dtomkatsu/primer-editor && cd primer-editor
+git clone https://github.com/Hawaii-Appleseed/Cider primer-editor && cd primer-editor
 python3 -m pip install -r requirements.txt
 make -C report2027 live          # http://localhost:8010/primer/edit.html
 ```

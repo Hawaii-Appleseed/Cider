@@ -105,7 +105,7 @@ the page.** Reasons, in order of weight:
    repository is strictly worse than one where the credential never leaves the
    browser that owns it.
 2. It would only work for public repositories, or force a service token for
-   private ones. primer-editor's consumers include private repositories.
+   private ones. Cider's consumers include private repositories.
 3. It is redundant work. The first browser into a room already has both files.
 
 Exactly one connection is granted the seed. The grant is a synchronous

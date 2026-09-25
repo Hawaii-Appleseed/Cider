@@ -1,7 +1,7 @@
 #!/bin/bash
 # One-line install for the docsync draft editor.
 #
-#   curl -fsSL https://raw.githubusercontent.com/dtomkatsu/primer-editor/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Hawaii-Appleseed/Cider/main/install.sh | bash
 #
 # What you get is a REAL git checkout you own — read it, edit it, commit to it,
 # open a pull request — plus a double-clickable app that keeps it up to date.
@@ -13,7 +13,7 @@
 #   PRIMER_BRANCH=main      which branch to track
 set -euo pipefail
 
-REPO_URL="${PRIMER_REPO:-https://github.com/dtomkatsu/primer-editor.git}"
+REPO_URL="${PRIMER_REPO:-https://github.com/Hawaii-Appleseed/Cider.git}"
 DEST="${PRIMER_HOME:-$HOME/primer-editor}"
 BRANCH="${PRIMER_BRANCH:-main}"
 PORT="${PRIMER_PORT:-8010}"
