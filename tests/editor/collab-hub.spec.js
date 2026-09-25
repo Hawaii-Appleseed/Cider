@@ -255,7 +255,7 @@ test('a fresh editor loads the stored document, not the vendored copy', async ()
 });
 
 test('prerendered from the list, an editor fetches and paints but joins nobody and marks nothing until it is shown', async () => {
-  const room = `Hawaii-Appleseed~primer-editor~${PROJECT}`;
+  const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   await a.evaluate(k => localStorage.removeItem(k), 'primer-seen:' + room);
   const page = await ctxA.newPage();
   // As Chrome would run it: document.prerendering true until activation.
@@ -321,7 +321,7 @@ test('Share shows the record, and a change narrows the document', async () => {
   await row.locator('select').selectOption('editor');
   await dlg.locator('button.dsdlg-ok').click();
   await expect(a.locator('#stat')).toHaveText(/sharing saved — everyone may view, 1 named/, { timeout: 10_000 });
-  const r = await a.request.get(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~primer-editor~${PROJECT}`);
+  const r = await a.request.get(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~Cider~${PROJECT}`);
   const rec = await r.json();
   expect(rec.default).toBe('viewer');
   expect(rec.people[ADA]).toBe('editor');
@@ -355,7 +355,7 @@ test('a viewer watches: the chip says so, Save stays off, and their edit reaches
   expect(await slot(a, key)).toBe(before);
   // Their edit became a suggestion (the suggesting tests below cover the rest); tidied here.
   await expect.poll(async () => (await allComments()).filter(c => c.kind === 'suggestion').length, { timeout: 10_000 }).toBe(1);
-  for (const c of await allComments()) await a.request.delete(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}/comments/${c.id}`);
+  for (const c of await allComments()) await a.request.delete(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}/comments/${c.id}`);
   // The dialog is readable, not changeable, for them.
   await openShare(page);
   await expect(page.locator('dialog[open] .hub-share-default')).toBeDisabled();
@@ -363,7 +363,7 @@ test('a viewer watches: the chip says so, Save stays off, and their edit reaches
   await page.locator('dialog[open] button.dsdlg-cancel').click();
   await ctx.close();
   // Back to open, so the tests after this see the door's default.
-  const r = await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~primer-editor~${PROJECT}`,
+  const r = await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~Cider~${PROJECT}`,
                                 { data: { default: 'editor', people: {} } });
   expect(r.status()).toBe(200);
 });
@@ -394,7 +394,7 @@ test('History lists every Save, names one, and brings one back as a new version'
   // The room got it too, as a saved version, not as unsaved edits.
   await expect.poll(() => slot(b, key), { timeout: 20_000 }).toBe(before);
   await expect(b.locator('#save')).toBeDisabled();
-  const hist = await (await a.request.get(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}/history`)).json();
+  const hist = await (await a.request.get(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}/history`)).json();
   expect(hist[0].restored_from).toBeTruthy();
   expect(hist.find(h => h.label === 'before the rewrite')).toBeTruthy();
 });
@@ -403,7 +403,7 @@ test('History lists every Save, names one, and brings one back as a new version'
 // top of one, the confirmation refused, a restore from the OTHER editor,
 // unsaved edits superseded, a reload and a fresh editor, the viewer's
 // read-only list, and naming from the dialog.
-const DOC_URL = () => `${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}`;
+const DOC_URL = () => `${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}`;
 const versions = async () => (await a.request.get(`${DOC_URL()}/history`)).json();
 const historyRows = page => page.locator('#hpanel .hub-history-row');   // the side panel, since the dialog became one
 const closeDialog = page => page.locator('dialog[open] button.dsdlg-cancel').click();
@@ -545,7 +545,7 @@ test('history: a reload and a fresh editor both open on the restored version, no
 });
 
 test('history: a viewer reads the list and may neither name nor restore', async () => {
-  const room = `Hawaii-Appleseed~primer-editor~${PROJECT}`;
+  const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   let r = await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/${room}`, { data: { default: 'viewer', people: { [ADA]: 'editor' } } });
   expect(r.status()).toBe(200);
   const ctx = await browser.newContext();
@@ -779,10 +779,10 @@ test('a comment on the selected element, from its own strip, marks it on the pag
   await expect(a.locator('#cpanel .cmt-here')).toBeVisible({ timeout: 10_000 });
   await expect(btn).toHaveClass(/has/);
   await expect(b.frameLocator('#out').locator(`[data-el="${id}"][data-ds-comments="1"], [data-slot="${id}"][data-ds-comments="1"]`)).toHaveCount(1, { timeout: 25_000 });
-  const list = await (await a.request.get(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}/comments`)).json();
+  const list = await (await a.request.get(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}/comments`)).json();
   const c = list.find(x => x.anchor === id);
   expect(c).toBeTruthy();
-  await a.request.delete(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}/comments/${c.id}`);
+  await a.request.delete(`${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}/comments/${c.id}`);
   await a.locator('#cpanel-close').click();
 });
 
@@ -870,7 +870,7 @@ test('a wheel over the gutter scrolls the page, as a wheel over the page does', 
 // reopened from the OTHER editor; who may delete; a viewer's part; Show;
 // persistence across a reload; and what the list page says.
 
-const ROOM_URL = `/api/docs/Hawaii-Appleseed~primer-editor~${PROJECT}`;
+const ROOM_URL = `/api/docs/Hawaii-Appleseed~Cider~${PROJECT}`;
 const allComments = () => a.request.get(`${hubAs(ADA_PORT)}${ROOM_URL}/comments`).then(r => r.json());
 const clearComments = async () => {
   for (const c of await allComments()) await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${c.id}`);
@@ -1022,7 +1022,7 @@ test('comments: Show flashes the paragraph; a comment on something no longer on 
 });
 
 test('comments: a viewer may comment and resolve, and is shown the same panel', async () => {
-  await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~primer-editor~${PROJECT}`,
+  await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~Cider~${PROJECT}`,
                       { data: { default: 'viewer', people: { [ADA]: 'editor' } } });
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
@@ -1039,7 +1039,7 @@ test('comments: a viewer may comment and resolve, and is shown the same panel', 
   await showResolved(page);
   await expect(cmtRow(page, 'Overall: shorter')).toHaveClass(/resolved/, { timeout: 10_000 });
   await ctx.close();
-  await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~primer-editor~${PROJECT}`,
+  await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~Cider~${PROJECT}`,
                       { data: { default: 'editor', people: {} } });
   await expect(cmtRow(a, 'From a viewer')).toBeVisible({ timeout: 20_000 });
   await showResolved(a);
@@ -1542,7 +1542,7 @@ const suggestions = async () => (await allComments()).filter(c => c.kind === 'su
 
 test("suggesting: a viewer's edit is proposed, shown inline, and an editor accepts it", async () => {
   await clearComments();
-  const room = `Hawaii-Appleseed~primer-editor~${PROJECT}`;
+  const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/${room}`, { data: { default: 'viewer', people: { [ADA]: 'editor' } } });
   // A body paragraph (plain HTML), so the proposal can be drawn inline.
   const inv = await a.evaluate('docsync.api.inventory()');

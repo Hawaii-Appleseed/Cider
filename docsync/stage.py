@@ -138,9 +138,9 @@ def _origin_slug(root) -> str | None:
 # now says Cider would otherwise re-key every document on the next vendor and
 # they would all open empty. Drop an entry only together with a migration of
 # those keys and the allowlist.
-RENAMED = {
-    "hawaii-appleseed/cider": "Hawaii-Appleseed/primer-editor",   # 2026-09
-}
+# Cider (formerly primer-editor) was migrated 2026-09-25: its documents were
+# copied to `Hawaii-Appleseed~Cider~<id>` keys, so it needs no entry here.
+RENAMED: dict[str, str] = {}
 
 
 def stage(b: Binding, repo: str = "") -> None:

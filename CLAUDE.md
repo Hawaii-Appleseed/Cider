@@ -1,9 +1,10 @@
 # Cider (formerly primer-editor) — the docsync draft editor engine
 
-> The GitHub repo is `Hawaii-Appleseed/Cider` (renamed 2026-09). Documents are
-> still KEYED `Hawaii-Appleseed~primer-editor~<id>` on the hub and relay —
-> `docsync/stage.py`'s `RENAMED` pins the old slug. Don't change that, the
-> manifests' `repo`, or `ALLOWED_REPOS` without migrating those keys.
+> The GitHub repo is `Hawaii-Appleseed/Cider` (renamed 2026-09). Hub/relay
+> documents were migrated to `Hawaii-Appleseed~Cider~<id>` keys on 2026-09-25;
+> the old `~primer-editor~` copies stay in R2 as a backup, and the old slug
+> stays in the allowlists only so a stale tab fails soft. A future repo rename
+> needs the same: copy the keys, then (or instead) pin it in `stage.RENAMED`.
 
 > Deeper playbook: the **`report-editor` skill** (`.claude/skills/report-editor/`)
 > — load it when building or changing anything a report's user should be able

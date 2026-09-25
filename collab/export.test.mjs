@@ -9,8 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { exportRoom, exportAll, listRooms, safeRepoPath, exportBranch } from './src/export.js';
 
-const ROOM = 'Hawaii-Appleseed~primer-editor~retitc';
-const NWO = 'Hawaii-Appleseed/primer-editor';
+const ROOM = 'Hawaii-Appleseed~Cider~retitc';
+const NWO = 'Hawaii-Appleseed/Cider';
 
 function bucket(seed = {}) {
   const store = new Map();
@@ -166,7 +166,7 @@ test('an empty store, no token, and a bad room are each named', async () => {
 });
 
 test('the nightly sweep visits every room and survives one failing', async () => {
-  const OTHER = 'Hawaii-Appleseed~primer-editor~rxkids';
+  const OTHER = 'Hawaii-Appleseed~Cider~rxkids';
   const b = bucket({ ...seed(),
     [`docs/${OTHER}/meta.json`]: JSON.stringify({ ...META, paths: { ...META.paths, content: 'projects/rxkids/content.md', branch: 'nope' } }),
     [`docs/${OTHER}/content.md`]: 'x',

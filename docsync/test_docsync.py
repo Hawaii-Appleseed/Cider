@@ -3975,10 +3975,8 @@ def _slug_for(url):
     return _origin_slug(d)
 
 
-check_eq("an origin naming Cider stages the slug its documents live under",
-         _slug_for("git@github.com:Hawaii-Appleseed/Cider.git"), "Hawaii-Appleseed/primer-editor")
-check_eq("...whatever case the URL is typed in",
-         _slug_for("https://github.com/hawaii-appleseed/cider"), "Hawaii-Appleseed/primer-editor")
+check_eq("an origin naming Cider stages Cider's own slug (its documents were migrated)",
+         _slug_for("git@github.com:Hawaii-Appleseed/Cider.git"), "Hawaii-Appleseed/Cider")
 check_eq("any other repo's slug passes through untouched",
          _slug_for("https://github.com/Hawaii-Appleseed/BudgetPrimerFinal.git"),
          "Hawaii-Appleseed/BudgetPrimerFinal")
