@@ -118,6 +118,8 @@ test.describe('File menu', () => {
       return m.id;
     });
     await expect(page).toHaveTitle(new RegExp(expected, 'i'));
+    // ...and the editor's own name follows it.
+    await expect(page).toHaveTitle(/ — Cider$/);
   });
 });
 

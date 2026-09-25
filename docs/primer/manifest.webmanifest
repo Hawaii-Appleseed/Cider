@@ -1,6 +1,6 @@
 {
-  "name": "Budget Primer Draft Editor",
-  "short_name": "Draft Editor",
+  "name": "Cider",
+  "short_name": "Cider",
   "description": "Edit, save, and publish budget primer reports.",
   "start_url": "./start.html",
   "scope": "./",
