@@ -273,7 +273,7 @@ def diagram_models() -> str:
 # checked against.
 REPOS = [("staff-updates-internal", "private"),
          ("Hawaii-Appleseed-website", "public"),
-         ("primer-editor", "public"),
+         ("Cider", "public"),
          ("Legislative-Research-Tool", "private"),
          ("and twelve more", "")]
 

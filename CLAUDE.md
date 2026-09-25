@@ -1,4 +1,9 @@
-# primer-editor — the docsync draft editor engine
+# Cider (formerly primer-editor) — the docsync draft editor engine
+
+> The GitHub repo is `Hawaii-Appleseed/Cider` (renamed 2026-09). Documents are
+> still KEYED `Hawaii-Appleseed~primer-editor~<id>` on the hub and relay —
+> `docsync/stage.py`'s `RENAMED` pins the old slug. Don't change that, the
+> manifests' `repo`, or `ALLOWED_REPOS` without migrating those keys.
 
 > Deeper playbook: the **`report-editor` skill** (`.claude/skills/report-editor/`)
 > — load it when building or changing anything a report's user should be able

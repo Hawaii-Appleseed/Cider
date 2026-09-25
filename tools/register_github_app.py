@@ -87,7 +87,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--name", default="Budget Primer Editor",
                     help="App name — must be unique across GitHub")
-    ap.add_argument("--url", default="https://github.com/dtomkatsu/primer-editor",
+    ap.add_argument("--url", default="https://github.com/Hawaii-Appleseed/Cider",
                     help="the App's homepage")
     a = ap.parse_args(argv)
 

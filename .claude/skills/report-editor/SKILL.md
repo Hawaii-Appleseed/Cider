@@ -537,6 +537,6 @@ and why.
 ## Where code lives
 
 The engine (`docsync/`, `edit.html`, `serve.py`, this skill) is canonical in
-the **primer-editor** repo; report repos vendor copies. Fix engine bugs there
+the **Cider** repo (formerly primer-editor); report repos vendor copies. Fix engine bugs there
 first, then copy over. Report content (its pages, prose, its renderer's
 bespoke design) is owned by each report's repo and never flows back.

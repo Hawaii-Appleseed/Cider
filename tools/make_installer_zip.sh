@@ -23,7 +23,7 @@ REPO="$(cd "$HERE/.." && pwd)"
 # recipient can always add one themselves later (start page > Adopt existing,
 # or re-run the installer line with PRIMER_LIVE).
 LIVE="${1:-}"
-INSTALL_URL="${PRIMER_INSTALL_URL:-https://raw.githubusercontent.com/dtomkatsu/primer-editor/main/install.sh}"
+INSTALL_URL="${PRIMER_INSTALL_URL:-https://raw.githubusercontent.com/Hawaii-Appleseed/Cider/main/install.sh}"
 
 DIST="$REPO/dist"
 STAGE="$DIST/Budget Primer Editor Installer"

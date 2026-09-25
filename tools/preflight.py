@@ -97,7 +97,7 @@ def check_chrome() -> bool:
 
 
 def main() -> int:
-    print("primer-editor preflight")
+    print("Cider preflight")
     hard = [check_python(), check_pyyaml()]
     check_hook()
     check_registry()

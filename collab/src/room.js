@@ -16,7 +16,7 @@
  *     strictly worse than one where the credential never leaves the browser
  *     that owns it.
  *   - It would only work for a public repo, or force a service token for a
- *     private one — and primer-editor's consumers include private repos.
+ *     private one — and Cider's consumers include private repos.
  *   - It is redundant. The first client to open the editor has already
  *     fetched both files in order to render the page.
  *

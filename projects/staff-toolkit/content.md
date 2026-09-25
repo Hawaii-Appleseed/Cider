@@ -60,7 +60,7 @@ words, and the rest of the vocabulary in this guide, are in the glossary at
 the back.
 
 **A report is one folder in a repository.** Its words, its layout and the
-Python that draws it sit together in primer-editor — the folder the editor
+Python that draws it sit together in Cider — the folder the editor
 opens — and Publish sends an edited report back as a commit of its own. A
 push to the hub's own repository is what rebuilds the site, which is why a
 new feature can appear without anyone sending you a link. That repository is
@@ -326,7 +326,7 @@ you move things by selecting them. It runs on this hub rather than somewhere
 else specifically so that it inherits your Google sign-in — the editor's own
 authentication is GitHub, and most of the people who need to use it have no
 GitHub account.[^readme] The engine itself, and the repository a brand-new
-report gets built in, is primer-editor.[^primer-editor]
+report gets built in, is Cider.[^cider]
 
 [[ed.card.title]]
 ### The five things to know
@@ -645,7 +645,7 @@ Where this is written down
 [[sources]]
 [hub]: The staff hub — https://staff-updates-internal.pages.dev
 [readme]: The hub's README — https://github.com/Hawaii-Appleseed/staff-updates-internal/blob/main/README.md
-[primer-editor]: primer-editor, the report engine — https://github.com/Hawaii-Appleseed/primer-editor
+[cider]: Cider, the report engine — https://github.com/Hawaii-Appleseed/Cider
 [legis]: Legislative-Research-Tool — https://github.com/Hawaii-Appleseed/Legislative-Research-Tool
 [models]: Anthropic, Models overview — https://platform.claude.com/docs/en/models/overview
 [cost]: Anthropic, Optimizing for cost and intelligence — https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence
