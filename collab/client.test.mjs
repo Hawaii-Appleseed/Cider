@@ -197,7 +197,7 @@ describe('plain <-> Y bridge', () => {
 
 describe('two front doors, one room', () => {
   const p = projects()[0];
-  const room = formatRoom('Hawaii-Appleseed', 'primer-editor', 'doors');
+  const room = formatRoom('Hawaii-Appleseed', 'Cider', 'doors');
 
   test('the relay is reached through its own party routing, with a ticket', () => {
     const s = new CollabSession({
@@ -231,7 +231,7 @@ describe('two front doors, one room', () => {
 describe('an offline session (no provider connection)', () => {
   const p = projects()[0];
   const make = () => new CollabSession({
-    host: HOST, room: formatRoom('dtomkatsu', 'primer-editor', 'offline'),
+    host: HOST, room: formatRoom('Hawaii-Appleseed', 'Cider', 'offline'),
     ticket: async () => 'unused', files: p, connect: false,
   });
 
@@ -334,7 +334,7 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
 
   const p = projects().find(x => x.id === 'report2027') || projects()[0];
   let seq = 0;
-  const uniqueRoom = tag => formatRoom('dtomkatsu', 'primer-editor', `c-${tag}-${Date.now()}-${seq++}`);
+  const uniqueRoom = tag => formatRoom('Hawaii-Appleseed', 'Cider', `c-${tag}-${Date.now()}-${seq++}`);
   const ticketFor = (room, login) => async () =>
     mintTicket(DEV_SECRET, { room, login, ro: false, exp: Math.floor(Date.now() / 1000) + 120 });
 

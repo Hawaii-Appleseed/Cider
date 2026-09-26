@@ -2,8 +2,8 @@
 
 > The GitHub repo is `Hawaii-Appleseed/Cider` (renamed 2026-09). Hub/relay
 > documents were migrated to `Hawaii-Appleseed~Cider~<id>` keys on 2026-09-25;
-> the old `~primer-editor~` copies stay in R2 as a backup, and the old slug
-> stays in the allowlists only so a stale tab fails soft. A future repo rename
+> the old `~primer-editor~` copies stay in R2 as a backup (no allowlist names
+> the old slug any more, so nothing can open or write them). A future repo rename
 > needs the same: copy the keys, then (or instead) pin it in `stage.RENAMED`.
 
 > Deeper playbook: the **`report-editor` skill** (`.claude/skills/report-editor/`)

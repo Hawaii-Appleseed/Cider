@@ -24,7 +24,7 @@ import { startDev } from './devserver.mjs';
 const DEV_SECRET = 'dev-only-insecure-secret';
 const PORT = Number(process.env.COLLAB_TEST_PORT || 8788);
 const HOST = `127.0.0.1:${PORT}`;
-const ROOM = formatRoom('dtomkatsu', 'primer-editor', 'demo-report');
+const ROOM = formatRoom('Hawaii-Appleseed', 'Cider', 'demo-report');
 const E2E = process.env.COLLAB_E2E !== '0';
 
 /* ------------------------------------------------------------------ unit */
@@ -32,8 +32,8 @@ const E2E = process.env.COLLAB_E2E !== '0';
 describe('room names', () => {
   test('round-trips', () => {
     assert.deepEqual(parseRoom(ROOM), {
-      owner: 'dtomkatsu', repo: 'primer-editor', project: 'demo-report',
-      nwo: 'dtomkatsu/primer-editor',
+      owner: 'Hawaii-Appleseed', repo: 'Cider', project: 'demo-report',
+      nwo: 'Hawaii-Appleseed/Cider',
     });
   });
 
@@ -60,7 +60,7 @@ describe('tickets', () => {
 
   test('is refused for a different room', async () => {
     const t = await mintTicket(DEV_SECRET, { room: ROOM, login: 'me', ro: false, exp: now() + 60 });
-    const other = formatRoom('dtomkatsu', 'primer-editor', 'retitc');
+    const other = formatRoom('Hawaii-Appleseed', 'Cider', 'retitc');
     assert.equal(await verifyTicket(DEV_SECRET, t, other), null);
   });
 
@@ -165,7 +165,7 @@ describe('end to end', { skip: E2E ? false : 'COLLAB_E2E=0' }, () => {
 
     test('refuses a ticket minted for another room', async () => {
       const t = await mintTicket(DEV_SECRET, {
-        room: formatRoom('dtomkatsu', 'primer-editor', 'retitc'),
+        room: formatRoom('Hawaii-Appleseed', 'Cider', 'retitc'),
         login: 'me', ro: false, exp: now() + 60,
       });
       const res = await rawUpgrade(`/parties/primer-room/${ROOM}?ticket=${encodeURIComponent(t)}`);
@@ -380,7 +380,7 @@ const now = () => Math.floor(Date.now() / 1000);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let roomSeq = 0;
 const uniqueRoom = tag =>
-  formatRoom('dtomkatsu', 'primer-editor', `t-${tag}-${Date.now()}-${roomSeq++}`);
+  formatRoom('Hawaii-Appleseed', 'Cider', `t-${tag}-${Date.now()}-${roomSeq++}`);
 
 function post(path, body, origin) {
   return fetch(`http://${HOST}${path}`, {

@@ -37,7 +37,7 @@
     // NOTE: the two spellings are DIFFERENT ROOMS — canonicalise the manifests
     // to Hawaii-Appleseed/… before anyone shares a document, or two people can
     // sit in separate rooms believing they are in one.
-    "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/primer-editor,Hawaii-Appleseed/BudgetPrimerFinal,dtomkatsu/primer-editor,dtomkatsu/BudgetPrimerFinal"
+    "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/BudgetPrimerFinal,dtomkatsu/BudgetPrimerFinal"
   }
 
   // Secrets, not vars (npx wrangler secret put <NAME>):
