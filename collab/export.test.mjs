@@ -179,3 +179,43 @@ test('the nightly sweep visits every room and survives one failing', async () =>
   assert.equal(out[1].status, 'failed', 'a branch that does not exist fails that room only');
   assert.match(out[1].error, /neither hub\/rxkids nor nope/);
 });
+
+test('the sweep skips rooms outside the allowlist and documents made on the hub', async () => {
+  const BACKUP = 'dtomkatsu~primer-editor~retitc';                 // a stale key-migration backup
+  const HUBMADE = 'Hawaii-Appleseed~Cider~my-brief';              // its paths point into its template's directory
+  const rooms = [BACKUP, HUBMADE];
+  const extra = {
+    'hub/shelf.json': JSON.stringify({ docs: { 'my-brief': { name: 'My brief', template: 'retitc', repo: NWO } } }),
+  };
+  for (const r of rooms) {
+    extra[`docs/${r}/meta.json`] = JSON.stringify(META);
+    extra[`docs/${r}/content.md`] = 'stale';
+  }
+  const b = bucket({ ...seed(), ...extra });
+  const gh = fakeGitHub();
+  const opts = { bucket: b, token: 't', api: 'https://gh.test', fetch: gh.fetch, allowed: ['hawaii-appleseed/cider'] };
+  const out = await exportAll(opts);
+  const by = Object.fromEntries(out.map(r => [r.room, r]));
+  assert.equal(by[ROOM].status, 'exported', 'the allowed, hand-made document still goes');
+  assert.equal(by[BACKUP].status, 'skipped');
+  assert.match(by[BACKUP].reason, /not served here/);
+  assert.equal(by[HUBMADE].status, 'skipped');
+  assert.match(by[HUBMADE].reason, /made on the hub/);
+  assert.deepEqual(Object.keys(gh.refs).sort(), ['hub/retitc', 'main'], 'only the real document got a branch');
+  assert.ok(!gh.calls.some(c => /my-brief/.test(c)), 'nothing was sent for the skipped rooms');
+
+  // No allowlist configured: no repo restriction (as /auth and /export), hub-made still skipped.
+  const open = await exportAll({ ...opts, allowed: [], fetch: fakeGitHub().fetch });
+  assert.equal(open.find(r => r.room === HUBMADE).status, 'skipped');
+  assert.notEqual(open.find(r => r.room === BACKUP).status, 'skipped');
+});
+
+test('an unreadable shelf stops the sweep rather than exporting hub-made documents', async () => {
+  const b = bucket({ ...seed(), 'hub/shelf.json': '{not json' });
+  const gh = fakeGitHub();
+  const out = await exportAll({ bucket: b, token: 't', api: 'https://gh.test', fetch: gh.fetch });
+  assert.equal(out.length, 1);
+  assert.equal(out[0].status, 'failed');
+  assert.match(out[0].error, /shelf unreadable/);
+  assert.equal(gh.calls.length, 0);
+});

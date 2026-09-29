@@ -77,7 +77,7 @@ export default {
         console.warn('export sweep skipped: PRIMER_DOCS or GITHUB_EXPORT_TOKEN not bound');
         return;
       }
-      const out = await exportAll({ bucket: env.PRIMER_DOCS, token: env.GITHUB_EXPORT_TOKEN, api: env.GITHUB_API });
+      const out = await exportAll({ bucket: env.PRIMER_DOCS, token: env.GITHUB_EXPORT_TOKEN, api: env.GITHUB_API, allowed: allowedRepos(env) });
       console.log('export sweep', JSON.stringify(out.map(r => [r.room, r.status, r.sha || r.error || r.reason || ''])));
     })());
   },

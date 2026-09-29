@@ -192,11 +192,54 @@ export async function listRooms(bucket) {
   return rooms;
 }
 
-/** The nightly sweep: every room, one at a time, nothing fatal. */
+/** The hub's shelf, in the same bucket: documents MADE on the hub, by id.
+ *  Written by the hub's Pages Functions (assets/shelf.js in
+ *  staff-updates-internal); this is the one place the Worker reads it. */
+export const SHELF_KEY = 'hub/shelf.json';
+
+/**
+ * The project ids of documents made on the hub. The same fact the hub's
+ * Publish (functions/api/docs, `shelf.docs[room.project]`) refuses on: a
+ * hub-made document borrows a template's engine, so the `meta.paths` its
+ * editor records point into the TEMPLATE's repository directory, not one of
+ * its own. A missing shelf is empty, as the hub reads it. An unreadable one
+ * is not: better no sweep tonight than one that commits hub-made documents
+ * into a template's repository.
+ */
+export async function hubMadeProjects(bucket) {
+  const o = await bucket.get(SHELF_KEY);
+  if (!o) return new Set();
+  const shelf = await o.json();   // throws on malformed JSON: fail closed
+  const docs = shelf && typeof shelf === 'object' && shelf.docs && typeof shelf.docs === 'object' ? shelf.docs : {};
+  return new Set(Object.keys(docs).filter(id => docs[id] && typeof docs[id] === 'object'));
+}
+
+/**
+ * The nightly sweep: every room, one at a time, nothing fatal.
+ *
+ * `allowed` is allowedRepos(env), lowercase owner/repo; empty means no
+ * restriction, as at /auth and /export. Rooms outside it are skipped: R2 also
+ * holds the `~primer-editor~` backup rooms from the key migration, and the
+ * sweep must not commit a stale backup over the live copy. Hub-made documents
+ * are skipped too (see hubMadeProjects). Skips are reported, not silent.
+ */
 export async function exportAll(opts) {
+  const { allowed = [], ...rest } = opts;
+  let hubMade;
+  try { hubMade = await hubMadeProjects(opts.bucket); }
+  catch (e) { return [{ status: 'failed', room: null, error: `shelf unreadable, sweep skipped: ${String(e.message || e)}` }]; }
   const out = [];
   for (const room of await listRooms(opts.bucket)) {
-    try { out.push(await exportRoom({ ...opts, room })); }
+    const parsed = parseRoom(room);
+    if (allowed.length && !allowed.includes(parsed.nwo.toLowerCase())) {
+      out.push({ status: 'skipped', room, reason: `repository ${parsed.nwo} is not served here` });
+      continue;
+    }
+    if (hubMade.has(parsed.project)) {
+      out.push({ status: 'skipped', room, reason: 'made on the hub: it has no directory in the repository to export into' });
+      continue;
+    }
+    try { out.push(await exportRoom({ ...rest, room })); }
     catch (e) { out.push({ status: 'failed', room, error: String(e.message || e) }); }
   }
   return out;

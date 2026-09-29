@@ -729,7 +729,11 @@ Contents read/write on the repositories in `ALLOWED_REPOS` and nothing else:
   holds and nothing else.
 - **Nightly**, `0 14 * * *` UTC (04:00 Hawaiʻi): `scheduled()` sweeps every
   room and exports the ones whose version the branch lacks. A room failing
-  fails that room only.
+  fails that room only. It skips (and logs as `skipped`) rooms whose repo is
+  not in `ALLOWED_REPOS` — the `~primer-editor~` backup rooms — and documents
+  made on the hub (listed in `hub/shelf.json`, the fact Publish refuses on),
+  whose recorded paths point into their template's directory. An unparseable
+  shelf skips the whole sweep.
 
 `GITHUB_API` (a var) points the Worker at a test double. `export.test.mjs`
 drives the export against an in-memory Git Data API: first export makes the
