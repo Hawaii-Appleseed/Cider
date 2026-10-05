@@ -2,16 +2,20 @@
 # Auto-vendor the engine to consumer repos (vendor.yml) whenever a commit
 # touches an engine path. Install once per clone:
 #   git config core.hooksPath .githooks
+# The checkout's own venv (install.sh makes it) has the engine's dependencies
+# (yaml); the system python3 may not.
+PY="$(git rev-parse --show-toplevel)/.venv/bin/python"
+[ -x "$PY" ] || PY=python3
 if git diff-tree --no-commit-id --name-only -r HEAD \
    | grep -qE '^docsync/|^report2027/tools/serve\.py$'; then
   echo "engine changed - vendoring to consumers (vendor.yml)..."
-  python3 -m docsync.vendor \
+  "$PY" -m docsync.vendor \
     || echo "VENDOR FAILED - run python3 -m docsync.vendor manually"
 fi
 # And the staff hub's copy of the editor (docsync/hub.py) — the editor, the
 # engine, or a project's own files. A no-op wherever no hub is configured.
 if git diff-tree --no-commit-id --name-only -r HEAD \
    | grep -qE '^docsync/|^projects/|^report2027/|^docs/primer/'; then
-  python3 -m docsync.hub \
+  "$PY" -m docsync.hub \
     || echo "HUB VENDOR FAILED - run python3 -m docsync.hub manually"
 fi
