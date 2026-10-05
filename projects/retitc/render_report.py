@@ -449,10 +449,6 @@ def stat(key: str) -> str:
 
 
 
-def bullets(key: str) -> str:
-    return "".join(f"<li>{b}</li>" for b in C.list(key))
-
-
 def contents_rows() -> str:
     return "".join(
         f'<div class="crow"><span class="cnum">{n}</span>'
@@ -463,28 +459,6 @@ def contents_rows() -> str:
 
 # Filled after C.fn.resolve() has walked the body and assigned every number.
 ENDNOTES_SLOT = "<!--ds-endnotes-->"
-
-
-def endnote_link(n: int, sid: str, txt: str, url: str) -> str:
-    # Keyed by source id, not by n: the number is whatever the current order
-    # says, but the identity the editor routes an edit back through has to stay
-    # put. data-el also makes the entry draggable to reorder.
-    sep = "" if n == 1 else '<span class="ensep"> · </span>'
-    return (f'{sep}<span id="en{n}" class="en"{L.attr(f"endnote.{sid}")}>'
-            f'<span class="enn">{n}</span> <a href="{url}">{txt}</a></span>')
-
-
-def linkify_footnotes(markup: str, count: int) -> str:
-    """Turn every <sup>N</sup> marker into a link to its endnote. Without this
-    the markers render as bare numerals pointing at nothing."""
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = [f'<a class="fn" href="#en{n}">{n}</a>' if 1 <= int(n) <= count
-               else n for n in nums]
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
 
 
 def head(pre: str, page_no: int) -> str:
@@ -581,11 +555,10 @@ page = f"""
 """
 
 body = C.fn.resolve(page)
-en = "".join(endnote_link(i + 1, sid, txt, url)
-             for i, (sid, txt, url) in enumerate(C.fn.endnotes_with_ids()))
+en = C.fn.endnotes_run(L)
 # `en` carries no <sup> markers of its own, so linkifying before the fill is
 # safe and keeps the substitution out of the regex's way.
-body = linkify_footnotes(body, len(C.fn.endnotes()))
+body = C.fn.linkify(body)
 body = body.replace(ENDNOTES_SLOT, en)
 
 html = f"""<!DOCTYPE html>

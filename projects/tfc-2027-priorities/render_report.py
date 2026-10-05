@@ -450,24 +450,8 @@ PRINT_CSS = """
 DESIGNED_PAGES = 1
 
 
-def sheet(pid):
-    """One <section class="page">: this report's markup for the designed page,
-    empty for a blank page added in the editor. data-page is the page's
-    IDENTITY, which stops matching its position once the order can change."""
-    inner = f"\n{BODY}\n" if pid == DESIGNED_PAGES else ""
-    return (f'<section class="page" data-page="{pid}"{L.fill_attr(f"page.{pid}")}>'
-            f'{inner}'
-            # INSIDE the section. The shapes, text boxes and tables added in
-            # the editor used to be written after </section>, so they were
-            # positioned against <body> while every drag measured them against
-            # the page: a text box dropped at 6.18in drew at 5.76in on a
-            # 1280px-wide window — the sheet's centring margin — and somewhere
-            # else again on any other width, published page included.
-            f'{L.layer(pid)}{L.text_boxes(pid)}{L.tables_html(pid)}'
-            f'</section>')
-
-
-SHEETS = ("".join(sheet(pid) for pid in L.page_order(DESIGNED_PAGES))
+SHEETS = ("".join(L.sheet(pid, f"\n{BODY}\n" if pid == DESIGNED_PAGES else "")
+                  for pid in L.page_order(DESIGNED_PAGES))
           + L.pagemeta(range(1, DESIGNED_PAGES + 1)))
 
 html = f"""<!DOCTYPE html>

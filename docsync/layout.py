@@ -4163,6 +4163,20 @@ class Layout:
                                   f"1–{designed}, not {pid}")
         return list(order)
 
+    def sheet(self, pid, inner: str = "") -> str:
+        """One <section class="page">: the renderer's markup for a designed
+        page (`inner`), empty for a blank page added in the editor.
+
+        data-page carries the page's IDENTITY, which stops matching its
+        position the moment the order can be changed. Shapes, text boxes and
+        tables go INSIDE the section: .page is the positioning context every
+        placed element is measured against, so as siblings they sat a box out
+        — a text box dropped at 6.18in drew at 5.76in on a 1280px window.
+        """
+        return (f'<section class="page" data-page="{pid}"{self.fill_attr(f"page.{pid}")}>'
+                f'{inner}{self.layer(pid)}{self.text_boxes(pid)}{self.tables_html(pid)}'
+                f'</section>')
+
     def blank_ids(self) -> list:
         return [b["id"] for b in (self.pages.get("blanks") or [])]
 

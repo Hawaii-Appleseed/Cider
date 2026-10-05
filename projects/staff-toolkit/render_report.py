@@ -862,43 +862,15 @@ DESIGNED_PAGES = max(
 NOTICES: list = []
 
 
-def sheet(pid) -> str:
-    """One <section class="page">: this document's markup for a designed
-    page, empty for a blank page added in the editor.
-
-    data-page carries the page's IDENTITY, which stops matching its position
-    the moment the order can be changed. L.layer/text_boxes/tables_html go
-    INSIDE the section — .page is the positioning context every placed
-    element is measured against, so as siblings they would sit a box out.
-    """
-    inner = DESIGNED.get(pid, "") if isinstance(pid, int) else ""
-    return (f'<section class="page" data-page="{pid}"'
-            f'{L.fill_attr(f"page.{pid}")}>{inner}'
-            f'{C.extras(f"page{pid}") if isinstance(pid, int) else ""}'
-            f'{L.layer(pid)}{L.text_boxes(pid)}{L.tables_html(pid)}'
-            f'</section>')
-
-
-def linkify_footnotes(markup: str, count: int) -> str:
-    """Turn every <sup>N</sup> marker into a link to its endnote. Without this
-    the markers render as bare numerals pointing at nothing."""
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = [f'<a class="fn" href="#en{n}">{n}</a>' if 1 <= int(n) <= count
-               else n for n in nums]
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
-
-
-body = ("".join(sheet(pid) for pid in L.page_order(DESIGNED_PAGES))
+body = ("".join(L.sheet(pid, (DESIGNED.get(pid, "") + C.extras(f"page{pid}")
+                                if isinstance(pid, int) else ""))
+                for pid in L.page_order(DESIGNED_PAGES))
         + L.pagemeta(range(1, DESIGNED_PAGES + 1))
         + L.notices(NOTICES))
 # resolve() walks the body assigning numbers and fills the endnotes mount on
 # the last sheet as it goes; only after that is the count known, so linkify runs last.
 body = C.fn.resolve(body)
-body = linkify_footnotes(body, len(C.fn.endnotes()))
+body = C.fn.linkify(body)
 
 unused = C.fn.unused()
 if unused:

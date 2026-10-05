@@ -43,7 +43,6 @@ rows, not components — the derivation reproduces ITEP's own printed shares to
 """
 from pathlib import Path
 import os
-import re
 import sys
 
 HERE = Path(__file__).resolve().parent           # projects/dotax-itep
@@ -571,32 +570,7 @@ def stat(key: str, cls: str = "") -> str:
             f'<div class="stat-l">{C.t(f"stat.{key}.l")}</div></div>')
 
 
-def bullets(key: str) -> str:
-    return "".join(f"<li>{b}</li>" for b in C.list(key))
-
-
 ENDNOTES_SLOT = "<!--ds-endnotes-->"
-
-
-def endnote_link(n: int, sid: str, txt: str, url: str) -> str:
-    # Keyed by source id, not by n: the number is whatever the current reading
-    # order says, but the identity the editor routes an edit through has to
-    # stay put. data-el also makes the entry draggable to reorder.
-    sep = "" if n == 1 else '<span class="ensep"> · </span>'
-    return (f'{sep}<span id="en{n}" class="en"{L.attr(f"endnote.{sid}")}>'
-            f'<span class="enn">{n}</span> <a href="{url}">{txt}</a></span>')
-
-
-def linkify_footnotes(markup: str, count: int) -> str:
-    """Turn every <sup>N</sup> marker into a link to its endnote."""
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = [f'<a class="fn" href="#en{n}">{n}</a>' if 1 <= int(n) <= count
-               else n for n in nums]
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
 
 
 # Every chart is wrapped for the phone case. smallest_label is the smallest
@@ -655,9 +629,8 @@ page = f"""
 """
 
 body = C.fn.resolve(page)
-en = "".join(endnote_link(i + 1, sid, txt, url)
-             for i, (sid, txt, url) in enumerate(C.fn.endnotes_with_ids(), 0))
-body = linkify_footnotes(body, len(C.fn.endnotes()))
+en = C.fn.endnotes_run(L)
+body = C.fn.linkify(body)
 body = body.replace(ENDNOTES_SLOT, en)
 
 html = f"""<!DOCTYPE html>

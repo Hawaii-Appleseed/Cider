@@ -392,15 +392,6 @@ def org_column(rows, accent: str, head_key: str) -> str:
             f'{L.spacer(list_id)}<ol class="orgs"{L.attr(list_id)}>{items}</ol></div>')
 
 
-def bullets(key: str) -> str:
-    """C.list() returns a list[str] of items — the caller builds the <li>s.
-
-    Interpolating the list straight into an f-string prints its Python repr
-    (brackets and quotes) onto the page.
-    """
-    return "".join(f"<li>{item}</li>" for item in C.list(key))
-
-
 def stat(key: str) -> str:
     """One figure in the top strip — number and label are separate slots."""
     return (f'<div class="stat">'
@@ -414,37 +405,6 @@ def stat(key: str) -> str:
 # numbering only exists once C.fn.resolve() has walked the page — so the page
 # is assembled holding a placeholder and the list is filled in afterwards.
 ENDNOTES_SLOT = "<!--ds-endnotes-->"
-
-
-def endnote_link(n: int, sid: str, txt: str, url: str) -> str:
-    """One entry in the sources run.
-
-    Keyed by source id rather than by n: the number is whatever the current
-    order says, but the identity the draft editor routes an edit back through
-    has to stay put. data-el also makes the entry draggable to reorder.
-
-    The citation TEXT is the link, not a spelled-out URL beside it — this is a
-    printed page, and every route it reaches a reader by carries the href.
-    """
-    sep = "" if n == 1 else '<span class="ensep"> · </span>'
-    return (f'{sep}<span id="en{n}" class="en"{L.attr(f"endnote.{sid}")}>'
-            f'<span class="enn">{n}</span> <a href="{url}">{txt}</a></span>')
-
-
-def linkify_footnotes(markup: str, count: int) -> str:
-    """Turn every <sup>N</sup> marker into a link to its endnote.
-
-    Without this the markers render as bare numerals — visible, meaningless,
-    and pointing at nothing.
-    """
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = [f'<a class="fn" href="#en{n}">{n}</a>' if 1 <= int(n) <= count
-               else n for n in nums]
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
 
 
 page = f"""
@@ -464,11 +424,11 @@ page = f"""
   <div class="cols">
     <div class="col">
       <h3 class="h-sup"{L.attr("support.h")}>{C.t("support.h")}</h3>
-      {C.movable("support.themes", f'<ul{C.ul_attr("support.themes")}>{bullets("support.themes")}</ul>')}
+      {C.movable("support.themes", f'<ul{C.ul_attr("support.themes")}>{C.list_items("support.themes")}</ul>')}
     </div>
     <div class="col">
       <h3 class="h-opp"{L.attr("oppose.h")}>{C.t("oppose.h")}</h3>
-      {C.movable("oppose.themes", f'<ul{C.ul_attr("oppose.themes")}>{bullets("oppose.themes")}</ul>')}
+      {C.movable("oppose.themes", f'<ul{C.ul_attr("oppose.themes")}>{C.list_items("oppose.themes")}</ul>')}
     </div>
   </div>
 
@@ -496,11 +456,10 @@ page = f"""
 </section>"""
 
 body = C.fn.resolve(page)
-en = "".join(endnote_link(i + 1, sid, txt, url)
-             for i, (sid, txt, url) in enumerate(C.fn.endnotes_with_ids()))
+en = C.fn.endnotes_run(L)
 # `en` carries no <sup> markers of its own, so linkifying first keeps the
 # substitution out of the regex's way.
-body = linkify_footnotes(body, len(C.fn.endnotes()))
+body = C.fn.linkify(body)
 body = body.replace(ENDNOTES_SLOT, en)
 
 html = f"""<!DOCTYPE html>

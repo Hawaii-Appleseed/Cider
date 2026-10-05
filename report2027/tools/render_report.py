@@ -756,17 +756,6 @@ def svg_img(el_id, src, cls, alt):
             f'style="color:{color}" aria-label="{alt}">{inner}</svg>')
 
 
-def endnote_link(n, sid, txt, url):
-    # data-el makes the entry draggable; dragging one REORDERS the list (see
-    # Layout.endnote_order and the editor's reorderEndnote) rather than
-    # parking it somewhere absolute, so no spacer is needed — an endnote
-    # never leaves the flow. Keyed by source id, not by n: the number is
-    # whatever the current order says, but the identity has to stay put.
-    # The link is optional: a source can be a book or an interview, and an
-    # empty url would draw <a href="">, a link back to this page.
-    link = f' <a href="{url}">{url}</a>' if url else ""
-    return f'<li id="en{n}"{L.attr(f"endnote.{sid}")}>{txt}{link}</li>'
-
 ONE_TIME_BULLETS = C.list("onetime.cards.onetime.bullets")
 EMERG_BULLETS = C.list("onetime.cards.emergency.bullets")
 
@@ -1119,29 +1108,8 @@ elif missing_src:
         + " — if you're moving the text that cites one, finish the move (paste it "
         + "back in); this blocks publishing only, not the live preview.")
 
-en = "".join(endnote_link(i + 1, sid, t, u) for i, (sid, t, u) in enumerate(C.fn.endnotes_with_ids()))
+en = C.fn.endnote_items(L)
 notes = C.fn.endnotes()
-
-def linkify_footnotes(markup):
-    """Turn every <sup>N</sup> marker into a clickable ref the JS can pop.
-
-    Handles multi-note markers like <sup>4&thinsp;5</sup>. The href still points
-    at the endnote anchor, so the marker works without JS and in print.
-    """
-    def repl(m):
-        inner = m.group(1)
-        nums = re.findall(r"\d+", inner)
-        if not nums:
-            return m.group(0)
-        out = []
-        for n in nums:
-            i = int(n)
-            if 1 <= i <= len(notes):
-                out.append(f'<a class="fn" href="#en{i}" data-fn="{i}">{n}</a>')
-            else:
-                out.append(n)
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
 
 # The endnotes page was assembled as a shell holding a placeholder; fill it now
 # that the numbering it depends on exists. `en` carries no footnote markers, so
@@ -1202,7 +1170,7 @@ html = f"""<!DOCTYPE html>
   <button onclick="window.print()">Download PDF</button>
  </span>
 </div>
-{linkify_footnotes(body)}
+{C.fn.linkify(body, pop=True)}
 <div id="tip" class="noprint"></div>
 <script>window.PRIMER_NOTES = {json.dumps([{"t": t, "u": u} for t, u in notes], separators=(",", ":"))};
 window.PRIMER_FY_SPAN = {json.dumps(HIST_FY_SPAN)};

@@ -26,7 +26,6 @@ import base64
 import html as _html
 import json
 import os
-import re
 import sys
 
 HERE = Path(__file__).resolve().parent           # projects/rxkids
@@ -683,15 +682,9 @@ def cta() -> str:
 # The original page's citations were plain <a>[Source]</a> links a reader could
 # click straight through; converting them to numbered [^id] superscripts (see
 # BENEFIT_KEYS etc. above) needs somewhere those numbers resolve TO, or a
-# reader has no way to find what "¹" refers to. Mirrors report2027's own
-# endnote_link pattern.
-def endnote_link(n, sid, txt, url):
-    return (f'<li id="en{n}"{L.attr(f"endnote.{sid}")}>{txt} '
-            f'<a href="{url}" target="_blank">{url}</a></li>')
-
-
-def sources_section(entries) -> str:
-    items = "".join(endnote_link(i + 1, sid, t, u) for i, (sid, t, u) in enumerate(entries))
+# reader has no way to find what "¹" refers to.
+def sources_section() -> str:
+    items = C.fn.endnote_items(L, new_tab=True)
     return f"""
 <div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.sources")}>
     <div class="tfc-content-container">
@@ -717,7 +710,7 @@ MAIN_BODY = f"""<div class="tfc-container">
 C.fn.order_by(L.endnote_order(), C.fn.cited(MAIN_BODY))
 
 BODY = f"""{MAIN_BODY}
-{sources_section(C.fn.endnotes_with_ids())}
+{sources_section()}
 {cta()}
 </div>"""
 
@@ -747,37 +740,11 @@ elif missing_src:
 
 # ---- footnote refs: make the numbers reachable --------------------------------
 # resolve() leaves a bare <sup>N</sup>, which tells a reader a citation EXISTS
-# but gives them no way to reach it — the endnote_link() comment above always
-# intended otherwise, but only the destination was ever built, not the link.
-# This is report2027's linkify_footnotes, ported verbatim in behaviour: the href
-# points at the endnote anchor, so a marker still works with JS off and in
+# but gives them no way to reach it. C.fn.linkify(pop=True) links each one: the
+# href points at the endnote anchor, so a marker still works with JS off and in
 # print, and the popover in FN_POPOVER_JS is pure enhancement on top.
 NOTES = C.fn.endnotes()                          # [(text, url)] in numbered order
-
-
-def linkify_footnotes(markup: str) -> str:
-    """Turn every <sup>N</sup> marker into a clickable ref the JS can pop.
-
-    Handles multi-note markers like <sup>4&thinsp;5</sup> — resolve() collapses
-    adjacent [^a][^b] tokens into ONE <sup> with thin-space separators, so this
-    has to split them back apart to link each number at its own anchor.
-    """
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = []
-        for n in nums:
-            i = int(n)
-            if 1 <= i <= len(NOTES):
-                out.append(f'<a class="fn" href="#en{i}" data-fn="{i}">{n}</a>')
-            else:
-                out.append(n)                    # out of range: leave it inert
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
-
-
-BODY = linkify_footnotes(BODY)
+BODY = C.fn.linkify(BODY, pop=True)
 
 # The note data the popover reads. Precomputed rather than inlined in the page
 # template: an f-string expression containing a dict literal AND quotes is a
@@ -901,23 +868,8 @@ FN_POPOVER_JS = """
 DESIGNED_PAGES = 1
 
 
-def sheet(pid):
-    """One page section: this report's markup for the designed page, empty for
-    a blank page added in the editor.
-
-    data-page carries the page's IDENTITY, which stops matching its position
-    the moment the order can be changed.
-    """
-    inner = BODY if pid == DESIGNED_PAGES else ""
-    return (f'<section class="page" data-page="{pid}"{L.fill_attr(f"page.{pid}")}>'
-            f'{inner}'
-            # Inside the section: .page is the positioning context every placed
-            # element is measured against, so as siblings they sat a box out.
-            f'{L.layer(pid)}{L.text_boxes(pid)}{L.tables_html(pid)}'
-            f'</section>')
-
-
-SHEETS = ("".join(sheet(pid) for pid in L.page_order(DESIGNED_PAGES))
+SHEETS = ("".join(L.sheet(pid, BODY if pid == DESIGNED_PAGES else "")
+                  for pid in L.page_order(DESIGNED_PAGES))
           + L.pagemeta(range(1, DESIGNED_PAGES + 1)))
 
 html = f"""<!DOCTYPE html>

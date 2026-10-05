@@ -24,7 +24,6 @@ restriction):
 """
 from pathlib import Path
 import os
-import re
 import sys
 
 HERE = Path(__file__).resolve().parent           # projects/rxkids-fiscal
@@ -460,41 +459,8 @@ def stat(key: str, cls: str = "") -> str:
             f'<div class="stat-l">{C.t(f"stat.{key}.l")}</div></div>')
 
 
-def bullets(key: str) -> str:
-    return "".join(f"<li>{b}</li>" for b in C.list(key))
-
-
 # Filled after C.fn.resolve() has walked the body and assigned every number.
 ENDNOTES_SLOT = "<!--ds-endnotes-->"
-
-
-def endnote_link(n: int, sid: str, txt: str, url: str) -> str:
-    # Keyed by source id, not by n: the number is whatever the current order
-    # says, but the identity the editor routes an edit back through has to stay
-    # put. data-el also makes the entry draggable to reorder.
-    # The citation TEXT is the link, not a spelled-out URL beside it. Six
-    # printed URLs cost two vertical inches on a page that has none to spare,
-    # and every route this page reaches a reader by — PDF, screen — carries
-    # the href.
-    sep = "" if n == 1 else '<span class="ensep"> · </span>'
-    return (f'{sep}<span id="en{n}" class="en"{L.attr(f"endnote.{sid}")}>'
-            f'<span class="enn">{n}</span> <a href="{url}">{txt}</a></span>')
-
-
-def linkify_footnotes(markup: str, count: int) -> str:
-    """Turn every <sup>N</sup> marker into a link to its endnote.
-
-    Without this the markers render as bare numerals — visible, meaningless,
-    and pointing at nothing.
-    """
-    def repl(m):
-        nums = re.findall(r"\d+", m.group(1))
-        if not nums:
-            return m.group(0)
-        out = [f'<a class="fn" href="#en{n}">{n}</a>' if 1 <= int(n) <= count
-               else n for n in nums]
-        return "<sup>" + "&thinsp;".join(out) + "</sup>"
-    return re.sub(r"<sup>(.*?)</sup>", repl, markup, flags=re.S)
 
 
 INNER = f"""
@@ -521,11 +487,11 @@ INNER = f"""
   <div class="cols">
     <div class="col"{L.frame("col.risk")}>
       <h3 class="h-warn"{L.attr("risk.h")}>{C.t("risk.h")}</h3>
-      {C.movable("risk.points", f'<ul{C.ul_attr("risk.points")}>{bullets("risk.points")}</ul>')}
+      {C.movable("risk.points", f'<ul{C.ul_attr("risk.points")}>{C.list_items("risk.points")}</ul>')}
     </div>
     <div class="col"{L.frame("col.ask")}>
       <h3 class="h-fed"{L.attr("ask.h")}>{C.t("ask.h")}</h3>
-      {C.movable("ask.points", f'<ul{C.ul_attr("ask.points")}>{bullets("ask.points")}</ul>')}
+      {C.movable("ask.points", f'<ul{C.ul_attr("ask.points")}>{C.list_items("ask.points")}</ul>')}
     </div>
   </div>
 
@@ -608,31 +574,15 @@ INNER2 = f"""
 DESIGNED_PAGES = 2
 
 
-def sheet(pid):
-    """One <section class="page">: this report's markup for the designed page,
-    empty for a blank page added in the editor.
-
-    data-page carries the page's IDENTITY, which stops matching its position
-    the moment the order can be changed.
-    """
-    inner = INNER if pid == 1 else INNER2 if pid == 2 else ""
-    return (f'<section class="page" data-page="{pid}"{L.fill_attr(f"page.{pid}")}>'
-            f'{inner}'
-            # Inside the section: .page is the positioning context every placed
-            # element is measured against, so as siblings they sat a box out.
-            f'{L.layer(pid)}{L.text_boxes(pid)}{L.tables_html(pid)}'
-            f'</section>')
-
-
-page = ("".join(sheet(pid) for pid in L.page_order(DESIGNED_PAGES))
+page = ("".join(L.sheet(pid, {1: INNER, 2: INNER2}.get(pid, ""))
+                for pid in L.page_order(DESIGNED_PAGES))
         + L.pagemeta(range(1, DESIGNED_PAGES + 1)))
 
 body = C.fn.resolve(page)
-en = "".join(endnote_link(i + 1, sid, txt, url)
-             for i, (sid, txt, url) in enumerate(C.fn.endnotes_with_ids(), 0))
+en = C.fn.endnotes_run(L)
 # `en` carries no <sup> markers of its own, so linkifying before the fill is
 # safe and keeps the substitution out of the regex's way.
-body = linkify_footnotes(body, len(C.fn.endnotes()))
+body = C.fn.linkify(body)
 body = body.replace(ENDNOTES_SLOT, en)
 
 html = f"""<!DOCTYPE html>
