@@ -30,14 +30,10 @@
     // repo, so without this anyone with push access to ANY repo could mint a
     // ticket for a room named after someone else's.
     //
-    // BOTH owner spellings are listed on purpose. Both repos moved to the
-    // Hawaii-Appleseed org, but the staged manifests still say `dtomkatsu/…`,
-    // and the room name is built from whatever the manifest says. Listing one
-    // spelling only would 403 either today's editors or tomorrow's.
-    // NOTE: the two spellings are DIFFERENT ROOMS — canonicalise the manifests
-    // to Hawaii-Appleseed/… before anyone shares a document, or two people can
-    // sit in separate rooms believing they are in one.
-    "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/BudgetPrimerFinal,dtomkatsu/BudgetPrimerFinal"
+    // Only the Hawaii-Appleseed spellings: every staged manifest says so, and
+    // a room is named from the manifest. The pre-org `dtomkatsu/…` and the
+    // pre-rename `primer-editor` slugs were dropped once nothing used them.
+    "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/BudgetPrimerFinal"
   }
 
   // Secrets, not vars (npx wrangler secret put <NAME>):
