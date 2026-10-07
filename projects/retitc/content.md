@@ -202,7 +202,7 @@ Sources
 [eo]: Executive Order No. 26-02, Office of the Governor, June 8, 2026. — https://governor.hawaii.gov/executive-orders/
 [tir]: Hawaiʻi Dept. of Taxation, Tax Information Release No. 2026-02, July 31, 2026. — https://tax.hawaii.gov/legal/tir/
 [cb]: Hawaiʻi Solar Energy Association figures reported by Honolulu Civil Beat, May 29 and June 12, 2026. — https://www.civilbeat.org/
-[cor]: Hawaiʻi Council on Revenues, General Fund forecast of May 21, 2026. — https://tax.hawaii.gov/useful/a2_b2_5cor/
-[ann]: Hawaiʻi Dept. of Taxation, Announcement No. 2026-06. — https://tax.hawaii.gov/legal/announce/
+[cor]: Hawaiʻi Council on Revenues, General Fund forecast of May 21, 2026. — https://tax.hawaii.gov/useful/a9_1cor/
+[ann]: Hawaiʻi Dept. of Taxation, Announcement No. 2026-06. — https://tax.hawaii.gov/news/announce/
 [model]: Census-Forecaster credit-overlay model (CD1 formula). — https://github.com/Hawaii-Appleseed/Census-Forecaster/blob/main/generate_reec_report.py
 [method]: Census-Forecaster, "RETITC Report — How the Pipeline Works." — https://github.com/Hawaii-Appleseed/Census-Forecaster/blob/main/RETITC_REPORT_METHODOLOGY.md
