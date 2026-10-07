@@ -197,7 +197,7 @@ RETITC · §235-12.5
 Sources
 
 [[sources]]
-[dotax]: Hawaiʻi Dept. of Taxation, Tax Credits Claimed by Hawaiʻi Taxpayers, Tax Year 2023 (December 2025). — https://tax.hawaii.gov/stats/a5_3txcr/
+[dotax]: Hawaiʻi Dept. of Taxation, Tax Credits Claimed by Hawaiʻi Taxpayers, Tax Year 2023 (December 2025). — https://tax.hawaii.gov/stats/a5_1annual/a5_4credits/
 [act24]: Act 24, Session Laws of Hawaiʻi 2026 (SB 3125), signed May 21, 2026. — https://www.capitol.hawaii.gov/session/measure_indiv.aspx?billtype=SB&billnumber=3125&year=2026
 [eo]: Executive Order No. 26-02, Office of the Governor, June 8, 2026. — https://governor.hawaii.gov/executive-orders/
 [tir]: Hawaiʻi Dept. of Taxation, Tax Information Release No. 2026-02, July 31, 2026. — https://tax.hawaii.gov/legal/tir/
