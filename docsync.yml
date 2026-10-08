@@ -497,3 +497,21 @@ bindings:
       # Must match the .page padding in render_report.py, or the editor's
       # guides sit where the text no longer does.
       margins: [0.62, 0.75]
+
+  # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed one-pager" template.
+  - id: itep-act24-estimate
+    content: projects/itep-act24-estimate/content.md
+    # Editability findings (dead text / frozen prose) are build ERRORS for
+    # this project — see docsync.check. Name deliberate exceptions in an
+    # editability_ok list rather than downgrading to warn.
+    editability: strict
+    build: python3 projects/itep-act24-estimate/render_report.py && python3 -m docsync.stage --id itep-act24-estimate
+    outputs:
+      - projects/itep-act24-estimate/web/index.html
+    editor:
+      dir: docs/itep-act24-estimate
+      render: projects/itep-act24-estimate/render_report.py
+      out: projects/itep-act24-estimate/web/index.html
+      layout: projects/itep-act24-estimate/layout.json
+      palette: ["#00907A", "#C4602F", "#2F3E46", "#354F52", "#52796F", "#84A98C", "#CAD2C5", "#EDF1EC", "#FFFFFF"]
+      page: [8.5, 11.0]

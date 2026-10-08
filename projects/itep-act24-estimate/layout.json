@@ -1,0 +1,916 @@
+{
+  "positions": {},
+  "fill": {},
+  "shapes": [
+    {
+      "id": "band",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 2.2,
+      "fill": "#2F3E46",
+      "z": 1
+    },
+    {
+      "id": "band-strip",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 0.12,
+      "fill": "#00907A",
+      "z": 2
+    },
+    {
+      "id": "g1-1b",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.62,
+      "y": 3.289,
+      "w": 4.66,
+      "h": 0.011,
+      "fill": "#2F3E46",
+      "z": 3,
+      "alpha": 0.55
+    },
+    {
+      "id": "g1-b2024",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.62,
+      "y": 3.922,
+      "w": 0.46,
+      "h": 0.198,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2025",
+      "page": 1,
+      "kind": "rect",
+      "x": 1.22,
+      "y": 3.627,
+      "w": 0.46,
+      "h": 0.493,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2026",
+      "page": 1,
+      "kind": "rect",
+      "x": 1.82,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2027a",
+      "page": 1,
+      "kind": "rect",
+      "x": 2.42,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2027b",
+      "page": 1,
+      "kind": "rect",
+      "x": 2.42,
+      "y": 3.358,
+      "w": 0.46,
+      "h": 0.151,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "g1-b2028a",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.02,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2028b",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.02,
+      "y": 3.251,
+      "w": 0.46,
+      "h": 0.258,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "g1-b2029a",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.62,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2029b",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.62,
+      "y": 3.078,
+      "w": 0.46,
+      "h": 0.431,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "g1-b2030a",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.22,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2030b",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.22,
+      "y": 3.007,
+      "w": 0.46,
+      "h": 0.502,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "g1-b2031a",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.82,
+      "y": 3.509,
+      "w": 0.46,
+      "h": 0.611,
+      "fill": "#354F52",
+      "z": 2
+    },
+    {
+      "id": "g1-b2031b",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.82,
+      "y": 2.92,
+      "w": 0.46,
+      "h": 0.589,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "g1-bite",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.82,
+      "y": 2.92,
+      "w": 0.46,
+      "h": 0.245,
+      "fill": "#00907A",
+      "z": 3
+    },
+    {
+      "id": "g1-lvl",
+      "page": 1,
+      "kind": "rect",
+      "x": 2.28,
+      "y": 3.504,
+      "w": 3.0,
+      "h": 0.012,
+      "fill": "#2F3E46",
+      "z": 3
+    },
+    {
+      "id": "g1-k1",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.5,
+      "y": 2.885,
+      "w": 0.14,
+      "h": 0.14,
+      "fill": "#00907A",
+      "z": 3
+    },
+    {
+      "id": "g1-k2",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.5,
+      "y": 3.245,
+      "w": 0.14,
+      "h": 0.14,
+      "fill": "#C4602F",
+      "z": 3
+    },
+    {
+      "id": "g1-k3",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.5,
+      "y": 3.765,
+      "w": 0.14,
+      "h": 0.14,
+      "fill": "#354F52",
+      "z": 3
+    },
+    {
+      "id": "p1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.62,
+      "y": 5.05,
+      "w": 3.5,
+      "h": 2.4,
+      "fill": "#F1F6F3",
+      "z": 1,
+      "r": 0.08
+    },
+    {
+      "id": "p2",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.38,
+      "y": 5.05,
+      "w": 3.5,
+      "h": 2.4,
+      "fill": "#F1F6F3",
+      "z": 1,
+      "r": 0.08
+    },
+    {
+      "id": "w-b1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.85,
+      "y": 5.75,
+      "w": 0.78,
+      "h": 0.95,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "w-b2",
+      "page": 1,
+      "kind": "rect",
+      "x": 1.95,
+      "y": 5.75,
+      "w": 0.78,
+      "h": 0.112,
+      "fill": "#00907A",
+      "z": 2
+    },
+    {
+      "id": "w-b3",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.05,
+      "y": 5.862,
+      "w": 0.78,
+      "h": 0.838,
+      "fill": "#C4602F",
+      "z": 2
+    },
+    {
+      "id": "w-c1",
+      "page": 1,
+      "kind": "rect",
+      "x": 1.63,
+      "y": 5.75,
+      "w": 0.32,
+      "h": 0.012,
+      "fill": "#7C8A80",
+      "z": 3
+    },
+    {
+      "id": "w-c2",
+      "page": 1,
+      "kind": "rect",
+      "x": 2.73,
+      "y": 5.862,
+      "w": 0.32,
+      "h": 0.012,
+      "fill": "#7C8A80",
+      "z": 3
+    },
+    {
+      "id": "s-top5",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.6,
+      "y": 5.55,
+      "w": 0.78,
+      "h": 0.311,
+      "fill": "#2F3E46",
+      "z": 2
+    },
+    {
+      "id": "s-n15",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.6,
+      "y": 5.861,
+      "w": 0.78,
+      "h": 0.377,
+      "fill": "#52796F",
+      "z": 2
+    },
+    {
+      "id": "s-b80",
+      "page": 1,
+      "kind": "rect",
+      "x": 4.6,
+      "y": 6.238,
+      "w": 0.78,
+      "h": 0.732,
+      "fill": "#CAD2C5",
+      "z": 2
+    },
+    {
+      "id": "tpl-rule2",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.62,
+      "y": 9.92,
+      "w": 7.26,
+      "h": 0.018,
+      "fill": "#CAD2C5",
+      "z": 2
+    }
+  ],
+  "boxes": [
+    {
+      "id": "tpl-kick",
+      "page": 1,
+      "x": 0.62,
+      "y": 0.5,
+      "w": 7.2,
+      "z": 4,
+      "md": "HAWAIʻI APPLESEED · ACT 46 AND ACT 24 · ITEP ESTIMATE",
+      "style": {
+        "font": "Manrope",
+        "size": 13.5,
+        "color": "#8FD3C4",
+        "leading": 1.35,
+        "weight": 800,
+        "tracking": 1.8
+      }
+    },
+    {
+      "id": "tpl-title",
+      "page": 1,
+      "x": 0.62,
+      "y": 0.82,
+      "w": 7.26,
+      "z": 4,
+      "md": "What ITEP’s $622M means",
+      "style": {
+        "font": "Manrope",
+        "size": 36,
+        "color": "#FFFFFF",
+        "leading": 1.1,
+        "weight": 800
+      }
+    },
+    {
+      "id": "tpl-lede",
+      "page": 1,
+      "x": 0.62,
+      "y": 1.42,
+      "w": 7.26,
+      "z": 4,
+      "md": "**ITEP estimates that by 2031, even after Act 24, Hawaiʻi will collect $622 million a year less in income tax than it would under 2026 law.** That counts only the part of Act 46’s cost that grows after 2026.",
+      "style": {
+        "font": "Poppins",
+        "size": 14.5,
+        "color": "#E3ECE7",
+        "leading": 1.45
+      }
+    },
+    {
+      "id": "g1-label",
+      "page": 1,
+      "x": 0.62,
+      "y": 2.48,
+      "w": 7.26,
+      "z": 4,
+      "md": "ACT 46’S YEARLY COST KEEPS CLIMBING",
+      "style": {
+        "font": "Manrope",
+        "size": 13.5,
+        "color": "#00705F",
+        "leading": 1.35,
+        "weight": 800,
+        "tracking": 1.6
+      }
+    },
+    {
+      "id": "g1-y2024",
+      "page": 1,
+      "x": 0.55,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2024",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2025",
+      "page": 1,
+      "x": 1.15,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2025",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2026",
+      "page": 1,
+      "x": 1.75,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2026",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2027",
+      "page": 1,
+      "x": 2.35,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2027",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2028",
+      "page": 1,
+      "x": 2.95,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2028",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2029",
+      "page": 1,
+      "x": 3.55,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2029",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2030",
+      "page": 1,
+      "x": 4.15,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2030",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-y2031",
+      "page": 1,
+      "x": 4.75,
+      "y": 4.17,
+      "w": 0.6,
+      "z": 4,
+      "md": "2031",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.2,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g1-1b-l",
+      "page": 1,
+      "x": 0.62,
+      "y": 2.994,
+      "w": 2.0,
+      "z": 4,
+      "md": "$1 billion a year",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#2F3E46",
+        "leading": 1.35,
+        "weight": 600
+      }
+    },
+    {
+      "id": "g1-kt1",
+      "page": 1,
+      "x": 5.74,
+      "y": 2.84,
+      "w": 2.14,
+      "z": 4,
+      "md": "Act 24 recovers about $300M",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#00705F",
+        "leading": 1.25,
+        "weight": 600
+      }
+    },
+    {
+      "id": "g1-kt2",
+      "page": 1,
+      "x": 5.74,
+      "y": 3.2,
+      "w": 2.14,
+      "z": 4,
+      "md": "The rise after 2026: the part ITEP counts",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#C4602F",
+        "leading": 1.25,
+        "weight": 600
+      }
+    },
+    {
+      "id": "g1-kt3",
+      "page": 1,
+      "x": 5.74,
+      "y": 3.72,
+      "w": 2.14,
+      "z": 4,
+      "md": "Where the cost stood in 2026: about $740M",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.25,
+        "weight": 600
+      }
+    },
+    {
+      "id": "g1-note",
+      "page": 1,
+      "x": 0.62,
+      "y": 4.46,
+      "w": 7.26,
+      "z": 4,
+      "md": "Even with Act 24’s roughly $300 million back, the yearly cost stays above $1 billion. Source: Department of Taxation, fiscal years shown as tax years (fiscal 2027 = 2026).",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#7C8A80",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "p1-t",
+      "page": 1,
+      "x": 0.8,
+      "y": 5.13,
+      "w": 3.2,
+      "z": 4,
+      "md": "ITEP’s bridge, 2031",
+      "style": {
+        "font": "Manrope",
+        "size": 15,
+        "color": "#00705F",
+        "leading": 1.35,
+        "weight": 800
+      }
+    },
+    {
+      "id": "p2-t",
+      "page": 1,
+      "x": 4.56,
+      "y": 5.13,
+      "w": 3.2,
+      "z": 4,
+      "md": "Who gets the cuts still to come",
+      "style": {
+        "font": "Manrope",
+        "size": 15,
+        "color": "#00705F",
+        "leading": 1.35,
+        "weight": 800
+      }
+    },
+    {
+      "id": "w-v1",
+      "page": 1,
+      "x": 0.75,
+      "y": 5.43,
+      "w": 0.98,
+      "z": 4,
+      "md": "$705M",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#2F3E46",
+        "leading": 1.1,
+        "weight": 800,
+        "align": "center"
+      }
+    },
+    {
+      "id": "w-v2",
+      "page": 1,
+      "x": 1.85,
+      "y": 5.43,
+      "w": 0.98,
+      "z": 4,
+      "md": "−$83M",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#00705F",
+        "leading": 1.1,
+        "weight": 800,
+        "align": "center"
+      }
+    },
+    {
+      "id": "w-v3",
+      "page": 1,
+      "x": 2.95,
+      "y": 5.552,
+      "w": 0.98,
+      "z": 4,
+      "md": "$622M",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#2F3E46",
+        "leading": 1.1,
+        "weight": 800,
+        "align": "center"
+      }
+    },
+    {
+      "id": "w-l1",
+      "page": 1,
+      "x": 0.69,
+      "y": 6.77,
+      "w": 1.1,
+      "z": 4,
+      "md": "Still to come after 2026",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.25,
+        "align": "center"
+      }
+    },
+    {
+      "id": "w-l2",
+      "page": 1,
+      "x": 1.79,
+      "y": 6.77,
+      "w": 1.1,
+      "z": 4,
+      "md": "Act 24 brings back",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.25,
+        "align": "center"
+      }
+    },
+    {
+      "id": "w-l3",
+      "page": 1,
+      "x": 2.89,
+      "y": 6.77,
+      "w": 1.1,
+      "z": 4,
+      "md": "Left after Act 24",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.25,
+        "align": "center"
+      }
+    },
+    {
+      "id": "p1-n",
+      "page": 1,
+      "x": 0.8,
+      "y": 7.17,
+      "w": 3.2,
+      "z": 4,
+      "md": "ITEP counts income tax changes only",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#7C8A80",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "s-top5-l",
+      "page": 1,
+      "x": 5.55,
+      "y": 5.596,
+      "w": 2.2,
+      "z": 4,
+      "md": "Top 5%: 22%",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#2F3E46",
+        "leading": 1.2,
+        "weight": 600
+      }
+    },
+    {
+      "id": "s-n15-l",
+      "page": 1,
+      "x": 5.55,
+      "y": 5.94,
+      "w": 2.2,
+      "z": 4,
+      "md": "Next 15%: 26.5%",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#2F3E46",
+        "leading": 1.2,
+        "weight": 600
+      }
+    },
+    {
+      "id": "s-b80-l",
+      "page": 1,
+      "x": 5.55,
+      "y": 6.494,
+      "w": 2.2,
+      "z": 4,
+      "md": "Bottom 80%: 51.5%",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#2F3E46",
+        "leading": 1.2,
+        "weight": 600
+      }
+    },
+    {
+      "id": "s-note",
+      "page": 1,
+      "x": 4.56,
+      "y": 7.05,
+      "w": 3.2,
+      "z": 4,
+      "md": "Top 20%, above $152,000: 48.5%",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#2F3E46",
+        "leading": 1.35,
+        "weight": 600
+      }
+    },
+    {
+      "id": "tpl-colh2",
+      "page": 1,
+      "x": 0.62,
+      "y": 7.58,
+      "w": 7.26,
+      "z": 4,
+      "md": "How it was derived",
+      "style": {
+        "font": "Manrope",
+        "size": 15,
+        "color": "#00705F",
+        "leading": 1.35,
+        "weight": 800
+      }
+    },
+    {
+      "id": "tpl-col2",
+      "page": 1,
+      "x": 0.62,
+      "y": 7.9,
+      "w": 7.26,
+      "z": 4,
+      "md": "- **Two sets of rules.** Each year, ITEP applies 2026 law and Act 24 as enrolled to the same residents, with incomes held at 2026 levels.\n- **Average times residents.** The workbook shows −$812 per resident in 2031. Times about 766,000 residents (implied by the sheet), that is $622 million.\n- **Income tax, residents only.** Nonresidents and Act 24’s credit changes are left out. The Department of Taxation puts the whole act at about $300 million a year by 2031.",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#354F52",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "tpl-src",
+      "page": 1,
+      "x": 0.62,
+      "y": 9.4,
+      "w": 7.26,
+      "z": 4,
+      "md": "Sources: ITEP, HI SB 3125 Analysis (May 13, 2026); Hawaiʻi Department of Taxation, Legislative Update to the Tax Review Commission (May 2026), slides 2, 14 and 15. All figures are per year and rounded.",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#7C8A80",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "tpl-logo",
+      "page": 1,
+      "x": 0.62,
+      "y": 10.12,
+      "w": 1.9,
+      "z": 4,
+      "md": "![](assets/appleseed-logo.svg)"
+    },
+    {
+      "id": "tpl-foot",
+      "page": 1,
+      "x": 5.4,
+      "y": 10.25,
+      "w": 2.48,
+      "z": 4,
+      "md": "hiappleseed.org",
+      "style": {
+        "font": "Poppins",
+        "size": 13.5,
+        "color": "#7C8A80",
+        "align": "right"
+      }
+    }
+  ],
+  "tables": []
+}
