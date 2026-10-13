@@ -501,7 +501,6 @@ bindings:
   # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed one-pager" template.
   - id: itep-act24-estimate
     name: "What ITEP’s $622M means"
-    hub: false            # off the staff hub (docsync/hub.py) until Devin decides to share it
     content: projects/itep-act24-estimate/content.md
     # Editability findings (dead text / frozen prose) are build ERRORS for
     # this project — see docsync.check. Name deliberate exceptions in an
