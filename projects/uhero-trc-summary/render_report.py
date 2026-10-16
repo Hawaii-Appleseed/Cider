@@ -321,7 +321,8 @@ html = f"""<!DOCTYPE html>
                    font-size:0.7rem; letter-spacing:.16em; line-height:1.4;
                    padding-bottom:9px; border-bottom:1.5px solid {INK}; margin:0; }}
   .brand {{ color:{INK}; flex:1; }}
-  .pill {{ color:{WARM}; padding-left:16px; }}
+  .pill {{ color:{WARM}; padding-left:16px; font-weight:700; font-size:0.8rem;
+           letter-spacing:0; line-height:calc(0.7rem * 1.4); }}
   .cover-h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
                font-weight:600; font-size:2.7rem; line-height:1.06;
                margin:1.05in 0 0; letter-spacing:-.03em; color:{INK}; max-width:7in; }}
@@ -329,8 +330,8 @@ html = f"""<!DOCTYPE html>
   .deck {{ font-size:1.06rem; line-height:1.55; color:{BODY}; margin:16px 0 0;
            max-width:6in; }}
   .deck b {{ color:{INK}; font-weight:700; }}
-  .klabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
-             font-weight:800; letter-spacing:.14em; color:{INK};
+  .klabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.8rem;
+             font-weight:800; letter-spacing:0; color:{INK};
              margin:0.62in 0 0; padding-top:9px; border-top:1.5px solid {INK}; }}
   .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:14px 0 0; }}
   .fig {{ padding:0 20px 0 0; }}
@@ -338,8 +339,8 @@ html = f"""<!DOCTYPE html>
   .fig-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:2.35rem;
             font-weight:600; line-height:1; letter-spacing:-.02em; color:{INK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
-  .fig-l {{ font-size:0.7rem; font-weight:600; letter-spacing:.035em;
-            color:{MUTED}; margin-top:10px; line-height:1.5; }}
+  .fig-l {{ font-size:0.8rem; font-weight:500; color:{BODY}; margin-top:10px;
+            line-height:1.45; }}
   /* label column + text column, ruled on top: the cover's dates and contents,
      and the glossary on page 2 */
   .datebox, .cgrid {{ display:grid; grid-template-columns:1.75in 1fr; }}
@@ -360,17 +361,15 @@ html = f"""<!DOCTYPE html>
 
   /* --- Interior pages ------------------------------------------------- */
   .phead {{ border-bottom:1px solid {INK}; padding-bottom:10px; margin-bottom:12px; }}
-  .eyebrow {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
-              font-weight:800; letter-spacing:.14em; text-transform:uppercase;
-              color:{PRIMARY}; margin-bottom:8px; }}
+  .eyebrow {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.82rem;
+              font-weight:700; color:{PRIMARY}; margin-bottom:6px; }}
   h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
         font-weight:600; font-size:1.78rem; line-height:1.12; margin:0; color:{INK};
         letter-spacing:-.025em; }}
   .psub {{ font-size:0.96rem; font-weight:500; line-height:1.4; color:{BODY};
            margin-top:7px; }}
-  .slabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
-             font-weight:800; letter-spacing:.13em; text-transform:uppercase;
-             margin:15px 0 0; color:{INK}; }}
+  .slabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.84rem;
+             font-weight:800; margin:15px 0 0; color:{INK}; }}
   h2 {{ font-family:OkinaManrope, Manrope, sans-serif; font-weight:800;
         font-size:1.02rem; line-height:1.3; margin:14px 0 0; padding-top:9px; color:{INK};
         border-top:1px solid {LINE}; letter-spacing:-.01em; }}
@@ -385,9 +384,8 @@ html = f"""<!DOCTYPE html>
   .box:not(.box-green) {{ padding-top:9px; border-top:1px solid {INK}; }}
   .box-green {{ padding-top:12px; border-top:2px solid {PRIMARY}; margin-top:6px; }}
   .phead + .box-green {{ border-top:0; padding-top:4px; margin-top:0; }}
-  .box-h {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
-            font-weight:800; letter-spacing:.13em; text-transform:uppercase;
-            color:{INK}; margin-bottom:6px; }}
+  .box-h {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.84rem;
+            font-weight:800; color:{INK}; margin-bottom:4px; }}
   .box-green .box-h {{ color:{PRIMARY}; }}
   .box-p {{ font-size:0.86rem; line-height:1.5; color:{BODY}; margin:0; }}
   .box-green .box-p {{ font-size:0.9rem; line-height:1.52; color:{INK}; }}
@@ -397,8 +395,8 @@ html = f"""<!DOCTYPE html>
   /* the six swaps: a ruled table, not a stack of cards */
   .swhead, .swrow {{ display:grid; grid-template-columns:2.35in 0.3in 2.75in 1fr; }}
   .swhead {{ margin:10px 0 0; padding-bottom:6px; border-bottom:1px solid {INK};
-             font-family:OkinaManrope, Manrope, sans-serif; font-size:0.68rem; font-weight:800;
-             letter-spacing:.11em; color:{MUTED}; }}
+             font-family:OkinaManrope, Manrope, sans-serif; font-size:0.76rem; font-weight:700;
+             color:{MUTED}; }}
   .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; }}
   .swaps {{ margin:0; }}
   .swrow {{ align-items:center; padding:5px 0; border-bottom:1px solid {LINE}; }}
@@ -417,7 +415,7 @@ html = f"""<!DOCTYPE html>
   .splitl {{ flex:0 0 4.7in; }}
   .pcts {{ flex:1; padding-top:4px; }}
   .pcts .klabel {{ margin:0; padding:0 0 2px; border:0; color:{MUTED};
-                   letter-spacing:.1em; line-height:1.4; }}
+                   font-weight:700; line-height:1.4; }}
   .pct {{ border-top:1px solid {LINE}; padding:10px 0 0; margin-top:10px; }}
   .pct-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:600; font-size:1.9rem;
             line-height:1; letter-spacing:-.02em; color:{PRIMARY_DARK}; }}
@@ -442,11 +440,10 @@ html = f"""<!DOCTYPE html>
   .pfoot {{ border-top:1px solid {LINE}; padding-top:8px; }}
   .pfoot-t {{ font-size:0.72rem; line-height:1.45; color:{MUTED}; margin:0; }}
   .pfoot-t b {{ color:{BODY}; font-weight:700; }}
-  .pnum {{ display:block; margin-top:6px; font-weight:700; letter-spacing:.12em;
-           text-transform:uppercase; font-size:0.68rem; color:{INK};
+  .pnum {{ display:block; margin-top:5px; font-weight:700;
+           font-size:0.72rem; color:{INK};
            font-variant-numeric:tabular-nums; }}
-  .srch {{ font-size:0.68rem; font-weight:800; letter-spacing:.12em;
-           text-transform:uppercase; color:{INK}; margin-right:6px; }}
+  .srch {{ font-size:0.76rem; font-weight:800; color:{INK}; margin-right:6px; }}
   .endnotes {{ margin:14px 0 0; padding-top:10px; border-top:1px solid {INK};
                font-size:0.715rem; line-height:1.45; color:{MUTED}; }}
   .en {{ white-space:normal; }}

@@ -18,7 +18,7 @@
 UHERO's draft report "On Hawaiʻi's Tax System": a plain-language summary
 
 [[cover.pill]]
-DRAFT REPORT · NOT FINAL
+Draft report · not final
 
 [[cover.h1]]
 What UHERO's draft says about Hawaiʻi's tax system
@@ -27,34 +27,34 @@ What UHERO's draft says about Hawaiʻi's tax system
 UHERO, a University of Hawaiʻi research group, has released a **draft** report for the Hawaiʻi Tax Review Commission (October 6, 2026). It explains how Hawaiʻi's main taxes work and tests six tax **swaps**. It does not tell the Commission what to do. Its one recommendation is about data.[^uhero]
 
 [[cover.figures.h]]
-KEY FACTS
+Key facts
 
 [[cover.fig.a.n]]
 0
 
 [[cover.fig.a.l]]
-TAX POLICY RECOMMENDATIONS: "NONE OF THESE REFORMS IS A RECOMMENDATION" (P. 158)
+Tax policy recommendations: "None of these reforms is a recommendation" (p. 158)
 
 [[cover.fig.b.n]]
 6
 
 [[cover.fig.b.l]]
-TAX SWAPS THE FINAL REPORT WILL ESTIMATE (P. 161)
+Tax swaps the final report will estimate (p. 161)
 
 [[cover.fig.c.n]]
 $267.4M
 
 [[cover.fig.c.l]]
-YEARLY COST OF EXEMPTING GROCERIES FROM THE GET (STATE + COUNTIES, 2027): THE ONE ESTIMATE SO FAR
+Yearly cost of exempting groceries from the GET (state + counties, 2027): the one estimate so far
 
 [[cover.dates.h]]
-WHAT HAPPENS NEXT
+What happens next
 
 [[cover.dates.p]]
 **October 28:** the full Commission discusses the draft. **December 21, 2026:** final report due. Results for the swaps "will appear in the final report" (p. 158).
 
 [[cover.contents.h]]
-INSIDE
+Inside
 
 [[contents.1]]
 What the draft is, and is not (p. 2)
@@ -75,13 +75,13 @@ Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is th
 Not reviewed or endorsed by UHERO or the Tax Review Commission. Figures are preliminary and may change in the final report.
 
 [[about.eyebrow]]
-THE BIG PICTURE
+The big picture
 
 [[about.h1]]
 A research report, not a reform plan
 
 [[about.sub]]
-Bottom line: UHERO tests tax swaps. It does not say which to pick.
+UHERO tests tax swaps. It does not say which to pick.
 
 [[about.works.p1]]
 The draft does not tell the Commission what to do. It says so directly: "None of these reforms is a recommendation" (p. 158). Instead it tests each reform as a **swap**: one tax change, plus a second change that makes up the money. Each swap keeps the **General Fund**, the state's main pool of money for general spending, at the same level in 2027. That is called **revenue-neutral**. Counties can still gain or lose money (p. 2).
@@ -90,16 +90,16 @@ The draft does not tell the Commission what to do. It says so directly: "None of
 The numbers come from a computer model of Hawaiʻi households. It uses Census survey data, fills gaps with IRS records, and lets people change how much they earn or report. For now, no one moves away and visitors spend the same. **Results for the swaps are not out yet. They are due in the final report** (p. 158).
 
 [[about.pairs.h]]
-THE SIX TAX SWAPS (P. 161)
+The six tax swaps (p. 161)
 
 [[about.also.h]]
-ALSO TO BE ESTIMATED IN THE FINAL REPORT (P. 161)
+Also to be estimated in the final report (p. 161)
 
 [[about.also.p]]
 A lower **corporate income tax** rate (ch. 6). A **statewide property tax**, maybe with different rates by owner and use (ch. 5). A higher **hotel and vacation-rental tax** (the TAT), with payback for residents (ch. 4). The **GET pile-up problem**, where tax is paid at every step of production (ch. 3). How many people might **move away** after income-tax changes (ch. 11).
 
 [[about.gloss.h]]
-TERMS USED HERE
+Terms used here
 
 [[about.gloss.p]]
 **GET:** Hawaiʻi's broad tax on business sales. The state rate is 4 percent on most activity, plus 0.5 percent for counties. Businesses cannot deduct their costs (p. 56). **AGI:** adjusted gross income, roughly income before deductions. **Refundable credit:** pays you even if you owe no tax. **DOTAX:** the state Department of Taxation.
@@ -108,13 +108,13 @@ TERMS USED HERE
 **Source:** UHERO draft report, ch. 1 (pp. 1–2) and ch. 10 (pp. 158, 161).
 
 [[groc.eyebrow]]
-THE ONE ESTIMATE SO FAR
+The one estimate so far
 
 [[groc.h1]]
 Exempting groceries from the GET
 
 [[groc.sub]]
-Bottom line: it saves the average household about $419 a year, and costs the state $233 million.
+It saves the average household about $419 a year, and costs the state $233 million.
 
 [[groc.lead]]
 UHERO's only estimate so far: take **groceries** (food and drinks bought at stores) out of the GET. It assumes stores lower prices by the full tax amount, households spend what they save, and visitors spend the same (p. 160). After residents spend part of their savings, the state's net loss is **$233.0M** (p. 158).
@@ -129,13 +129,13 @@ Bar chart of the yearly savings per household from exempting groceries, for ten 
 Ten equal groups of households, lowest income to highest. Savings are net of GET paid on extra spending. Draft Figure 10.1, p. 160.
 
 [[groc.read.h]]
-WHAT IT MEANS
+What it means
 
 [[groc.read.p]]
 The average household saves about **$419 a year**. Richer households save more dollars because they spend more. But the savings matter more to poorer ones: about **1.3 percent of income** for the lowest-income group, against **0.1 percent** for the highest (p. 159).
 
 [[groc.pay.h]]
-WHO PAYS DEPENDS ON THE MAKE-UP TAX
+Who pays depends on the make-up tax
 
 [[groc.pay.p]]
 If income taxes rise to cover residents' savings, residents break even as a group. But the state is still $53.3M short, because visitors keep theirs, so residents would also cover the visitors' share (p. 1). Individual households can still lose: in UHERO's example, a household saves $400 on groceries but pays $500 more income tax, so it is $100 worse off (p. 161). No one knows if stores would pass the full cut on; studies from Germany and Spain found most did, not all (p. 66).
@@ -144,7 +144,7 @@ If income taxes rise to cover residents' savings, residents break even as a grou
 **Source:** UHERO draft report, section 3.4 (pp. 65–66) and Figure 10.1 (p. 160); UHERO labels them preliminary.
 
 [[ch.eyebrow.a]]
-CHAPTER BY CHAPTER, 1 OF 2
+Chapter by chapter, 1 of 2
 
 [[ch.h1.a]]
 Income tax, the GET and visitor taxes
@@ -153,28 +153,28 @@ Income tax, the GET and visitor taxes
 Chapters 2 to 4, in plain language
 
 [[ch2.h]]
-CH. 2 · INDIVIDUAL INCOME TAX (PP. 26–55)
+Ch. 2 · Individual income tax (pp. 26–55)
 
 [[ch2.bl]]
-Bottom line: the income tax takes a bigger share from higher earners, and two new laws are reshaping it.
+The income tax takes a bigger share from higher earners, and two new laws are reshaping it.
 
 [[ch2.p]]
 The income tax raised **$3.29 billion** in FY2025 (the year ending June 2025), 28.7 percent of state tax collections (p. 3). Two recent laws, Acts 46 and 24, raise the standard deduction and cut lower rates. Act 24 also adds a **13 percent top rate** above $500,000 for single filers (p. 28). In 2027, a single person earning $1 million would pay more Hawaiʻi income tax than in any other state. A low-income family with two children would pay among the least, because refundable credits can exceed what it owes (p. 32). In 2022, people earning under $10,000 got back 2.6 percent of their income on average. People earning $500,000 or more paid about 8 percent (p. 35). **Capital gains** (profit from selling assets) are taxed at no more than 7.25 percent. About 74 percent of gains claimed that way came from 4,188 returns with income of $400,000 or more (p. 46). Most **pension income and Social Security** is not taxed. Commissions have proposed taxing pensions five times since 1995 (p. 49).
 
 [[ch3.h]]
-CH. 3 · GENERAL EXCISE TAX (PP. 56–72)
+Ch. 3 · General excise tax (pp. 56–72)
 
 [[ch3.bl]]
-Bottom line: the GET is Hawaiʻi's biggest tax, and it hits business sales at every step.
+The GET is Hawaiʻi's biggest tax, and it hits business sales at every step.
 
 [[ch3.p]]
 The GET and use tax raised **$4.63 billion** in FY2025, 40.4 percent of all state tax collections (p. 3). It taxes sales between businesses and lets them deduct no costs, so a firm with a small profit can still owe a lot (p. 56). Tax can also **pile up** along a supply chain, which is called pyramiding. In UHERO's example, three firms in a chain, taxed at a made-up 2 percent, pay $14 in total. One firm doing all the work would pay $8 (p. 60). A household with low income in one year can pay a bigger share of its income in GET than a richer one, even if both pay the same share of what they spend (p. 63). The final report will estimate two swaps: groceries paid for with higher income-tax rates, and a higher GET rate paid back with lower income-tax rates (p. 69).
 
 [[ch4.h]]
-CH. 4 · VISITORS AND TOURISM (PP. 73–85)
+Ch. 4 · Visitors and tourism (pp. 73–85)
 
 [[ch4.bl]]
-Bottom line: taxing visitors can help residents, but only if residents are paid back for what they pay too.
+Taxing visitors can help residents, but only if residents are paid back for what they pay too.
 
 [[ch4.p]]
 Hawaiʻi cannot tax tourists' incomes, so it taxes what they buy (p. 73). The state **hotel and vacation-rental tax (TAT)** is 11 percent since January 2026 and falls to 10 percent after 2030. Each county adds 3 percent. The state TAT raised **$816.2 million** in FY2025, the third-largest state tax (pp. 73–74). In one economic model, if residents are fully paid back, the state should collect as much as it can from visitors, taxing hardest what must be bought here, like hotel rooms (p. 73). The hard part is the payback: it is easier to refund higher prices than lost jobs and wages in tourism (p. 77). No one yet knows how high the TAT can go before visitors spend less and the state loses money (pp. 81–82).
@@ -183,7 +183,7 @@ Hawaiʻi cannot tax tourists' incomes, so it taxes what they buy (p. 73). The st
 **Source:** UHERO draft report, chapters 2–4. Dollar figures are fiscal-year or tax-year amounts as reported there.
 
 [[ch.eyebrow.b]]
-CHAPTER BY CHAPTER, 2 OF 2
+Chapter by chapter, 2 of 2
 
 [[ch.h1.b]]
 Property, business, wealth and credits
@@ -192,37 +192,37 @@ Property, business, wealth and credits
 Chapters 5 to 8 (chapter 9 is a placeholder)
 
 [[ch5.h]]
-CH. 5 · PROPERTY AND REAL ESTATE (PP. 86–99)
+Ch. 5 · Property and real estate (pp. 86–99)
 
 [[ch5.bl]]
-Bottom line: homeowners pay the lowest property tax rate in the country, and only counties can set it.
+Homeowners pay the lowest property tax rate in the country, and only counties can set it.
 
 [[ch5.p]]
 Only the counties may tax real property, so a **statewide property tax** would need a change to the state constitution (p. 87). The counties billed **$3.06 billion** in FY2025 (p. 4). Homeowners paid 0.29 percent of home value in 2024, the lowest of the 50 states (US: 0.90 percent) (p. 88). For a $2 million home, an owner who lives there owes $6,580 in Honolulu or $2,835 in Maui (p. 87). The **conveyance tax** is charged when real estate is sold. It raised $96.0 million in FY2025. Because the rate applies to the whole price, tax jumps at set prices. On the standard schedule, a cash sale just under $1 million owes about $2,000, but at $1 million it owes $3,000 (p. 95).
 
 [[ch6.h]]
-CH. 6 · BUSINESS TAXES (PP. 100–117)
+Ch. 6 · Business taxes (pp. 100–117)
 
 [[ch6.bl]]
-Bottom line: the corporate tax raises little, and UHERO says a big cut could raise money overall.
+The corporate tax raises little, and UHERO says a big cut could raise money overall.
 
 [[ch6.p]]
 The **corporate income tax** raised $400.4 million net in FY2025, 3.5 percent of state tax collections (p. 101). The top rate, 6.4 percent, is close to the typical state's 6.5 percent. But Hawaiʻi collects $287 per resident, against $480 across all states (p. 102). UHERO says a large rate cut "could raise total revenue" once effects on income-tax and GET collections are counted. That rests on 2010 data and will be revisited in the final report (p. 107). The section on **real estate investment trusts (REITs)**, companies that own property, is one sentence: "The final report will discuss how Hawaiʻi taxes real estate investment trusts" (p. 113).
 
 [[ch7.h]]
-CH. 7 · WEALTH AND ESTATES (PP. 118–132)
+Ch. 7 · Wealth and estates (pp. 118–132)
 
 [[ch7.bl]]
-Bottom line: an annual wealth tax is unlikely to raise much, and estate tax revenue is lumpy.
+An annual wealth tax is unlikely to raise much, and estate tax revenue is lumpy.
 
 [[ch7.p]]
 UHERO says an annual **wealth tax** is "unlikely" to raise much money if Hawaiʻi acts alone. Wealth is hard to measure, and people can report less or move away (pp. 118, 128). Hawaiʻi already taxes wealth in part through property taxes and the GET (p. 127). The **estate tax** (tax on large estates after death) exempts the first $5.49 million, a figure fixed since 2017, and charges 10 to 20 percent above that (pp. 118–119). Collections were $12.1 to $58.1 million a year before FY2025. Then FY2025 hit **$405.8 million**, including a **one-time $315 million payment**. UHERO warns that FY2025 is not a guide to future years (p. 120). The final report may estimate what repealing the estate tax would do (p. 129).
 
 [[ch8.h]]
-CH. 8 · TAX CREDITS (PP. 133–156)
+Ch. 8 · Tax credits (pp. 133–156)
 
 [[ch8.bl]]
-Bottom line: tax credits are spending by another name: $621 million in 2023.
+Tax credits are spending by another name: $621 million in 2023.
 
 [[ch8.p]]
 People claimed **$621.3 million** of credits in 2023. About $243 million avoided double taxation, $218 million gave targeted relief (such as the earned income and food/excise credits), and $152 million aimed to change behavior (p. 133). The **solar credit** ($100.1 million claimed) returns about 71 cents of benefit to Hawaiʻi residents per net state dollar, or $1.95 counting global climate benefits (p. 142). 72 percent of individual claims went to people earning $100,000 or more (p. 147). Act 24 now caps the credit at $40 million a year, bars high earners from 2027, and ends it after 2029 (p. 143). The **film credit** ($43.5 million claimed) brings back an estimated 30 to 50 cents in tax per dollar, a net loss of $19 to $27 million (pp. 148–149).
@@ -231,22 +231,22 @@ People claimed **$621.3 million** of credits in 2023. About $243 million avoided
 **Source:** UHERO draft report, chapters 5–9. Chapter 9 ("Other matters") is a placeholder to be completed in the final report (p. 157).
 
 [[end.eyebrow]]
-THE ONE RECOMMENDATION, AND WHAT IT MEANS
+The one recommendation, and what it means
 
 [[end.h1]]
 Data first, and what to watch
 
 [[end.sub]]
-Bottom line: the one real recommendation is better data. The swaps leave out options that raise new money.
+The one real recommendation is better data. The swaps leave out options that raise new money.
 
 [[rec.h]]
-CH. 11 · THE SOLE RECOMMENDATION (P. 162)
+Ch. 11 · The sole recommendation (p. 162)
 
 [[rec.p]]
 The draft's only recommendation: "We recommend linking tax returns with records of earnings and benefits for the same households over time," with data sharing under clear rules and easier access for researchers (p. 162). Today the Tax Department has returns, other agencies hold wage and benefit records (like SNAP), and researchers struggle to combine them. Names would be removed, only trained researchers would get access, data would stay on secure servers, and results would be checked before release (p. 163). One payoff: finding out how many eligible families miss credits because they do not file a return (p. 163).
 
 [[fair.h]]
-WHAT THIS MEANS FOR TAX FAIRNESS
+What this means for tax fairness
 
 [[fair.note]]
 These are the Coalition's observations on the draft, not UHERO's. Nothing below is scored by UHERO yet.
@@ -273,13 +273,13 @@ These are the Coalition's observations on the draft, not UHERO's. Nothing below 
 Sources
 
 [[swap.head.a]]
-THE CHANGE
+The change
 
 [[swap.head.b]]
-THE MAKE-UP CHANGE
+The make-up change
 
 [[swap.head.c]]
-OUR READ (NOT UHERO'S)
+Our read (not UHERO's)
 
 [[swap.1.a]]
 No GET on groceries
@@ -348,7 +348,7 @@ Two stacked bars, each totaling 267.4 million dollars. Savings go 214.1 million 
 Before residents spend part of their savings, which wins back about $4.7M for the state (pp. 65, 158).
 
 [[groc.pct.h]]
-SAVINGS AS A SHARE OF INCOME (P. 159)
+Savings as a share of income (p. 159)
 
 [[groc.pct.a.n]]
 1.3%
@@ -375,4 +375,4 @@ Horizontal bar chart of shares of the 11.46 billion dollars in state tax collect
 TAX FAIRNESS COALITION
 
 [[foot.running]]
-UHERO DRAFT SUMMARY · TAX FAIRNESS COALITION
+UHERO draft summary · Tax Fairness Coalition
