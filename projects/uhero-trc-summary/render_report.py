@@ -325,7 +325,7 @@ html = f"""<!DOCTYPE html>
            letter-spacing:0; line-height:calc(0.7rem * 1.4); }}
   .cover-h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
                font-weight:600; font-size:2.7rem; line-height:1.06;
-               margin:1.05in 0 0; letter-spacing:-.03em; color:{INK}; max-width:7in; }}
+               margin:0.9in 0 0; letter-spacing:-.03em; color:{INK}; max-width:7in; }}
   .rule {{ width:0.5in; height:3px; background:{PRIMARY}; margin:24px 0 0; }}
   .deck {{ font-size:1.06rem; line-height:1.55; color:{BODY}; margin:16px 0 0;
            max-width:6in; }}
