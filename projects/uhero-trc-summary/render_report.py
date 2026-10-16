@@ -46,10 +46,9 @@ ASH = "#CAD2C5"            # --ash
 BODY = "#3F5256"           # body copy (slate, darkened for 7:1 on white)
 MUTED = "#5F7072"          # secondary text, clears 4.5:1 on white
 LINE = "#DCE3DC"           # --rule
-BG_SOFT = "#F3F6F3"        # panel wash
+PAPER = "#EDF0ED"          # the desk behind the sheets on screen
 WARM = "#A8603F"           # the poll page's "against" rust, used sparingly
-WARM_TINT = "#F8EFEA"
-GREEN_TINT = "#EAF1EC"
+NEUTRAL = "#A3AFAC"        # the swap table's "mixed / unclear" marker
 
 CHART_W_IN = 7.2
 
@@ -178,8 +177,10 @@ def foot(key: str, page_no: int) -> str:
 
 page = f"""
 <section class="page cover">
-  <div class="brand"{L.attr("cover.brand")}>{C.t("cover.brand")}</div>
-  <div class="pill"{L.attr("cover.pill")}>{C.t("cover.pill")}</div>
+  <div class="mast">
+    <div class="brand"{L.attr("cover.brand")}>{C.t("cover.brand")}</div>
+    <div class="pill"{L.attr("cover.pill")}>{C.t("cover.pill")}</div>
+  </div>
   {L.spacer("cover.h1")}<h1 class="cover-h1"{L.attr("cover.h1")}>{C.t("cover.h1")}</h1>
   <div class="rule"{L.attr("cover.rule")}></div>
   {C.html("cover.deck", "deck")}
@@ -194,8 +195,10 @@ page = f"""
     {C.html("cover.dates.p", "box-p")}
   </div>
 
-  <div class="klabel klabel-t"{L.attr("cover.contents.h")}>{C.t("cover.contents.h")}</div>
-  <div class="contents"{L.attr("cover.contents")}>{contents_rows()}</div>
+  <div class="cgrid">
+    <div class="klabel klabel-t"{L.attr("cover.contents.h")}>{C.t("cover.contents.h")}</div>
+    <div class="contents"{L.attr("cover.contents")}>{contents_rows()}</div>
+  </div>
 
   <div class="cfwrap"><div class="cover-foot"{L.frame("cover.foot")}>
     <div class="cfoot-l"{L.attr("cover.source")}>{C.t("cover.source")}</div>
@@ -297,182 +300,190 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@600&display=swap" rel="stylesheet">
 <style>
 {OKINA_FACES}
-  body {{ margin:0; background:{BG_SOFT};
+  /* Editorial: one display face (Poppins) for titles and big figures, Manrope
+     for everything else; hairline rules instead of cards, no tinted panels,
+     colour only where it carries meaning (green = the report, rust = against). */
+  body {{ margin:0; background:{PAPER};
          font:14.5px/1.5 OkinaManrope, Manrope, system-ui, sans-serif; color:{INK};
-         font-variant-ligatures:none; }}
-  .page {{ width:8.5in; height:11in; margin:24px auto; background:#fff;
-           box-shadow:0 4px 18px rgba(0,0,0,.12); padding:0.5in 0.55in 0.42in;
+         font-variant-ligatures:none; -webkit-font-smoothing:antialiased;
+         font-feature-settings:"tnum" 0; }}
+  .page {{ width:8.5in; height:11in; margin:28px auto; background:#fff;
+           box-shadow:0 0 0 1px rgba(47,62,70,.07), 0 1px 3px rgba(47,62,70,.08);
+           padding:0.5in 0.55in 0.42in;
            box-sizing:border-box; position:relative; overflow:hidden; }}
 
   /* --- Cover --------------------------------------------------------- */
-  .cover {{ padding-left:0.78in; }}
-  .cover::before {{ content:""; position:absolute; left:0; top:0; bottom:0;
-                     width:0.19in; background:{PRIMARY}; z-index:2; }}
-  .cover::after {{ content:""; position:absolute; left:0; right:0; top:0;
-                   height:3.6in; background:{BG_SOFT}; border-bottom:1px solid {LINE};
-                   z-index:0; }}
-  .cover > * {{ position:relative; z-index:1; }}
-  .brand {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:700;
-            font-size:0.82rem; letter-spacing:.14em; color:{PRIMARY_DARK};
-            margin:0 0 16px; }}
-  .pill {{ display:inline-block; background:{WARM}; color:#fff;
-           font-family:OkinaPoppins, Poppins, sans-serif; font-weight:700;
-           font-size:0.82rem; letter-spacing:.06em; padding:5px 15px;
-           border-radius:13px; }}
+  .mast {{ display:flex; justify-content:space-between; align-items:baseline; }}
+  .brand, .pill {{ font-family:OkinaManrope, Manrope, sans-serif; font-weight:800;
+                   font-size:0.7rem; letter-spacing:.16em; line-height:1.4;
+                   padding-bottom:9px; border-bottom:1.5px solid {INK}; margin:0; }}
+  .brand {{ color:{INK}; flex:1; }}
+  .pill {{ color:{WARM}; padding-left:16px; }}
   .cover-h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-               font-size:2.2rem; line-height:1.1; margin:16px 0 0;
-               letter-spacing:-.022em; color:{INK}; max-width:6.2in; }}
-  .rule {{ width:1.35in; height:5px; background:{PRIMARY}; margin:16px 0 14px; }}
-  .deck {{ font-size:0.98rem; line-height:1.5; color:{BODY}; margin:0 0 22px;
-           max-width:6.1in; }}
-  .klabel {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.78rem;
-             font-weight:700; letter-spacing:.1em; color:{PRIMARY};
-             margin:0 0 10px; }}
-  .klabel-t {{ margin-top:16px; }}
-  .figs {{ display:flex; gap:12px; margin:0 0 16px; }}
-  .fig {{ flex:1; background:#fff; border:1px solid {LINE};
-          border-left:5px solid {PRIMARY}; padding:13px 15px 12px; }}
-  .fig-warn {{ border-left-color:{WARM}; }}
+               font-weight:600; font-size:2.7rem; line-height:1.06;
+               margin:1.05in 0 0; letter-spacing:-.03em; color:{INK}; max-width:7in; }}
+  .rule {{ width:0.5in; height:3px; background:{PRIMARY}; margin:24px 0 0; }}
+  .deck {{ font-size:1.06rem; line-height:1.55; color:{BODY}; margin:16px 0 0;
+           max-width:6in; }}
+  .deck b {{ color:{INK}; font-weight:700; }}
+  .klabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
+             font-weight:800; letter-spacing:.14em; color:{INK};
+             margin:0.62in 0 0; padding-top:9px; border-top:1.5px solid {INK}; }}
+  .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:14px 0 0; }}
+  .fig {{ padding:0 20px 0 0; }}
+  .fig + .fig {{ border-left:1px solid {LINE}; padding-left:20px; }}
+  .fig-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:2.35rem;
+            font-weight:600; line-height:1; letter-spacing:-.02em; color:{INK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
-  .fig-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:1.72rem;
-            font-weight:700; line-height:1; color:{INK}; }}
-  .fig-l {{ font-size:0.72rem; font-weight:700; letter-spacing:.03em;
-            color:{MUTED}; margin-top:8px; line-height:1.35; }}
-  .datebox {{ background:{GREEN_TINT}; border-left:4px solid {PRIMARY};
-              padding:10px 15px; }}
-  .contents {{ margin:0; }}
-  .crow {{ display:flex; gap:16px; padding:7px 4px; border-top:1px solid {LINE};
-           font-size:0.9rem; }}
-  .crow:last-child {{ border-bottom:1px solid {LINE}; }}
-  .cnum {{ font-weight:700; color:{PRIMARY}; min-width:1.6em; }}
-  .ctxt {{ color:{BODY}; }}
-  .cfwrap {{ position:absolute !important; left:0.78in; right:0.55in; bottom:0.5in; }}
-  .cover-foot {{ border-top:1px solid {LINE}; padding-top:11px; }}
-  .cfoot-l {{ font-size:0.76rem; color:{MUTED}; line-height:1.5; }}
+  .fig-l {{ font-size:0.7rem; font-weight:600; letter-spacing:.035em;
+            color:{MUTED}; margin-top:10px; line-height:1.5; }}
+  /* label column + text column, ruled on top: the cover's dates and contents,
+     and the glossary on page 2 */
+  .datebox, .cgrid {{ display:grid; grid-template-columns:1.75in 1fr; }}
+  .datebox {{ margin:0.5in 0 0; padding:10px 0 0; border-top:1px solid {INK}; }}
+  .datebox .box-h {{ margin:0; padding-right:16px; }}
+  .datebox .box-p {{ font-size:0.9rem; }}
+  .cgrid {{ margin:22px 0 0; }}
+  .cgrid .klabel {{ margin:0; padding:10px 16px 0 0; border-top:1px solid {INK}; }}
+  .contents {{ margin:0; border-top:1px solid {INK}; }}
+  .crow {{ display:grid; grid-template-columns:1.9em 1fr; padding:9px 0 8px;
+           font-size:0.92rem; line-height:1.35; }}
+  .crow + .crow {{ border-top:1px solid {LINE}; }}
+  .cnum {{ font-weight:800; color:{PRIMARY}; font-variant-numeric:tabular-nums; }}
+  .ctxt {{ color:{INK}; }}
+  .cfwrap {{ position:absolute !important; left:0.55in; right:0.55in; bottom:0.5in; }}
+  .cover-foot {{ border-top:1px solid {LINE}; padding-top:10px; }}
+  .cfoot-l {{ font-size:0.72rem; color:{MUTED}; line-height:1.55; }}
 
   /* --- Interior pages ------------------------------------------------- */
-  .phead {{ border-bottom:2px solid {PRIMARY}; padding-bottom:10px;
-            margin-bottom:14px; }}
-  .eyebrow {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.78rem;
-              font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-              color:{PRIMARY}; margin-bottom:5px; }}
+  .phead {{ border-bottom:1px solid {INK}; padding-bottom:10px; margin-bottom:12px; }}
+  .eyebrow {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
+              font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+              color:{PRIMARY}; margin-bottom:8px; }}
   h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-        font-size:1.62rem; line-height:1.16; margin:0; color:{INK};
-        letter-spacing:-.015em; }}
-  .psub {{ font-size:0.92rem; font-weight:700; color:{PRIMARY_DARK}; margin-top:6px; }}
-  .slabel {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.78rem;
-             font-weight:700; letter-spacing:.09em; text-transform:uppercase;
-             margin:16px 0 0; padding-bottom:7px; position:relative;
-             color:{PRIMARY}; }}
-  .slabel::after {{ content:""; position:absolute; left:0; bottom:0;
-                    width:0.55in; height:3px; background:currentColor; }}
-  h2 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-        font-size:1.02rem; margin:15px 0 0; padding-top:9px; color:{INK};
-        border-top:1px solid {LINE}; letter-spacing:-.005em; }}
+        font-weight:600; font-size:1.78rem; line-height:1.12; margin:0; color:{INK};
+        letter-spacing:-.025em; }}
+  .psub {{ font-size:0.96rem; font-weight:500; line-height:1.4; color:{BODY};
+           margin-top:7px; }}
+  .slabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
+             font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+             margin:15px 0 0; color:{INK}; }}
+  h2 {{ font-family:OkinaManrope, Manrope, sans-serif; font-weight:800;
+        font-size:1.02rem; line-height:1.3; margin:14px 0 0; padding-top:9px; color:{INK};
+        border-top:1px solid {LINE}; letter-spacing:-.01em; }}
   .lead {{ font-size:0.93rem; line-height:1.52; color:{INK}; margin:12px 0 0; }}
-  .body {{ font-size:0.88rem; line-height:1.5; color:{BODY}; margin:8px 0 0; }}
-  .body b, .lead b {{ color:{INK}; }}
-  .note {{ font-size:0.82rem; line-height:1.45; color:{MUTED}; margin:7px 0 0;
-           font-style:italic; }}
-  .note-b {{ font-size:0.8rem; line-height:1.42; color:{BODY}; margin:6px 0 0; }}
-  .note-b b {{ color:{INK}; }}
+  .body {{ font-size:0.88rem; line-height:1.49; color:{BODY}; margin:6px 0 0; }}
+  .body b, .lead b {{ color:{INK}; font-weight:700; }}
+  .note {{ font-size:0.8rem; line-height:1.45; color:{MUTED}; margin:8px 0 0; }}
+  .note-b {{ font-size:0.8rem; line-height:1.42; color:{MUTED}; margin:6px 0 0; }}
+  .note-b b {{ color:{BODY}; }}
 
-  .pairs {{ list-style:none; margin:10px 0 0; padding:0;
-            border-top:1px solid {LINE}; }}
-  .pairs li {{ display:flex; gap:12px; padding:4px 2px;
-               border-bottom:1px solid {LINE}; font-size:0.87rem;
-               line-height:1.42; color:{BODY}; }}
-  .pn {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:700;
-         color:#fff; background:{PRIMARY}; border-radius:50%; min-width:1.45em;
-         height:1.45em; text-align:center; line-height:1.45em;
-         font-size:0.78rem; margin-top:1px; }}
-
-  .box {{ background:{BG_SOFT}; border:1px solid {LINE}; border-left:4px solid {PRIMARY};
-          padding:9px 15px 9px; margin:14px 0 0; }}
-  .box-green {{ background:{GREEN_TINT}; }}
-  .box-h {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.76rem;
-            font-weight:700; letter-spacing:.075em; text-transform:uppercase;
-            color:{PRIMARY_DARK}; margin-bottom:6px; }}
-  .box-p {{ font-size:0.85rem; line-height:1.48; color:{BODY}; margin:0; }}
+  .box {{ margin:18px 0 0; }}
+  .box:not(.box-green) {{ padding-top:9px; border-top:1px solid {INK}; }}
+  .box-green {{ padding-top:12px; border-top:2px solid {PRIMARY}; margin-top:6px; }}
+  .phead + .box-green {{ border-top:0; padding-top:4px; margin-top:0; }}
+  .box-h {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.7rem;
+            font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+            color:{INK}; margin-bottom:6px; }}
+  .box-green .box-h {{ color:{PRIMARY}; }}
+  .box-p {{ font-size:0.86rem; line-height:1.5; color:{BODY}; margin:0; }}
+  .box-green .box-p {{ font-size:0.9rem; line-height:1.52; color:{INK}; }}
   .box-p b {{ color:{INK}; }}
   .ds-graphic {{ margin-top:8px; }}
 
-  .stats {{ display:flex; gap:11px; margin:14px 0 0; align-items:stretch; }}
-  .stat {{ flex:1; background:{BG_SOFT}; border-left:4px solid {PRIMARY};
-           padding:11px 13px 10px; }}
-  .stat-n {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-             font-size:1.5rem; font-weight:700; line-height:1;
-             color:{PRIMARY_DARK}; }}
-  .stat-l {{ font-size:0.78rem; line-height:1.32; color:{BODY}; margin-top:7px; }}
+  /* the six swaps: a ruled table, not a stack of cards */
+  .swhead, .swrow {{ display:grid; grid-template-columns:2.35in 0.3in 2.75in 1fr; }}
+  .swhead {{ margin:10px 0 0; padding-bottom:6px; border-bottom:1px solid {INK};
+             font-family:OkinaManrope, Manrope, sans-serif; font-size:0.68rem; font-weight:800;
+             letter-spacing:.11em; color:{MUTED}; }}
+  .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; }}
+  .swaps {{ margin:0; }}
+  .swrow {{ align-items:center; padding:5px 0; border-bottom:1px solid {LINE}; }}
+  .sw {{ font-size:0.81rem; line-height:1.3; padding-right:10px; }}
+  .sw.a {{ color:{INK}; font-weight:600; }}
+  .sw.b {{ color:{BODY}; }}
+  .arr {{ color:{MUTED}; }}
+  .tag {{ font-size:0.78rem; font-weight:700; line-height:1.3; color:{INK};
+          display:flex; align-items:center; gap:8px; }}
+  .tag::before {{ content:""; flex:none; width:8px; height:8px; border-radius:50%;
+                  background:{NEUTRAL}; }}
+  .tag.up::before {{ background:{PRIMARY}; }}
+  .tag.dn {{ color:{WARM}; }} .tag.dn::before {{ background:{WARM}; }}
 
-  .swhead {{ display:grid; grid-template-columns:2.35in 0.3in 2.55in 1fr; margin:10px 0 0;
-             font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.72rem; font-weight:700;
-             letter-spacing:.07em; color:{PRIMARY}; }}
-  .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; padding-left:6px; }}
-  .swaps {{ margin:4px 0 0; }}
-  .swrow {{ display:grid; grid-template-columns:2.35in 0.3in 2.55in 1fr; align-items:stretch;
-            gap:0; margin:0 0 4px; }}
-  .sw {{ background:{BG_SOFT}; border:1px solid {LINE}; padding:4px 8px; font-size:0.78rem;
-         line-height:1.3; color:{BODY}; display:flex; align-items:center; }}
-  .sw.b {{ background:{GREEN_TINT}; }}
-  .arr {{ text-align:center; color:{PRIMARY}; font-weight:700; align-self:center; }}
-  .tag {{ margin-left:6px; padding:4px 8px; font-size:0.76rem; font-weight:700; line-height:1.25;
-          display:flex; align-items:center; border-left:5px solid {MUTED}; background:#EEF1F1; color:{INK}; }}
-  .tag.up {{ border-left-color:{PRIMARY}; background:{GREEN_TINT}; }}
-  .tag.dn {{ border-left-color:{WARM}; background:{WARM_TINT}; }}
-  .split {{ display:flex; gap:14px; align-items:stretch; margin-top:6px; }}
+  .split {{ display:flex; gap:28px; align-items:flex-start; margin-top:6px; }}
   .splitl {{ flex:0 0 4.7in; }}
-  .pcts {{ flex:1; }}
-  .pct {{ border-left:4px solid {PRIMARY}; background:{BG_SOFT}; padding:6px 10px; margin-top:6px; }}
-  .pct-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:700; font-size:1.5rem;
-            line-height:1; color:{PRIMARY_DARK}; }}
-  .pct-l {{ font-size:0.78rem; line-height:1.3; color:{BODY}; margin-top:4px; }}
-  .chap {{ border-left:3px solid {TEAL}; padding:0 0 0 13px; margin:0 0 14px; }}
-  .chap .slabel {{ margin-top:0; }}
-  .bl {{ font-weight:700; font-size:0.86rem; line-height:1.35; color:{INK}; margin:6px 0 0; }}
-  .chap .body {{ font-size:0.83rem; line-height:1.46; margin-top:5px; }}
+  .pcts {{ flex:1; padding-top:4px; }}
+  .pcts .klabel {{ margin:0; padding:0 0 2px; border:0; color:{MUTED};
+                   letter-spacing:.1em; line-height:1.4; }}
+  .pct {{ border-top:1px solid {LINE}; padding:10px 0 0; margin-top:10px; }}
+  .pct-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:600; font-size:1.9rem;
+            line-height:1; letter-spacing:-.02em; color:{PRIMARY_DARK}; }}
+  .pct-l {{ font-size:0.8rem; line-height:1.35; color:{BODY}; margin-top:5px; }}
 
-  .fl {{ list-style:none; margin:8px 0 0; padding:0; }}
+  /* chapters: separated by a hairline, kicker + dek + text */
+  .chap {{ padding:9px 0 0; margin:0 0 10px; border-top:1px solid {LINE}; }}
+  .phead + .chap {{ border-top:0; padding-top:0; }}
+  .chap .slabel {{ margin-top:0; color:{PRIMARY}; }}
+  .bl {{ font-weight:700; font-size:0.86rem; line-height:1.35; color:{INK};
+         margin:5px 0 0; letter-spacing:-.005em; }}
+  .chap .body {{ font-size:0.83rem; line-height:1.46; margin-top:3px; }}
+
+  .fl {{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid {LINE}; }}
   .fb {{ padding:6px 0; border-bottom:1px solid {LINE}; }}
   .fb:last-child {{ border-bottom:none; }}
-  .fbp {{ font-size:0.86rem; line-height:1.48; color:{BODY}; margin:0; }}
+  .fbp {{ font-size:0.86rem; line-height:1.5; color:{BODY}; margin:0; }}
   .fbp b {{ color:{INK}; }}
 
   /* --- Footers, endnotes ---------------------------------------------- */
   .pfwrap {{ position:absolute; left:0.55in; right:0.55in; bottom:0.42in; }}
   .pfoot {{ border-top:1px solid {LINE}; padding-top:8px; }}
-  .pfoot-t {{ font-size:0.735rem; line-height:1.45; color:{MUTED}; margin:0; }}
-  .pfoot-t b {{ color:{BODY}; }}
-  .pnum {{ display:block; margin-top:5px; font-weight:700; letter-spacing:.06em;
-           text-transform:uppercase; font-size:0.7rem; color:{PRIMARY}; }}
-  .srch {{ font-size:0.7rem; font-weight:700; letter-spacing:.07em;
-           text-transform:uppercase; color:{BODY}; margin-right:5px; }}
-  .endnotes {{ margin:12px 0 0; padding-top:9px; border-top:1px solid {LINE};
-               font-size:0.715rem; line-height:1.4; color:{MUTED}; }}
+  .pfoot-t {{ font-size:0.72rem; line-height:1.45; color:{MUTED}; margin:0; }}
+  .pfoot-t b {{ color:{BODY}; font-weight:700; }}
+  .pnum {{ display:block; margin-top:6px; font-weight:700; letter-spacing:.12em;
+           text-transform:uppercase; font-size:0.68rem; color:{INK};
+           font-variant-numeric:tabular-nums; }}
+  .srch {{ font-size:0.68rem; font-weight:800; letter-spacing:.12em;
+           text-transform:uppercase; color:{INK}; margin-right:6px; }}
+  .endnotes {{ margin:14px 0 0; padding-top:10px; border-top:1px solid {INK};
+               font-size:0.715rem; line-height:1.45; color:{MUTED}; }}
   .en {{ white-space:normal; }}
-  .enn {{ font-weight:700; color:{PRIMARY_DARK}; }}
+  .enn {{ font-weight:700; color:{INK}; }}
   .ensep {{ color:{MUTED}; }}
   .endnotes a {{ color:{MUTED}; text-decoration:none; }}
   sup {{ font-size:10.6px; line-height:0; }}
-  sup a.fn {{ color:{PRIMARY_DARK}; text-decoration:none; font-weight:700; }}
-  a {{ color:{PRIMARY_DARK}; }}
+  sup a.fn {{ color:{PRIMARY}; text-decoration:none; font-weight:700; }}
+  a {{ color:{PRIMARY_DARK}; text-underline-offset:2px; }}
 
   /* --- The phone: fluid pages, as in retitc --------------------------- */
   @media screen and (max-width:8.5in) {{
     .page {{ width:100%; max-width:100%; height:auto; min-height:0; margin:0;
-             box-shadow:none; padding:26px 20px; }}
-    .cover {{ padding-left:30px; }}
-    .cover::before {{ width:6px; }}
-    .cover::after {{ display:none; }}
+             box-shadow:none; padding:28px 20px; border-bottom:8px solid {PAPER}; }}
     .ds-graphic {{ width:auto !important; max-width:100% !important; }}
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
-                        bottom:auto; margin-top:22px; }}
-    .figs, .stats, .split {{ flex-direction:column; }}
-    .swhead {{ display:none; }} .swrow {{ grid-template-columns:1fr; }}
+                        bottom:auto; margin-top:26px; }}
+    .mast {{ flex-direction:column; gap:0; }}
+    .brand {{ border-bottom:0; padding-bottom:4px; }}
+    .pill {{ align-self:stretch; padding-left:0; }}
+    .cover-h1 {{ font-size:2.05rem; margin-top:40px; }}
+    .klabel {{ margin-top:36px; }}
+    .figs {{ grid-template-columns:1fr; }}
+    .fig {{ padding:12px 0; }}
+    .fig + .fig {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
+    .datebox, .cgrid {{ grid-template-columns:1fr; }}
+    .datebox {{ margin-top:30px; }}
+    .datebox .box-h {{ margin-bottom:6px; }}
+    .cgrid .klabel {{ border-top:1px solid {INK}; padding-bottom:4px; }}
+    .contents {{ border-top:0; }}
+    .split {{ flex-direction:column; gap:10px; }}
     .splitl {{ flex:none; }}
+    .swhead {{ display:none; }}
+    .swrow {{ grid-template-columns:1fr; gap:2px; padding:10px 0; }}
+    .arr {{ display:none; }}
+    .sw.b::before {{ content:"\\2192\\00a0"; color:{MUTED}; }}
+    .tag {{ margin-top:4px; }}
     .cover-h1, .deck, .psub {{ max-width:100%; }}
     body > button {{ top:auto !important; bottom:14px !important;
                      right:14px !important; padding:8px 13px !important;
