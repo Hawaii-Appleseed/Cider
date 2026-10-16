@@ -57,6 +57,19 @@ CHART_W_IN = 7.2
 DECILE_GAIN = [156, 190, 263, 348, 414, 461, 501, 560, 590, 729]
 DECILE_LABELS = ["Lowest", "2", "3", "4", "5", "6", "7", "8", "9", "Highest"]
 
+# FY2025 tax collections, UHERO Table 1.1 (p. 3): share of DOTAX's $11.46B total.
+TAX_MIX = [("General excise & use tax", 40.4), ("Individual income tax", 28.7),
+           ("Hotel & rental tax (state TAT)", 7.1),
+           ("County GET surcharges", 4.9), ("Estate & transfer tax", 3.5),
+           ("Corporate income tax", 3.5), ("Conveyance tax", 0.8)]
+
+# Grocery exemption, 2027 (pp. 65, 158): $M. Both bars total $267.4M.
+WHERE = [("Savings go to", [("Residents", 214.1), ("Visitors", 53.3)]),
+         ("Revenue lost by", [("State", 237.7), ("Counties", 29.7)])]
+
+# (tag text, css class) per swap; wording lives in content.md
+SWAP_TAG = {1: "mx", 2: "mx", 3: "up", 4: "up", 5: "mx", 6: "dn"}
+
 CONTENTS = [("1", "contents.1"), ("2", "contents.2"),
             ("3", "contents.3"), ("4", "contents.4")]
 
@@ -72,6 +85,39 @@ def decile_spec() -> dict:
         "format": {"prefix": "$", "decimals": 0},
         "labelColor": INK,
     }
+
+
+def mix_spec() -> dict:
+    return {"type": "row", "labels": [a for a, _ in TAX_MIX],
+            "series": [{"name": "Share of state tax collections",
+                        "data": [b for _, b in TAX_MIX], "color": PRIMARY}],
+            "legend": False, "values": True, "grid": False,
+            "format": {"suffix": "%", "decimals": 1}, "labelColor": INK}
+
+
+def where_spec() -> dict:
+    names = [n for _, g in WHERE for n, _ in g]
+    cols = [PRIMARY, TEAL, PRIMARY_DARK, ASH]
+    series = []
+    for i, n in enumerate(names):
+        data = [0.0, 0.0]
+        data[i // 2] = dict(WHERE[i // 2][1])[n]
+        series.append({"name": n, "data": data, "color": cols[i]})
+    return {"type": "stacked-row", "labels": [a for a, _ in WHERE],
+            "series": series, "legend": True, "legendPos": "top",
+            "values": False, "grid": False, "labelColor": INK}
+
+
+def swap_rows() -> str:
+    out = []
+    for n in range(1, 7):
+        out.append(
+            f'<div class="swrow"{L.frame(f"swap.row.{n}")}>'
+            f'<div class="sw a"{L.attr(f"swap.{n}.a")}>{C.t(f"swap.{n}.a")}</div>'
+            f'<div class="arr">&rarr;</div>'
+            f'<div class="sw b"{L.attr(f"swap.{n}.b")}>{C.t(f"swap.{n}.b")}</div>'
+            f'<div class="tag {SWAP_TAG[n]}"{L.attr(f"swap.{n}.tag")}>{C.t(f"swap.{n}.tag")}</div></div>')
+    return "".join(out)
 
 
 def fig(key: str, cls: str = "") -> str:
@@ -163,7 +209,9 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   {C.html("about.model.p", "body")}
   <div class="slabel"{L.attr("about.pairs.h", "color:" + PRIMARY)}>{C.t("about.pairs.h")}</div>
-  <ol class="pairs"{L.frame("about.pairs")}>{pairs()}</ol>
+  <div class="swhead"{L.frame("swap.head")}><span{L.attr("swap.head.a")}>{C.t("swap.head.a")}</span><span{L.attr("swap.head.b")}>{C.t("swap.head.b")}</span><span{L.attr("swap.head.c")}>{C.t("swap.head.c")}</span></div>
+  <div class="swaps"{L.frame("swap.rows")}>{swap_rows()}</div>
+  {C.html("swap.note", "note")}
   <div class="slabel"{L.attr("about.also.h", "color:" + WARM)}>{C.t("about.also.h")}</div>
   {C.html("about.also.p", "body")}
   <div class="box"{L.frame("about.glossbox")}>
@@ -177,12 +225,21 @@ page = f"""
 <section class="page">
   {head("groc.eyebrow", "groc.h1", "groc.sub", "groc")}
   {C.html("groc.lead", "lead")}
-  <div class="stats"{L.frame("groc.stats")}>{stat("a")}{stat("b")}{stat("c")}</div>
+  <h2{L.attr("groc.where.h")}>{C.t("groc.where.h")}</h2>
+  {chart(L, "chart.where", where_spec(), w=CHART_W_IN, h=0.8,
+         desc=describe(C, "groc.where.desc", "Two stacked bars of 267.4 million dollars each"))}
+  {C.html("groc.where.note", "note-b")}
   <h2{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
-  {chart(L, "chart.decile", decile_spec(), w=CHART_W_IN, h=1.8,
+  <div class="split"{L.frame("groc.split")}><div class="splitl">
+  {chart(L, "chart.decile", decile_spec(), w=4.7, h=1.6,
          desc=describe(C, "groc.chart.desc", "Yearly gain per household from "
                        "exempting groceries, by income tenth, from 156 dollars "
                        "in the lowest to 729 dollars in the highest"))}
+  </div><div class="pcts"{L.frame("groc.pcts")}>
+    <div class="klabel"{L.attr("groc.pct.h")}>{C.t("groc.pct.h")}</div>
+    <div class="pct"{L.attr("groc.pct.a")}><div class="pct-n">{C.t("groc.pct.a.n")}</div><div class="pct-l">{C.t("groc.pct.a.l")}</div></div>
+    <div class="pct"{L.attr("groc.pct.b")}><div class="pct-n">{C.t("groc.pct.b.n")}</div><div class="pct-l">{C.t("groc.pct.b.l")}</div></div>
+  </div></div>
   {C.html("groc.chart.note", "note-b")}
   <div class="slabel"{L.attr("groc.read.h", "color:" + PRIMARY)}>{C.t("groc.read.h")}</div>
   {C.html("groc.read.p", "body")}
@@ -197,6 +254,9 @@ page = f"""
   {chap(2)}
   {chap(3)}
   {chap(4)}
+  <h2{L.attr("mix.h")}>{C.t("mix.h")}</h2>
+  {chart(L, "chart.mix", mix_spec(), w=CHART_W_IN, h=1.3,
+         desc=describe(C, "mix.desc", "Shares of state tax collections, FY2025"))}
   {foot("ch.foot.a", 4)}
 {C.extras("page4")} {L.layer(4)}{L.text_boxes(4)}{L.tables_html(4)}
 </section>
@@ -348,6 +408,28 @@ html = f"""<!DOCTYPE html>
              color:{PRIMARY_DARK}; }}
   .stat-l {{ font-size:0.78rem; line-height:1.32; color:{BODY}; margin-top:7px; }}
 
+  .swhead {{ display:grid; grid-template-columns:2.35in 0.3in 2.55in 1fr; margin:10px 0 0;
+             font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.72rem; font-weight:700;
+             letter-spacing:.07em; color:{PRIMARY}; }}
+  .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; padding-left:6px; }}
+  .swaps {{ margin:4px 0 0; }}
+  .swrow {{ display:grid; grid-template-columns:2.35in 0.3in 2.55in 1fr; align-items:stretch;
+            gap:0; margin:0 0 4px; }}
+  .sw {{ background:{BG_SOFT}; border:1px solid {LINE}; padding:4px 8px; font-size:0.78rem;
+         line-height:1.3; color:{BODY}; display:flex; align-items:center; }}
+  .sw.b {{ background:{GREEN_TINT}; }}
+  .arr {{ text-align:center; color:{PRIMARY}; font-weight:700; align-self:center; }}
+  .tag {{ margin-left:6px; padding:4px 8px; font-size:0.76rem; font-weight:700; line-height:1.25;
+          display:flex; align-items:center; border-left:5px solid {MUTED}; background:#EEF1F1; color:{INK}; }}
+  .tag.up {{ border-left-color:{PRIMARY}; background:{GREEN_TINT}; }}
+  .tag.dn {{ border-left-color:{WARM}; background:{WARM_TINT}; }}
+  .split {{ display:flex; gap:14px; align-items:stretch; margin-top:6px; }}
+  .splitl {{ flex:0 0 4.7in; }}
+  .pcts {{ flex:1; }}
+  .pct {{ border-left:4px solid {PRIMARY}; background:{BG_SOFT}; padding:6px 10px; margin-top:6px; }}
+  .pct-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:700; font-size:1.5rem;
+            line-height:1; color:{PRIMARY_DARK}; }}
+  .pct-l {{ font-size:0.78rem; line-height:1.3; color:{BODY}; margin-top:4px; }}
   .chap {{ border-left:3px solid {TEAL}; padding:0 0 0 13px; margin:0 0 14px; }}
   .chap .slabel {{ margin-top:0; }}
   .bl {{ font-weight:700; font-size:0.86rem; line-height:1.35; color:{INK}; margin:6px 0 0; }}
@@ -388,7 +470,9 @@ html = f"""<!DOCTYPE html>
     .ds-graphic {{ width:auto !important; max-width:100% !important; }}
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:22px; }}
-    .figs, .stats {{ flex-direction:column; }}
+    .figs, .stats, .split {{ flex-direction:column; }}
+    .swhead {{ display:none; }} .swrow {{ grid-template-columns:1fr; }}
+    .splitl {{ flex:none; }}
     .cover-h1, .deck, .psub {{ max-width:100%; }}
     body > button {{ top:auto !important; bottom:14px !important;
                      right:14px !important; padding:8px 13px !important;
