@@ -372,6 +372,33 @@ bindings:
         - projects/tfc-2027-priorities/body.slotted.html
         - projects/tfc-2027-priorities/votes.json
 
+  # UHERO's draft "On Hawaiʻi's Tax System" (Oct 6, 2026) — a 6-page plain-language
+  # summary in Tax Fairness Coalition branding. Layout, hooks and build copied
+  # from retitc; palette and fonts from tfc-2027-priorities.
+  - id: uhero-trc-summary
+    name: "UHERO draft report on Hawaiʻi's tax system: TFC summary"
+    hub: false            # off the staff hub (docsync/hub.py): local until Devin says to publish
+    content: projects/uhero-trc-summary/content.md
+    editability: strict
+    build: python3 projects/uhero-trc-summary/render_report.py && python3 -m docsync.stage --id uhero-trc-summary
+    outputs:
+      - projects/uhero-trc-summary/index.html
+    editor:
+      pages:
+        - ["page1", "Page 1"]
+        - ["page2", "Page 2"]
+        - ["page3", "Page 3"]
+        - ["page4", "Page 4"]
+        - ["page5", "Page 5"]
+        - ["page6", "Page 6"]
+      dir: docs/uhero-trc-summary
+      render: projects/uhero-trc-summary/render_report.py
+      out: projects/uhero-trc-summary/index.html
+      layout: projects/uhero-trc-summary/layout.json
+      palette: ["#FFFFFF", "#52796F", "#354F52", "#2F3E46", "#84A98C", "#CAD2C5", "#F3F6F3", "#A8603F"]
+      page: [8.5, 11]
+      margins: [0.55, 0.5]
+
   # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed policy brief" template.
   - id: my-report
     name: "My report"
