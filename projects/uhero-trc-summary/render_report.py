@@ -103,6 +103,7 @@ def pairs() -> str:
 def chap(n: int) -> str:
     return (f'<div class="chap"{L.frame(f"ch{n}.box")}>'
             f'<div class="slabel"{L.attr(f"ch{n}.h")}>{C.t(f"ch{n}.h")}</div>'
+            f'<div class="bl"{L.attr(f"ch{n}.bl")}>{C.t(f"ch{n}.bl")}</div>'
             f'{C.html(f"ch{n}.p", "body")}</div>')
 
 
@@ -301,7 +302,7 @@ html = f"""<!DOCTYPE html>
   h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
         font-size:1.62rem; line-height:1.16; margin:0; color:{INK};
         letter-spacing:-.015em; }}
-  .psub {{ font-size:0.86rem; color:{MUTED}; margin-top:6px; }}
+  .psub {{ font-size:0.92rem; font-weight:700; color:{PRIMARY_DARK}; margin-top:6px; }}
   .slabel {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:0.78rem;
              font-weight:700; letter-spacing:.09em; text-transform:uppercase;
              margin:16px 0 0; padding-bottom:7px; position:relative;
@@ -349,7 +350,8 @@ html = f"""<!DOCTYPE html>
 
   .chap {{ border-left:3px solid {TEAL}; padding:0 0 0 13px; margin:0 0 14px; }}
   .chap .slabel {{ margin-top:0; }}
-  .chap .body {{ font-size:0.9rem; line-height:1.52; margin-top:7px; }}
+  .bl {{ font-weight:700; font-size:0.86rem; line-height:1.35; color:{INK}; margin:6px 0 0; }}
+  .chap .body {{ font-size:0.83rem; line-height:1.46; margin-top:5px; }}
 
   .fl {{ list-style:none; margin:8px 0 0; padding:0; }}
   .fb {{ padding:6px 0; border-bottom:1px solid {LINE}; }}

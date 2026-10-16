@@ -377,7 +377,7 @@ bindings:
   # from retitc; palette and fonts from tfc-2027-priorities.
   - id: uhero-trc-summary
     name: "UHERO draft report on Hawaiʻi's tax system: TFC summary"
-    hub: false            # off the staff hub (docsync/hub.py): local until Devin says to publish
+    hub: true
     content: projects/uhero-trc-summary/content.md
     editability: strict
     build: python3 projects/uhero-trc-summary/render_report.py && python3 -m docsync.stage --id uhero-trc-summary
