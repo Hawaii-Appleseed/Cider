@@ -49,6 +49,8 @@ LINE = "#DCE3DC"           # --rule
 PAPER = "#EDF0ED"          # the desk behind the sheets on screen
 WARM = "#A8603F"           # the poll page's "against" rust, used sparingly
 NEUTRAL = "#A3AFAC"        # the swap table's "mixed / unclear" marker
+TEXT = "#232B2D"           # body text (near-black, as the house reports set it)
+STRIPE = "#F4F6F4"         # alternate rows of Table 1
 
 CHART_W_IN = 7.2
 
@@ -147,8 +149,8 @@ def pairs() -> str:
 
 def chap(n: int) -> str:
     return (f'<div class="chap"{L.frame(f"ch{n}.box")}>'
-            f'<div class="slabel"{L.attr(f"ch{n}.h")}>{C.t(f"ch{n}.h")}</div>'
-            f'<div class="bl"{L.attr(f"ch{n}.bl")}>{C.t(f"ch{n}.bl")}</div>'
+            f'<div class="chh"><div class="slabel"{L.attr(f"ch{n}.h")}>{C.t(f"ch{n}.h")}</div>'
+            f'<div class="bl"{L.attr(f"ch{n}.bl")}>{C.t(f"ch{n}.bl")}</div></div>'
             f'{C.html(f"ch{n}.p", "body")}</div>')
 
 
@@ -172,11 +174,12 @@ def foot(key: str, page_no: int) -> str:
     # beat a position:absolute on the frame and leave the footer in the flow.
     return (f'<div class="pfwrap"><div class="pfoot"{L.frame(f"pfoot.{page_no}")}>{C.html(key, "pfoot-t")}'
             f'<span class="pnum"{L.attr(f"foot.pnum.{page_no}")}>'
-            f'{page_no:02d} · {C.t("foot.running")}</span></div></div>')
+            f'{page_no} · {C.t("foot.running")}</span></div></div>')
 
 
 page = f"""
 <section class="page cover">
+  <div class="cfield"{L.frame("cover.field")}>
   <div class="mast">
     <div class="brand"{L.attr("cover.brand")}>{C.t("cover.brand")}</div>
     <div class="pill"{L.attr("cover.pill")}>{C.t("cover.pill")}</div>
@@ -184,6 +187,7 @@ page = f"""
   {L.spacer("cover.h1")}<h1 class="cover-h1"{L.attr("cover.h1")}>{C.t("cover.h1")}</h1>
   <div class="rule"{L.attr("cover.rule")}></div>
   {C.html("cover.deck", "deck")}
+  </div>
 
   <div class="klabel"{L.attr("cover.figures.h")}>{C.t("cover.figures.h")}</div>
   <div class="figs"{L.attr("cover.figs")}>
@@ -211,11 +215,11 @@ page = f"""
   {head("about.eyebrow", "about.h1", "about.sub", "about")}
   {C.html("about.works.p1", "lead")}
   {C.html("about.model.p", "body")}
-  <div class="slabel"{L.attr("about.pairs.h", "color:" + PRIMARY)}>{C.t("about.pairs.h")}</div>
+  <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
   <div class="swhead"{L.frame("swap.head")}><span{L.attr("swap.head.a")}>{C.t("swap.head.a")}</span><span{L.attr("swap.head.b")}>{C.t("swap.head.b")}</span><span{L.attr("swap.head.c")}>{C.t("swap.head.c")}</span></div>
   <div class="swaps"{L.frame("swap.rows")}>{swap_rows()}</div>
   {C.html("swap.note", "note")}
-  <div class="slabel"{L.attr("about.also.h", "color:" + WARM)}>{C.t("about.also.h")}</div>
+  <div class="slabel"{L.attr("about.also.h")}>{C.t("about.also.h")}</div>
   {C.html("about.also.p", "body")}
   <div class="box"{L.frame("about.glossbox")}>
     <div class="box-h"{L.attr("about.gloss.h")}>{C.t("about.gloss.h")}</div>
@@ -228,13 +232,13 @@ page = f"""
 <section class="page">
   {head("groc.eyebrow", "groc.h1", "groc.sub", "groc")}
   {C.html("groc.lead", "lead")}
-  <h2{L.attr("groc.where.h")}>{C.t("groc.where.h")}</h2>
-  {chart(L, "chart.where", where_spec(), w=CHART_W_IN, h=0.8,
+  <h2 class="figt"{L.attr("groc.where.h")}>{C.t("groc.where.h")}</h2>
+  {chart(L, "chart.where", where_spec(), w=CHART_W_IN, h=0.72,
          desc=describe(C, "groc.where.desc", "Two stacked bars of 267.4 million dollars each"))}
-  {C.html("groc.where.note", "note-b")}
-  <h2{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
+  {C.html("groc.where.note", "cap")}
+  <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
   <div class="split"{L.frame("groc.split")}><div class="splitl">
-  {chart(L, "chart.decile", decile_spec(), w=4.7, h=1.6,
+  {chart(L, "chart.decile", decile_spec(), w=4.7, h=1.45,
          desc=describe(C, "groc.chart.desc", "Yearly gain per household from "
                        "exempting groceries, by income tenth, from 156 dollars "
                        "in the lowest to 729 dollars in the highest"))}
@@ -243,10 +247,10 @@ page = f"""
     <div class="pct"{L.attr("groc.pct.a")}><div class="pct-n">{C.t("groc.pct.a.n")}</div><div class="pct-l">{C.t("groc.pct.a.l")}</div></div>
     <div class="pct"{L.attr("groc.pct.b")}><div class="pct-n">{C.t("groc.pct.b.n")}</div><div class="pct-l">{C.t("groc.pct.b.l")}</div></div>
   </div></div>
-  {C.html("groc.chart.note", "note-b")}
-  <div class="slabel"{L.attr("groc.read.h", "color:" + PRIMARY)}>{C.t("groc.read.h")}</div>
+  {C.html("groc.chart.note", "cap")}
+  <div class="slabel"{L.attr("groc.read.h")}>{C.t("groc.read.h")}</div>
   {C.html("groc.read.p", "body")}
-  <div class="slabel"{L.attr("groc.pay.h", "color:" + WARM)}>{C.t("groc.pay.h")}</div>
+  <div class="slabel"{L.attr("groc.pay.h")}>{C.t("groc.pay.h")}</div>
   {C.html("groc.pay.p", "body")}
   {foot("groc.foot", 3)}
 {C.extras("page3")} {L.layer(3)}{L.text_boxes(3)}{L.tables_html(3)}
@@ -254,10 +258,8 @@ page = f"""
 
 <section class="page">
   {head("ch.eyebrow.a", "ch.h1.a", "ch.sub.a", "cha")}
-  {chap(2)}
-  {chap(3)}
-  {chap(4)}
-  <h2{L.attr("mix.h")}>{C.t("mix.h")}</h2>
+  <div class="cols">{chap(2)}{chap(3)}{chap(4)}</div>
+  <h2 class="figt"{L.attr("mix.h")}>{C.t("mix.h")}</h2>
   {chart(L, "chart.mix", mix_spec(), w=CHART_W_IN, h=1.3,
          desc=describe(C, "mix.desc", "Shares of state tax collections, FY2025"))}
   {foot("ch.foot.a", 4)}
@@ -266,10 +268,7 @@ page = f"""
 
 <section class="page">
   {head("ch.eyebrow.b", "ch.h1.b", "ch.sub.b", "chb")}
-  {chap(5)}
-  {chap(6)}
-  {chap(7)}
-  {chap(8)}
+  <div class="cols">{chap(5)}{chap(6)}{chap(7)}{chap(8)}</div>
   {foot("ch.foot.b", 5)}
 {C.extras("page5")} {L.layer(5)}{L.text_boxes(5)}{L.tables_html(5)}
 </section>
@@ -300,152 +299,158 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 {OKINA_FACES}
-  /* Editorial: one display face (Poppins) for titles and big figures, Manrope
-     for everything else; hairline rules instead of cards, no tinted panels,
-     colour only where it carries meaning (green = the report, rust = against). */
+  /* House report style, as in Hawaiʻi Appleseed's published reports (and the
+     docsync report template drawn from them): Barlow for display, Source Sans 3
+     for text, a topic-colour field on the cover with the title in white caps,
+     caps section headings over a hairline in the topic colour, "Figure N."
+     titles, a dark terms panel, "<page> · <TITLE>" footers. Topic colour here
+     is the Coalition's slate. Both faces carry their own ʻokina (U+02BB). */
   body {{ margin:0; background:{PAPER};
-         font:14.5px/1.5 OkinaManrope, Manrope, system-ui, sans-serif; color:{INK};
-         font-variant-ligatures:none; -webkit-font-smoothing:antialiased;
-         font-feature-settings:"tnum" 0; }}
+         font:14.5px/1.5 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+         color:{TEXT}; -webkit-font-smoothing:antialiased; }}
   .page {{ width:8.5in; height:11in; margin:28px auto; background:#fff;
            box-shadow:0 0 0 1px rgba(47,62,70,.07), 0 1px 3px rgba(47,62,70,.08);
-           padding:0.5in 0.55in 0.42in;
-           box-sizing:border-box; position:relative; overflow:hidden; }}
+           padding:0.5in 0.6in 0.42in; box-sizing:border-box; position:relative;
+           overflow:hidden; }}
+  .disp {{ font-family:Barlow, 'Source Sans 3', sans-serif; }}
 
   /* --- Cover --------------------------------------------------------- */
-  .mast {{ display:flex; justify-content:space-between; align-items:baseline; }}
-  .brand, .pill {{ font-family:OkinaManrope, Manrope, sans-serif; font-weight:800;
-                   font-size:0.7rem; letter-spacing:.16em; line-height:1.4;
-                   padding-bottom:9px; border-bottom:1.5px solid {INK}; margin:0; }}
-  .brand {{ color:{INK}; flex:1; }}
-  .pill {{ color:{WARM}; padding-left:16px; font-weight:700; font-size:0.8rem;
-           letter-spacing:0; line-height:calc(0.7rem * 1.4); }}
-  .cover-h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-               font-weight:600; font-size:2.7rem; line-height:1.06;
-               margin:0.9in 0 0; letter-spacing:-.03em; color:{INK}; max-width:7in; }}
-  .rule {{ width:0.5in; height:3px; background:{PRIMARY}; margin:24px 0 0; }}
-  .deck {{ font-size:1.06rem; line-height:1.55; color:{BODY}; margin:16px 0 0;
-           max-width:6in; }}
-  .deck b {{ color:{INK}; font-weight:700; }}
-  .klabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.8rem;
-             font-weight:800; letter-spacing:0; color:{INK};
-             margin:0.62in 0 0; padding-top:9px; border-top:1.5px solid {INK}; }}
-  .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:14px 0 0; }}
-  .fig {{ padding:0 20px 0 0; }}
-  .fig + .fig {{ border-left:1px solid {LINE}; padding-left:20px; }}
-  .fig-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-size:2.35rem;
-            font-weight:600; line-height:1; letter-spacing:-.02em; color:{INK}; }}
+  .cfield {{ margin:-0.5in -0.6in 0; padding:0.5in 0.6in 0.5in;
+             background:{PRIMARY_DARK}; color:#fff; min-height:5.3in;
+             box-sizing:border-box; display:flex; flex-direction:column; }}
+  .mast {{ display:flex; justify-content:space-between; align-items:baseline;
+           padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.35); }}
+  .brand {{ font-family:Barlow, sans-serif; font-weight:700; font-size:13.5px;
+            letter-spacing:.14em; color:#fff; }}
+  .pill {{ font-family:Barlow, sans-serif; font-weight:600; font-size:13.5px;
+           letter-spacing:.06em; text-transform:uppercase; color:{ASH}; }}
+  .cover-h1 {{ font-family:Barlow, sans-serif; font-weight:800; font-size:52px;
+               line-height:1.02; text-transform:uppercase; letter-spacing:-.005em;
+               color:#fff; margin:auto 0 0; padding-top:0.7in; max-width:6.6in; }}
+  .rule {{ width:1.1in; height:4px; background:{TEAL}; margin:22px 0 0; }}
+  .deck {{ font-size:17px; line-height:1.5; color:#E6ECE7; margin:16px 0 0;
+           max-width:6.2in; }}
+  .deck b {{ color:#fff; font-weight:700; }}
+  .deck sup a.fn {{ color:{ASH}; }}
+  .klabel {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+             letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY_DARK};
+             margin:0.32in 0 0; }}
+  .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:8px 0 0;
+           border-top:2px solid {PRIMARY_DARK}; }}
+  .fig {{ padding:12px 18px 0 0; }}
+  .fig + .fig {{ border-left:1px solid {LINE}; padding-left:18px; }}
+  .fig-n {{ font-family:Barlow, sans-serif; font-size:44px; font-weight:800;
+            line-height:1; color:{PRIMARY_DARK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
-  .fig-l {{ font-size:0.8rem; font-weight:500; color:{BODY}; margin-top:10px;
-            line-height:1.45; }}
-  /* label column + text column, ruled on top: the cover's dates and contents,
-     and the glossary on page 2 */
-  .datebox, .cgrid {{ display:grid; grid-template-columns:1.75in 1fr; }}
-  .datebox {{ margin:0.5in 0 0; padding:10px 0 0; border-top:1px solid {INK}; }}
-  .datebox .box-h {{ margin:0; padding-right:16px; }}
-  .datebox .box-p {{ font-size:0.9rem; }}
-  .cgrid {{ margin:22px 0 0; }}
-  .cgrid .klabel {{ margin:0; padding:10px 16px 0 0; border-top:1px solid {INK}; }}
-  .contents {{ margin:0; border-top:1px solid {INK}; }}
-  .crow {{ display:grid; grid-template-columns:1.9em 1fr; padding:9px 0 8px;
-           font-size:0.92rem; line-height:1.35; }}
+  .fig-l {{ font-size:13.5px; color:{BODY}; margin-top:8px; line-height:1.4; }}
+  .datebox, .cgrid {{ display:grid; grid-template-columns:1.6in 1fr; }}
+  .datebox {{ margin:0.28in 0 0; padding:9px 0 0; border-top:1px solid {LINE}; }}
+  .datebox .box-h {{ margin:2px 16px 0 0; }}
+  .datebox .box-p {{ font-size:14.5px; }}
+  .cgrid {{ margin:14px 0 0; }}
+  .cgrid .klabel {{ margin:0; padding:11px 16px 0 0; border-top:1px solid {LINE}; }}
+  .contents {{ margin:0; border-top:1px solid {LINE}; }}
+  .crow {{ display:grid; grid-template-columns:1.7em 1fr; padding:7px 0 6px;
+           font-size:15px; line-height:1.35; }}
   .crow + .crow {{ border-top:1px solid {LINE}; }}
-  .cnum {{ font-weight:800; color:{PRIMARY}; font-variant-numeric:tabular-nums; }}
-  .ctxt {{ color:{INK}; }}
-  .cfwrap {{ position:absolute !important; left:0.55in; right:0.55in; bottom:0.5in; }}
-  .cover-foot {{ border-top:1px solid {LINE}; padding-top:10px; }}
-  .cfoot-l {{ font-size:0.72rem; color:{MUTED}; line-height:1.55; }}
+  .cnum {{ font-family:Barlow, sans-serif; font-weight:700; color:{PRIMARY}; }}
+  .ctxt {{ color:{TEXT}; }}
+  .cfwrap {{ position:absolute !important; left:0.6in; right:0.6in; bottom:0.42in; }}
+  .cover-foot {{ border-top:1px solid {LINE}; padding-top:8px; }}
+  .cfoot-l {{ font-size:13.5px; color:{MUTED}; line-height:1.5; }}
 
   /* --- Interior pages ------------------------------------------------- */
-  .phead {{ border-bottom:1px solid {INK}; padding-bottom:10px; margin-bottom:12px; }}
-  .eyebrow {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.82rem;
-              font-weight:700; color:{PRIMARY}; margin-bottom:6px; }}
-  h1 {{ font-family:OkinaPoppins, Poppins, OkinaManrope, Manrope, sans-serif;
-        font-weight:600; font-size:1.78rem; line-height:1.12; margin:0; color:{INK};
-        letter-spacing:-.025em; }}
-  .psub {{ font-size:0.96rem; font-weight:500; line-height:1.4; color:{BODY};
-           margin-top:7px; }}
-  .slabel {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.84rem;
-             font-weight:800; margin:15px 0 0; color:{INK}; }}
-  h2 {{ font-family:OkinaManrope, Manrope, sans-serif; font-weight:800;
-        font-size:1.02rem; line-height:1.3; margin:14px 0 0; padding-top:9px; color:{INK};
-        border-top:1px solid {LINE}; letter-spacing:-.01em; }}
-  .lead {{ font-size:0.93rem; line-height:1.52; color:{INK}; margin:12px 0 0; }}
-  .body {{ font-size:0.88rem; line-height:1.49; color:{BODY}; margin:6px 0 0; }}
-  .body b, .lead b {{ color:{INK}; font-weight:700; }}
-  .note {{ font-size:0.8rem; line-height:1.45; color:{MUTED}; margin:8px 0 0; }}
-  .note-b {{ font-size:0.8rem; line-height:1.42; color:{MUTED}; margin:6px 0 0; }}
-  .note-b b {{ color:{BODY}; }}
+  .phead {{ border-bottom:2px solid {PRIMARY}; padding-bottom:10px; margin-bottom:14px; }}
+  .eyebrow {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+              letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY};
+              margin-bottom:4px; }}
+  h1 {{ font-family:Barlow, sans-serif; font-weight:800; font-size:31px;
+        line-height:1.04; text-transform:uppercase; margin:0; color:{INK}; }}
+  .psub {{ font-size:16.5px; line-height:1.4; color:{PRIMARY_DARK}; margin-top:8px; }}
+  .slabel {{ font-family:Barlow, sans-serif; font-size:17px; font-weight:700;
+             line-height:1.25; margin:13px 0 0; color:{PRIMARY_DARK}; }}
+  .slabel.tbl, h2.figt {{ font-family:Barlow, sans-serif; font-size:15px;
+             font-weight:700; color:{INK}; }}
+  h2 {{ font-family:Barlow, sans-serif; font-weight:700; font-size:17px;
+        line-height:1.25; margin:16px 0 0; color:{PRIMARY_DARK}; }}
+  h2.figt {{ margin-top:13px; padding-top:8px; border-top:1px solid {LINE}; }}
+  .lead {{ font-size:15px; line-height:1.52; color:{TEXT}; margin:0; }}
+  .body {{ font-size:14.5px; line-height:1.5; color:{TEXT}; margin:5px 0 0; }}
+  .body b, .lead b {{ font-weight:700; color:{INK}; }}
+  .note, .cap {{ font-size:13.5px; line-height:1.45; color:{MUTED}; margin:6px 0 0; }}
+  .cap b {{ color:{BODY}; }}
 
-  .box {{ margin:18px 0 0; }}
-  .box:not(.box-green) {{ padding-top:9px; border-top:1px solid {INK}; }}
-  .box-green {{ padding-top:12px; border-top:2px solid {PRIMARY}; margin-top:6px; }}
-  .phead + .box-green {{ border-top:0; padding-top:4px; margin-top:0; }}
-  .box-h {{ font-family:OkinaManrope, Manrope, sans-serif; font-size:0.84rem;
-            font-weight:800; color:{INK}; margin-bottom:4px; }}
-  .box-green .box-h {{ color:{PRIMARY}; }}
-  .box-p {{ font-size:0.86rem; line-height:1.5; color:{BODY}; margin:0; }}
-  .box-green .box-p {{ font-size:0.9rem; line-height:1.52; color:{INK}; }}
+  .box {{ margin:16px 0 0; }}
+  .box:not(.box-green) {{ background:{INK}; color:#fff; padding:11px 16px 12px; }}
+  .box:not(.box-green) .box-h {{ color:{ASH}; }}
+  .box:not(.box-green) .box-p, .box:not(.box-green) .box-p b {{ color:#fff; }}
+  .box-green {{ padding-top:2px; }}
+  .box-h {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+            letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY_DARK};
+            margin-bottom:4px; }}
+  .box-green .box-h {{ font-size:17px; letter-spacing:0; text-transform:none; }}
+  .box-p {{ font-size:13.5px; line-height:1.5; color:{TEXT}; margin:0; }}
+  .box-green .box-p {{ font-size:15px; line-height:1.55; }}
   .box-p b {{ color:{INK}; }}
   .ds-graphic {{ margin-top:8px; }}
 
-  /* the six swaps: a ruled table, not a stack of cards */
-  .swhead, .swrow {{ display:grid; grid-template-columns:2.35in 0.3in 2.75in 1fr; }}
-  .swhead {{ margin:10px 0 0; padding-bottom:6px; border-bottom:1px solid {INK};
-             font-family:OkinaManrope, Manrope, sans-serif; font-size:0.76rem; font-weight:700;
-             color:{MUTED}; }}
+  /* Table 1, the six swaps */
+  .swhead, .swrow {{ display:grid; grid-template-columns:2.4in 0.3in 2.65in 1fr; }}
+  .swhead {{ margin:8px 0 0; padding:5px 0; background:{PRIMARY_DARK}; color:#fff;
+             font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+             letter-spacing:.06em; text-transform:uppercase; }}
+  .swhead span:first-child {{ padding-left:8px; }}
   .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; }}
-  .swaps {{ margin:0; }}
-  .swrow {{ align-items:center; padding:5px 0; border-bottom:1px solid {LINE}; }}
-  .sw {{ font-size:0.81rem; line-height:1.3; padding-right:10px; }}
-  .sw.a {{ color:{INK}; font-weight:600; }}
-  .sw.b {{ color:{BODY}; }}
+  .swaps {{ margin:0; border-bottom:1px solid {PRIMARY_DARK}; }}
+  .swrow {{ align-items:center; padding:5px 0; }}
+  .swrow:nth-child(even) {{ background:{STRIPE}; }}
+  .swrow + .swrow {{ border-top:1px solid {LINE}; }}
+  .sw {{ font-size:13.5px; line-height:1.3; padding-right:10px; }}
+  .sw.a {{ padding-left:8px; color:{INK}; font-weight:600; }}
+  .sw.b {{ color:{TEXT}; }}
   .arr {{ color:{MUTED}; }}
-  .tag {{ font-size:0.78rem; font-weight:700; line-height:1.3; color:{INK};
-          display:flex; align-items:center; gap:8px; }}
-  .tag::before {{ content:""; flex:none; width:8px; height:8px; border-radius:50%;
-                  background:{NEUTRAL}; }}
-  .tag.up::before {{ background:{PRIMARY}; }}
-  .tag.dn {{ color:{WARM}; }} .tag.dn::before {{ background:{WARM}; }}
+  .tag {{ font-size:13.5px; font-weight:600; line-height:1.3; color:{INK}; }}
+  .tag.up {{ color:{PRIMARY}; }}
+  .tag.dn {{ color:{WARM}; }}
 
-  .split {{ display:flex; gap:28px; align-items:flex-start; margin-top:6px; }}
-  .splitl {{ flex:0 0 4.7in; }}
-  .pcts {{ flex:1; padding-top:4px; }}
-  .pcts .klabel {{ margin:0; padding:0 0 2px; border:0; color:{MUTED};
-                   font-weight:700; line-height:1.4; }}
-  .pct {{ border-top:1px solid {LINE}; padding:10px 0 0; margin-top:10px; }}
-  .pct-n {{ font-family:OkinaPoppins, Poppins, sans-serif; font-weight:600; font-size:1.9rem;
-            line-height:1; letter-spacing:-.02em; color:{PRIMARY_DARK}; }}
-  .pct-l {{ font-size:0.8rem; line-height:1.35; color:{BODY}; margin-top:5px; }}
+  .split {{ display:flex; gap:26px; align-items:flex-start; margin-top:6px; }}
+  .splitl {{ flex:0 0 4.6in; }}
+  .pcts {{ flex:1; padding-top:2px; }}
+  .pcts .klabel {{ margin:0; font-size:13.5px; color:{MUTED}; line-height:1.35; }}
+  .pct {{ border-top:1px solid {LINE}; padding:8px 0 0; margin-top:8px; }}
+  .pct-n {{ font-family:Barlow, sans-serif; font-weight:800; font-size:32px;
+            line-height:1; color:{PRIMARY_DARK}; }}
+  .pct-l {{ font-size:13.5px; line-height:1.35; color:{BODY}; margin-top:3px; }}
 
-  /* chapters: separated by a hairline, kicker + dek + text */
-  .chap {{ padding:9px 0 0; margin:0 0 10px; border-top:1px solid {LINE}; }}
-  .phead + .chap {{ border-top:0; padding-top:0; }}
-  .chap .slabel {{ margin-top:0; color:{PRIMARY}; }}
-  .bl {{ font-weight:700; font-size:0.86rem; line-height:1.35; color:{INK};
-         margin:5px 0 0; letter-spacing:-.005em; }}
-  .chap .body {{ font-size:0.83rem; line-height:1.46; margin-top:3px; }}
+  /* chapter pages: two columns */
+  .cols {{ column-count:2; column-gap:0.32in; column-fill:balance; }}
+  .chap {{ margin:0 0 12px; }}
+  .chh {{ break-inside:avoid; break-after:avoid; }}
+  .chap .slabel {{ margin-top:0; font-size:16px; color:{PRIMARY}; }}
+  .bl {{ font-weight:700; font-size:14px; line-height:1.35; color:{INK}; margin:3px 0 0; }}
+  .chap .body {{ font-size:14px; line-height:1.5; margin-top:3px; hyphens:auto;
+                 -webkit-hyphens:auto; }}
 
-  .fl {{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid {LINE}; }}
-  .fb {{ padding:6px 0; border-bottom:1px solid {LINE}; }}
-  .fb:last-child {{ border-bottom:none; }}
-  .fbp {{ font-size:0.86rem; line-height:1.5; color:{BODY}; margin:0; }}
-  .fbp b {{ color:{INK}; }}
+  .fl {{ list-style:none; margin:6px 0 0; padding:0; }}
+  .fb {{ padding:6px 0; border-top:1px solid {LINE}; }}
+  .fbp {{ font-size:14.5px; line-height:1.5; color:{TEXT}; margin:0; }}
+  .fbp b {{ color:{PRIMARY_DARK}; }}
 
   /* --- Footers, endnotes ---------------------------------------------- */
-  .pfwrap {{ position:absolute; left:0.55in; right:0.55in; bottom:0.42in; }}
-  .pfoot {{ border-top:1px solid {LINE}; padding-top:8px; }}
-  .pfoot-t {{ font-size:0.72rem; line-height:1.45; color:{MUTED}; margin:0; }}
-  .pfoot-t b {{ color:{BODY}; font-weight:700; }}
-  .pnum {{ display:block; margin-top:5px; font-weight:700;
-           font-size:0.72rem; color:{INK};
-           font-variant-numeric:tabular-nums; }}
-  .srch {{ font-size:0.76rem; font-weight:800; color:{INK}; margin-right:6px; }}
-  .endnotes {{ margin:14px 0 0; padding-top:10px; border-top:1px solid {INK};
-               font-size:0.715rem; line-height:1.45; color:{MUTED}; }}
+  .pfwrap {{ position:absolute; left:0.6in; right:0.6in; bottom:0.42in; }}
+  .pfoot {{ border-top:1px solid {LINE}; padding-top:7px; }}
+  .pfoot-t {{ font-size:13.5px; line-height:1.45; color:{MUTED}; margin:0; }}
+  .pfoot-t b {{ color:{BODY}; }}
+  .pnum {{ display:block; margin-top:5px; text-align:right; font-family:Barlow, sans-serif;
+           font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+           font-size:13.5px; color:#464646; }}
+  .srch {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+           letter-spacing:.1em; text-transform:uppercase; color:{INK}; margin-right:6px; }}
+  .endnotes {{ margin:14px 0 0; padding-top:8px; border-top:1px solid {LINE};
+               font-size:13.5px; line-height:1.45; color:{MUTED}; }}
   .en {{ white-space:normal; }}
   .enn {{ font-weight:700; color:{INK}; }}
   .ensep {{ color:{MUTED}; }}
@@ -454,33 +459,33 @@ html = f"""<!DOCTYPE html>
   sup a.fn {{ color:{PRIMARY}; text-decoration:none; font-weight:700; }}
   a {{ color:{PRIMARY_DARK}; text-underline-offset:2px; }}
 
-  /* --- The phone: fluid pages, as in retitc --------------------------- */
+  /* --- The phone: fluid pages ----------------------------------------- */
   @media screen and (max-width:8.5in) {{
     .page {{ width:100%; max-width:100%; height:auto; min-height:0; margin:0;
              box-shadow:none; padding:28px 20px; border-bottom:8px solid {PAPER}; }}
+    .cfield {{ margin:-28px -20px 0; padding:24px 20px 28px; min-height:0; }}
+    .mast {{ flex-direction:column; gap:4px; }}
+    .cover-h1 {{ font-size:36px; padding-top:48px; }}
     .ds-graphic {{ width:auto !important; max-width:100% !important; }}
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:26px; }}
-    .mast {{ flex-direction:column; gap:0; }}
-    .brand {{ border-bottom:0; padding-bottom:4px; }}
-    .pill {{ align-self:stretch; padding-left:0; }}
-    .cover-h1 {{ font-size:2.05rem; margin-top:40px; }}
-    .klabel {{ margin-top:36px; }}
+    h1 {{ font-size:27px; }}
     .figs {{ grid-template-columns:1fr; }}
     .fig {{ padding:12px 0; }}
     .fig + .fig {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
     .datebox, .cgrid {{ grid-template-columns:1fr; }}
-    .datebox {{ margin-top:30px; }}
-    .datebox .box-h {{ margin-bottom:6px; }}
-    .cgrid .klabel {{ border-top:1px solid {INK}; padding-bottom:4px; }}
+    .datebox .box-h {{ margin:0 0 4px; }}
+    .cgrid .klabel {{ padding-bottom:4px; }}
     .contents {{ border-top:0; }}
+    .cols {{ column-count:1; }}
     .split {{ flex-direction:column; gap:10px; }}
     .splitl {{ flex:none; }}
     .swhead {{ display:none; }}
-    .swrow {{ grid-template-columns:1fr; gap:2px; padding:10px 0; }}
+    .swaps {{ border-top:2px solid {PRIMARY_DARK}; }}
+    .swrow {{ grid-template-columns:1fr; gap:2px; padding:9px 8px; }}
+    .sw.a {{ padding-left:0; }}
     .arr {{ display:none; }}
     .sw.b::before {{ content:"\\2192\\00a0"; color:{MUTED}; }}
-    .tag {{ margin-top:4px; }}
     .cover-h1, .deck, .psub {{ max-width:100%; }}
     body > button {{ top:auto !important; bottom:14px !important;
                      right:14px !important; padding:8px 13px !important;

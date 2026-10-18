@@ -90,7 +90,7 @@ UHERO is explicit that "none of these reforms is a recommendation" (p. 158). Eac
 The estimates come from a model of Hawaiʻi households built on Census survey data, with gaps filled from IRS records. People in the model can change how much they earn or report; for now, nobody moves away and visitors keep spending as before. **Results for the six swaps are due in the final report** (p. 158).
 
 [[about.pairs.h]]
-The six tax swaps (p. 161)
+Table 1. The six tax swaps (p. 161)
 
 [[about.also.h]]
 Also to be estimated in the final report (p. 161)
@@ -120,7 +120,7 @@ The average household would save about $419 a year, and the state would lose $23
 So far the draft estimates only one change: taking **groceries** (food and drinks bought at stores) out of the GET. UHERO assumes stores cut prices by the full amount of the tax, households spend what they save, and visitors keep spending as before (p. 160). Once residents spend part of their savings, the state's net loss is **$233.0M** (p. 158).
 
 [[groc.chart.h]]
-What a household saves each year, by income group
+Figure 2. What a household saves each year, by income group
 
 [[groc.chart.desc]]
 Bar chart of the yearly savings per household from exempting groceries, for ten income groups from lowest to highest, rising from 156 dollars to 729 dollars.
@@ -339,7 +339,7 @@ Leans against lower earners
 The direction tags are the Coalition's reading. UHERO has not scored any swap yet; its results come in the final report.
 
 [[groc.where.h]]
-Who gets the savings, and who loses the revenue ($267.4M)
+Figure 1. Who gets the savings, and who loses the revenue ($267.4M)
 
 [[groc.where.desc]]
 Two stacked bars, each totaling 267.4 million dollars. Savings go 214.1 million to residents and 53.3 million to visitors. The revenue loss is 237.7 million for the state and 29.7 million for counties.
@@ -363,7 +363,7 @@ of income saved by the lowest-income tenth of households
 of income saved by the highest-income tenth
 
 [[mix.h]]
-Where Hawaiʻi's state tax money comes from, FY2025 (draft Table 1.1, p. 3)
+Figure 3. Where Hawaiʻi's state tax money comes from, FY2025 (draft Table 1.1, p. 3)
 
 [[mix.desc]]
 Horizontal bar chart of shares of the 11.46 billion dollars in state tax collections in fiscal 2025: general excise and use tax 40.4 percent, individual income tax 28.7, hotel and rental tax 7.1, county GET surcharges 4.9, estate tax 3.5, corporate income tax 3.5, conveyance tax 0.8.
