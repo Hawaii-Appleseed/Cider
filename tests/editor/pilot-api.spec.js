@@ -132,7 +132,7 @@ test.describe('pilot api', () => {
       layout.shapes.some(s => s.id === id), r.id)).toBe(false);
 
     // A kind the Shapes panel does not offer is refused, naming the menu.
-    const bad = await api(page, `addShape({ kind: 'star' })`);
+    const bad = await api(page, `addShape({ kind: 'hexagram' })`);
     expect(bad.ok).toBe(false);
     expect(bad.error).toContain('rect');
   });
