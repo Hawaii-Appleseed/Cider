@@ -2,20 +2,14 @@
   "positions": {
     "header.logo": {
       "x": 0.55,
-      "y": 1.45,
-      "w": 5.7,
+      "y": 1.68,
+      "w": 5.2,
       "z": 2
-    },
-    "tanf.bottomline.title": {
-      "x": 0.2,
-      "y": 14.66,
-      "w": 12,
-      "reserve": 2.08
     },
     "hero.badge": {
       "x": 0.55,
-      "y": 3.73,
-      "w": 5.7,
+      "y": 3.78,
+      "w": 5.2,
       "reserve": 0.41
     }
   },

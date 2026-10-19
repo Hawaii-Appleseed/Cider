@@ -383,6 +383,46 @@ MODERN_CSS = """
     text-underline-offset: 4px; padding: 16px 20px; margin-left: 8px; }
   .tfc-cta-section p.rxk-partner { border-top-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
 
+
+  /* Phase 3: three heart cards replace the clip-art house diagram */
+  .rxk-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 48px; }
+  .rxk-feature-grid .tfc-scene-tag { position: static; width: auto; margin: 0; padding: 28px 28px 30px;
+    text-align: left; transform: none; }
+  .rxk-feature-grid .tfc-scene-tag::before, .rxk-feature-grid .tfc-scene-tag::after { display: none; }
+  .rxk-feature-grid .tfc-scene-tag:hover { transform: translateY(-2px); }
+  .rxk-feature-grid .tfc-scene-title { font-size: 1.25rem; margin: 18px 0 8px; }
+  .rxk-feature-grid .tfc-scene-tag p { font-size: 1rem; line-height: 1.6; }
+  .rxk-feature-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--rx-tint); color: var(--rx-red); }
+  .rxk-feature-icon::before { content: ""; width: 24px; height: 24px; background: currentColor;
+    -webkit-mask: url("{_HEART}") center / contain no-repeat; mask: url("{_HEART}") center / contain no-repeat; }
+  .rxk-feature-grid .tfc-scene-tag:nth-child(2) .rxk-feature-icon { color: var(--rx-blue); }
+  .rxk-feature-grid .tfc-scene-tag:nth-child(3) .rxk-feature-icon { color: var(--rx-green); }
+  @media (max-width: 768px) { .rxk-feature-grid { grid-template-columns: 1fr; } }
+
+  /* Phase 3: a larger hero photo and a facts strip straddling its bottom edge */
+  .tfc-hero { gap: 56px; }
+  .tfc-hero-badge { font-size: .84rem; letter-spacing: .6px; padding: 8px 16px; }
+  .tfc-hero-image-container { max-width: 540px; }
+  .rxk-facts { position: relative; z-index: 3; max-width: 1000px; margin: -40px auto 0; display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); background: #fff; border: 1px solid var(--rx-line);
+    border-radius: 20px; box-shadow: var(--rx-lift); }
+  .rxk-fact { padding: 24px 32px; text-align: left; }
+  .rxk-fact + .rxk-fact { border-left: 1px solid var(--rx-line); }
+  .rxk-fact-value { display: block; font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1;
+    color: var(--rx-navy); font-family: OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Heavy', Arial, sans-serif; }
+  .rxk-fact:nth-child(1) .rxk-fact-value { color: var(--rx-red); }
+  .rxk-fact:nth-child(2) .rxk-fact-value { color: var(--rx-blue); }
+  .rxk-fact:nth-child(3) .rxk-fact-value { color: var(--rx-magenta); }
+  .rxk-fact-label { display: block; margin-top: 6px; font-size: .98rem; line-height: 1.45; color: var(--rx-ink); }
+  @media (max-width: 768px) { .rxk-facts { grid-template-columns: 1fr; margin-top: -24px; }
+    .rxk-fact + .rxk-fact { border-left: none; border-top: 1px solid var(--rx-line); } }
+
+  /* Phase 3: the long TANF explainer sits behind one button */
+  .rxk-fold { text-align: center; margin: 8px 0 44px; }
+  .rxk-fold .tfc-expand-content { text-align: left; }
+  .rxk-fold .tfc-expand-inner { padding-top: 32px; }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -395,6 +435,7 @@ _HEART = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewB
           "<path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 "
           "3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86"
           "-8.55 11.54L12 21.35z'/></svg>")
+MODERN_CSS = MODERN_CSS.replace("{_HEART}", _HEART)
 BRAND_CSS = f"""
   .tfc-benefit-list li::before {{
     content: ""; width: 15px; height: 15px; top: 5px; left: 1px;
@@ -468,6 +509,18 @@ def hero() -> str:
 </div>"""
 
 
+FACT_KEYS = ["1", "2", "3"]
+
+
+def facts_strip() -> str:
+    """Three headline numbers straddling the hero's bottom edge."""
+    items = "".join(
+        f'<div class="rxk-fact"><span class="rxk-fact-value">{C.t(f"facts.{k}.value")}</span>'
+        f'<span class="rxk-fact-label">{C.t(f"facts.{k}.label")}</span></div>'
+        for k in FACT_KEYS)
+    return f"""{L.spacer("facts")}<div class="rxk-facts"{L.attr("facts")}>{items}</div>"""
+
+
 # ---- what is rxkids ----------------------------------------------------------
 def what_is_rxkids() -> str:
     return f"""
@@ -478,11 +531,9 @@ def what_is_rxkids() -> str:
             {L.spacer("para.what.body")}
             <p class="tfc-section-subtitle tfc-subtitle-box"{L.frame("what.body")}><span class="tfc-subtitle-eyebrow"{L.attr("what.eyebrow")}>{C.t("what.eyebrow")}</span>{C.slot_span("what.body", C("what.body"))}</p>
 
-            <div class="tfc-scene-container">
-                {img_el("what.heart.image", "tfc-floating-heart", "https://images.squarespace-cdn.com/content/63c215f8a268791349c9f04a/7e595665-8ca3-4621-b694-a787aa3f3965/floating+heart.png?content-type=image%2Fpng", esc(C.text("what.heart.alt")))}
-                {img_el("what.childcare.image", "tfc-childcare-image", "https://images.squarespace-cdn.com/content/63c215f8a268791349c9f04a/a493efe8-48df-4068-a64d-a1a8cf2f39a3/Childcare+center.png?content-type=image%2Fpng", esc(C.text("what.childcare.alt")))}
-                {scene_tag("right", "what.scene.right")}
+            <div class="rxk-feature-grid">
                 {scene_tag("left", "what.scene.left")}
+                {scene_tag("right", "what.scene.right")}
                 {scene_tag("bottom", "what.scene.bottom")}
             </div>
         </div>
@@ -495,6 +546,7 @@ def what_is_rxkids() -> str:
 
 def scene_tag(side: str, key: str) -> str:
     return f"""{L.spacer(key)}<div class="tfc-scene-tag tfc-scene-tag-{side}"{L.attr(key)}>
+        <span class="rxk-feature-icon" aria-hidden="true"></span>
         <h3 class="tfc-scene-title">{C.t(f"{key}.title")}</h3><p>{C.t(f"{key}.body")}</p>
     </div>"""
 
@@ -935,14 +987,23 @@ def tanf_section() -> str:
             </div>
 
             {L.spacer("tanf.choice.title")}<h3{merge_attrs(' style="text-align:center; color:#2A3A4D; font-size:1.5rem; margin: 56px 0 16px;"', L.attr("tanf.choice.title"))}>{C.t("tanf.choice.title")}</h3>
-            {C.html("tanf.choice.body", "tfc-section-subtitle tanf-choice-body")}
+            {C.html("tanf.choice.summary", "tfc-section-subtitle tanf-choice-body")}
 
-            <div class="tfc-tanf-compare">
-                {tanf_option_card("tanf.option1", "Option 1")}
-                {tanf_option_card("tanf.option2", "Option 2 · Recommended", free=True)}
+            <div class="tfc-expandable-section rxk-fold">
+                {L.spacer("tanf.more.button")}<button class="tfc-expand-btn rxk-fold-btn" onclick="rxkToggle(this, 'tanf-more')"{L.attr("tanf.more.button")}><span{C.slot_attr("tanf.more.button")}>{C.text("tanf.more.button")}</span><span class="tfc-expand-icon">&#9660;</span></button>
+                <div id="tanf-more" class="tfc-expand-content">
+                    <div class="tfc-expand-inner">
+                        {C.html("tanf.choice.body", "tfc-section-subtitle tanf-choice-body")}
+
+                        <div class="tfc-tanf-compare">
+                        {tanf_option_card("tanf.option1", "Option 1")}
+                        {tanf_option_card("tanf.option2", "Option 2 · Recommended", free=True)}
+                        </div>
+
+                        {C.html("tanf.note", "tfc-tanf-note")}
+                    </div>
+                </div>
             </div>
-
-            {C.html("tanf.note", "tfc-tanf-note")}
 
             {L.spacer("tanf.bottomline.title")}
             <!-- margin-top is zeroed alongside margin-bottom: .tfc-highlight-box
@@ -1014,6 +1075,7 @@ def sources_section() -> str:
 
 MAIN_BODY = f"""<div class="tfc-container">
 {hero()}
+{facts_strip()}
 {what_is_rxkids()}
 {benefits_widget()}
 {stats_carousel()}
@@ -1247,7 +1309,7 @@ html = f"""<!DOCTYPE html>
      tag ~161px into the blue benefits band below. Any element that parks an
      absolutely-positioned child past its own bottom edge belongs in this
      exclusion list. */
-  .tfc-section > *:last-child:not(.tfc-scene-container) {{ margin-bottom: 0 !important; }}
+  .tfc-section > *:last-child:not(.rxk-feature-grid) {{ margin-bottom: 0 !important; }}
   /* .tfc-container's 60px bottom padding sat below the final band's own
      padding, doubling the gap at the very end of the page. */
   .tfc-container {{ padding-bottom: 0 !important; }}
@@ -1269,19 +1331,19 @@ html = f"""<!DOCTYPE html>
      shifted 4px in from every side read as a ~4px orange rim. */
   .rxk-timeline {{ position: relative; margin-top: 22px; border-radius: 12px;
                    overflow: hidden;
-                   filter: drop-shadow(0 4px 10px rgba(42,58,77,.15)); }}
-  .rxk-frame {{ position: absolute; inset: 0; background: #F6921E; }}
-  .rxk-inner {{ position: relative; margin: 4px; background: #8E3B9C; }}
+                    }}
+  .rxk-frame {{ display: none; }}
+  .rxk-inner {{ position: relative; margin: 0; background: #8E3B9C; }}
   /* The green (TANF) block: full height, its top shaped by the container's
      own curve. The orange lines are its internal cell separators, plus one on
      its right edge where it hands off to the purple. */
   .rxk-green-fill {{ position: absolute; left: 0; top: 0; height: 100%; z-index: 0;
       background:
-        linear-gradient(90deg, transparent calc(25% - 1px), #F6921E calc(25% - 1px), #F6921E calc(25% + 1px), transparent calc(25% + 1px)),
-        linear-gradient(90deg, transparent calc(50% - 1px), #F6921E calc(50% - 1px), #F6921E calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(90deg, transparent calc(75% - 1px), #F6921E calc(75% - 1px), #F6921E calc(75% + 1px), transparent calc(75% + 1px)),
-        linear-gradient(90deg, transparent calc(100% - 3px), #F6921E calc(100% - 3px)),
-        linear-gradient(180deg, #34B36B, #1E9E57); }}
+        linear-gradient(90deg, transparent calc(25% - 1px), rgba(255,255,255,.55) calc(25% - 1px), rgba(255,255,255,.55) calc(25% + 1px), transparent calc(25% + 1px)),
+        linear-gradient(90deg, transparent calc(50% - 1px), rgba(255,255,255,.55) calc(50% - 1px), rgba(255,255,255,.55) calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(90deg, transparent calc(75% - 1px), rgba(255,255,255,.55) calc(75% - 1px), rgba(255,255,255,.55) calc(75% + 1px), transparent calc(75% + 1px)),
+        linear-gradient(90deg, transparent calc(100% - 2px), rgba(255,255,255,.55) calc(100% - 2px)),
+        linear-gradient(#00A84F, #00A84F); }}
   /* Solid purple so the column separator lines behind it don't cross the
      "OTHER FUNDING" text; sits above the columns (z-index) to cover them. */
   .rxk-otherfunding {{ position: absolute; top: 0; right: 0; height: 40px; z-index: 2;
@@ -1394,12 +1456,12 @@ html = f"""<!DOCTYPE html>
      the 4px side margin lines the bracket up inside the timeline's 4px frame. */
   .rxk-bracket-row {{ display: flex; margin: 10px 4px 0; }}
   .rxk-bracket {{ flex: 4; height: 15px; position: relative;
-                  border: 3px solid #1E9E57; border-top: none;
+                  border: 2px solid #00A84F; border-top: none;
                   border-radius: 0 0 10px 10px; }}
   .rxk-bracket-rest {{ flex: 9; }}
   .rxk-bracket-amt {{ position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
                       margin-top: 6px; white-space: nowrap;
-                      color: #1E9E57; font-weight: 800; font-size: 1.4rem; }}
+                      color: #00A84F; font-weight: 800; font-size: 1.4rem; }}
   .tanf-choice-body {{ margin-bottom: 32px; }}
   .rxk-col--other {{ background: transparent; }}
   /* (A local `.page [style*="position:absolute"] {{ margin:0 }}` rule used to

@@ -20,6 +20,24 @@ Universal cash support for Hawaiʻi moms and babies
 [[hero.image.alt]]
 Moms, babies and children in Hawaiʻi
 
+[[facts.1.value]]
+14,808
+
+[[facts.1.label]]
+babies born in Hawaiʻi in a year, and every family would qualify
+
+[[facts.2.value]]
+$4,500
+
+[[facts.2.label]]
+for each family over the first six months
+
+[[facts.3.value]]
+6–12 months
+
+[[facts.3.label]]
+of $500 monthly payments after birth, as funding allows
+
 [[what.h2]]
 What is RxKeiki?
 
@@ -28,12 +46,6 @@ The Program
 
 [[what.body]]
 Based on the successful Rx Kids program, RxKeiki is a proposal for **universal, no-strings-attached cash support** for every pregnant mom in Hawaiʻi and her baby. There are Rx Kids programs in cities across Michigan.
-
-[[what.heart.alt]]
-Love
-
-[[what.childcare.alt]]
-Childcare Center
 
 [[what.scene.right.title]]
 No Strings Attached
@@ -337,6 +349,12 @@ RxKeiki uses the no-strings, short-term TANF to cover the most important early s
 
 [[tanf.choice.title]]
 The choice that keeps it "no strings"
+
+[[tanf.choice.summary]]
+The proposed bill uses TANF for only the first four payments and pays everything else from state, county, and private funds. That keeps the whole program free of time limits and work rules.
+
+[[tanf.more.button]]
+How the bill keeps it no-strings
 
 [[tanf.choice.body]]
 There's a catch: TANF's no-strings help only lasts about four months. If TANF pays for more than that, the law treats it as ongoing aid — and the strings come back. (Just limiting it to lower-income families doesn't change that — what matters is keeping TANF to those first few months.) That leaves Hawaiʻi two ways to build the program. The proposed bill takes the second:

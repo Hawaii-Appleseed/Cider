@@ -99,8 +99,6 @@ bindings:
     editability_ok:
       - "RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies"
       - "Moms, babies and children in Hawaiʻi"
-      - "Love"
-      - "Childcare Center"
     # Also re-stages the editor, unlike budget-primer's `make ... pub` (whose
     # Makefile target already depends on `editor` -> docsync.stage) — without
     # this, the watcher rebuilds the PUBLISHED page but leaves the staged
