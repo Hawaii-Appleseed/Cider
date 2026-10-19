@@ -290,6 +290,7 @@ BRAND_CSS = f"""
             mask: url("{_HEART}") center / contain no-repeat; }}
   .tfc-cta-section p.rxk-partner {{ font-size: 0.95rem; line-height: 1.5; margin: 36px auto 0;
     padding-top: 20px; border-top: 1px solid rgba(255,255,255,.45); max-width: 720px; }}
+  .rxk-cost-note {{ margin: 14px 4px 0; font-size: 0.95rem; line-height: 1.5; color: #40417b; text-align: left; }}
   .rxk-works {{ background: #fff; border-radius: 16px; padding: 24px 32px 12px;
                 margin: 0 0 32px; box-shadow: 0 2px 10px rgba(16,18,90,.08); }}
   .rxk-works-title {{ margin: 0 0 4px; font-size: 1.6rem; color: #10125A; }}
@@ -691,6 +692,7 @@ def cost_expandable() -> str:
                 </tr></thead>
                 <tbody>{"".join(body_rows)}</tbody>
             </table>
+            <p class="rxk-cost-note"{C.slot_attr("cost.note")}>{C.text("cost.note")}</p>
         </div>
     </div>
 </div>

@@ -9,7 +9,7 @@
 -->
 
 [[title]]
-RxKids Hawaiʻi
+RxKeiki Hawaiʻi
 
 [[header.logo.alt]]
 RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies
@@ -21,19 +21,19 @@ RxKeiki
 Hawaiʻi
 
 [[hero.badge]]
-Direct cash support for expecting moms and their babies
+Universal cash support for Hawaiʻi moms and babies
 
 [[hero.image.alt]]
 Moms, babies and children in Hawaiʻi
 
 [[what.h2]]
-What is RxKids?
+What is RxKeiki?
 
 [[what.eyebrow]]
 The Program
 
 [[what.body]]
-Based on the successful Rx Kids program, RxKeiki is a groundbreaking proposal to provide **no-strings-attached financial support** to pregnant moms and their babies. There are Rx Kids programs in cities across Michigan.
+Based on the successful Rx Kids program, RxKeiki is a proposal for **universal, no-strings-attached cash support** for every pregnant mom in Hawaiʻi and her baby. There are Rx Kids programs in cities across Michigan.
 
 [[what.heart.alt]]
 Love
@@ -51,16 +51,16 @@ Families decide how to use the funds based on their unique needs—whether for r
 Universal Support
 
 [[what.scene.left.body]]
-Every pregnant mom in participating communities receives support—no complicated eligibility requirements or means testing.
+Every pregnant mom who lives in Hawaiʻi receives support—no income test, and no need to be on Medicaid or any other benefit.
 
 [[what.scene.bottom.title]]
 Critical First Year
 
 [[what.scene.bottom.body]]
-Monthly payments continue throughout the baby's first year, providing stability during the most important developmental period.
+Monthly payments start at birth and run for six months, and for up to twelve as funding allows—stability during the most important developmental period.
 
 [[benefits.h2]]
-Benefits of RxKids
+Benefits of Rx Kids
 
 [[benefits.health.title]]
 Better Health Outcomes
@@ -180,7 +180,7 @@ Reduction in screening positive for postpartum depression
 Reduction in uncontrollable worrying
 
 [[carousel.h2]]
-Why Hawaiʻi's families need RxKids
+Why Hawaiʻi's families need RxKeiki
 
 [[carousel.poverty.quote]]
 In Hawaiʻi, more than 1 out of 4 children with single mothers are in poverty.
@@ -240,25 +240,25 @@ Percentage of married-couple median income
 Source: Child Care Aware of America 2024 Analysis[^childcare-aware-2024]
 
 [[steps.h2]]
-How RxKids would work in Hawaiʻi
+How RxKeiki would work in Hawaiʻi
 
 [[steps.banner.label]]
 A Hawaiʻi family could receive
 
 [[steps.banner.amount]]
-more than $3,000
+up to $7,500
 
 [[steps.banner.sub]]
-
+$4,500 through the first six months, and up to $3,000 more through age one as funding allows
 
 [[steps.1.phase]]
-3rd Trimester
+From 16 Weeks
 
 [[steps.1.title]]
 Pregnancy Enrollment
 
 [[steps.1.text]]
-Expecting moms enroll during their third trimester of pregnancy.
+Expecting moms can enroll once they are at least 16 weeks pregnant.
 
 [[steps.2.phase]]
 Before Birth
@@ -273,10 +273,10 @@ $1,500
 one-time
 
 [[steps.2.text]]
-A lump sum during pregnancy to prepare for baby's arrival — funded by TANF.
+A lump sum during pregnancy to prepare for baby's arrival — the same for every eligible mom.
 
 [[steps.3.phase]]
-Months 1–3
+Months 1–6
 
 [[steps.3.title]]
 Monthly Support
@@ -288,10 +288,10 @@ $500
 per month
 
 [[steps.3.text]]
-Guaranteed for the first three months after birth — the TANF-funded stretch.
+Six monthly payments after birth, the same for every family.
 
 [[steps.4.phase]]
-Months 4–12
+Months 7–12
 
 [[steps.4.title]]
 Additional Support
@@ -303,16 +303,16 @@ $500
 per month
 
 [[steps.4.text]]
-Nine more monthly payments, covered by state and other funds.
+Six more monthly payments through age one, as funding allows.
 
 [[steps.note]]
-Payment amounts mirror the Flint, Michigan model and are illustrative for a proposed Hawaiʻi program.
+Amounts follow the draft 2027 bill.[^rxkeiki-bill] A nonprofit administrator would issue the payments, with administrative costs capped at 5 percent of spending.
 
 [[tanf.h2]]
-How TANF helps pay for RxKids
+How TANF helps pay for RxKeiki
 
 [[tanf.intro]]
-TANF (Temporary Assistance for Needy Families) is a federal program that gives each state a pot of money to help struggling families with children. A large part of the RxKids program is funded with TANF money.
+TANF (Temporary Assistance for Needy Families) is a federal program that gives each state a pot of money to help struggling families with children. Under the proposal, TANF can pay for part of RxKeiki, but only for families who qualify under Hawaiʻi's TANF plan. Every other family receives the same payments from state, county, and private funds.
 
 [[tanf.compare1.title]]
 TANF can give money in two different ways
@@ -336,16 +336,16 @@ No strings
 A brief payment for one specific moment — like welcoming a new baby. As long as it lasts no more than a few months, it counts as short-term help: no time limits, no work requirements, no strings attached.
 
 [[tanf.split.title]]
-How RxKids uses TANF
+How RxKeiki uses TANF
 
 [[tanf.split.body]]
-RxKids uses the no-strings, short-term TANF to cover the most important early stretch — before pregnancy and the first three months after birth. The later months are paid for with state and other funds.
+RxKeiki uses the no-strings, short-term TANF to cover the most important early stretch — the payment during pregnancy and the first three months after birth — for families who qualify. Everyone else gets the same payments from state, county, and private funds, so every family is treated alike.
 
 [[tanf.choice.title]]
 The choice that keeps it "no strings"
 
 [[tanf.choice.body]]
-There's a catch: TANF's no-strings help only lasts about four months. If TANF pays for more than that, the law treats it as ongoing aid — and the strings come back. (Just limiting it to lower-income families doesn't change that — what matters is keeping TANF to those first few months.) That leaves Hawaiʻi two ways to build the program:
+There's a catch: TANF's no-strings help only lasts about four months. If TANF pays for more than that, the law treats it as ongoing aid — and the strings come back. (Just limiting it to lower-income families doesn't change that — what matters is keeping TANF to those first few months.) That leaves Hawaiʻi two ways to build the program. The proposed bill takes the second:
 
 [[tanf.option1.title]]
 Use TANF for everything
@@ -363,19 +363,19 @@ For families who qualify, TANF could pay for all 12 months. It's simpler to fund
 Stays no strings
 
 [[tanf.option2.body]]
-TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest — plus the families who don't qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how Rx Kids already runs in Michigan.
+TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest — plus the families who don't qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how Rx Kids already runs in Michigan, and how the proposed bill is written.
 
 [[tanf.note]]
-Hawaiʻi's bill (HB2006) already limits TANF money to families on Medicaid or under 300% of the poverty line — but it doesn't yet cap TANF to those first few months. Adding that cap is the key to keeping the program no-strings. It's also why some state officials have warned about work rules, child support, and reduced benefits — those concerns are real under Option 1, but largely disappear under Option 2.
+Last session's bill (HB2006) limited the program to families on Medicaid or under 300% of the poverty line, and it did not cap TANF to those first few months. The proposed 2027 bill fixes both: every family is eligible, and TANF can pay only for the prenatal payment and up to the first three monthly payments, for families who qualify (Medicaid can serve as the income test).[^rxkeiki-bill] It also pairs each government-funded payment with at least $1 of private money, paid out by a nonprofit administrator, to help protect SNAP and other benefits. State officials have warned about work rules, child support, and reduced benefits — those concerns are real under Option 1, but largely disappear under Option 2.
 
 [[tanf.bottomline.title]]
 The bottom line
 
 [[tanf.bottomline.body]]
-TANF pays for the start. Hawaiʻi pays for the rest. Families get help right when they need it most — with no strings attached.
+TANF pays for the start for families who qualify. Hawaiʻi pays for the rest. Every family gets the same help right when they need it most — with no strings attached.
 
 [[cta.title]]
-Learn More About RxKids
+Learn More About Rx Kids
 
 [[cta.body]]
 Discover how this innovative program is transforming communities and supporting families across the nation.
@@ -399,13 +399,13 @@ Rx Kids is led by Michigan State University and administered by GiveDirectly. Rx
 -->
 
 [[cost.button.eyebrow]]
-Cost to launch statewide
+Statewide, six-month program
 
 [[cost.button.amt]]
-$15 million
+$66.6 million
 
 [[cost.title]]
-Cost estimate to bring RxKids to Hawaiʻi moms and babies
+Cost estimate to bring RxKeiki to Hawaiʻi moms and babies
 
 [[cost.head.babies]]
 Number of babies
@@ -427,6 +427,9 @@ Prenatal + 6-month program
 
 [[cost.head.twelve.note]]
 Prenatal + 12-month program
+
+[[cost.note]]
+Universal: figures price payments for every baby born in the state. TANF covers $3,000 for each Medicaid birth, and other public or private dollars cover the rest. Administration, capped at 5 percent of spending in the draft bill, is not included.
 
 [[cost.hawaii.county]]
 Hawaiʻi County
@@ -519,5 +522,6 @@ Sources
 [givedirectly-rxkids]: GiveDirectly, Rx Kids program overview. — https://www.givedirectly.org/rxkids/
 [ajph-flint]: American Journal of Public Health, Flint Rx Kids outcomes study. — https://ajph.aphapublications.org/doi/full/10.2105/AJPH.2025.308244
 [rxkids-brand]: Rx Kids, *Brand Standard Guidelines*, July 2026 (the program's own messaging, not independent research).
+[rxkeiki-bill]: Hawaiʻi Rx Keiki Workgroup, "Hawaii Rx Keiki Program," draft bill for the 2027 session (draft; not yet introduced).
 [census-poverty]: U.S. Census Bureau, poverty and income data. — https://www.census.gov/topics/income-poverty/poverty/data.html
 [childcare-aware-2024]: Child Care Aware of America, "2024 Affordability Analysis." — https://info.childcareaware.org/hubfs/Affordability_Analysis_2024.pdf
