@@ -37,7 +37,7 @@ test.describe('text context menu', () => {
   test('the existing-endnote row opens the list in a submenu', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await expect(frame.locator('.ds-submenu')).toHaveCount(0);
-    await frame.locator('.ds-menu button.ds-sub').hover();
+    await frame.locator('.ds-menu button.ds-sub', { hasText: 'Existing endnote' }).hover();
     await page.waitForTimeout(400);
     await expect(frame.locator('.ds-submenu')).toHaveCount(1);
     // Numbered in READING order, with the citation beside it — the number is

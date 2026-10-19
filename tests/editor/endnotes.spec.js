@@ -59,7 +59,7 @@ test.describe('right-click endnotes', () => {
     // "Existing endnote" row, which keeps the common case (a NEW source) from
     // being buried under a document's worth of citations.
     await ta.click({ button: 'right' });
-    await frame.locator('.ds-menu button.ds-sub').hover();
+    await frame.locator('.ds-menu button.ds-sub', { hasText: 'Existing endnote' }).hover();
     const cite = frame.locator('.ds-submenu button', { hasText: 'First source' });
     await expect(cite).toBeVisible();
     await cite.click();
