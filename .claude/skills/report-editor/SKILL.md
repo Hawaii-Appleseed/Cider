@@ -323,6 +323,7 @@ ids it returns:
 | `audit()` | **every mechanical layout problem as data** — see below |
 | `getSlot(key)` / `setSlot(key, md)` | a slot's markdown, read / replaced (renderer's grammar applies) |
 | `setBoxText(id, md)` | a TEXT BOX's words — they live in layout.json, so `setSlot` cannot reach them |
+| `describeImage(host, words, src?)` | an image's alt text, written into the markdown that holds it (a text box id or a slot key; `src` picks one of several; `''` = decoration). `audit()` lists every image still described by its file name as `alt-is-filename` — Insert image writes the file name, so describe each image you place |
 | `setStyle(key, patch)` | typography for a slot key or `'text.N'`: `{size, font, weight, color, tracking, leading, italic, underline, align, case}`; `null` clears one |
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
@@ -348,7 +349,7 @@ assuming the request landed verbatim. `remove`/`duplicate`/`addPage`/
 `addEndnotesSection` push their own history internally and cannot join a
 batch; call them singly.
 
-**`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`,
+**`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`, `describeImage`,
 `setStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
 `addTextBox`, `addShape`, `addSource`. Name an op with `as` and later ops can say `'@name'`
 wherever an id goes, so create-then-place is ONE call:

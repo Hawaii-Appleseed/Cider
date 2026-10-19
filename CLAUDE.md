@@ -433,9 +433,13 @@ Rules that bite:
   comes from, exactly as `C.derived` does, and a SENTENCE is exempt — a
   caption is prose wherever its numbers came from. Worked examples:
   rxkids-fiscal (17), staff-toolkit (15), retitc and dotax-itep.
-  **Still open:** a `data-desc` slot has no click target in the editor
-  (an attribute carries no element to float a field over), so a description
-  is edited through content.md or the MCP connector, not on the page.
+  A `data-desc` slot has no glyphs to float a field over, so it edits from
+  the figure's right-click menu (Description (for screen readers)…). An
+  image that came in through MARKDOWN (Insert image's box, a picture in a
+  paragraph) keeps its alt in that markdown instead: the same menu item
+  rewrites it there, the pilot verb is `describeImage(host, words, src?)`,
+  and `audit()` / `docsync.check` flag an alt that is a file name
+  (`alt_is_filename`, twinned in edit.html). INDESIGN_PARITY.md (16).
 - **Every text box moves and resizes, and a click in text types there
   (2026-09-22).** Reported on tfc-2027-priorities: a single click selected
   every word in the field (edit() selected the host's contents), and not one
