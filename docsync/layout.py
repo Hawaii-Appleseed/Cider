@@ -3199,6 +3199,73 @@ VARS_JS = (
     "if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);})();"
 )
 
+# Threaded frames (Layout.threads). After layout, each thread's story is put
+# back in its first frame and poured forward: in each frame, the first block
+# whose bottom passes the frame's content edge is split at the first LINE
+# that does not fit — a paragraph by Range, so its inline markup (a link, a
+# bold run) is carried across intact; a list by whole items, an <ol> keeping
+# its numbering with `start` — and everything after it moves to the next
+# frame. A continuation carries `ds-cont` (no first-line indent, no space
+# before), the mark InDesign's own text has none of but needs. A last frame
+# that still overflows gets `data-overset` and keeps its words visible.
+#
+# On a phone the sheet's pins are released (mobile_css) and every frame is in
+# the flow, so the story simply stays in its first frame. Without a script at
+# all the same is true: the first frame holds every word. It runs at parse,
+# load, when fonts arrive and on resize, from the story it saved, so a reflow
+# never compounds; window.__dsThreadGather(head) puts a story back in its
+# first frame for the editor to open it as one piece.
+THREAD_CSS = (
+    ".ds-thread .ds-cont{text-indent:0!important;margin-top:0!important}"
+    ".ds-thread>:first-child{margin-top:0}"
+)
+THREAD_EDIT_CSS = (
+    ".ds-thread[data-overset]{outline:1.5px solid #C0392B;outline-offset:2px}"
+    ".ds-thread[data-overset]::after{content:'+';position:absolute;right:-9px;"
+    "bottom:-9px;width:14px;height:14px;line-height:13px;text-align:center;"
+    "font:700 12px/13px system-ui;color:#fff;background:#C0392B;border-radius:2px}"
+)
+THREAD_JS = (
+    "(function(){"
+    "function lim(f){var r=f.getBoundingClientRect(),s=getComputedStyle(f);"
+    "return r.bottom-parseFloat(s.borderBottomWidth||0)-parseFloat(s.paddingBottom||0);}"
+    "function split(el,L){"
+    "if(el.tagName==='UL'||el.tagName==='OL'){var li=[].slice.call(el.children),k=-1;"
+    "for(var i=0;i<li.length;i++)if(li[i].getBoundingClientRect().bottom>L+.5){k=i;break;}"
+    "if(k<=0)return null;var t=el.cloneNode(false);t.classList.add('ds-cont');"
+    "if(el.tagName==='OL')t.setAttribute('start',String(+(el.getAttribute('start')||1)+k));"
+    "for(var j=k;j<li.length;j++)t.appendChild(li[j]);return t;}"
+    "var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),P=[],n;"
+    "while((n=w.nextNode())){var v=n.nodeValue,re=/\\S+/g,m;while((m=re.exec(v)))P.push([n,m.index]);}"
+    "if(!P.length)return null;"
+    "function bot(p){var r=document.createRange();r.setStart(p[0],p[1]);"
+    "r.setEnd(p[0],Math.min(p[1]+1,p[0].nodeValue.length));var q=r.getClientRects();"
+    "return q.length?q[q.length-1].bottom:0;}"
+    "var lo=0,hi=P.length;while(lo<hi){var mid=(lo+hi)>>1;if(bot(P[mid])>L+.5)hi=mid;else lo=mid+1;}"
+    "if(lo===0)return null;if(lo>=P.length)return false;"
+    "var r=document.createRange();r.setStart(P[lo][0],P[lo][1]);r.setEnd(el,el.childNodes.length);"
+    "var t=el.cloneNode(false);t.removeAttribute('id');t.classList.add('ds-cont');"
+    "t.appendChild(r.extractContents());return t;}"
+    "function groups(){var g={};[].forEach.call(document.querySelectorAll('[data-thread]'),function(f){"
+    "var k=f.getAttribute('data-thread');(g[k]=g[k]||[])[+f.getAttribute('data-thread-i')]=f;});"
+    "return g;}"
+    "function gather(fs){var h=fs[0];if(h.__dsStory===undefined)h.__dsStory=h.innerHTML;"
+    "h.innerHTML=h.__dsStory;for(var i=0;i<fs.length;i++){if(i)fs[i].innerHTML='';"
+    "fs[i].removeAttribute('data-overset');}}"
+    "function pour(fs){gather(fs);if(getComputedStyle(fs[0]).position==='static')return;"
+    "for(var i=0;i<fs.length;i++){var f=fs[i],nx=fs[i+1],L=lim(f),kids=[].slice.call(f.children),k=-1;"
+    "for(var j=0;j<kids.length;j++)if(kids[j].getBoundingClientRect().bottom>L+.5){k=j;break;}"
+    "if(k<0)continue;if(!nx){f.setAttribute('data-overset','');break;}"
+    "var mv=[],t=split(kids[k],L);if(t===null)mv.push(kids[k]);else if(t)mv.push(t);"
+    "for(j=k+1;j<kids.length;j++)mv.push(kids[j]);"
+    "for(j=0;j<mv.length;j++)nx.appendChild(mv[j]);}}"
+    "function go(){var g=groups();for(var k in g)pour(g[k].filter(Boolean));}"
+    "window.__dsThread=go;"
+    "window.__dsThreadGather=function(id){var g=groups()[id];if(g)gather(g.filter(Boolean));};"
+    "go();addEventListener('load',go);addEventListener('resize',go);"
+    "if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);})();"
+)
+
 ANCHOR_JS = (
     "(function(){var W=%(w)s;function go(){"
     # Struts first: an element that reserves flow space and whose page holds
@@ -3513,6 +3580,7 @@ class Layout:
         self._type_sent = False
         self._vars_sent = False
         self._char_sent = False
+        self._thread_sent = False
         # Ids whose vacated flow slot is held. The runtime materialises the
         # strut for any of these whose renderer never called spacer() — see
         # attr() and ANCHOR_JS — so it ships whenever one exists.
@@ -3793,6 +3861,10 @@ class Layout:
                 for k in ("imgW", "dx", "dy"):
                     if _num(c[k], f"{where}.crop.{k}") < 0:
                         raise LayoutError(f"{where}.crop.{k} cannot be negative")
+        # Threads first: a frame's words may be empty only because a thread
+        # says so, and a broken `next` should be named as itself rather than
+        # surface as the "has no text" it causes downstream.
+        self._check_threads()
         for i, b in enumerate(self.boxes):
             self._check_box(b, f"box #{i + 1}", seen)
         for name, m in self.masters.items():
@@ -4424,7 +4496,7 @@ class Layout:
             _anim_check(b["anim"], where)
         if b.get("h") is not None:      # optional min-height (never clips)
             _num(b["h"], f"{where}.h")
-        if not str(b.get("md", "")).strip():
+        if not str(b.get("md", "")).strip() and not self.in_thread(bid):
             raise LayoutError(f"{where}: has no text — 'md' is empty")
         # A box may ACT: 'pdf' (a Download-PDF button) or 'toggle' (an
         # expandable section — the button shows/hides another box). An
@@ -4468,6 +4540,95 @@ class Layout:
         _check_object_use(b, "box", self.object_styles, where)
         _check_box_look(self.dressed(b), where)
 
+    # ---- threaded frames (INDESIGN_PARITY.md 4) -----------------------------
+    # A box says `next: "<box id>"` and its words continue there when they
+    # run out of room, InDesign's threaded frames. The FIRST frame of a
+    # thread holds the whole story's markdown; the frames after it hold none.
+    # Where a frame ends is a fact about the laid-out page, so THREAD_JS
+    # works it out after layout and moves the overflow on — the same
+    # measure-then-write pattern ANCHOR_JS uses. Every frame has a fixed
+    # height (`h`), because a frame that grows never runs out of room.
+
+    def _box_ids(self) -> dict:
+        return {b.get("id"): b for b in self.boxes}
+
+    def thread_prev(self) -> dict:
+        """follower id -> the frame before it."""
+        return {b["next"]: b.get("id") for b in self.boxes if b.get("next")}
+
+    def in_thread(self, bid) -> bool:
+        b = self._box_ids().get(bid)
+        return bool(b and (b.get("next") or bid in self.thread_prev()))
+
+    def threads(self) -> list:
+        """Every thread as its frames in order, first frame first."""
+        prev, ids = self.thread_prev(), self._box_ids()
+        out = []
+        for b in self.boxes:
+            if b.get("next") and b.get("id") not in prev:
+                chain, seen, cur = [], set(), b
+                while cur is not None and cur.get("id") not in seen:
+                    seen.add(cur.get("id"))
+                    chain.append(cur)
+                    cur = ids.get(cur.get("next")) if cur.get("next") else None
+                out.append(chain)
+        return out
+
+    def _check_threads(self) -> None:
+        ids, nexts = self._box_ids(), {}
+        for b in self.boxes:
+            n = b.get("next")
+            if n is None:
+                continue
+            where = f"box '{b.get('id')}'"
+            if not isinstance(n, str) or n not in ids:
+                raise LayoutError(f"{where}: next {n!r} is not a text box on this layout")
+            if n == b.get("id"):
+                raise LayoutError(f"{where}: a frame cannot continue into itself")
+            if n in nexts:
+                raise LayoutError(f"{where}: '{n}' already continues '{nexts[n]}' — "
+                                  f"a frame has one frame before it")
+            nexts[n] = b.get("id")
+        for b in self.boxes:                     # a loop has no first frame
+            if b.get("next"):
+                seen, cur = set(), b
+                while cur is not None and cur.get("next"):
+                    if cur.get("id") in seen:
+                        raise LayoutError(f"box '{b.get('id')}': the thread loops "
+                                          f"back on itself")
+                    seen.add(cur.get("id"))
+                    cur = ids.get(cur["next"])
+        for chain in self.threads():
+            for i, b in enumerate(chain):
+                where = f"box '{b.get('id')}' (frame {i + 1} of a thread)"
+                if b.get("h") is None:
+                    raise LayoutError(f"{where}: a threaded frame needs a height "
+                                      f"'h' — a frame that grows never runs out of room")
+                for k in ("anchor", "wrap", "act"):
+                    if b.get(k) is not None:
+                        raise LayoutError(f"{where}: a threaded frame cannot carry '{k}'")
+                if b.get("cols") and int(b["cols"]) > 1:
+                    raise LayoutError(f"{where}: a threaded frame cannot also set "
+                                      f"columns — thread more frames instead")
+                if i and str(b.get("md", "")).strip():
+                    raise LayoutError(f"{where}: only the first frame holds the "
+                                      f"words — this one's would be lost")
+            if not str(chain[0].get("md", "")).strip():
+                raise LayoutError(f"box '{chain[0].get('id')}': the first frame of a "
+                                  f"thread has no text")
+
+    def _thread_once(self) -> str:
+        """THREAD_CSS and THREAD_JS, once per document and only when something
+        is threaded — a layout without threads keeps its bytes."""
+        if self._thread_sent or not any(b.get("next") for b in self.boxes):
+            return ""
+        self._thread_sent = True
+        edit = os.environ.get("DOCSYNC_EDIT")
+        return (f"<style>{THREAD_CSS}{THREAD_EDIT_CSS if edit else ''}"
+                f"@media screen and (max-width:{float(self.page_w):g}in){{"
+                f".ds-thread{{height:auto!important}}}}</style>"
+                f"<script>{THREAD_JS}</script>")
+
     @staticmethod
     def _check_master_item(it: dict, where: str) -> None:
         """What a master item may not be: anchored (it is placed by the page,
@@ -4476,7 +4637,7 @@ class Layout:
         if "@" in str(it.get("id", "")):
             raise LayoutError(f"{where}: an id cannot contain '@' — that marks a "
                               f"master item on a page")
-        for k in ("anchor", "wrap", "act"):
+        for k in ("anchor", "wrap", "act", "next"):
             if it.get(k) is not None:
                 raise LayoutError(f"{where}: a master item cannot carry '{k}'")
 
@@ -4888,6 +5049,12 @@ class Layout:
                     "btn.classList.toggle('ds-tgl-on',open);"
                     "btn.setAttribute('aria-expanded',String(open))}"
                     '</script>')
+        thread_of = {}
+        for chain in self.threads():
+            for i, fb in enumerate(chain):
+                thread_of[fb.get("id")] = (chain[0].get("id"), i)
+        if any(b.get("id") in thread_of for b in mine):
+            out.append(self._thread_once())
         for b in mine:
             b = self.dressed(b)
             act = b.get("act")
@@ -4902,7 +5069,14 @@ class Layout:
             css = (f'box-sizing:border-box;position:absolute;'
                    f'left:{b["x"]}in;top:{b["y"]}in;'
                    f'width:{b["w"]}in;z-index:{int(b.get("z", 2))}')
-            if b.get("h"):
+            thr = thread_of.get(b.get("id"))
+            if thr is not None:
+                # A frame is exactly its height: the overflow is the next
+                # frame's, which is the whole idea. Nothing is ever hidden —
+                # a last frame that still overflows spills visibly, and the
+                # editor marks it overset.
+                css += f';height:{b["h"]}in'
+            elif b.get("h"):
                 css += f';min-height:{b["h"]}in'
             if b.get("fill"):
                 # A background needs breathing room or the words sit on its
@@ -5034,6 +5208,10 @@ class Layout:
             # to recolour it. Shut-side (pointing down), because that is the
             # state a reader meets the button in.
             arrow = self.tgl_arrow(b["id"], edit) if act == "toggle" else ""
+            thr = thread_of.get(b.get("id"))
+            if thr is not None:
+                klass += " ds-thread"
+                extra += f' data-thread="{thr[0]}" data-thread-i="{thr[1]}"'
             out.append(f'<div class="{klass}"{extra}{tag}{an}{PLACED} '
                        f'style="{tglFull}">'
                        f'{block_html(b["md"])}{arrow}</div>')

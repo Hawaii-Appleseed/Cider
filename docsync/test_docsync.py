@@ -4168,6 +4168,35 @@ _two = _fake.replace('<div class="row"><div>a</div><div>b</div></div>' * 4,
 check_eq("two grid blocks (cards, not rows) are not a table",
          check_fake_tables(_two), [])
 
+# --- threaded frames (INDESIGN_PARITY 4) ------------------------------------
+from docsync.layout import THREAD_JS                                         # noqa: E402
+
+_tf = lambda **k: dict({"page": 1, "x": 1, "y": 1, "w": 3, "h": 2}, **k)
+_th = _layout({"boxes": [_tf(id="a", md="one\n\ntwo", next="b"), _tf(id="b", page=2, md="")]})
+_t1, _t2 = _th.text_boxes(1), _th.text_boxes(2)
+check_eq("a frame is exactly its height, and says which thread and place it is",
+         ('data-thread="a" data-thread-i="0"' in _t1, "height:2in" in _t1,
+          "min-height" in _t1, 'data-thread="a" data-thread-i="1"' in _t2), (True, True, False, True))
+check_eq("the runtime rides out once for a document, on the first threaded page",
+         (_t1 + _t2).count(THREAD_JS), 1)
+check_eq("the story sits in the first frame; the next frame is empty until poured",
+         ("two" in _t1, "two" in _t2), (True, False))
+check_eq("a layout with no thread emits none of it",
+         THREAD_JS in _layout({"boxes": [_tf(id="a", md="x")]}).text_boxes(1), False)
+for _bad, _says in (
+        ([_tf(id="a", md="x", next="b"), _tf(id="b", page=2, md="words")], "only the first frame"),
+        ([_tf(id="a", md="x", next="b"), dict(_tf(id="b", page=2, md=""), h=None)], "needs a height"),
+        ([_tf(id="a", md="x", next="zz")], "not a text box"),
+        ([_tf(id="a", md="x", next="a")], "itself"),
+        ([_tf(id="a", md="x", next="c"), _tf(id="b", md="y", next="c"), _tf(id="c", md="")], "already continues"),
+        ([_tf(id="a", md="x", next="b"), _tf(id="b", md="", next="a")], "loops"),
+        ([_tf(id="a", md="x", next="b", cols=2), _tf(id="b", md="")], "columns"),
+        ([_tf(id="a", md="x", next="b", anchor={"to": "k", "dy": 0}), _tf(id="b", md="")], "anchor")):
+    check_eq(f"a thread is refused: {_says}", _says in _layout_error({"boxes": _bad}), True)
+check_eq("a master box cannot thread",
+         "next" in _layout_error({"masters": {"M": {"boxes": [_tf(id="f", md="x", next="g")]}},
+                                  "boxes": [_tf(id="g", md="y")]}), True)
+
 if FAILS:
     print("\n\n".join("FAIL: " + f for f in FAILS))
     print(f"\n{len(FAILS)} failed")
