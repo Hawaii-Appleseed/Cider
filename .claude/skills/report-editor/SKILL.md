@@ -321,6 +321,8 @@ ids it returns:
 | `status()` | `{dirty, editing, page:{w,h,pageless}, overflow, selected}` — cheap, poll it |
 | `inventory()` | every page: elements `{id, kind, box, locked, text}`, slots `{key, text}`, plus sources and status |
 | `audit()` | **every mechanical layout problem as data** — see below |
+| `preflight()` | `audit()` plus `missing-image`, `low-res`, `no-alt`, `low-contrast` (WCAG AA, against what is painted behind the words) and `font-failed`, each with a `severity` — the Preflight panel's list |
+| `hyperlinks()` / `checkLinks()` / `changeLink(old, new)` / `linkBareUrls()` | every link by address with its uses and `state` (`ok`/`broken`/`unverified`/`unchecked`); `checkLinks` asks the local server; `changeLink` rewrites an address everywhere, sources too; `linkBareUrls` links bare addresses in words |
 | `getSlot(key)` / `setSlot(key, md)` | a slot's markdown, read / replaced (renderer's grammar applies) |
 | `setBoxText(id, md)` | a TEXT BOX's words — they live in layout.json, so `setSlot` cannot reach them |
 | `skew(id, deg)` / `wrap(id, side, shape)` | shear ±60° on any placed thing; a wrapped object's `shape`: `box`, `contour` (the picture's outline) or `ellipse` |
