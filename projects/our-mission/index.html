@@ -247,6 +247,14 @@
 }
 
   .px-nav .px-brand-tag{font-size:10.5px;}
+  @media (min-width:701px){
+    .ha-mission .ha-five .ha-five-bodies{display:grid;
+      grid-template-columns:minmax(0,1fr);min-height:0 !important;}
+    .ha-mission .ha-five .ha-five-body{grid-area:1/1;position:relative;
+      align-self:start;}
+    .ha-mission .ha-five .ha-five-body-c:not(.is-active) .ha-focus-card{
+      --morph:0;}
+  }
   
 </style>
 </head>

@@ -52,6 +52,35 @@ STYLE = okinafy(STYLE)
 # okinafy() works here — original.html stays the live page's pristine copy.
 # Its .26em tracking is what makes a small tagline read as one; that stays.
 FLOOR_CSS = "\n  .px-nav .px-brand-tag{font-size:10.5px;}"
+# The "Five" carousel leaned on the page's own script for two things it sets
+# at load. A script runs once per document, and the editor's incremental
+# render puts a re-rendered page in place without running it, so after any
+# edit both fell back to the import's sheet. Both are CSS here instead:
+#  - Its height. The three phase bodies share one slot, each absolutely
+#    positioned over the others, so they give .ha-five-bodies no height; the
+#    sheet holds 340px until sizeBodies() writes the tallest body's height
+#    inline (246px). Without it everything under the carousel dropped 94px
+#    (0.98in). Stacked in one grid cell, the slot is as tall as its tallest
+#    body by itself, script or no script. The min-height is !important
+#    because the script still writes its measurement inline: the same
+#    number, but the height must not depend on whether the script has run.
+#  - The focus icons. Each focus card's icon fades and grows with --morph,
+#    which the sheet rests at 1 and the script holds at 0 until the focus
+#    phase; at 1 the five icons sat over the practices' numbered badges. It
+#    rests at 0 now unless that phase's body is the active one, and the
+#    script's inline value still drives the morph between phases.
+# Desktop only: at 700px and under the import's carousel shows one body at a
+# time and sizes itself. One class more than the import's rules, which sit
+# later, in the body.
+FIVE_CSS = """
+  @media (min-width:701px){
+    .ha-mission .ha-five .ha-five-bodies{display:grid;
+      grid-template-columns:minmax(0,1fr);min-height:0 !important;}
+    .ha-mission .ha-five .ha-five-body{grid-area:1/1;position:relative;
+      align-self:start;}
+    .ha-mission .ha-five .ha-five-body-c:not(.is-active) .ha-focus-card{
+      --morph:0;}
+  }"""
 
 BODY = (HERE / "body.slotted.html").read_text()
 # The markers (A=slot attr, T=slot text, S=movable spacer, E=movable attr,
@@ -82,7 +111,7 @@ html = f"""<!DOCTYPE html>
   body {{ margin:0; background:#EDF1EE; }}
   .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
-  {STYLE}{FLOOR_CSS}
+  {STYLE}{FLOOR_CSS}{FIVE_CSS}
   {EDIT_CSS}
 </style>
 </head>
