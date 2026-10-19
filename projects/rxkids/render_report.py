@@ -180,12 +180,100 @@ BRAND_COLORS = {
     "#efdff5": "#eed6e9",   # magenta 20% tint
     "#f7effa": "#f8eaf5",
     "#f7f0fa": "#f8eaf5",
+    # -- everything else the original page used, snapped to the guide. Hue picks
+    # the family; lighter tones become the guide's tints (80/60/40/20% with white,
+    # 10% for pale backgrounds), mid-dark tones a shade (the colour mixed with
+    # navy, at most 35%), near-black navy, and slate / gray-blue tones the navy
+    # family. Generated once from the built page; see the Rx Kids guide, p.4.
+    "#00669e": "#0272b9",
+    "#00693f": "#067453",
+    "#007a3a": "#048252",
+    "#00915c": "#029151",
+    "#0d47a1": "#0272b9",
+    "#1565c0": "#0083ca",
+    "#1976d2": "#339cd5",
+    "#1b5e20": "#048252",
+    "#1e3a5b": "#0467ae",
+    "#1e9e57": "#00a84f",
+    "#263238": "#10125a",
+    "#2ab972": "#33b972",
+    "#2e5a8b": "#0272b9",
+    "#34b36b": "#33b972",
+    "#388e3c": "#00a84f",
+    "#3949ab": "#0083ca",
+    "#3a4a5c": "#40417b",
+    "#3f6b8c": "#40417b",
+    "#42a5f5": "#66b5df",
+    "#4a3728": "#a66632",
+    "#4a5568": "#40417b",
+    "#4a90d9": "#339cd5",
+    "#546e7a": "#40417b",
+    "#5bc890": "#66cb95",
+    "#5c6bc0": "#339cd5",
+    "#5d4037": "#b62844",
+    "#607d8b": "#70719c",
+    "#64b5f6": "#66b5df",
+    "#6b4423": "#bd742c",
+    "#6b8aa3": "#70719c",
+    "#718096": "#70719c",
+    "#7a5d3a": "#d48026",
+    "#7d1319": "#b62844",
+    "#7fb9de": "#66b5df",
+    "#8b6914": "#c39621",
+    "#90a4ae": "#9fa0bd",
+    "#90caf9": "#99cdea",
+    "#9b7b4e": "#d48026",
+    "#a2dcbc": "#99dcb9",
+    "#a5141d": "#cd2c40",
+    "#a8895a": "#d48026",
+    "#b0bec5": "#9fa0bd",
+    "#bfdcf0": "#cce6f4",
+    "#c11722": "#cd2c40",
+    "#c4a574": "#f9a94a",
+    "#d1e8f5": "#cce6f4",
+    "#d81f29": "#cd2c40",
+    "#d97706": "#d48026",
+    "#dcebf7": "#e6f3fa",
+    "#dff3e8": "#e6f6ed",
+    "#e2e8f0": "#e7e7ee",
+    "#e5e5e5": "#e7e7ee",
+    "#e6f6ee": "#e6f6ed",
+    "#e7daf2": "#f7eaf4",
+    "#e81f2b": "#cd2c40",
+    "#e8e6e1": "#e7e7ee",
+    "#e8ecf0": "#e7e7ee",
+    "#eceff1": "#e7e7ee",
+    "#edf1ee": "#e7e7ee",
+    "#eff9f3": "#e6f6ed",
+    "#f1f4f8": "#e7e7ee",
+    "#f39aa0": "#f5838a",
+    "#f8f9fa": "#f4f4f8",
+    "#f8fafc": "#f0f8fc",
+    "#fafafa": "#f4f4f8",
+    "#fbb040": "#f9a94a",
+    "#fbd0d3": "#fcd6d8",
+    "#fde3bd": "#fdead2",
+    "#fdebec": "#fdeaec",
+    "#fef4e7": "#fef4e8",
+    "#fff6d8": "#fff3cf",
+}
+
+# Shadows and glows: tinted rgba() values follow their colour; neutral black and
+# white ones stay.
+BRAND_RGBA = {
+    "42,58,77": "16,18,90", "229,83,83": "238,48,60", "229,57,53": "238,48,60",
+    "140,20,20": "238,48,60", "0,90,58": "0,168,79", "232,230,225": "231,231,239",
+    "139,90,43": "247,148,29",
 }
 
 
 def brand_colors(markup: str) -> str:
-    return re.sub(r"#[0-9a-fA-F]{6}\b",
-                  lambda m: BRAND_COLORS.get(m.group(0).lower(), m.group(0)), markup)
+    markup = re.sub(r"#[0-9a-fA-F]{6}\b",
+                    lambda m: BRAND_COLORS.get(m.group(0).lower(), m.group(0)), markup)
+    return re.sub(r"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,",
+                  lambda m: "rgba(" + BRAND_RGBA.get(f"{m.group(1)},{m.group(2)},{m.group(3)}",
+                                                       f"{m.group(1)},{m.group(2)},{m.group(3)}") + ",",
+                  markup)
 
 
 # Hearts are the guide's bullet ("ideal for ... bullet points"); Georgia for
@@ -1091,7 +1179,7 @@ html = f"""<!DOCTYPE html>
   /* nowrap: "Month 10/11/12" are wider and would wrap to two lines in the
      narrow columns, pushing their $500 down out of line with the rest. */
   .rxk-col-month {{ font-size: 0.78rem; font-weight: 700; opacity: .95; white-space: nowrap; }}
-  .rxk-col-amt {{ font-size: 1.3rem; font-weight: 800; white-space: nowrap; }}
+  .rxk-col-amt {{ font-size: 1.05rem; font-weight: 700; letter-spacing: -.2px; white-space: nowrap; }}
   .rxk-col-tag {{ font-size: 0.72rem; font-weight: 700; letter-spacing: .5px; margin-top: auto; }}
   /* Purple columns carry the thin separators; green columns are drawn by the
      fill shape (which has its own orange separators), so they add none. */
