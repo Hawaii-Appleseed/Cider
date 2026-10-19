@@ -14,12 +14,6 @@ RxKeiki Hawaiʻi
 [[header.logo.alt]]
 RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies
 
-[[hero.title]]
-RxKeiki
-
-[[hero.hawaii]]
-Hawaiʻi
-
 [[hero.badge]]
 Universal cash support for Hawaiʻi moms and babies
 

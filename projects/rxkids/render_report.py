@@ -337,19 +337,16 @@ EDIT_OVERRIDES = """
 
 # ---- hero (with logo overlaid top-left) --------------------------------------
 def hero() -> str:
-    # The logo lives INSIDE the hero, absolutely positioned like hero.title —
-    # so it sits on the hero's blue background (not a separate white band above
-    # it) and its editor drag coords are relative to the hero, same as the
-    # title. No leading L.spacer("hero.title") here: that spacer reserved
-    # container-level flow space for a title that's actually positioned within
-    # the hero, which only produced a phantom white band above it.
+    # The logo lives INSIDE the hero, absolutely positioned — so it sits on the
+    # hero's background (not a separate white band above it) and its editor drag
+    # coords are relative to the hero. It IS the headline: the old "RxKeiki" /
+    # "Hawaiʻi" title text repeated what the logo already says, so it is gone
+    # (Hawaiʻi stays in the badge beneath).
     logo_src = data_uri(HERE / "assets" / "rxkeiki-logo.png")
     return f"""
 <div class="tfc-hero tfc-reveal"{L.sec("band.hero")}>
     {img_el("header.logo", "rxkeiki-logo", logo_src, esc(C.text("header.logo.alt")))}
     <div class="tfc-hero-content">
-        <h1 class="tfc-hero-title"{L.attr("hero.title")}>{C.t("hero.title")}</h1>
-        <h2 class="tfc-hero-title tfc-hawaii-title"{L.attr("hero.hawaii", "margin-right:20px")}>{C.t("hero.hawaii")}</h2>
         <div class="tfc-hero-badge"{L.attr("hero.badge")}>{C.t("hero.badge")}</div>
     </div>
     <div class="tfc-hero-image-container">
