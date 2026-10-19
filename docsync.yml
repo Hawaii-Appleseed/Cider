@@ -132,6 +132,7 @@ bindings:
         # virtual filesystem won't have it (unlike a real checkout on disk).
         - projects/rxkids/original.html
         - projects/rxkids/assets/rxkeiki-logo.png
+        - projects/rxkids/assets/rxkeiki-logo-white.png
 
   # A SECOND report on the same engine — the proof that one editor serves any
   # report. Scaffolded by hand the way "+ New report" would; its renderer

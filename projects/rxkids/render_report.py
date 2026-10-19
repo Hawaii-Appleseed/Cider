@@ -348,6 +348,41 @@ MODERN_CSS = """
   .rxk-cost td.rxk-cost-tanf, .rxk-cost td.rxk-cost-add { background: none; color: var(--rx-navy); font-weight: 600; }
   .rxk-cost tr.rxk-cost-total th, .rxk-cost tr.rxk-cost-total td { background: var(--rx-tint); }
 
+
+  /* Phase 2: the two charts sit side by side (no carousel) */
+  .tfc-carousel-container { max-width: none; overflow: visible; background: none; border: none;
+                            box-shadow: none; padding: 0; margin: 0 auto 24px; }
+  .tfc-carousel-track { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px;
+                        transform: none !important; transition: none; }
+  .tfc-carousel-slide { min-width: 0; padding: 32px 28px; background: var(--rx-tint);
+                        border: 1px solid var(--rx-line); border-radius: var(--rx-radius); }
+  .tfc-carousel-arrow { display: none; }
+  @media (max-width: 768px) { .tfc-carousel-track { grid-template-columns: 1fr; } }
+
+  /* Phase 2: benefit tabs are pills over one card */
+  .tfc-benefits-layout { flex-direction: column; align-items: stretch; gap: 24px; }
+  .tfc-benefits-tabs { flex: none; display: grid; grid-template-columns: repeat(3, max-content);
+                       justify-content: center; gap: 10px 12px; overflow: visible; padding: 0; }
+  .tfc-benefits-tabs .tfc-benefit-tab { border-radius: 999px; padding: 10px 20px; font-size: .98rem;
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 1px solid var(--rx-line); border-left-width: 1px; border-left-color: var(--rx-line); }
+  .tfc-benefit-tab::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+  .tfc-benefits-tabs .tfc-benefit-tab.active { border-color: transparent; }
+  .tfc-benefits-display { background: none; border: none; min-height: 0; overflow: visible; }
+  .tfc-benefit-content { padding: 0; min-height: 0; }
+  .tfc-benefit-text-box { padding: 32px 40px; box-shadow: var(--rx-shadow); }
+
+  /* Phase 2: the closing call to action is a navy block with the white logo */
+  .tfc-cta-section { background: var(--rx-navy); }
+  .rxk-cta-logo { display: block; width: 320px; height: auto; margin: 0 auto 28px; }
+  .tfc-cta-section p { color: rgba(255,255,255,.85); opacity: 1; }
+  .tfc-cta-section .tfc-btn { background: var(--rx-red); color: #fff; }
+  .tfc-cta-section .tfc-btn:hover { background: var(--rx-red); color: #fff; opacity: .92; }
+  .tfc-cta-section .tfc-btn-outline, .tfc-cta-section .tfc-btn-outline:hover {
+    background: none; border: none; color: #fff; text-decoration: underline;
+    text-underline-offset: 4px; padding: 16px 20px; margin-left: 8px; }
+  .tfc-cta-section p.rxk-partner { border-top-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -484,7 +519,8 @@ def _benefit_rainbow_css() -> str:
         ink = "#10125A" if col in LIGHT_FILLS else "#FFFFFF"
         head = "#10125A" if col in LIGHT_FILLS else col
         out.append(
-            f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}) {{ border-left-color: {col}; }} "
+            f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i})::before {{ background: {col}; }} "
+            f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active::before {{ background: {ink}; }} "
             f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active {{ background: {col}; border-left-color: {col}; color: {ink}; }} "
             f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) .tfc-benefit-list li::before {{ color: {col}; }} "
             f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) h3 {{ color: {head}; }}"
@@ -593,6 +629,16 @@ def flint_expandable() -> str:
 
 
 # ---- stats carousel (2 slides) -----------------------------------------------
+def bar_w(key: str) -> str:
+    """Bar width from its own slot ("49.0%" -> "49.0"). The original page set it in
+    script when the slide scrolled into view; with both charts on show at once
+    the width has to be in the markup."""
+    try:
+        return f"{float(C.text(key).strip().rstrip('%')):g}"
+    except ValueError:
+        return "0"
+
+
 def stats_carousel() -> str:
     return f"""
 <div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.stats")}>
@@ -601,9 +647,6 @@ def stats_carousel() -> str:
             {L.spacer("carousel.h2")}<h2 class="tfc-section-title"{L.attr("carousel.h2")}>{C.t("carousel.h2")}</h2>
 
             <div class="tfc-carousel-container"{L.frame("panel.carousel")}>
-                <button class="tfc-carousel-arrow tfc-carousel-prev" onclick="moveCarousel(-1)">&#10094;</button>
-                <button class="tfc-carousel-arrow tfc-carousel-next" onclick="moveCarousel(1)">&#10095;</button>
-
                 <div class="tfc-carousel-track" id="statsTrack">
                     <div class="tfc-carousel-slide">
                         {L.spacer("carousel.poverty.quote")}
@@ -639,7 +682,7 @@ def stats_carousel() -> str:
                                 {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.single")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.single.label")}</span>
                                     <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill single" id="bar-single">{C.t("carousel.childcare.bar.single.value")}</div>
+                                        <div class="tfc-bar-fill single" id="bar-single" style="width:{bar_w("carousel.childcare.bar.single.value")}%">{C.t("carousel.childcare.bar.single.value")}</div>
                                     </div>
                                     <p style="font-size: 0.9rem; color: #718096; margin-top: 8px;">{C.t("carousel.childcare.bar.single.note")}</p>
                                 </div>
@@ -647,7 +690,7 @@ def stats_carousel() -> str:
                                 {L.spacer("carousel.childcare.bar.married")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.married")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.married.label")}</span>
                                     <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill married" id="bar-married">{C.t("carousel.childcare.bar.married.value")}</div>
+                                        <div class="tfc-bar-fill married" id="bar-married" style="width:{bar_w("carousel.childcare.bar.married.value")}%">{C.t("carousel.childcare.bar.married.value")}</div>
                                     </div>
                                 </div>
                             </div>
@@ -942,6 +985,7 @@ def tanf_option_card(key: str, num_label: str, free: bool = False) -> str:
 def cta() -> str:
     return f"""
 <div class="tfc-cta-section tfc-reveal"{L.frame("panel.cta", "margin-bottom:0")}>
+    {img_el("cta.logo", "rxk-cta-logo", data_uri(HERE / "assets" / "rxkeiki-logo-white.png"), esc(C.text("header.logo.alt")))}
     {L.spacer("cta.title")}<h2{L.attr("cta.title")}>{C.t("cta.title")}</h2>
     {L.spacer("cta.body")}<p{L.attr("cta.body")}>{C.t("cta.body")}</p>
     {L.spacer("cta.link1")}<a href="https://rxkids.org/" target="_blank" class="tfc-btn"{L.attr("cta.link1")}>{C.t("cta.link1.label")}</a>

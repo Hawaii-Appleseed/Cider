@@ -213,7 +213,7 @@ Annual Center-Based Care Cost (2024)
 $24,115
 
 [[carousel.childcare.cost.monthly]]
-($2,010 per month)
+$2,010 per month
 
 [[carousel.childcare.bar.single.label]]
 Percentage of single-parent median income
