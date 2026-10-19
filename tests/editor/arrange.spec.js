@@ -372,4 +372,24 @@ test.describe('arranging', () => {
       expect(near(r.live.w, r.a0.w, 0.006), `in hand ${r.a0.w} -> ${r.live.w}`).toBe(true);
       expect(near(r.a1.w, r.a0.w, 0.006), `rendered ${r.a0.w} -> ${r.a1.w}`).toBe(true);
     });
+  test('a Budget Primer branch card moved stays where it is dropped', async ({ page }) => {
+    // The renderer marked the card with L.tag() and wrote its own style
+    // (its background) without L.style(), so its placement never reached
+    // the page: it dragged, then snapped back on the render. Its photo and
+    // the cards around it stay where they were (its strut holds the slot).
+    await gotoEditor(page);
+    const r = await inEditor(page, async (d, h) => {
+      const b0 = h.box('branch.executive'), p0 = h.box('branch.photo.executive');
+      const n0 = h.box('branch.oha');
+      setSel(d, ['branch.executive']);
+      nudgeSel(d, [0.2, 0.3]);
+      await render(); await h.settle();
+      return { b0, b1: h.box('branch.executive'), p0, p1: h.box('branch.photo.executive'),
+               n0, n1: h.box('branch.oha') };
+    });
+    expect(near(r.b1.x, r.b0.x + 0.2) && near(r.b1.y, r.b0.y + 0.3),
+      `card ${r.b0.x},${r.b0.y} -> ${r.b1.x},${r.b1.y}`).toBe(true);
+    expect(near(r.p1.y, r.p0.y) && near(r.p1.x, r.p0.x), 'its photo stayed').toBe(true);
+    expect(near(r.n1.y, r.n0.y), 'the next card stayed').toBe(true);
+  });
 });
