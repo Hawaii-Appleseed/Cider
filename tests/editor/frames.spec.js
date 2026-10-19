@@ -7,7 +7,9 @@
 // frozen thing for many. Now a container is an L.frame (⟦F⟧ in an imported
 // page): a click on its words takes that field, a click on its padding takes
 // the card, and a field already moved inside a card rides the card without
-// leaping, because the frame is positioned from birth.
+// leaping, because the frame is positioned from birth. (A press on a card's
+// padding that travels before the card is selected bands instead of dragging
+// it — see frame-children-move.spec.js.)
 const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const CARD = '[data-el="frame.fam-1"]';
@@ -71,7 +73,14 @@ test.describe('a card is a frame (tfc-2027-priorities)', () => {
     await drag(page, await pointOf(page, FIELD), 30, 20);
     expect(await page.evaluate(() => layout.positions['field.fam.h3-1'])).toBeTruthy();
     const before = await offsetIn(page, FIELD, CARD);
-    await drag(page, await pointOf(page, CARD, 4), 0, 90);
+    // A card's surface drags it once the card is in hand; pressed cold, the
+    // same drag draws a rubber band (frame-children-move.spec.js), so take
+    // the card first.
+    const pad = await pointOf(page, CARD, 4);
+    await page.mouse.click(pad.x, pad.y);
+    await page.waitForTimeout(200);
+    expect(await page.evaluate(() => [...selIds])).toEqual(['frame.fam-1']);
+    await drag(page, pad, 0, 90);
     expect(await page.evaluate(() => layout.positions['frame.fam-1']), 'the card moved').toBeTruthy();
     const live = await offsetIn(page, FIELD, CARD);
     expect(Math.abs(live.x - before.x), 'x, live').toBeLessThanOrEqual(1.5);
