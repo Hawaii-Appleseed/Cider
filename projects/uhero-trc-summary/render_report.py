@@ -122,7 +122,7 @@ def swap_rows() -> str:
 
 
 def fig(key: str, cls: str = "") -> str:
-    return (f'<div class="fig{cls}"{L.attr(f"cover.fig.{key}")}>'
+    return (f'<div class="fig fig-{key}{cls}"{L.attr(f"cover.fig.{key}")}>'
             f'<div class="fig-n">{C.t(f"cover.fig.{key}.n")}</div>'
             f'<div class="fig-l">{C.t(f"cover.fig.{key}.l")}</div></div>')
 
@@ -135,7 +135,7 @@ def stat(key: str) -> str:
 
 def contents_rows() -> str:
     return "".join(
-        f'<div class="crow"{L.attr(f"cover.crow.{n}")}><span class="cnum">{n}</span>'
+        f'<div class="crow{"" if n == "1" else " crow-n"}"{L.attr(f"cover.crow.{n}")}><span class="cnum">{n}</span>'
         f'<span class="ctxt">{C.t(key, esc=True)}</span></div>'
         for n, key in CONTENTS)
 
@@ -148,7 +148,11 @@ def pairs() -> str:
 
 
 def chap(n: int) -> str:
-    return (f'<div class="chap"{L.frame(f"ch{n}.box")}>'
+    # No handle of its own: the chapter paints nothing, and the columns split
+    # it, so a positioned chapter (a frame, which a container with a handle has
+    # to be) would hand anything moved inside it a containing block in two
+    # pieces. Its heading, summary and paragraph each move on their own.
+    return (f'<div class="chap">'
             f'<div class="chh"><div class="slabel"{L.attr(f"ch{n}.h")}>{C.t(f"ch{n}.h")}</div>'
             f'<div class="bl"{L.attr(f"ch{n}.bl")}>{C.t(f"ch{n}.bl")}</div></div>'
             f'{C.html(f"ch{n}.p", "body")}</div>')
@@ -216,7 +220,7 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   {C.html("about.model.p", "body")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
-  <div class="swhead"{L.frame("swap.head")}><span{L.attr("swap.head.a")}>{C.t("swap.head.a")}</span><span{L.attr("swap.head.b")}>{C.t("swap.head.b")}</span><span{L.attr("swap.head.c")}>{C.t("swap.head.c")}</span></div>
+  <div class="swhead"{L.frame("swap.head")}><span class="sh-a"{L.attr("swap.head.a")}>{C.t("swap.head.a")}</span><span class="sh-b"{L.attr("swap.head.b")}>{C.t("swap.head.b")}</span><span class="sh-c"{L.attr("swap.head.c")}>{C.t("swap.head.c")}</span></div>
   <div class="swaps"{L.frame("swap.rows")}>{swap_rows()}</div>
   {C.html("swap.note", "note")}
   <div class="slabel"{L.attr("about.also.h")}>{C.t("about.also.h")}</div>
@@ -341,7 +345,9 @@ html = f"""<!DOCTYPE html>
   .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:8px 0 0;
            border-top:2px solid {PRIMARY_DARK}; }}
   .fig {{ padding:12px 18px 0 0; }}
-  .fig + .fig {{ border-left:1px solid {LINE}; padding-left:18px; }}
+  /* by class, not .fig + .fig: the editor's strut beside a moved fact would
+     break the sibling chain and take the rule off its neighbour */
+  .fig-b, .fig-c {{ border-left:1px solid {LINE}; padding-left:18px; }}
   .fig-n {{ font-family:Barlow, sans-serif; font-size:44px; font-weight:800;
             line-height:1; color:{PRIMARY_DARK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
@@ -355,7 +361,7 @@ html = f"""<!DOCTYPE html>
   .contents {{ margin:0; border-top:1px solid {LINE}; }}
   .crow {{ display:grid; grid-template-columns:1.7em 1fr; padding:7px 0 6px;
            font-size:15px; line-height:1.35; }}
-  .crow + .crow {{ border-top:1px solid {LINE}; }}
+  .crow-n {{ border-top:1px solid {LINE}; }}
   .cnum {{ font-family:Barlow, sans-serif; font-weight:700; color:{PRIMARY}; }}
   .ctxt {{ color:{TEXT}; }}
   .cfwrap {{ position:absolute !important; left:0.6in; right:0.6in; bottom:0.42in; }}
@@ -402,8 +408,10 @@ html = f"""<!DOCTYPE html>
   .swhead {{ margin:8px 0 0; padding:5px 0; background:{PRIMARY_DARK}; color:#fff;
              font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
              letter-spacing:.06em; text-transform:uppercase; }}
-  .swhead span:first-child {{ padding-left:8px; }}
-  .swhead span:nth-child(2) {{ grid-column:3; }} .swhead span:nth-child(3) {{ grid-column:4; }}
+  /* by class, not nth-child: a strut put in front of a moved header (the
+     editor holding its place) would shift every count after it */
+  .swhead .sh-b {{ grid-column:3; }} .swhead .sh-c {{ grid-column:4; }}
+  .swhead .sh-a {{ padding-left:8px; }}
   .swaps {{ margin:0; border-bottom:1px solid {PRIMARY_DARK}; }}
   .swrow {{ align-items:center; padding:5px 0; }}
   .swrow:nth-child(even) {{ background:{STRIPE}; }}
@@ -472,7 +480,7 @@ html = f"""<!DOCTYPE html>
     h1 {{ font-size:27px; }}
     .figs {{ grid-template-columns:1fr; }}
     .fig {{ padding:12px 0; }}
-    .fig + .fig {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
+    .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
     .datebox, .cgrid {{ grid-template-columns:1fr; }}
     .datebox .box-h {{ margin:0 0 4px; }}
     .cgrid .klabel {{ padding-bottom:4px; }}
