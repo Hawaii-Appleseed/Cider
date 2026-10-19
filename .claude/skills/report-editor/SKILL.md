@@ -323,6 +323,11 @@ ids it returns:
 | `audit()` | **every mechanical layout problem as data** — see below |
 | `getSlot(key)` / `setSlot(key, md)` | a slot's markdown, read / replaced (renderer's grammar applies) |
 | `setBoxText(id, md)` | a TEXT BOX's words — they live in layout.json, so `setSlot` cannot reach them |
+| `skew(id, deg)` / `wrap(id, side, shape)` | shear ±60° on any placed thing; a wrapped object's `shape`: `box`, `contour` (the picture's outline) or `ellipse` |
+| `defineLayer(name, {hidden, locked, rename})` / `toLayer(ids, name)` / `dropLayer(name)` | document layers, first created at the back; hidden = not drawn anywhere, locked = refuses moves |
+| `setGrid({increment, start})` | the baseline grid (pt, in); a style sits on it with `setStyle(key, {grid: true})` |
+| `masterOverride(id, on)` | change one page's copy of a shared-layout item (`'text.folio@3'`) without the others; `false` puts it back. Tables may be shared-layout items and anchors too |
+| `addPath({page, points, closed})` / `pathfinder(ids, op)` / `release(id)` | pen paths (points in page inches, handles as offsets) and Pathfinder (`union` / `subtract` / `intersect` / `exclude`; the lowest shape is the back) |
 | `fit(id, mode, align?)` / `fitFrame(id)` | how a picture sits in its frame, on a designed image or a box that is one picture: `cover` fills the frame, `contain` shows it all, `fill` stretches, `none` is actual size; `align` anchors it (`top left` … `bottom right`); `null` clears. The frame keeps its size. `fitFrame` makes the frame's height follow the picture |
 | `thread(a, b)` / `unthread(id)` | threaded frames: a's words continue in b when they run out of room (b's own words join the story's end; every frame keeps a fixed `h`). The FIRST frame holds the story, so `setBoxText` on it retexts the whole thread. `audit()` reports `overset` when the last frame overflows. `unthread` removes the empty frames after the break |
 | `describeImage(host, words, src?)` | an image's alt text, written into the markdown that holds it (a text box id or a slot key; `src` picks one of several; `''` = decoration). `audit()` lists every image still described by its file name as `alt-is-filename` — Insert image writes the file name, so describe each image you place |
