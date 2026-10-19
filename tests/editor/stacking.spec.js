@@ -132,16 +132,21 @@ test.describe('stacking', () => {
         return [zOf(a), zOf(b), layout.positions[a].z, layout.positions[b].z];
       }, ids);
       // Not "one step from the top of the stack", which is where pinning
-      // alone would have carried them: 0 is behind the page's content in the
-      // Layers panel's terms, 2 one above it.
-      expect(after).toEqual([0, 2, 0, 2]);
+      // alone would have carried them: each enters right beside the content —
+      // a just below it, b just above, under the rect — and the page is
+      // renumbered as the Layers panel does (layerStep). Behind is NEGATIVE:
+      // a positioned z-index:0 paints in front of the page's own text, so the
+      // 0 this used to hand out was behind the content in name only.
+      expect(after).toEqual([-1, 1, -1, 1]);
+      expect(await page.evaluate(() => zOf('stack-rect'))).toBe(2);
       // Bring to front still scans this page's whole stack.
       const front = await page.evaluate(async ([a]) => {
         const d = document.getElementById('out').contentDocument;
         setSel(d, [a]);
         await layerStep(d, 1, true);
-        return zOf(a);
+        return [zOf(a), zOf('stack-rect')];
       }, ids);
-      expect(front).toBe(4);                  // above the rect at 3
+      expect(front[0]).toBeGreaterThan(front[1]);   // above the rect
+      expect(front).toEqual([3, 2]);
     });
 });
