@@ -21,10 +21,10 @@ RxKeiki
 Hawaiʻi
 
 [[hero.badge]]
-Direct cash support for expecting mothers and their infants
+Direct cash support for expecting moms and their babies
 
 [[hero.image.alt]]
-RxKids Hero Image
+Moms, babies and children in Hawaiʻi
 
 [[what.h2]]
 What is RxKids?
@@ -33,7 +33,7 @@ What is RxKids?
 The Program
 
 [[what.body]]
-Based on the successful RxKids program, RxKeiki is a groundbreaking proposal to provide **no-strings-attached financial support** to pregnant mothers. There are RxKids programs in cities across Michigan.
+Based on the successful Rx Kids program, RxKeiki is a groundbreaking proposal to provide **no-strings-attached financial support** to pregnant moms and their babies. There are Rx Kids programs in cities across Michigan.
 
 [[what.heart.alt]]
 Love
@@ -51,7 +51,7 @@ Families decide how to use the funds based on their unique needs—whether for r
 Universal Support
 
 [[what.scene.left.body]]
-Every pregnant mother in participating communities receives support—no complicated eligibility requirements or means testing.
+Every pregnant mom in participating communities receives support—no complicated eligibility requirements or means testing.
 
 [[what.scene.bottom.title]]
 Critical First Year
@@ -75,7 +75,7 @@ Better Health Outcomes
 Child Development
 
 [[benefits.development.bullets]]
-- **80% of participants** report RxKids helped them become more confident parents[^rxkids-research-brief]
+- **80% of participants** report Rx Kids helped them become more confident parents[^rxkids-research-brief]
 - Reduced NICU admissions establish stronger developmental foundations[^rxkids-nicu]
 - Funds enable direct investments in home learning environments and enrichment materials[^rxkids-intl-analysis]
 - 59% found it easier to obtain needed healthcare[^rxkids-research-brief]
@@ -84,7 +84,7 @@ Child Development
 Housing Stability
 
 [[benefits.housing.bullets]]
-- **91% decrease in evictions** among RxKids participants[^rxkids-impact]
+- **91% decrease in evictions** among Rx Kids participants[^rxkids-impact]
 - Average reduction in housing debt of **over $1,000 per family**[^rxkids-savings]
 - 57% of participants used funds explicitly for rent payments[^rxkids-research-brief]
 - Represents a **75% income expansion** for lowest-income families[^rxkids-nicu]
@@ -93,7 +93,7 @@ Housing Stability
 Food Security
 
 [[benefits.food.bullets]]
-- **78% of participants** use RxKids funds for food purchases[^rxkids-research-brief]
+- **78% of participants** use Rx Kids funds for food purchases[^rxkids-research-brief]
 - 8.2% increase in families reporting they have "enough of the kinds of foods we want"[^rxkids-research-brief]
 - Cash enables purchase of preferred nutritious foods rather than reliance on emergency assistance
 - Better nutrition supports improved maternal health and birth outcomes[^rxkids-intl-analysis]
@@ -111,10 +111,28 @@ Economic Mobility
 Family Bonding
 
 [[benefits.bonding.bullets]]
-- Mothers report feeling **more loved, valued, empowered, and respected**[^rxkids-impact]
+- Moms report feeling **more loved, valued, empowered, and respected**[^rxkids-impact]
 - "My mental space is different, so I'm happy to be happy for my baby" — Participant[^rxkids-survey-nov2024]
 - Reduced financial stress enables greater emotional availability for children[^rxkids-maltreatment]
 - Trust in healthcare institutions rose by 10 percentage points[^rxkids-savings]
+
+[[works.title]]
+Healthier Moms. Healthier Babies.
+
+[[works.lead]]
+What Rx Kids is delivering in Michigan:[^rxkids-brand]
+
+[[works.1]]
+Nearly all eligible families enroll
+
+[[works.2]]
+More prenatal visits and pediatric check-ups
+
+[[works.3]]
+More babies surviving their first month of life
+
+[[works.4]]
+Low overhead, with safeguards that get payments to eligible families
 
 [[flint.button]]
 Example: Flint Michigan
@@ -123,7 +141,7 @@ Example: Flint Michigan
 Case Study · Flint, Michigan
 
 [[flint.lead]]
-Comparing Flint mothers eligible for Rx Kids in 2024 with 2023 — every hardship and mental-health measure improved.[^ajph-flint]
+Comparing Flint moms eligible for Rx Kids in 2024 with 2023 — every hardship and mental-health measure improved.[^ajph-flint]
 
 [[flint.stat.rent.value]]
 13.0%
@@ -240,7 +258,7 @@ more than $3,000
 Pregnancy Enrollment
 
 [[steps.1.text]]
-Expectant mothers enroll during their third trimester of pregnancy.
+Expecting moms enroll during their third trimester of pregnancy.
 
 [[steps.2.phase]]
 Before Birth
@@ -345,7 +363,7 @@ For families who qualify, TANF could pay for all 12 months. It's simpler to fund
 Stays no strings
 
 [[tanf.option2.body]]
-TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest — plus the families who don't qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how RxKids already runs in Michigan.
+TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest — plus the families who don't qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how Rx Kids already runs in Michigan.
 
 [[tanf.note]]
 Hawaiʻi's bill (HB2006) already limits TANF money to families on Medicaid or under 300% of the poverty line — but it doesn't yet cap TANF to those first few months. Adding that cap is the key to keeping the program no-strings. It's also why some state officials have warned about work rules, child support, and reduced benefits — those concerns are real under Option 1, but largely disappear under Option 2.
@@ -497,5 +515,6 @@ Sources
 [upjohn-study]: W.E. Upjohn Institute, "Study finds Rx Kids program supports families, drives jobs and income growth." — https://www.upjohn.org/research-highlights/study-finds-rx-kids-program-supports-families-drives-jobs-and-income-growth
 [givedirectly-rxkids]: GiveDirectly, Rx Kids program overview. — https://www.givedirectly.org/rxkids/
 [ajph-flint]: American Journal of Public Health, Flint Rx Kids outcomes study. — https://ajph.aphapublications.org/doi/full/10.2105/AJPH.2025.308244
+[rxkids-brand]: Rx Kids, *Brand Standard Guidelines*, July 2026 (the program's own messaging, not independent research).
 [census-poverty]: U.S. Census Bureau, poverty and income data. — https://www.census.gov/topics/income-poverty/poverty/data.html
 [childcare-aware-2024]: Child Care Aware of America, "2024 Affordability Analysis." — https://info.childcareaware.org/hubfs/Affordability_Analysis_2024.pdf

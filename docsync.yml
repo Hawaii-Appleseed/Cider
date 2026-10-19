@@ -98,7 +98,7 @@ bindings:
     # the image itself is the editor's "Replace image…".
     editability_ok:
       - "RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies"
-      - "RxKids Hero Image"
+      - "Moms, babies and children in Hawaiʻi"
       - "Love"
       - "Childcare Center"
     # Also re-stages the editor, unlike budget-primer's `make ... pub` (whose
@@ -121,9 +121,9 @@ bindings:
       render: projects/rxkids/render_report.py
       out: projects/rxkids/index.html
       layout: projects/rxkids/layout.json
-      # rxkids.org's own brand palette: navy text, accent red, brand blue,
+      # Rx Kids Brand Standard Guidelines (July 2026) palette: navy text, red, blue,
       # green, orange, white — the swatches the editor offers for recolouring.
-      palette: ["#2A3A4D", "#EE303B", "#0082C9", "#00A750", "#F6921E", "#FFFFFF"]
+      palette: ["#10125A", "#EE303C", "#0083CA", "#00A84F", "#F7941D", "#FFC20E", "#AB3192", "#FFFFFF"]
       page: [12.5, 84]
       margins: [0.3, 0.3]
       engine:

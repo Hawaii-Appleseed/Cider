@@ -25,6 +25,7 @@ from pathlib import Path
 import base64
 import html as _html
 import json
+import re
 import os
 import sys
 
@@ -136,6 +137,87 @@ STYLE = rebrand(STYLE)
 # okinafy() rewrites the inherited stacks; original.html stays untouched.
 STYLE = okinafy(STYLE)
 
+# ---- Rx Kids Brand Standard Guidelines (July 2026) pass ----------------------
+# Fonts: Franklin Gothic (headlines, subheads, body) and Georgia Pro (quotes,
+# subheads). Libre Franklin (OFL) stands in for Franklin Gothic on the web;
+# Georgia is the system face Georgia Pro extends. OkinaOpenSans leads every
+# stack so U+02BB (the Hawaiian okina) gets a real glyph -- Libre Franklin and
+# Georgia do not encode it (see docsync/okina.py; its unicode-range claims
+# nothing else, so it is safe in front of any family).
+FRANKLIN = ("OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Book', "
+            "'Franklin Gothic Medium', Arial, sans-serif")
+FRANKLIN_HEAVY = ("OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Heavy', "
+                  "'Franklin Gothic Demi', Arial, sans-serif")
+GEORGIA = "OkinaOpenSans, 'Georgia Pro', Georgia, serif"
+FONT_LINK = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+             '<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@'
+             '0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">')
+STYLE = re.sub(r"@import url\('[^']*family=Open\+Sans[^']*'\);\s*", "", STYLE)
+STYLE = re.sub(r"@import url\('[^']*family=Halyard\+Display[^']*'\);\s*", "", STYLE)
+STYLE = STYLE.replace("font-family: 'Halyard Display', 'Oswald', 'Impact', sans-serif;",
+                      f"font-family: {FRANKLIN_HEAVY};")
+STYLE = STYLE.replace("font-family: 'Arial Black', 'Helvetica', sans-serif;",
+                      f"font-family: {FRANKLIN_HEAVY};")
+STYLE = re.sub(r"font-family:\s*(?:OkinaOpenSans,\s*)?'?Open Sans'?,\s*sans-serif;",
+               f"font-family: {FRANKLIN};", STYLE)
+
+# Colors: snap the page's own variants to the guide's palette (hex values from
+# p.4 of the guide). Darker "depth" shades (#c11722, #007a3a ...) stay: they
+# are shades of these hues kept for text contrast on white, which the guide's
+# tints (all lighter) cannot give. Purples fold into the guide's magenta
+# #AB3192 (tints 80/60/40/20 are mixes with white); navy text becomes #10125A.
+BRAND_COLORS = {
+    "#2a3a4d": "#10125a",   # navy (headings / strong text)
+    "#ee303b": "#ee303c",   # red
+    "#0082c9": "#0083ca",   # blue
+    "#00a750": "#00a84f",   # green
+    "#f6921e": "#f7941d",   # orange
+    "#f0a800": "#ffc20e",   # yellow
+    "#8e3b9c": "#ab3192",   # magenta
+    "#7a3e9d": "#ab3192",
+    "#5b2c7b": "#ab3192",
+    "#9b4db8": "#bc5aa8",   # magenta 80% tint
+    "#efdff5": "#eed6e9",   # magenta 20% tint
+    "#f7effa": "#f8eaf5",
+    "#f7f0fa": "#f8eaf5",
+}
+
+
+def brand_colors(markup: str) -> str:
+    return re.sub(r"#[0-9a-fA-F]{6}\b",
+                  lambda m: BRAND_COLORS.get(m.group(0).lower(), m.group(0)), markup)
+
+
+# Hearts are the guide's bullet ("ideal for ... bullet points"); Georgia for
+# quotes. CSS-only, so nothing here needs a slot or a handle.
+_HEART = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
+          "<path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 "
+          "3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86"
+          "-8.55 11.54L12 21.35z'/></svg>")
+BRAND_CSS = f"""
+  .tfc-benefit-list li::before {{
+    content: ""; width: 15px; height: 15px; top: 5px; left: 1px;
+    background: currentColor;
+    -webkit-mask: url("{_HEART}") center / contain no-repeat;
+            mask: url("{_HEART}") center / contain no-repeat; }}
+  .rxk-works {{ background: #fff; border-radius: 16px; padding: 24px 32px 12px;
+                margin: 0 0 32px; box-shadow: 0 2px 10px rgba(16,18,90,.08); }}
+  .rxk-works-title {{ margin: 0 0 4px; font-size: 1.6rem; color: #10125A; }}
+  .rxk-works-lead {{ margin: 0 0 16px; color: #4a5568; font-size: 1.05rem; }}
+  .rxk-works-list {{ list-style: none; margin: 0; padding: 0; display: grid;
+                     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 4px 28px; }}
+  .rxk-works-list li {{ position: relative; padding: 0 0 14px 28px; font-size: 1.05rem;
+                        line-height: 1.45; color: #10125A; font-weight: 600; text-align: left; }}
+  .rxk-works-list li::before {{ content: ""; position: absolute; left: 0; top: 4px;
+    width: 18px; height: 18px; background: currentColor;
+    -webkit-mask: url("{_HEART}") center / contain no-repeat;
+            mask: url("{_HEART}") center / contain no-repeat; }}
+  .rxk-works-1::before {{ color: #EE303C; }} .rxk-works-2::before {{ color: #0083CA; }}
+  .rxk-works-3::before {{ color: #00A84F; }} .rxk-works-4::before {{ color: #AB3192; }}
+  .tfc-pullout-quote .tfc-quote-text, .tfc-flint-lead, .tfc-highlight-box p {{
+    font-family: {GEORGIA}; }}
+"""
+
 # The hero's auto-cycling JS (setInterval over three hardcoded URLs) would
 # silently overwrite a user's "replace image" edit a few seconds later — cut
 # JUST that block in edit mode, leaving the published page untouched. The
@@ -220,7 +302,11 @@ def scene_tag(side: str, key: str) -> str:
 BENEFIT_KEYS = ["health", "development", "housing", "food", "economic", "bonding"]
 # The RxKeiki logo's rainbow, one per benefit tab (red, blue, green, orange,
 # magenta, gold) — sampled from the logo PNG.
-BENEFIT_COLORS = ["#D81830", "#0078C0", "#009048", "#F09018", "#A81878", "#F0A800"]
+BENEFIT_COLORS = ["#EE303C", "#0083CA", "#00A84F", "#F7941D", "#AB3192", "#FFC20E"]
+# White on red/blue/magenta; navy on green/orange/yellow (white on those is
+# under 3.2:1). The same three headings take navy: orange and yellow on
+# white are 2.2:1 and 1.6:1.
+LIGHT_FILLS = {"#00A84F", "#F7941D", "#FFC20E"}
 
 
 def _benefit_rainbow_css() -> str:
@@ -229,14 +315,30 @@ def _benefit_rainbow_css() -> str:
     match. Gold takes dark ink for contrast; every other fill takes white."""
     out = []
     for i, col in enumerate(BENEFIT_COLORS, start=1):
-        ink = "#2A3A4D" if col == "#F0A800" else "#FFFFFF"
+        ink = "#10125A" if col in LIGHT_FILLS else "#FFFFFF"
+        head = "#10125A" if col in LIGHT_FILLS else col
         out.append(
             f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}) {{ border-left-color: {col}; }} "
             f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active {{ background: {col}; border-left-color: {col}; color: {ink}; }} "
             f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) .tfc-benefit-list li::before {{ color: {col}; }} "
-            f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) h3 {{ color: {col}; }}"
+            f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) h3 {{ color: {head}; }}"
         )
     return "\n  ".join(out)
+
+
+WORKS_KEYS = ["1", "2", "3", "4"]
+
+
+def works_strip() -> str:
+    """The guide's "Healthier Moms. Healthier Babies." message: four program
+    results from its Brand Messaging page, hearts in the palette's colours."""
+    items = "".join(
+        f'<li class="rxk-works-{k}">{C.t(f"works.{k}")}</li>' for k in WORKS_KEYS)
+    return f"""{L.spacer("works")}<div class="rxk-works"{L.attr("works")}>
+                <h3 class="rxk-works-title">{C.t("works.title")}</h3>
+                <p class="rxk-works-lead">{C.t("works.lead")}</p>
+                <ul class="rxk-works-list">{items}</ul>
+            </div>"""
 
 
 def benefits_widget() -> str:
@@ -250,6 +352,8 @@ def benefits_widget() -> str:
     <div class="tfc-content-container">
         <div class="tfc-section tfc-benefits-widget-section" style="margin: 0 auto;">
             {L.spacer("benefits.h2")}<h2 class="tfc-section-title"{L.attr("benefits.h2")}>{C.t("benefits.h2")}</h2>
+
+            {works_strip()}
 
             <div class="tfc-benefits-layout">
             {L.spacer("benefits.tabs")}<div class="tfc-benefits-tabs"{L.attr("benefits.tabs")}>
@@ -878,12 +982,14 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
+{FONT_LINK}
 <style>
 {OKINA_FACES}
   body {{ margin:0; background:#EDF1EE; }}
   .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}
+  {BRAND_CSS}
   /* original.html reserves dead space at the top for chrome we don't have:
      body{{padding-top:80px}} cleared Squarespace's sticky nav, and
      .tfc-container's own 30px top padding sat below it — both removed so the
@@ -1044,7 +1150,7 @@ html = f"""<!DOCTYPE html>
   .rxk-cost-btn-eyebrow {{ font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px;
                            text-transform: uppercase; opacity: .9; }}
   .rxk-cost-btn-amt {{ font-size: 2.4rem; font-weight: 800; letter-spacing: .5px;
-                       font-family: 'Halyard Display','Oswald','Impact',sans-serif; }}
+                       font-family: {FRANKLIN_HEAVY}; }}
   .rxk-cost-btn-foot {{ font-size: 0.78rem; font-weight: 600; opacity: .92;
                         display: inline-flex; align-items: center; gap: 8px; }}
   .rxk-cost-btn .tfc-expand-icon {{ transition: transform .3s ease; }}
@@ -1126,5 +1232,6 @@ function rxkToggle(btn, id) {{
 </html>
 """
 
+html = brand_colors(html)
 _OUT.write_text(html)
 print(f"wrote {_OUT} ({len(html):,} bytes)")
