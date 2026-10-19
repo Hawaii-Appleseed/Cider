@@ -10,6 +10,19 @@
 > — load it when building or changing anything a report's user should be able
 > to edit. This file is the always-on summary.
 
+## Tables in reports are real tables (Devin's rule, 2026-10-19)
+
+Never build tabular data out of `<div>`s and CSS grid in a renderer (UHERO TRC
+Table 1 shipped that way and a column of it could not be deleted in the
+editor). A table is a table object in layout.json `tables` with `"flow": true`
+(`header`, `rows`, optional `headerFill`/`band`/`colw`), drawn where it belongs
+by `L.flow_table("<id>", DEFAULT)` — same object, same Table panel, same
+right-click rows & columns as a placed table, and it stacks into labelled rows
+at phone width. `DEFAULT` only draws while layout.json lacks the entry, and
+`docsync.check` flags that (`fake-table`: "drawn from the renderer's default")
+along with any 3+ sibling multi-column grid rows (`.row x6 in .rows`; list that
+exact line in `editability_ok` if it is genuinely a list, e.g. a contents page).
+
 ## Default to driving the editor, not editing files
 
 When the user asks for a visual/content change — move, resize, restyle,

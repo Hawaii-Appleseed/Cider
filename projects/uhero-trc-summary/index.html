@@ -133,26 +133,13 @@
   .box-p b { color:#2F3E46; }
   .ds-graphic { margin-top:8px; }
 
-  /* Table 1, the six swaps */
-  .swhead, .swrow { display:grid; grid-template-columns:2.4in 0.3in 2.65in 1fr; }
-  .swhead { margin:8px 0 0; padding:5px 0; background:#354F52; color:#fff;
-             font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
-             letter-spacing:.06em; text-transform:uppercase; }
-  /* by class, not nth-child: a strut put in front of a moved header (the
-     editor holding its place) would shift every count after it */
-  .swhead .sh-b { grid-column:3; } .swhead .sh-c { grid-column:4; }
-  .swhead .sh-a { padding-left:8px; }
-  .swaps { margin:0; border-bottom:1px solid #354F52; }
-  .swrow { align-items:center; padding:5px 0; }
-  .swrow:nth-child(even) { background:#F4F6F4; }
-  .swrow + .swrow { border-top:1px solid #DCE3DC; }
-  .sw { font-size:13.5px; line-height:1.3; padding-right:10px; }
-  .sw.a { padding-left:8px; color:#2F3E46; font-weight:600; }
-  .sw.b { color:#232B2D; }
-  .arr { color:#5F7072; }
-  .tag { font-size:13.5px; font-weight:600; line-height:1.3; color:#2F3E46; }
-  .tag.up { color:#52796F; }
-  .tag.dn { color:#A8603F; }
+  /* Table 1, the six swaps: a real table (L.flow_table), so the layout's own
+     fills and borders apply; this adds only the type */
+  table.ds-flow { margin:8px 0 0; border-bottom:1px solid #354F52; }
+  table.ds-flow th { font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+                      letter-spacing:.06em; text-transform:uppercase; }
+  table.ds-flow td { font-size:13.5px; line-height:1.3; color:#232B2D; border-top:1px solid #DCE3DC; }
+  table.ds-flow td:first-child { color:#2F3E46; font-weight:600; }
 
   .split { display:flex; gap:26px; align-items:flex-start; margin-top:6px; }
   .splitl { flex:0 0 4.6in; }
@@ -218,6 +205,23 @@
     .cols { column-count:1; }
     .split { flex-direction:column; gap:10px; }
     .splitl { flex:none; }
+    table.ds-flow { border-top:2px solid #354F52; }
+    table.ds-flow td { padding:9px 8px; }
+    .cover-h1 { font-size:36px; padding-top:48px; }
+    .ds-graphic { width:auto !important; max-width:100% !important; }
+    .cfwrap, .pfwrap { position:static !important; left:auto; right:auto;
+                        bottom:auto; margin-top:26px; }
+    h1 { font-size:27px; }
+    .figs { grid-template-columns:1fr; }
+    .fig { padding:12px 0; }
+    .fig-b, .fig-c { border-left:0; padding-left:0; border-top:1px solid #DCE3DC; }
+    .datebox, .cgrid { grid-template-columns:1fr; }
+    .datebox .box-h { margin:0 0 4px; }
+    .cgrid .klabel { padding-bottom:4px; }
+    .contents { border-top:0; }
+    .cols { column-count:1; }
+    .split { flex-direction:column; gap:10px; }
+    .splitl { flex:none; }
     .swhead { display:none; }
     .swaps { border-top:2px solid #354F52; }
     .swrow { grid-template-columns:1fr; gap:2px; padding:9px 8px; }
@@ -266,7 +270,7 @@
     <div class="cfoot-l">Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is the draft's printed page number.</div>
     <div class="cfoot-l">Not reviewed or endorsed by UHERO or the Tax Review Commission. Figures are preliminary and may change in the final report.</div>
   </div></div>
- 
+ <style>@media screen and (max-width:8.5in){[data-placed],.page [style*="position:absolute"]:not(.shape-layer){position:static !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;width:auto !important;max-width:100% !important;transform:none !important;rotate:none !important;margin:0 0 12px !important}.ds-spacer{display:none !important}.page img{max-width:100% !important;height:auto}.page table{display:block;max-width:100%;overflow-x:auto}}</style>
 </section>
 
 <section class="page">
@@ -274,9 +278,7 @@
   <p class="lead">UHERO is explicit that "none of these reforms is a recommendation" (p. 158). Each reform is set up as a <b>swap</b>: a tax change paired with a second change that replaces the money, so the <b>General Fund</b>, the state's main account for general spending, ends 2027 at the same level. Economists call this <b>revenue-neutral</b>. County budgets can still come out ahead or behind (p. 2).</p>
   <p class="body">The estimates come from a model of Hawaiʻi households built on Census survey data, with gaps filled from IRS records. People in the model can change how much they earn or report; for now, nobody moves away and visitors keep spending as before. <b>Results for the six swaps are due in the final report</b> (p. 158).</p>
   <div class="slabel tbl">Table 1. The six tax swaps (p. 161)</div>
-  <div class="swhead" style="position:relative"><span class="sh-a">The change</span><span class="sh-b">The make-up change</span><span class="sh-c">Our read (not UHERO's)</span></div>
-  <div class="swaps" style="position:relative"><div class="swrow" style="position:relative"><div class="sw a">No GET on groceries</div><div class="arr">&rarr;</div><div class="sw b">Raise all income-tax rates by the same percentage</div><div class="tag mx">Mixed / unclear</div></div><div class="swrow" style="position:relative"><div class="sw a">No GET on groceries</div><div class="arr">&rarr;</div><div class="sw b">Cut the food/excise tax credit</div><div class="tag mx">Mixed / unclear</div></div><div class="swrow" style="position:relative"><div class="sw a">Tax long-term capital gains like ordinary income</div><div class="arr">&rarr;</div><div class="sw b">Lower the top three income-tax rates</div><div class="tag up">Leans toward lower earners</div></div><div class="swrow" style="position:relative"><div class="sw a">Raise the top income-tax rate by 1 point</div><div class="arr">&rarr;</div><div class="sw b">Lower the bottom three rates, or enlarge the food/excise credit</div><div class="tag up">Helps lower earners</div></div><div class="swrow" style="position:relative"><div class="sw a">Exempt long-term capital gains from tax</div><div class="arr">&rarr;</div><div class="sw b">Raise the top three income-tax rates</div><div class="tag mx">Mixed / unclear</div></div><div class="swrow" style="position:relative"><div class="sw a">Raise the GET rate by half a point</div><div class="arr">&rarr;</div><div class="sw b">Lower all income-tax rates by the same percentage</div><div class="tag dn">Leans against lower earners</div></div></div>
-  <p class="note">The direction tags are the Coalition's reading. UHERO has not scored any swap yet; its results come in the final report.</p>
+  <style>table.ds-flow{border-collapse:collapse;table-layout:fixed}table.ds-flow td,table.ds-flow th{text-align:left;vertical-align:middle;padding:5px 8px}@media (max-width:640px){table.ds-flow,table.ds-flow tbody,table.ds-flow tr,table.ds-flow td{display:block;width:100%;box-sizing:border-box}table.ds-flow colgroup,table.ds-flow tr.ds-hdr{display:none}table.ds-flow td[data-label]:not(:first-child)::before{content:attr(data-label) ": ";font-weight:700;opacity:.7}}</style><table class="ds-table ds-flow" style="box-sizing:border-box;width:100%"><colgroup><col style="width:47.0000%"><col style="width:53.0000%"></colgroup><tr class="ds-hdr"><th style="background:#354F52;color:#FFFFFF">The change</th><th style="background:#354F52;color:#FFFFFF">The make-up change</th></tr><tr><td data-label="The change">No GET on groceries</td><td data-label="The make-up change">Raise all income-tax rates by the same percentage</td></tr><tr><td data-label="The change" style="background:#F4F6F4">No GET on groceries</td><td data-label="The make-up change" style="background:#F4F6F4">Cut the food/excise tax credit</td></tr><tr><td data-label="The change">Tax long-term capital gains like ordinary income</td><td data-label="The make-up change">Lower the top three income-tax rates</td></tr><tr><td data-label="The change" style="background:#F4F6F4">Raise the top income-tax rate by 1 point</td><td data-label="The make-up change" style="background:#F4F6F4">Lower the bottom three rates, or enlarge the food/excise credit</td></tr><tr><td data-label="The change">Exempt long-term capital gains from tax</td><td data-label="The make-up change">Raise the top three income-tax rates</td></tr><tr><td data-label="The change" style="background:#F4F6F4">Raise the GET rate by half a point</td><td data-label="The make-up change" style="background:#F4F6F4">Lower all income-tax rates by the same percentage</td></tr></table>
   <div class="slabel">Also to be estimated in the final report (p. 161)</div>
   <p class="body">The final report will also look at a lower <b>corporate income tax</b> rate (ch. 6); a <b>statewide property tax</b>, possibly with rates that vary by owner and use (ch. 5); a higher <b>hotel and vacation-rental tax</b> (the TAT) with payback for residents (ch. 4); the way the <b>GET piles up</b> when it is paid at each step of production (ch. 3); and how many people might <b>move away</b> after income-tax changes (ch. 11).</p>
   <div class="box" style="position:relative">

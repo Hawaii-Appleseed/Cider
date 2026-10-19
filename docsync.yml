@@ -380,6 +380,9 @@ bindings:
     hub: true
     content: projects/uhero-trc-summary/content.md
     editability: strict
+    editability_ok:
+      # a table of contents (number + title per line), a list rather than a table
+      - ".crow x4 in .contents"
     build: python3 projects/uhero-trc-summary/render_report.py && python3 -m docsync.stage --id uhero-trc-summary
     outputs:
       - projects/uhero-trc-summary/index.html

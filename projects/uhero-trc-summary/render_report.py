@@ -68,8 +68,9 @@ TAX_MIX = [("General excise & use tax", 40.4), ("Individual income tax", 28.7),
 WHERE = [("Savings go to", [("Residents", 214.1), ("Visitors", 53.3)]),
          ("Revenue lost by", [("State", 237.7), ("Counties", 29.7)])]
 
-# (tag text, css class) per swap; wording lives in content.md
-SWAP_TAG = {1: "mx", 2: "mx", 3: "up", 4: "up", 5: "mx", 6: "dn"}
+# Table 1 is a real table (layout.json `tables`, id "swaps", flow); this is only
+# what draws if that entry is ever missing
+SWAPS_DEFAULT = {"header": True, "rows": [["The change", "The make-up change"]]}
 
 CONTENTS = [("1", "contents.1"), ("2", "contents.2"),
             ("3", "contents.3"), ("4", "contents.4")]
@@ -107,18 +108,6 @@ def where_spec() -> dict:
     return {"type": "stacked-row", "labels": [a for a, _ in WHERE],
             "series": series, "legend": True, "legendPos": "top",
             "values": False, "grid": False, "labelColor": INK}
-
-
-def swap_rows() -> str:
-    out = []
-    for n in range(1, 7):
-        out.append(
-            f'<div class="swrow"{L.frame(f"swap.row.{n}")}>'
-            f'<div class="sw a"{L.attr(f"swap.{n}.a")}>{C.t(f"swap.{n}.a")}</div>'
-            f'<div class="arr">&rarr;</div>'
-            f'<div class="sw b"{L.attr(f"swap.{n}.b")}>{C.t(f"swap.{n}.b")}</div>'
-            f'<div class="tag {SWAP_TAG[n]}"{L.attr(f"swap.{n}.tag")}>{C.t(f"swap.{n}.tag")}</div></div>')
-    return "".join(out)
 
 
 def fig(key: str, cls: str = "") -> str:
@@ -220,9 +209,7 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   {C.html("about.model.p", "body")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
-  <div class="swhead"{L.frame("swap.head")}><span class="sh-a"{L.attr("swap.head.a")}>{C.t("swap.head.a")}</span><span class="sh-b"{L.attr("swap.head.b")}>{C.t("swap.head.b")}</span><span class="sh-c"{L.attr("swap.head.c")}>{C.t("swap.head.c")}</span></div>
-  <div class="swaps"{L.frame("swap.rows")}>{swap_rows()}</div>
-  {C.html("swap.note", "note")}
+  {L.flow_table("swaps", SWAPS_DEFAULT)}
   <div class="slabel"{L.attr("about.also.h")}>{C.t("about.also.h")}</div>
   {C.html("about.also.p", "body")}
   <div class="box"{L.frame("about.glossbox")}>
@@ -403,26 +390,13 @@ html = f"""<!DOCTYPE html>
   .box-p b {{ color:{INK}; }}
   .ds-graphic {{ margin-top:8px; }}
 
-  /* Table 1, the six swaps */
-  .swhead, .swrow {{ display:grid; grid-template-columns:2.4in 0.3in 2.65in 1fr; }}
-  .swhead {{ margin:8px 0 0; padding:5px 0; background:{PRIMARY_DARK}; color:#fff;
-             font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
-             letter-spacing:.06em; text-transform:uppercase; }}
-  /* by class, not nth-child: a strut put in front of a moved header (the
-     editor holding its place) would shift every count after it */
-  .swhead .sh-b {{ grid-column:3; }} .swhead .sh-c {{ grid-column:4; }}
-  .swhead .sh-a {{ padding-left:8px; }}
-  .swaps {{ margin:0; border-bottom:1px solid {PRIMARY_DARK}; }}
-  .swrow {{ align-items:center; padding:5px 0; }}
-  .swrow:nth-child(even) {{ background:{STRIPE}; }}
-  .swrow + .swrow {{ border-top:1px solid {LINE}; }}
-  .sw {{ font-size:13.5px; line-height:1.3; padding-right:10px; }}
-  .sw.a {{ padding-left:8px; color:{INK}; font-weight:600; }}
-  .sw.b {{ color:{TEXT}; }}
-  .arr {{ color:{MUTED}; }}
-  .tag {{ font-size:13.5px; font-weight:600; line-height:1.3; color:{INK}; }}
-  .tag.up {{ color:{PRIMARY}; }}
-  .tag.dn {{ color:{WARM}; }}
+  /* Table 1, the six swaps: a real table (L.flow_table), so the layout's own
+     fills and borders apply; this adds only the type */
+  table.ds-flow {{ margin:8px 0 0; border-bottom:1px solid {PRIMARY_DARK}; }}
+  table.ds-flow th {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
+                      letter-spacing:.06em; text-transform:uppercase; }}
+  table.ds-flow td {{ font-size:13.5px; line-height:1.3; color:{TEXT}; border-top:1px solid {LINE}; }}
+  table.ds-flow td:first-child {{ color:{INK}; font-weight:600; }}
 
   .split {{ display:flex; gap:26px; align-items:flex-start; margin-top:6px; }}
   .splitl {{ flex:0 0 4.6in; }}
@@ -473,6 +447,23 @@ html = f"""<!DOCTYPE html>
              box-shadow:none; padding:28px 20px; border-bottom:8px solid {PAPER}; }}
     .cfield {{ margin:-28px -20px 0; padding:24px 20px 28px; min-height:0; }}
     .mast {{ flex-direction:column; gap:4px; }}
+    .cover-h1 {{ font-size:36px; padding-top:48px; }}
+    .ds-graphic {{ width:auto !important; max-width:100% !important; }}
+    .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
+                        bottom:auto; margin-top:26px; }}
+    h1 {{ font-size:27px; }}
+    .figs {{ grid-template-columns:1fr; }}
+    .fig {{ padding:12px 0; }}
+    .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
+    .datebox, .cgrid {{ grid-template-columns:1fr; }}
+    .datebox .box-h {{ margin:0 0 4px; }}
+    .cgrid .klabel {{ padding-bottom:4px; }}
+    .contents {{ border-top:0; }}
+    .cols {{ column-count:1; }}
+    .split {{ flex-direction:column; gap:10px; }}
+    .splitl {{ flex:none; }}
+    table.ds-flow {{ border-top:2px solid {PRIMARY_DARK}; }}
+    table.ds-flow td {{ padding:9px 8px; }}
     .cover-h1 {{ font-size:36px; padding-top:48px; }}
     .ds-graphic {{ width:auto !important; max-width:100% !important; }}
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;

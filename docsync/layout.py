@@ -26,6 +26,7 @@ import json
 import math
 import os
 import re
+from html import escape as _html_escape
 from pathlib import Path
 
 # One direction only: content.py imports nothing from this package (it takes its
@@ -3498,6 +3499,8 @@ class Layout:
         self.object_styles = raw.get("objectStyles") or {}
         self.boxes = raw.get("boxes") or []
         self.tables = raw.get("tables") or []
+        # flow tables a renderer drew from its own default (not in layout.json)
+        self.unseeded_tables: dict = {}
         # The slots some object follows. content.py stamps these with
         # data-anc-host in BOTH modes, which is the one hook the published page
         # has for the anchor runtime to measure against (data-slot is edit-only).
@@ -3806,10 +3809,12 @@ class Layout:
             if tid in seen:
                 raise LayoutError(f"{where}: duplicate id '{tid}' — already a shape or box")
             seen.add(tid)
-            if not isinstance(t.get("page"), (int, str)) or isinstance(t.get("page"), bool):
-                raise LayoutError(f"{where}: 'page' must be a page number or blank-page id")
-            for k in ("x", "y", "w"):
-                _num(t.get(k), f"{where}.{k}")
+            # A flow table sits in its page's flow, so it has no page/x/y/w.
+            if not t.get("flow"):
+                if not isinstance(t.get("page"), (int, str)) or isinstance(t.get("page"), bool):
+                    raise LayoutError(f"{where}: 'page' must be a page number or blank-page id")
+                for k in ("x", "y", "w"):
+                    _num(t.get(k), f"{where}.{k}")
             rows = t.get("rows")
             if not isinstance(rows, list) or not rows:
                 raise LayoutError(f"{where}: 'rows' must be a non-empty grid")
@@ -5073,125 +5078,187 @@ class Layout:
         of cell markdown; `header` makes the first row a <th> band. Each cell
         carries a data-cell hook in edit mode so the editor can edit it in
         place."""
-        mine = [t for t in self.tables if t.get("page") == page]
+        mine = [t for t in self.tables
+                if t.get("page") == page and not t.get("flow")]
         if not mine:
             return ""
         edit = bool(os.environ.get("DOCSYNC_EDIT"))
         out = []
         for t in mine:
-            t = self.dressed(t)
+            out.append(self._table_el(t, edit))
+        return "".join(out)
+
+    def _table_el(self, t: dict, edit: bool, flow: bool = False) -> str:
+        """One table object as a real <table>. `flow` puts it in the page's
+        own flow (static, full width, moved only by a positions[] offset)
+        instead of absolutely at x/y in inches — same cells, same hooks, same
+        editor panel, so a renderer's table is as editable as a placed one."""
+        t = self.dressed(t)
+        if flow:
+            css = 'box-sizing:border-box;width:100%'
+        else:
             css = (f'box-sizing:border-box;position:absolute;'
                    f'left:{t["x"]}in;top:{t["y"]}in;'
                    f'width:{t["w"]}in;z-index:{int(t.get("z", 2))}')
-            if t.get("rot"):
-                css += f';rotate:{t["rot"]}deg'      # own property — see _style
-            if t.get("alpha") is not None:
-                css += f';opacity:{t["alpha"]:g}'
-            if t.get("blend") and t["blend"] != "normal":
-                css += f';mix-blend-mode:{t["blend"]}'
-            style = text_css(self.styled_as(t.get("style")))
-            tag = f' data-el="table.{t["id"]}"' if edit else ""
-            header = bool(t.get("header"))
-            rows = t.get("rows", [])
-            ncols = len(rows[0]) if rows else 0
-            border = t.get("border")
-            outer = table_border_css(border, "outer")
-            inner = table_border_css(border, "inner")
-            over = t.get("cells") or {}
-            col_align = t.get("colAlign") or []
-            # Per decimal column, the widest tail in it — in ch, the width of
-            # a "0", with a little over for a "%" being wider than a digit.
-            tails = {}
-            for cj, al in enumerate(col_align):
-                if al != "decimal":
-                    continue
-                ws = [decimal_tail(r[cj]) for ri2, r in enumerate(rows)
-                      if not (header and ri2 == 0) and cj < len(r)]
-                ws = [w for w in ws if w is not None]
-                tails[cj] = round(max((sum(1 if ch.isdigit() else 1.4 for ch in w)
-                                       for w in ws), default=0), 2)
-            # Column widths as a <colgroup>: percentages of the table's own
-            # width, so dragging a column divider never changes the table's
-            # placement on the page.
-            colgroup = ""
-            if t.get("colw") and ncols:
-                total = sum(t["colw"]) or 1
-                colgroup = "<colgroup>" + "".join(
-                    f'<col style="width:{w / total * 100:.4f}%">' for w in t["colw"]
-                ) + "</colgroup>"
-            body = ""
-            for ri, row in enumerate(rows):
-                cells = ""
-                for ci, c in enumerate(row):
-                    th = header and ri == 0
-                    name = "th" if th else "td"
-                    hook = f' data-cell="{ri},{ci}"' if edit else ""
-                    # Each edge picks the outer rule on the grid's rim and the
-                    # inner rule between cells, so "outer only" and "inner
-                    # only" both fall out of the same per-cell emit. Emitted
-                    # ONLY when the table carries a border spec: without one,
-                    # nothing is written and the report's own stylesheet keeps
-                    # styling the grid exactly as it always did.
-                    cs = ""
-                    if border:
-                        cs = (f'border-top:{outer if ri == 0 else inner};'
-                              f'border-left:{outer if ci == 0 else inner};'
-                              f'border-right:{outer if ci == ncols - 1 else inner};'
-                              f'border-bottom:{outer if ri == len(rows) - 1 else inner}')
-                    ov = over.get(f"{ri},{ci}") or {}
-                    # Zebra striping counts from the first BODY row, so a table
-                    # stripes the same whether or not it has a header band.
-                    band = None
-                    if t.get("band") and not th:
-                        if (ri - (1 if header else 0)) % 2 == 1:
-                            band = t["band"]
-                    bg = ov.get("fill") or (t.get("headerFill") if th else None) \
-                        or band or t.get("fill")
-                    bits = [cs] if cs else []
-                    if bg:
-                        bits.append(f"background:{bg}")
-                    fg = ov.get("color") or (t.get("headerColor") if th else None)
-                    if fg:
-                        bits.append(f"color:{fg}")
-                    ca_j = col_align[ci] if ci < len(col_align) else None
-                    dec = (ca_j == "decimal" and not th
-                           and decimal_tail(c) is not None)
-                    if ov.get("align"):
-                        bits.append(f'text-align:{ov["align"]}')
-                    elif ca_j:
-                        # A decimal column is right-aligned: the split below
-                        # gives every figure the same right-hand box, so its
-                        # point lands where everyone else's does. Its header,
-                        # and a cell of words, simply sit right.
-                        bits.append("text-align:" + ("right" if ca_j == "decimal" else ca_j))
-                    if dec:
-                        bits.append("font-variant-numeric:tabular-nums")
-                    if ov.get("bold") is not None:
-                        bits.append(f'font-weight:{"700" if ov["bold"] else "400"}')
-                    if ov.get("italic"):
-                        bits.append("font-style:italic")
-                    sty = f' style="{";".join(bits)}"' if bits else ""
-                    # A cell is ONE string, so a newline in it can only be a
-                    # break somebody typed (the cell editor's Shift-Enter).
-                    # Prose is the opposite — content.md soft-wraps at about
-                    # eighty columns, which is why md_inline itself leaves a
-                    # newline alone and paragraphs() closes it up to a space.
-                    body_c = (decimal_cell(c, tails.get(ci, 0)) if dec and not ov.get("align")
-                              else md_inline(str(c)).replace("\n", "<br>"))
-                    cells += f'<{name}{hook}{sty}>{body_c}</{name}>'
-                body += f"<tr>{cells}</tr>"
-            klass = "ds-table"
-            extra = ""
-            tglSty = ""
-            if not edit and t["id"] in self.toggle_targets:
-                klass += " ds-tglable"
-                extra = f' id="ds-x-{t["id"]}"'
-                tglSty = f';--ds-tgl-d:{self.toggle_speed.get(t["id"], 0.3):g}s'
-            out.append(f'<table class="{klass}"{extra}{tag}{PLACED}'
-                       f'{anim_attrs(t.get("anim"))}{anchor_attrs(t)} '
-                       f'style="{css}{";" + style if style else ""}{tglSty}">'
-                       f'{colgroup}{body}</table>')
-        return "".join(out)
+        if t.get("rot"):
+            css += f';rotate:{t["rot"]}deg'      # own property — see _style
+        if t.get("alpha") is not None:
+            css += f';opacity:{t["alpha"]:g}'
+        if t.get("blend") and t["blend"] != "normal":
+            css += f';mix-blend-mode:{t["blend"]}'
+        style = text_css(self.styled_as(t.get("style")))
+        tag = f' data-el="table.{t["id"]}"' if edit else ""
+        header = bool(t.get("header"))
+        rows = t.get("rows", [])
+        ncols = len(rows[0]) if rows else 0
+        border = t.get("border")
+        outer = table_border_css(border, "outer")
+        inner = table_border_css(border, "inner")
+        over = t.get("cells") or {}
+        col_align = t.get("colAlign") or []
+        # Per decimal column, the widest tail in it — in ch, the width of
+        # a "0", with a little over for a "%" being wider than a digit.
+        tails = {}
+        for cj, al in enumerate(col_align):
+            if al != "decimal":
+                continue
+            ws = [decimal_tail(r[cj]) for ri2, r in enumerate(rows)
+                  if not (header and ri2 == 0) and cj < len(r)]
+            ws = [w for w in ws if w is not None]
+            tails[cj] = round(max((sum(1 if ch.isdigit() else 1.4 for ch in w)
+                                   for w in ws), default=0), 2)
+        # Column widths as a <colgroup>: percentages of the table's own
+        # width, so dragging a column divider never changes the table's
+        # placement on the page.
+        colgroup = ""
+        if t.get("colw") and ncols:
+            total = sum(t["colw"]) or 1
+            colgroup = "<colgroup>" + "".join(
+                f'<col style="width:{w / total * 100:.4f}%">' for w in t["colw"]
+            ) + "</colgroup>"
+        body = ""
+        for ri, row in enumerate(rows):
+            cells = ""
+            for ci, c in enumerate(row):
+                th = header and ri == 0
+                name = "th" if th else "td"
+                hook = f' data-cell="{ri},{ci}"' if edit else ""
+                if flow and not th and header and ci < len(rows[0]):
+                    # the column's header, so the phone layout can say what
+                    # each stacked value is (the header row itself is hidden)
+                    hook += ' data-label="%s"' % _html_escape(
+                        re.sub(r"[*_`]", "", str(rows[0][ci]).replace("\n", " ")).strip(),
+                        quote=True)
+                # Each edge picks the outer rule on the grid's rim and the
+                # inner rule between cells, so "outer only" and "inner
+                # only" both fall out of the same per-cell emit. Emitted
+                # ONLY when the table carries a border spec: without one,
+                # nothing is written and the report's own stylesheet keeps
+                # styling the grid exactly as it always did.
+                cs = ""
+                if border:
+                    cs = (f'border-top:{outer if ri == 0 else inner};'
+                          f'border-left:{outer if ci == 0 else inner};'
+                          f'border-right:{outer if ci == ncols - 1 else inner};'
+                          f'border-bottom:{outer if ri == len(rows) - 1 else inner}')
+                ov = over.get(f"{ri},{ci}") or {}
+                # Zebra striping counts from the first BODY row, so a table
+                # stripes the same whether or not it has a header band.
+                band = None
+                if t.get("band") and not th:
+                    if (ri - (1 if header else 0)) % 2 == 1:
+                        band = t["band"]
+                bg = ov.get("fill") or (t.get("headerFill") if th else None) \
+                    or band or t.get("fill")
+                bits = [cs] if cs else []
+                if bg:
+                    bits.append(f"background:{bg}")
+                fg = ov.get("color") or (t.get("headerColor") if th else None)
+                if fg:
+                    bits.append(f"color:{fg}")
+                ca_j = col_align[ci] if ci < len(col_align) else None
+                dec = (ca_j == "decimal" and not th
+                       and decimal_tail(c) is not None)
+                if ov.get("align"):
+                    bits.append(f'text-align:{ov["align"]}')
+                elif ca_j:
+                    # A decimal column is right-aligned: the split below
+                    # gives every figure the same right-hand box, so its
+                    # point lands where everyone else's does. Its header,
+                    # and a cell of words, simply sit right.
+                    bits.append("text-align:" + ("right" if ca_j == "decimal" else ca_j))
+                if dec:
+                    bits.append("font-variant-numeric:tabular-nums")
+                if ov.get("bold") is not None:
+                    bits.append(f'font-weight:{"700" if ov["bold"] else "400"}')
+                if ov.get("italic"):
+                    bits.append("font-style:italic")
+                sty = f' style="{";".join(bits)}"' if bits else ""
+                # A cell is ONE string, so a newline in it can only be a
+                # break somebody typed (the cell editor's Shift-Enter).
+                # Prose is the opposite — content.md soft-wraps at about
+                # eighty columns, which is why md_inline itself leaves a
+                # newline alone and paragraphs() closes it up to a space.
+                body_c = (decimal_cell(c, tails.get(ci, 0)) if dec and not ov.get("align")
+                          else md_inline(str(c)).replace("\n", "<br>"))
+                cells += f'<{name}{hook}{sty}>{body_c}</{name}>'
+            hdr = ' class="ds-hdr"' if flow and header and ri == 0 else ""
+            body += f"<tr{hdr}>{cells}</tr>"
+        klass = "ds-table"
+        extra = ""
+        tglSty = ""
+        if not edit and t["id"] in self.toggle_targets:
+            klass += " ds-tglable"
+            extra = f' id="ds-x-{t["id"]}"'
+            tglSty = f';--ds-tgl-d:{self.toggle_speed.get(t["id"], 0.3):g}s'
+        if flow:
+            # attr() stamps data-el (edit mode only) and applies a moved
+            # table's positions[] offset, merged with this table's own style.
+            attrs = self.attr(f'table.{t["id"]}',
+                              css + (";" + style if style else "") + tglSty)
+            if t.get("_unseeded") and edit:
+                attrs += f' data-unseeded="{t["id"]}"'
+            return (f'<table class="{klass} ds-flow"{extra}{attrs}>'
+                    f'{colgroup}{body}</table>')
+        return (f'<table class="{klass}"{extra}{tag}{PLACED}'
+                f'{anim_attrs(t.get("anim"))}{anchor_attrs(t)} '
+                f'style="{css}{";" + style if style else ""}{tglSty}">'
+                f'{colgroup}{body}</table>')
+
+    FLOW_TABLE_CSS = (
+        "<style>table.ds-flow{border-collapse:collapse;table-layout:fixed}"
+        "table.ds-flow td,table.ds-flow th{text-align:left;vertical-align:middle;"
+        "padding:5px 8px}"
+        "@media (max-width:640px){"
+        "table.ds-flow,table.ds-flow tbody,table.ds-flow tr,"
+        "table.ds-flow td{display:block;width:100%;box-sizing:border-box}"
+        "table.ds-flow colgroup,table.ds-flow tr.ds-hdr{display:none}"
+        "table.ds-flow td[data-label]:not(:first-child)::before{"
+        'content:attr(data-label) ": ";font-weight:700;opacity:.7}}'
+        "</style>")
+
+    def flow_table(self, table_id: str, default: dict | None = None) -> str:
+        """A table that sits IN the page's flow, as a real <table> the editor
+        can add rows/columns to, retype and restyle (the same object as a
+        placed table, so the same Table panel). The data lives in layout.json
+        `tables` with `"flow": true`; a renderer calls this where the table
+        belongs and never builds the grid from <div>s.
+
+        `default` is a table dict ({"rows": [...], "header": true, ...}) drawn
+        only while layout.json has no such table, so a fresh renderer still
+        shows its table. It is NOT editable until seeded: the editor works on
+        layout.json, so docsync.check reports any flow table drawn from its
+        default, with the JSON to paste."""
+        edit = bool(os.environ.get("DOCSYNC_EDIT"))
+        t = self.table(table_id)
+        if t is None:
+            if default is None:
+                return ""
+            t = {"id": table_id, "flow": True, "_unseeded": True, **default}
+            self.unseeded_tables[table_id] = t
+        css = "" if getattr(self, "_flowtable_sent", False) else self.FLOW_TABLE_CSS
+        self._flowtable_sent = True
+        return css + self._table_el(t, edit, flow=True)
 
     def table(self, table_id: str) -> dict | None:
         return next((t for t in self.tables if t.get("id") == table_id), None)
