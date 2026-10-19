@@ -518,6 +518,114 @@ $51,381,000
 [[cost.entire-state.twelve]]
 $95,805,000
 
+[[tabs.home]]
+Home
+
+[[tabs.why]]
+Why Hawaiʻi
+
+[[tabs.evidence]]
+Evidence
+
+[[tabs.funding]]
+Funding & TANF
+
+[[tabs.bill]]
+The bill
+
+[[next.why]]
+Next: Evidence
+
+[[next.evidence]]
+Next: Funding & TANF
+
+[[next.funding]]
+Next: The bill
+
+[[next.bill]]
+Back to Home
+
+[[teaser.h2]]
+Go deeper
+
+[[teaser.why.title]]
+Why Hawaiʻi
+
+[[teaser.why.body]]
+More than 1 in 4 children with single mothers lives in poverty, and childcare takes nearly half a single parent's income.
+
+[[teaser.evidence.title]]
+The evidence
+
+[[teaser.evidence.body]]
+Fewer preterm births and evictions, and less stress: what Rx Kids has done in Michigan.
+
+[[teaser.funding.title]]
+Funding and TANF
+
+[[teaser.funding.body]]
+How TANF can pay for part of RxKeiki without strings, and what a statewide program would cost.
+
+[[teaser.bill.title]]
+The bill
+
+[[teaser.bill.body]]
+What the draft 2027 legislation would do, in plain language.
+
+[[cost.h2]]
+What it would cost
+
+[[cost.lead]]
+Because RxKeiki is universal, these figures price the first payments for every baby born in Hawaiʻi, and show how much TANF could cover.
+
+[[bill.status]]
+Draft · 2027 session
+
+[[bill.h2]]
+What the proposed bill would do
+
+[[bill.lead]]
+RxKeiki would be a statewide program run through the Department of Human Services. This page summarizes the draft bill for the 2027 session in plain language. The bill is still a draft, and details may change before it is introduced.[^rxkeiki-bill]
+
+[[bill.1.title]]
+Who qualifies
+
+[[bill.1.body]]
+Every pregnant person who lives in Hawaiʻi and is at least 16 weeks along, and every household with a baby under one. There is no income or asset test, no need to be on Medicaid or any other benefit, and no TANF requirement. The state may only verify pregnancy or birth, identity, and residency.
+
+[[bill.2.title]]
+What families get
+
+[[bill.2.body]]
+$1,500 once during pregnancy, starting at 16 weeks. Then $500 a month from birth through the sixth month. Six more $500 payments run through the first birthday, as funding allows. Every family gets the same schedule, and the state may adjust the amounts for the cost of living.
+
+[[bill.3.title]]
+No strings attached
+
+[[bill.3.body]]
+Payments can't depend on work, school, child-support cooperation, health care use, or how the money is spent.
+
+[[bill.4.title]]
+How TANF fits
+
+[[bill.4.body]]
+TANF can pay only for families who qualify under the state's TANF plan, and only for the pregnancy payment and up to the first three monthly payments. Medicaid can serve as the income test. Everyone else receives the same payments from state, county, or private funds. A payment is not ongoing TANF, so no time limits, work rules, or child-support requirements apply.
+
+[[bill.5.title]]
+Protecting other benefits
+
+[[bill.5.body]]
+Each payment that includes government money also includes at least $1 from a private donor and arrives as one blended payment from a nonprofit administrator. The state must work to keep the payments from counting as income for SNAP, Medicaid, child care assistance, and TANF, and every applicant gets a plain-language notice about their other benefits. The bill cannot guarantee every program will exclude the payment, and people on SSI are told to talk with a benefits counselor first.
+
+[[bill.6.title]]
+Who runs it, and how it's checked
+
+[[bill.6.body]]
+The Department of Human Services oversees the program and may contract a nonprofit administrator to enroll families, verify eligibility, issue payments, and guard against fraud, with community groups helping people sign up. Administration is capped at 5 percent of spending. Before each session, DHS reports on enrollment, who is reached, spending by source, administrative costs, private funds raised, and federal approvals.
+
+[[bill.note]]
+If enacted, the program would take effect July 1, 2027. Before the first payment, DHS must file the needed federal plan changes, get written federal guidance, sign an agreement with a nonprofit administrator, confirm the private funds, and publish its financing and benefits-protection plan. The draft leaves the appropriation amounts blank.
+
 [[endnotes.h2]]
 Sources
 
@@ -533,7 +641,7 @@ Sources
 [upjohn-study]: W.E. Upjohn Institute, "Study finds Rx Kids program supports families, drives jobs and income growth." — https://www.upjohn.org/research-highlights/study-finds-rx-kids-program-supports-families-drives-jobs-and-income-growth
 [givedirectly-rxkids]: GiveDirectly, Rx Kids program overview. — https://www.givedirectly.org/rxkids/
 [ajph-flint]: American Journal of Public Health, Flint Rx Kids outcomes study. — https://ajph.aphapublications.org/doi/full/10.2105/AJPH.2025.308244
-[rxkids-brand]: Rx Kids, *Brand Standard Guidelines*, July 2026 (the program's own messaging, not independent research).
+[rxkids-brand]: Rx Kids, "Brand Standard Guidelines," July 2026 (the program's own messaging, not independent research).
 [rxkeiki-bill]: Hawaiʻi Rx Keiki Workgroup, "Hawaii Rx Keiki Program," draft bill for the 2027 session (draft; not yet introduced).
 [census-poverty]: U.S. Census Bureau, poverty and income data. — https://www.census.gov/topics/income-poverty/poverty/data.html
 [childcare-aware-2024]: Child Care Aware of America, "2024 Affordability Analysis." — https://info.childcareaware.org/hubfs/Affordability_Analysis_2024.pdf

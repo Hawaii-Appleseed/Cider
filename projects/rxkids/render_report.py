@@ -35,6 +35,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from docsync.content import Content, ContentError, merge_attrs  # noqa: E402
+from docsync.blocks import describe                 # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.okina import OKINA_FACES, okinafy  # noqa: E402
 
@@ -423,6 +424,57 @@ MODERN_CSS = """
   .rxk-fold .tfc-expand-content { text-align: left; }
   .rxk-fold .tfc-expand-inner { padding-top: 32px; }
 
+
+  /* Tabs: a Home summary plus four deeper pages in one embed */
+  .page { min-height: 0 !important; }
+  .rxk-tabs { display: flex; justify-content: center; gap: 4px; padding: 0 16px; background: #fff;
+    border-bottom: 1px solid var(--rx-line); overflow-x: auto; }
+  .rxk-tab { appearance: none; background: none; border: none; border-bottom: 3px solid transparent;
+    margin-bottom: -1px; padding: 18px 22px; font: inherit; font-weight: 600; font-size: 1rem;
+    color: var(--rx-ink); cursor: pointer; white-space: nowrap; transition: color .2s, border-color .2s; }
+  .rxk-tab:hover { color: var(--rx-navy); }
+  .rxk-tab[aria-selected="true"] { color: var(--rx-navy); border-bottom-color: var(--rx-red); }
+  .rxk-tab:focus-visible, .rxk-teaser:focus-visible, .rxk-next-btn:focus-visible {
+    outline: 2px solid var(--rx-blue); outline-offset: 2px; border-radius: 8px; }
+  .rxk-panel[hidden] { display: none !important; }
+  .rxk-next { text-align: center; padding: 8px 24px 72px; }
+  .rxk-next-btn { appearance: none; background: #fff; border: 1px solid var(--rx-line); border-radius: 999px;
+    padding: 14px 28px; font: inherit; font-weight: 700; font-size: 1.05rem; color: var(--rx-navy); cursor: pointer;
+    transition: background .2s, border-color .2s; }
+  .rxk-next-btn:hover { background: var(--rx-tint); border-color: var(--rx-navy); }
+  .rxk-next-btn::after { content: "\\2192"; margin-left: 10px; }
+
+  /* Home: teaser cards that open the other tabs */
+  .rxk-teaser-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 40px; }
+  .rxk-teaser { appearance: none; text-align: left; font: inherit; cursor: pointer; background: #fff;
+    border: 1px solid var(--rx-line); border-radius: var(--rx-radius); box-shadow: var(--rx-shadow);
+    padding: 26px 24px 28px; transition: transform .2s, box-shadow .2s; }
+  .rxk-teaser:hover { transform: translateY(-2px); box-shadow: var(--rx-lift); }
+  .rxk-teaser h3 { margin: 0 0 8px; font-size: 1.2rem; letter-spacing: -.01em; color: var(--rx-navy); }
+  .rxk-teaser h3::after { content: "\\2192"; margin-left: 8px; color: var(--rx-red); }
+  .rxk-teaser p { margin: 0; font-size: .98rem; line-height: 1.55; color: var(--rx-ink); }
+  .rxk-works-band .rxk-works { background: var(--rx-tint); box-shadow: none; border: 1px solid var(--rx-line); margin-bottom: 0; }
+  @media (max-width: 900px) { .rxk-teaser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .rxk-teaser-grid { grid-template-columns: 1fr; } }
+
+  /* Funding: the headline total is a stat, not a button */
+  .rxk-cost-stat { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 8px auto 36px; text-align: center; }
+  .rxk-cost-stat .rxk-cost-btn-eyebrow { font-size: .8rem; letter-spacing: 2px; color: var(--rx-muted); opacity: 1; }
+  .rxk-cost-stat .rxk-cost-btn-amt { font-size: 3.4rem; letter-spacing: -.02em; color: var(--rx-navy); }
+
+  /* The bill */
+  .rxk-draft-pill { display: block; width: max-content; margin: 0 auto 14px; padding: 6px 16px; border-radius: 999px;
+    background: var(--rx-tint); border: 1px solid var(--rx-line); color: var(--rx-ink); font-size: .78rem;
+    font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .rxk-bill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 44px; counter-reset: bill; }
+  .rxk-bill-card { counter-increment: bill; background: #fff; border: 1px solid var(--rx-line);
+    border-radius: var(--rx-radius); box-shadow: var(--rx-shadow); padding: 30px 32px 32px; text-align: left; }
+  .rxk-bill-card::before { content: counter(bill); display: grid; place-items: center; width: 36px; height: 36px;
+    border-radius: 50%; background: var(--rx-navy); color: #fff; font-weight: 800; font-size: .95rem; margin-bottom: 16px; }
+  .rxk-bill-title { margin: 0 0 8px; font-size: 1.3rem; letter-spacing: -.01em; color: var(--rx-navy); }
+  .rxk-bill-card p { margin: 0; font-size: 1.02rem; line-height: 1.65; color: var(--rx-ink); }
+  @media (max-width: 768px) { .rxk-bill-grid { grid-template-columns: 1fr; } }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -480,6 +532,49 @@ if EDIT:
 SCRIPT = (SCRIPT
           .replace("'49.0%'", f'\'{C.text("carousel.childcare.bar.single.value")}\'')
           .replace("'17.9%'", f'\'{C.text("carousel.childcare.bar.married.value")}\''))
+
+TAB_JS = """
+(function () {
+  var IDS = ['home', 'why', 'evidence', 'funding', 'bill'];
+  function show(id, fromHash, quiet) {
+    if (IDS.indexOf(id) < 0) id = 'home';
+    IDS.forEach(function (k) {
+      var p = document.getElementById('rxk-panel-' + k), t = document.getElementById('rxk-tab-' + k);
+      if (!p || !t) return;
+      var on = k === id;
+      if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+    });
+    if (!fromHash && !quiet) { try { location.hash = 'rxk-' + id; } catch (e) {} }
+    var bar = document.querySelector('.rxk-tabs');
+    if (bar && !quiet) {
+      var top = bar.getBoundingClientRect().top;
+      if (top < 0) window.scrollTo({ top: window.pageYOffset + top - 8, behavior: 'smooth' });
+    }
+  }
+  function fromLocation() {
+    var m = /^#rxk-([a-z]+)$/.exec(location.hash || '');
+    return m ? m[1] : null;
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-rxk-tab]') : null;
+    if (el) show(el.getAttribute('data-rxk-tab'));
+  });
+  document.addEventListener('keydown', function (e) {
+    var t = e.target.closest ? e.target.closest('.rxk-tab') : null;
+    if (!t || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    var i = IDS.indexOf(t.getAttribute('data-rxk-tab')) + (e.key === 'ArrowRight' ? 1 : -1);
+    i = (i + IDS.length) % IDS.length;
+    show(IDS[i]);
+    var nt = document.getElementById('rxk-tab-' + IDS[i]); if (nt) nt.focus();
+    e.preventDefault();
+  });
+  window.addEventListener('hashchange', function () { var id = fromLocation(); if (id) show(id, true); });
+  var first = fromLocation();
+  if (first) show(first, true, true);
+})();
+"""
 
 EDIT_OVERRIDES = """
   /* DOCSYNC_EDIT only: the scroll-reveal IntersectionObserver above doesn't
@@ -595,6 +690,17 @@ def works_strip() -> str:
             </div>"""
 
 
+def works_band() -> str:
+    return f"""
+<div class="tfc-full-width tfc-bg-white rxk-works-band tfc-reveal"{L.sec("band.works")}>
+    <div class="tfc-content-container">
+        <div class="tfc-section" style="margin-bottom: 0;">
+            {works_strip()}
+        </div>
+    </div>
+</div>"""
+
+
 def benefits_widget() -> str:
     tabs = "\n".join(
         f'<button class="tfc-benefit-tab{" active" if i == 0 else ""}" '
@@ -606,8 +712,6 @@ def benefits_widget() -> str:
     <div class="tfc-content-container">
         <div class="tfc-section tfc-benefits-widget-section" style="margin: 0 auto;">
             {L.spacer("benefits.h2")}<h2 class="tfc-section-title"{L.attr("benefits.h2")}>{C.t("benefits.h2")}</h2>
-
-            {works_strip()}
 
             <div class="tfc-benefits-layout">
             {L.spacer("benefits.tabs")}<div class="tfc-benefits-tabs"{L.attr("benefits.tabs")}>
@@ -793,7 +897,6 @@ def how_it_works() -> str:
 
             {L.spacer("steps.note")}<p class="tfc-steps-note"{L.attr("steps.note")}>{C.t("steps.note")}</p>
 
-            {cost_expandable()}
         </div>
     </div>
 </div>"""
@@ -828,7 +931,7 @@ def step(n: int) -> str:
 COST_ROWS = ["hawaii", "honolulu", "maui", "unidentified", "entire-state"]
 
 
-def cost_expandable() -> str:
+def cost_table() -> str:
     body_rows = []
     for slug in COST_ROWS:
         total = ' class="rxk-cost-total"' if slug == "entire-state" else ""
@@ -842,15 +945,7 @@ def cost_expandable() -> str:
     # "Additional public and/or private dollars needed" is ONE slot rendered
     # under both money columns — the same words each time, so a reword lands
     # in both headers at once (the tax-testimony label pattern).
-    return f"""<div class="tfc-expandable-section">
-    {L.spacer("cost.button")}<button class="tfc-expand-btn rxk-cost-btn" onclick="rxkToggle(this, 'cost-content')"{L.attr("cost.button")}>
-    <span class="rxk-cost-btn-eyebrow"{C.slot_attr("cost.button.eyebrow")}>{C.text("cost.button.eyebrow")}</span>
-    <span class="rxk-cost-btn-amt"{C.slot_attr("cost.button.amt")}>{C.text("cost.button.amt")}</span>
-    <span class="rxk-cost-btn-foot"><span class="tfc-expand-icon">&#9660;</span></span>
-</button>
-<div id="cost-content" class="tfc-expand-content">
-    <div class="tfc-expand-inner">
-        {L.spacer("cost.table")}<div class="rxk-cost-wrap"{L.attr("cost.table")}>
+    return f"""{L.spacer("cost.table")}<div class="rxk-cost-wrap"{L.attr("cost.table")}>
             <div class="rxk-cost-title"{C.slot_attr("cost.title")}>{C.text("cost.title")}</div>
             <table class="rxk-cost">
                 <thead><tr>
@@ -863,9 +958,26 @@ def cost_expandable() -> str:
                 <tbody>{"".join(body_rows)}</tbody>
             </table>
             <p class="rxk-cost-note"{C.slot_attr("cost.note")}>{C.text("cost.note")}</p>
+        </div>"""
+
+
+def cost_section() -> str:
+    """The cost figures as their own band on the Funding tab (they used to sit
+    behind a button on the page's single scroll). The headline total keeps the
+    old button's slots, so its words and number stay editable where they were."""
+    return f"""
+<div class="tfc-full-width tfc-bg-blue tfc-reveal"{L.sec("band.cost")}>
+    <div class="tfc-content-container">
+        <div class="tfc-section" style="margin-bottom: 0;">
+            {L.spacer("cost.h2")}<h2 class="tfc-section-title"{L.attr("cost.h2")}>{C.t("cost.h2")}</h2>
+            {C.html("cost.lead", "tfc-section-subtitle")}
+            {L.spacer("cost.button")}<div class="rxk-cost-stat"{L.attr("cost.button")}>
+                <span class="rxk-cost-btn-eyebrow"{C.slot_attr("cost.button.eyebrow")}>{C.text("cost.button.eyebrow")}</span>
+                <span class="rxk-cost-btn-amt"{C.slot_attr("cost.button.amt")}>{C.text("cost.button.amt")}</span>
+            </div>
+            {cost_table()}
         </div>
     </div>
-</div>
 </div>"""
 
 
@@ -1073,14 +1185,86 @@ def sources_section() -> str:
 </div>"""
 
 
-MAIN_BODY = f"""<div class="tfc-container">
-{hero()}
+# ---- tabs: Home summary + four deeper pages, one embed -----------------------
+TABS = ["home", "why", "evidence", "funding", "bill"]
+NEXT_TAB = {"why": "evidence", "evidence": "funding", "funding": "bill", "bill": "home"}
+
+
+def tab_bar() -> str:
+    btns = "".join(
+        f'<button type="button" role="tab" class="rxk-tab" id="rxk-tab-{k}" aria-controls="rxk-panel-{k}" '
+        f'aria-selected="{"true" if k == "home" else "false"}" data-rxk-tab="{k}">{C.t(f"tabs.{k}")}</button>'
+        for k in TABS)
+    return f"""{L.spacer("tabs")}<nav class="rxk-tabs" role="tablist"{describe(C, "tabs.desc", "RxKeiki sections", role="")}{L.attr("tabs")}>{btns}</nav>"""
+
+
+def panel(tab: str, inner: str) -> str:
+    hidden = "" if tab == "home" else " hidden"
+    return (f'<section class="rxk-panel" id="rxk-panel-{tab}" role="tabpanel" '
+            f'aria-labelledby="rxk-tab-{tab}"{hidden}>{inner}\n</section>')
+
+
+def next_link(tab: str) -> str:
+    return (f'{L.spacer(f"next.{tab}")}<div class="rxk-next"{L.attr(f"next.{tab}")}>'
+            f'<button type="button" class="rxk-next-btn" data-rxk-tab="{NEXT_TAB[tab]}">'
+            f'<span{C.slot_attr(f"next.{tab}")}>{C.text(f"next.{tab}")}</span></button></div>')
+
+
+TEASERS = ["why", "evidence", "funding", "bill"]
+
+
+def teasers() -> str:
+    cards = "".join(
+        f"""{L.spacer(f"teaser.{k}")}<button type="button" class="rxk-teaser" data-rxk-tab="{k}"{L.attr(f"teaser.{k}")}>
+            <h3>{C.t(f"teaser.{k}.title")}</h3><p>{C.t(f"teaser.{k}.body")}</p></button>"""
+        for k in TEASERS)
+    return f"""
+<div class="tfc-full-width rxk-hiw-bg tfc-reveal"{L.sec("band.teasers")}>
+    <div class="tfc-content-container">
+        <div class="tfc-section" style="margin-bottom: 0;">
+            {L.spacer("teaser.h2")}<h2 class="tfc-section-title"{L.attr("teaser.h2")}>{C.t("teaser.h2")}</h2>
+            <div class="rxk-teaser-grid">{cards}</div>
+        </div>
+    </div>
+</div>"""
+
+
+BILL_KEYS = ["1", "2", "3", "4", "5", "6"]
+
+
+def bill_section() -> str:
+    cards = "".join(
+        f"""{L.spacer(f"bill.{k}")}<div class="rxk-bill-card"{L.attr(f"bill.{k}")}>
+            <h3 class="rxk-bill-title">{C.t(f"bill.{k}.title")}</h3><p>{C.t(f"bill.{k}.body")}</p></div>"""
+        for k in BILL_KEYS)
+    return f"""
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.bill")}>
+    <div class="tfc-content-container">
+        <div class="tfc-section" style="margin-bottom: 0;">
+            {L.spacer("bill.status")}<span class="rxk-draft-pill"{L.attr("bill.status")}>{C.t("bill.status")}</span>
+            {L.spacer("bill.h2")}<h2 class="tfc-section-title"{L.attr("bill.h2")}>{C.t("bill.h2")}</h2>
+            {C.html("bill.lead", "tfc-section-subtitle")}
+            <div class="rxk-bill-grid">{cards}</div>
+            {L.spacer("bill.note")}<p class="tfc-steps-note"{L.attr("bill.note")}>{C.t("bill.note")}</p>
+        </div>
+    </div>
+</div>"""
+
+
+HOME_PANEL = f"""{hero()}
 {facts_strip()}
 {what_is_rxkids()}
-{benefits_widget()}
-{stats_carousel()}
 {how_it_works()}
-{tanf_section()}"""
+{works_band()}
+{teasers()}"""
+
+MAIN_BODY = f"""<div class="tfc-container">
+{tab_bar()}
+{panel("home", HOME_PANEL)}
+{panel("why", stats_carousel() + next_link("why"))}
+{panel("evidence", benefits_widget() + next_link("evidence"))}
+{panel("funding", tanf_section() + cost_section() + next_link("funding"))}
+{panel("bill", bill_section() + next_link("bill"))}"""
 
 # Citation numbering runs once, on the whole body assembled SO FAR — before the
 # sources section exists (it has no [^id] tokens of its own, and needs the
@@ -1478,6 +1662,7 @@ html = f"""<!DOCTYPE html>
 {SHEETS}
 <script>
 {SCRIPT}
+{TAB_JS}
 // Generic expand/collapse for sections added on the Hawaii page (the Cost
 // table) — same max-height dance as the original page's toggleFlintSection,
 // which is hard-wired to #flint-content and can't be reused.
