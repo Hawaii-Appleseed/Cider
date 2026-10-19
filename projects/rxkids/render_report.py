@@ -200,6 +200,8 @@ BRAND_CSS = f"""
     background: currentColor;
     -webkit-mask: url("{_HEART}") center / contain no-repeat;
             mask: url("{_HEART}") center / contain no-repeat; }}
+  .tfc-cta-section p.rxk-partner {{ font-size: 0.95rem; line-height: 1.5; margin: 36px auto 0;
+    padding-top: 20px; border-top: 1px solid rgba(255,255,255,.45); max-width: 720px; }}
   .rxk-works {{ background: #fff; border-radius: 16px; padding: 24px 32px 12px;
                 margin: 0 0 32px; box-shadow: 0 2px 10px rgba(16,18,90,.08); }}
   .rxk-works-title {{ margin: 0 0 4px; font-size: 1.6rem; color: #10125A; }}
@@ -779,6 +781,7 @@ def cta() -> str:
     {L.spacer("cta.body")}<p{L.attr("cta.body")}>{C.t("cta.body")}</p>
     {L.spacer("cta.link1")}<a href="https://rxkids.org/" target="_blank" class="tfc-btn"{L.attr("cta.link1")}>{C.t("cta.link1.label")}</a>
     {L.spacer("cta.link2")}<a href="https://rxkids.org/about/" target="_blank" class="tfc-btn tfc-btn-outline"{L.attr("cta.link2")}>{C.t("cta.link2.label")}</a>
+    {L.spacer("partner.statement")}<p class="rxk-partner"{L.attr("partner.statement")}>{C.t("partner.statement")}</p>
 </div>"""
 
 

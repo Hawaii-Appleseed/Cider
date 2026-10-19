@@ -386,6 +386,9 @@ Visit RxKids.org
 [[cta.link2.label]]
 About the Program
 
+[[partner.statement]]
+Rx Kids is led by Michigan State University and administered by GiveDirectly. RxKeiki Hawaiʻi is a Hawaiʻi Appleseed proposal modeled on the program.
+
 <!--
   Cost estimate table (below, through cost.entire-state.twelve): from the
   program's own cost slide, hand-typed like the other charts (no live
