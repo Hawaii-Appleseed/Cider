@@ -2162,6 +2162,77 @@
                             box-shadow: 0 0 0 6px #fff3cf; }
 
   
+  .page { --rx-navy:#10125A; --rx-ink:#40417B; --rx-muted:#70719C;
+          --rx-line:#E4E4EE; --rx-tint:#F5F5F9;
+          --rx-red:#EE303C; --rx-blue:#0083CA; --rx-green:#00A84F;
+          --rx-orange:#F7941D; --rx-magenta:#AB3192;
+          --rx-radius:16px;
+          --rx-shadow:0 1px 2px rgba(16,18,90,.05), 0 8px 24px rgba(16,18,90,.06);
+          --rx-lift:0 2px 4px rgba(16,18,90,.06), 0 14px 32px rgba(16,18,90,.10); }
+
+  /* Cards: hairline + one soft shadow, no coloured top rules */
+  .tfc-scene-tag, .tfc-step, .tfc-total-banner, .tfc-tanf-card, .tfc-benefit-text-box,
+  .tfc-highlight-box, .rxk-cost-wrap, .tfc-carousel-container {
+    border: 1px solid var(--rx-line); border-top: 1px solid var(--rx-line);
+    border-radius: var(--rx-radius); box-shadow: var(--rx-shadow); }
+  .tfc-tanf-card--free { border-top-color: var(--rx-line); }
+  .tfc-step:hover, .tfc-scene-tag:hover { transform: translateY(-2px); box-shadow: var(--rx-lift); }
+  .tfc-step--alt { background: #fff; }
+  .tfc-step-number { background: var(--rx-red); box-shadow: none; }
+  .tfc-step--alt .tfc-step-number { background: var(--rx-magenta); }
+  .tfc-step:not(:last-child)::after, .rxk-hiw-bg .tfc-step:not(:last-child)::after { background: var(--rx-line); }
+  .tfc-highlight-box { background: var(--rx-tint); }
+  .tfc-highlight-box h3 { color: var(--rx-navy); }
+  .tfc-carousel-container { background: var(--rx-tint); }
+  .tfc-benefits-display { background: var(--rx-tint); box-shadow: none; border: 1px solid var(--rx-line); }
+  .tfc-benefit-text-box { box-shadow: none; }
+  .tfc-benefit-tab { box-shadow: none; border-top: 1px solid var(--rx-line);
+                     border-right: 1px solid var(--rx-line); border-bottom: 1px solid var(--rx-line); }
+  .tfc-benefit-tab.active { box-shadow: none; }
+  .tfc-hero-image { border-radius: 20px; box-shadow: var(--rx-lift); }
+
+  /* Bands: white, pale navy, and one navy slab */
+  .tfc-hero, .tfc-bg-blue, .rxk-hiw-bg { background-color: var(--rx-tint); }
+  .rxk-tanf-top { background-color: var(--rx-navy); }
+  .rxk-tanf-top .tfc-section-subtitle { color: rgba(255,255,255,.82); }
+
+  /* Type */
+  .tfc-section-title { letter-spacing: -.02em; line-height: 1.12; font-weight: 800; }
+  h1, h2, h3 { text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  .tfc-section-subtitle { line-height: 1.65; font-size: 1.15rem; color: var(--rx-ink); }
+  .tfc-step-title, .tfc-scene-title, .tfc-tanf-card h3 { letter-spacing: -.01em; }
+
+  /* Buttons: solid fills, no gradients or glows */
+  .tfc-hero-badge { background: var(--rx-navy); box-shadow: none; }
+  .tfc-expand-btn { background-color: var(--rx-red); box-shadow: none; padding: 14px 28px; font-size: 1.1rem; }
+  .tfc-expand-btn:hover { background-color: var(--rx-red); transform: none; box-shadow: none; filter: brightness(.92); }
+  .rxk-cost-btn { background: var(--rx-navy) !important; box-shadow: none !important; }
+  .rxk-cost-btn:hover { filter: brightness(1.25); }
+  .tfc-cta-section { background: var(--rx-red); }
+  .tfc-btn:hover { transform: none; box-shadow: none; opacity: .92; }
+
+  /* Quiet details: plain superscript footnotes, a hairline cost table */
+  @media screen {
+    a.fn { background: none; padding: 0; margin: 0 1px; border-radius: 0; color: var(--rx-blue); }
+    a.fn:hover { background: none; color: var(--rx-navy); text-decoration: underline; }
+  }
+  .rxk-cost-title { background: none; color: var(--rx-navy); text-align: left; text-transform: none;
+                    letter-spacing: -.01em; font-size: 1.2rem; padding: 20px 24px 8px; }
+  .rxk-cost th, .rxk-cost td { padding: 14px 20px; }
+  .rxk-cost thead th, .rxk-cost thead th.rxk-cost-tanf, .rxk-cost thead th.rxk-cost-add {
+    background: none; color: var(--rx-ink); border-bottom: 1px solid var(--rx-line); }
+  .rxk-cost thead th:not(:first-child) { text-align: right; }
+  .rxk-cost td { text-align: right; font-variant-numeric: tabular-nums; }
+  .rxk-cost td.rxk-cost-tanf, .rxk-cost td.rxk-cost-add { background: none; color: var(--rx-navy); font-weight: 600; }
+  .rxk-cost tr.rxk-cost-total th, .rxk-cost tr.rxk-cost-total td { background: var(--rx-tint); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
+    .tfc-reveal { opacity: 1 !important; transform: none !important; }
+  }
+
+  
 </style>
 </head>
 <body>
