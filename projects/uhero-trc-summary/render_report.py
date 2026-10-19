@@ -155,7 +155,7 @@ def chap(n: int) -> str:
 
 
 def bullet(n: int) -> str:
-    return (f'<li class="fb"{L.attr(f"fair.li.{n}")}>{C.html(f"fair.b{n}", "fbp")}</li>')
+    return (f'<li class="fb"{L.frame(f"fair.li.{n}")}>{C.html(f"fair.b{n}", "fbp")}</li>')
 
 
 ENDNOTES_SLOT = "<!--ds-endnotes-->"
@@ -190,7 +190,7 @@ page = f"""
   </div>
 
   <div class="klabel"{L.attr("cover.figures.h")}>{C.t("cover.figures.h")}</div>
-  <div class="figs"{L.attr("cover.figs")}>
+  <div class="figs"{L.frame("cover.figs")}>
     {fig("a", " fig-warn")}{fig("b")}{fig("c")}
   </div>
 
@@ -201,7 +201,7 @@ page = f"""
 
   <div class="cgrid">
     <div class="klabel klabel-t"{L.attr("cover.contents.h")}>{C.t("cover.contents.h")}</div>
-    <div class="contents"{L.attr("cover.contents")}>{contents_rows()}</div>
+    <div class="contents"{L.frame("cover.contents")}>{contents_rows()}</div>
   </div>
 
   <div class="cfwrap"><div class="cover-foot"{L.frame("cover.foot")}>
@@ -321,7 +321,7 @@ html = f"""<!DOCTYPE html>
   .cfield {{ margin:-0.5in -0.6in 0; padding:0.5in 0.6in 0.5in;
              background:{PRIMARY_DARK}; color:#fff; min-height:5.3in;
              box-sizing:border-box; display:flex; flex-direction:column; }}
-  .mast {{ display:flex; justify-content:space-between; align-items:baseline;
+  .mast {{ display:flex; justify-content:space-between; align-items:flex-start;
            padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.35); }}
   .brand {{ font-family:Barlow, sans-serif; font-weight:700; font-size:13.5px;
             letter-spacing:.14em; color:#fff; }}
