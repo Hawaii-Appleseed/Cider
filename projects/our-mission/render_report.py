@@ -31,11 +31,27 @@ C = Content(_CONTENT, styles=L)
 
 EDIT = bool(os.environ.get("DOCSYNC_EDIT"))
 
+# The site chrome's scroll effects are the page script's: as the window
+# scrolls it gives the fixed nav its glass look (.is-scrolled, 20px taller)
+# and stretches the reading-progress bar. A script runs once per document and
+# the editor's incremental render never runs it, so after an edit made while
+# scrolled the nav snapped back to its resting look and the bar to empty, and
+# neither moved again — the listener still held the nodes the edit replaced.
+# In the editor they hold still instead: the nav keeps its resting look (the
+# values the import's own rules give it) and the bar is not drawn. The
+# published page, which always runs its script, keeps both.
 EDIT_CSS = """
 [class*="reveal"], [class*="fade"], [class*="animate"], [data-aos] {
   opacity: 1 !important; transform: none !important;
   visibility: visible !important;
 }
+.px-nav.is-scrolled { background:#fff; box-shadow:none;
+  -webkit-backdrop-filter:none; backdrop-filter:none; }
+@media (min-width:701px) {
+  .px-nav.is-scrolled { padding-top:14px; padding-bottom:14px; }
+  .px-nav.is-scrolled .px-brand-mark { width:40px; height:40px; }
+}
+.px-scroll-progress { display:none; }
 """ if EDIT else ""
 
 SRC = (HERE / "original.html").read_text()
