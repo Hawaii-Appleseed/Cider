@@ -514,6 +514,50 @@ opacity:0 even after scrolling. Not a build error; a rendering interop wrinkle
 worth fixing (or stripping the reveal-gating for the editor context) if it
 matters for editing that content.
 
+## Publishing a website project to its own repo
+
+A project whose page is deployed from ANOTHER repo (a GitHub Pages site) is
+published by a `publish:` block on its binding — see `docsync/publish.py`. To
+make a new website project publish on Save, in this order:
+
+1. **Make the project** — `docsync.scaffold` + `docsync.propose` (+ the stage-two
+   pass for tables, citations and figures; `projects/wfc-credits/` is the worked
+   example, with `wire_stage_two.py`). The project's own build is an editor sheet,
+   NOT the page: it keeps no `<link>` tags and fixes the width.
+2. **Say where the page goes** in `docsync.yml`:
+
+   ```yaml
+   publish:
+     repo: Hawaii-Appleseed/Some-Site       # owner/name, a git URL or a local path
+     branch: main                           # the branch the site deploys from
+     when: save                             # save | push. NOT `on:` (YAML reads it as true)
+     command: >-
+       python3 -m docsync.publish_page --id my-page
+       --shell "$CIDER_SITE/site/my-page/index.html" --write
+     paths: [site/my-page/index.html]       # the only files a publish may change
+     message: "docs(site): my page edited in Cider"
+     url: https://example.github.io/Some-Site/my-page/
+   ```
+
+   `publish_page` renders the project and puts it inside the site's existing page
+   (`--shell`), so the live head, fonts and responsive layout stay. `--env K=V`
+   tells a renderer to draw the site's own markup (wfc-credits' tables and
+   endnotes); `--swap-asset FILE=>URL` turns an image the project carries inline
+   back into the site's own URL; `--replace OLD=>NEW` fixes a link. A different
+   kind of site writes a different `command` — anything that writes `paths` into
+   `$CIDER_SITE`.
+3. **In the site repo**, if it has a generator that also writes this page, stop it
+   (Census-Forecaster: add the slug to `site/cider-managed.txt`), and make sure a
+   push to the branch deploys it.
+4. **Choose `when`.** `save` publishes on every Save — the editor's Save is the
+   publish, with no review step. `push` waits for the editor's Push button.
+5. Check it without GitHub: point `repo:` at a bare clone of the site, run
+   `publish.run(...)` (as `test_docsync.py` does), and look at the commit.
+
+The first publish also normalises the page's markup (slot spans, `<b>` for
+`<strong>`): one cosmetic diff, then only real edits. Numbers in a published
+page are the project's text — a model rerun does not update them.
+
 ## Handing over a conversion: the editability contract
 
 A converted document (a PDF rebuilt as a renderer, a scaffolded page after

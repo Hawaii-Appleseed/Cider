@@ -307,6 +307,23 @@ Rules that bite:
   and the MCP `style_guide` tool. When a user says "make a report from this
   text", start there (the report-editor skill's "Make me a report from this
   text" section is the walkthrough).
+- **A project can publish to a public site that lives in ANOTHER repo**
+  (`publish:` on its binding; `docsync/publish.py`). Save/Push only ever
+  commit to the repo the editor runs from, so a website deployed from
+  elsewhere (the Estimates pages in Census-Forecaster) needs this: when the
+  binding's `when:` (`save` or `push`; NOT `on:`, which YAML reads as `true`)
+  fires, the server runs `command` against the engine's own clone of the site
+  repo (`~/.cider/publish/…`, reset to the remote branch each time — never a
+  person's checkout), stages only the declared `paths`, commits and pushes the
+  branch, and the site's own deploy does the rest. The Save is already safe
+  before it runs and a failed publish never undoes it; the editor's message
+  says whether the public site was updated. `POST /__publish {"project": id}`
+  re-runs it on demand. `docsync/publish_page.py` is the ready-made `command`
+  for a scaffolded page (project -> the page's own shell). A site with its own
+  generator must stop rewriting the page (Census-Forecaster lists such slugs in
+  `site/cider-managed.txt`). Setup recipe: the report-editor skill, "Publishing
+  a website project". Local editor only: the staff hub's Publish is a
+  different path (the Worker commits to `hub/<id>`).
 - **Bringing in a static HTML page**: `python3 -m docsync.scaffold page.html
   --id <slug>` does STAGE ONE (openable) automatically — project dir, wrapper
   renderer, docsync.yml binding, build + stage. Then `python3 -m

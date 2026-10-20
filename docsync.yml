@@ -559,6 +559,24 @@ bindings:
     build: python3 projects/wfc-credits/render_report.py
     outputs:
       - projects/wfc-credits/index.html
+    # The public page lives in Census-Forecaster (GitHub Pages). Saving here
+    # also publishes it there — docsync/publish.py. The command writes the page
+    # into the engine's own clone, $CIDER_SITE; only the one path is committed.
+    publish:
+      repo: Hawaii-Appleseed/Census-Forecaster
+      branch: main
+      when: save
+      command: >-
+        python3 -m docsync.publish_page --id wfc-credits
+        --shell "$CIDER_SITE/site/working-family-credits/index.html"
+        --env WFC_SITE=1
+        --swap-asset "$CIDER_SITE/site/assets/appleseed-logo-cropped.png=>../assets/appleseed-logo-cropped.png"
+        --swap-asset "$CIDER_SITE/site/assets/appleseed-footer-logo-white.png=>../assets/appleseed-footer-logo-white.png"
+        --replace "href=\"https://hawaii-appleseed.github.io/Census-Forecaster/\"=>href=\"../index.html\""
+        --write
+      paths: [site/working-family-credits/index.html]
+      message: "docs(site): credits page edited in Cider"
+      url: https://hawaii-appleseed.github.io/Census-Forecaster/working-family-credits/
     editor:
       dir: docs/wfc-credits
       render: projects/wfc-credits/render_report.py
