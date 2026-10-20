@@ -1389,11 +1389,21 @@ here by now; what is not, ranked the same way. Numbering continues from
     local server the browser's print hides the same sheets for the print
     and shows them again. Checked with real Chrome: a two-page report with
     page 2 kept prints one page, the endnotes.
-84. **Tabs and slides for the web.** InDesign's Object States: one frame
-    holding several states, switched by buttons — a tabbed explainer on the
-    web, the states one after another in print. RxKids' tabbed page was
-    built by hand in its renderer; this would make it a thing any report can
-    have. **M–L.**
+84. **Tabs and slides for the web. — CLOSED 2026-10-19.** In a text
+    box, a line that is only `{state:<label>}` starts a state; words before
+    the first one are an intro above the tabs. Published, the box is a
+    tablist (`role=tab`, `aria-selected`, ←/→, Home, End) showing one panel
+    at a time — or, with `states: "slides"`, ‹ › and a dot per state; in
+    print every state, one after another under its own label; in the
+    editor every state stacked, each marker a chip ("⇥ tab: Evidence"), so
+    the words are typed like any box's. Right-click in a box's words ▸
+    Insert ▸ **A new tab here…**; right-click the box ▸ **Show the states
+    as slides / tabs**. CSS and runtime are emitted once, only when a box
+    has states; a `{state:}` that is not on a line of its own shows in the
+    editor and stands for nothing when published. Not done: states of
+    placed objects (a whole layout per tab, as InDesign's Object States
+    allow) — a state here is words, pictures and lists, which is what
+    RxKids' tabs hold.
 85. **Layer housekeeping. — CLOSED 2026-10-19.** In the Layers panel,
     per layer: **◎** selects everything on it that is drawn (refused, and
     said, for a locked or hidden layer), **⤓** merges it into another —

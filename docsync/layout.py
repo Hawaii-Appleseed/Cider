@@ -34,7 +34,7 @@ from pathlib import Path
 # happens to be positioned — block_html already renders exactly that for the
 # overflow slots, and a second renderer for the same thing would drift.
 from .content import (CAPTION_RE, COND_RE, Footnotes, block_html, char_styles_used,
-                      link_refs, md_inline, paragraph, uses_breaks, uses_vars)
+                      link_refs, md_inline, paragraph, split_states, uses_breaks, uses_vars)
 
 # Letter portrait, because that is what the Budget Primer is. Any report with a
 # different page passes its own size in — this is a default, not a law. It is
@@ -3579,6 +3579,8 @@ def _check_box_look(b: dict, where: str) -> None:
                               f"columns, 1 to 4")
     if b.get("gap") is not None and not 0 <= _num(b["gap"], f"{where}.gap") <= 2:
         raise LayoutError(f"{where}.gap: {b['gap']} is outside 0–2in")
+    if b.get("states") is not None and b["states"] not in STATE_KINDS:
+        raise LayoutError(f"{where}.states must be one of {', '.join(STATE_KINDS)}")
     if b.get("vAlign") is not None and b["vAlign"] not in BOX_VALIGNS:
         raise LayoutError(f"{where}.vAlign: {', '.join(BOX_VALIGNS)}")
     if b.get("firstBaseline") is not None and b["firstBaseline"] not in FIRST_BASELINES:
@@ -3882,6 +3884,78 @@ LINKED_RE = re.compile(r"\{text:([A-Za-z0-9._@-]+)\}")
 # *{titleof:whopays.h1}* on page {pageof:whopays.h1}" follows a renamed
 # heading as well as a moved one.
 TITLEOF_RE = re.compile(r"\{titleof:([A-Za-z0-9._@-]+)\}")
+# Tabs and slides (INDESIGN_PARITY.md 84). A text box whose words hold
+# {state:<label>} lines (content.split_states) is a set of states: tabs by
+# default, `states: "slides"` for ‹ › and dots. On screen one state shows; in
+# print every state, one after another, under its own label; in the editor
+# every state stacked, so the words are typed like any box's.
+STATE_KINDS = ("tabs", "slides")
+STATES_CSS = (
+    ".ds-states .ds-st-bar{display:flex;align-items:center;gap:.2em;margin:0 0 .6em;"
+    "border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent)}"
+    ".ds-states [role=tab]{font:inherit;font-weight:600;color:inherit;background:none;border:0;"
+    "border-bottom:2px solid transparent;margin-bottom:-1px;padding:.35em .7em;cursor:pointer;opacity:.7}"
+    ".ds-states [role=tab][aria-selected=true]{opacity:1;border-bottom-color:currentColor}"
+    ".ds-states [role=tab]:focus-visible{outline:2px solid currentColor;outline-offset:1px}"
+    ".ds-st-slides .ds-st-bar{border:0;justify-content:center;order:2;margin:.6em 0 0}"
+    ".ds-st-slides{display:flex;flex-direction:column}"
+    ".ds-st-slides [role=tab]{width:.6em;height:.6em;padding:0;border-radius:50%;border:0;"
+    "background:currentColor;opacity:.25;margin:0 .2em}"
+    ".ds-st-slides [role=tab][aria-selected=true]{opacity:.85}"
+    ".ds-st-slides [role=tab] span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}"
+    ".ds-st-step{font:inherit;font-size:1.2em;line-height:1;color:inherit;background:none;border:0;"
+    "padding:.1em .5em;cursor:pointer;opacity:.7}"
+    ".ds-st-plabel{display:none;font-weight:700;margin:.8em 0 .3em}"
+    "@media print{.ds-st-bar{display:none!important}.ds-st-panel[hidden]{display:block!important}"
+    ".ds-st-plabel{display:block}}"
+)
+STATES_JS = (
+    "(function(){function sel(r,i,f){var t=r.querySelectorAll('[role=tab]'),p=r.querySelectorAll('.ds-st-panel');"
+    "if(!t.length)return;i=(i+t.length)%t.length;for(var k=0;k<t.length;k++){var on=k===i;"
+    "t[k].setAttribute('aria-selected',on?'true':'false');t[k].tabIndex=on?0:-1;"
+    "if(on)p[k].removeAttribute('hidden');else p[k].setAttribute('hidden','');}"
+    "r.setAttribute('data-at',i);if(f)t[i].focus();}"
+    "document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest("
+    "'.ds-states [role=tab],.ds-states .ds-st-step');if(!b)return;var r=b.closest('.ds-states');"
+    "if(b.getAttribute('role')==='tab')sel(r,[].indexOf.call(r.querySelectorAll('[role=tab]'),b));"
+    "else sel(r,(+r.getAttribute('data-at')||0)+(b.getAttribute('data-step')==='1'?1:-1));});"
+    "document.addEventListener('keydown',function(e){var b=e.target;if(!b.closest||b.getAttribute('role')!=='tab')return;"
+    "var r=b.closest('.ds-states');if(!r)return;var t=r.querySelectorAll('[role=tab]'),i=[].indexOf.call(t,b),"
+    "k={ArrowRight:i+1,ArrowLeft:i-1,Home:0,End:t.length-1}[e.key];if(k===undefined)return;"
+    "e.preventDefault();sel(r,k,1);});})();"
+)
+STATES_EDIT_CSS = (
+    ".ds-statemark{display:inline-block;font:600 11px/1.6 system-ui,sans-serif;letter-spacing:.03em;"
+    "color:#52796F;background:#EEF4F0;border:1px dashed #9DBBA8;border-radius:4px;padding:0 .6em}"
+    ".ds-statemark::before{content:'\\25B8  tab: '}"
+)
+
+
+def states_html(bid: str, kind: str, intro: str, states: list) -> str:
+    """A set of states, published (84). Panel 0 shows; the rest are hidden
+    until a tab or a step shows them, and all of them print."""
+    tabs = "".join(
+        f'<button type="button" role="tab" id="ds-st-{bid}-t{i}" aria-controls="ds-st-{bid}-p{i}" '
+        f'aria-selected="{"true" if i == 0 else "false"}" tabindex="{0 if i == 0 else -1}"'
+        + (f' aria-label="{html_attr(lab)}"><span>{md_inline(lab)}</span>' if kind == "slides"
+           else f'>{md_inline(lab)}') + "</button>"
+        for i, (lab, _) in enumerate(states))
+    if kind == "slides":
+        tabs = ('<button type="button" class="ds-st-step" data-step="-1" aria-label="Previous">\u2039</button>'
+                + tabs + '<button type="button" class="ds-st-step" data-step="1" aria-label="Next">\u203a</button>')
+    panels = "".join(
+        f'<div class="ds-st-panel" role="tabpanel" id="ds-st-{bid}-p{i}" aria-labelledby="ds-st-{bid}-t{i}"'
+        f'{" hidden" if i else ""}><p class="ds-st-plabel">{md_inline(lab)}</p>{block_html(md)}</div>'
+        for i, (lab, md) in enumerate(states))
+    return ((block_html(intro) if intro else "")
+            + f'<div class="ds-states ds-st-{kind}" data-at="0"><div class="ds-st-bar" role="tablist">{tabs}</div>'
+            + f'{panels}</div>')
+
+
+def html_attr(s: str) -> str:
+    return str(s).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+
 # Words that resolve_text() rewrites; a text holding none is left alone.
 RESOLVE_TOKENS = ("{caption:", "{var:", "{text:", "{titleof:")
 # The ids an internal link [words](#key) names (content.XREF_RE): the target
@@ -5523,6 +5597,19 @@ class Layout:
             return m.group(0)
         return f"\x0e{m.group(1)}\x10{src}\x0f" if os.environ.get("DOCSYNC_EDIT") else src
 
+    def _states_once(self) -> str:
+        """The tabs' CSS and runtime (84), once, when some text box has
+        states — and in the editor only the marker's look."""
+        if getattr(self, "_states_sent", False):
+            return ""
+        if not any("{state:" in str(b.get("md", "")) and split_states(str(b.get("md", "")))
+                   for b in self.all_boxes()):
+            return ""
+        self._states_sent = True
+        if os.environ.get("DOCSYNC_EDIT"):
+            return f"<style>{STATES_EDIT_CSS}</style>"
+        return f"<style>{STATES_CSS}</style><script>{STATES_JS}</script>"
+
     def _xref_once(self) -> str:
         """XREF_JS, once, when some words link to a place in the report — a
         report with no internal link keeps its bytes."""
@@ -6908,9 +6995,12 @@ class Layout:
             if thr is not None:
                 klass += " ds-thread"
                 extra += f' data-thread="{thr[0]}" data-thread-i="{thr[1]}"'
+            sts = None if edit else split_states(b["md"])
+            words = (states_html(b["id"], b.get("states") or "tabs", sts[0], sts[1])
+                     if sts else block_html(b["md"]))
             out.append(f'<div class="{klass}"{extra}{tag}{an}{PLACED} '
                        f'style="{tglFull}">'
-                       f'{block_html(b["md"])}{arrow}</div>')
+                       f'{words}{arrow}</div>')
         return "".join(out)
 
     def box(self, box_id: str) -> dict | None:
@@ -7403,7 +7493,7 @@ class Layout:
                 + self._vars_once() + self._breaks_once() + self._char_once()
                 + self._bleed_once() + self._grid_once() + self._wrapshape_once()
                 + self._cond_once() + self._tabs_once() + self._order_once()
-                + self._xref_once())
+                + self._xref_once() + self._states_once())
         # A blank page that is a COPY of a designed one draws that page's
         # markup first — the designed content the renderer never knew to
         # emit for it — then its own shapes over it, like any other sheet.

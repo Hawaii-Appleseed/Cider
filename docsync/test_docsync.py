@@ -4602,6 +4602,27 @@ for _bad, _says in (({"kind": "line"}, "closed shape"), ({"image": {"src": ""}},
                     ({"kind": "path", "points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]}, "closed shape")):
     check_eq(f"58: refused: {_says}", _says in _layout_error({"shapes": [dict(_S58, **_bad)]}), True)
 
+# --- INDESIGN_PARITY.md 84: tabs and slides ---------------------------------------
+from docsync.content import split_states as _ss   # noqa: E402
+check_eq("84: {state:} lines split a box's words; what comes first is an intro",
+         _ss("## Why\n\n{state:Home}\nOne.\n\n{state:The *bill*}\nTwo.\n"),
+         ("## Why", [("Home", "One."), ("The *bill*", "Two.")]))
+check_eq("84: words with no state line are not states", _ss("Just words {state:x} inline"), None)
+_MD84 = "{state:Home}\nOne.\n\n{state:Evidence}\nTwo."
+_h84 = _layout({"boxes": [_tf(id="t", md=_MD84)]})
+_p84 = _h84.layer(1) + _h84.text_boxes(1)
+check_eq("84: published, tabs: a tablist, the first panel shown, the rest hidden, all printable",
+         ['role="tablist"' in _p84, 'aria-selected="true"' in _p84, '<div class="ds-st-panel" role="tabpanel" id="ds-st-t-p1" aria-labelledby="ds-st-t-t1" hidden>' in _p84,
+          ".ds-st-panel[hidden]{display:block!important}" in _p84, _p84.count("<script>") == 1],
+         [True] * 5)
+_s84 = _layout({"boxes": [_tf(id="t", md=_MD84, states="slides")]}).text_boxes(1)
+check_eq("84: slides: previous and next, and a dot per state named for screen readers",
+         ['data-step="-1"' in _s84, 'aria-label="Evidence"' in _s84, "ds-st-slides" in _s84], [True] * 3)
+check_eq("84: a box without states draws what it did, and carries no runtime",
+         "ds-states" in _layout({"boxes": [_tf(id="t", md="One.")]}).layer(1), False)
+check_eq("84: states is tabs or slides",
+         "states must be one of" in _layout_error({"boxes": [_tf(id="t", md=_MD84, states="carousel")]}), True)
+
 # --- INDESIGN_PARITY.md 68: flip on shapes, boxes and tables ----------------------
 _fl = _layout({"boxes": [_tf(id="f", md="x", flip="h", skew=10)],
                "shapes": [{"id": "s", "page": 1, "kind": "rect", "x": 1, "y": 1, "w": 2, "h": 1, "flip": "v"}],

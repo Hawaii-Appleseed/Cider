@@ -108,7 +108,23 @@ _DEST = r"(?:[^()\s]+|\([^()\s]*\))+"
 # is never touched.
 VAR_NAMES = ("page", "pages", "section", "title", "date", "contents")
 VAR_RE = re.compile(r"\{(page|pages|section|title|date|contents|pageof:([A-Za-z0-9._-]+)"
-                    r"|break:(?:line|optional|column|frame)|span)\}")
+                    r"|break:(?:line|optional|column|frame)|span|state:[^{}\n]{1,40})\}")
+# Tabs and slides (INDESIGN_PARITY.md 84): in a text box, a line that is only
+# {state:<label>} starts a new state. Published, the box is a set of tabs (or
+# slides) showing one state at a time; in print every state, one after
+# another under its label; in the editor every state, stacked, each marker a
+# chip — so the words are typed like any box's.
+STATE_LINE_RE = re.compile(r"^[ \t]*\{state:([^{}\n]{1,40})\}[ \t]*$", re.M)
+
+
+def split_states(md: str):
+    """(intro, [(label, md), ...]) when the words hold {state:} lines, else
+    None. The words before the first one are an intro, shown above the tabs."""
+    if "{state:" not in (md or "") or not STATE_LINE_RE.search(md):
+        return None
+    parts = STATE_LINE_RE.split(md)
+    intro, rest = parts[0], parts[1:]
+    return intro.strip(), [(rest[i].strip(), rest[i + 1].strip()) for i in range(0, len(rest), 2)]
 # Breaks (INDESIGN_PARITY.md 31) ride the same token grammar, so the editor
 # shows them as the same atomic chips while typing:
 #   {break:line}      a forced line break — a <br> in a heading or an address
@@ -148,6 +164,14 @@ def var_span(m) -> str:
     if name.startswith("pageof:"):
         return (f'<span class="ds-var" data-var="pageof" data-ref="{m.group(2)}">'
                 '?</span>')
+    if name.startswith("state:"):
+        # Published, a box is split at these lines before its words are
+        # drawn (layout.states_html), so one met here is not on a line of
+        # its own (or is not in a text box) and stands for nothing. In the
+        # editor it shows, so it can be seen and moved to its own line.
+        if not os.environ.get("DOCSYNC_EDIT"):
+            return ""
+        return f'<span class="ds-statemark">{name[6:].strip()}</span>'
     if name == "date":
         return f'<span class="ds-var" data-var="date">{build_date()}</span>'
     return f'<span class="ds-var" data-var="{name}"></span>'
@@ -155,7 +179,7 @@ def var_span(m) -> str:
 
 def uses_vars(text: str) -> bool:
     """A token the variables runtime has to fill — a break needs none."""
-    return bool(text) and any(not m.group(1).startswith("break:") and m.group(1) != "span"
+    return bool(text) and any(not m.group(1).startswith(("break:", "state:")) and m.group(1) != "span"
                               for m in VAR_RE.finditer(text))
 
 

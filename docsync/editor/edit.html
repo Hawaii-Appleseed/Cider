@@ -3415,7 +3415,7 @@ const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 // content.py's CHAR_STYLE_RE: `[words]{.Name}`, a text style on a run of words.
 const CHAR_STYLE_RE_G = /\[([^\]^][^\]]*)\]\{\.([^}\n]+)\}/g;
 // content.py's VAR_RE, and the one place the editor spells it.
-const VAR_RE_G = /\{(page|pages|section|title|date|contents|pageof:([A-Za-z0-9._-]+)|break:(?:line|optional|column|frame)|span|caption:[A-Za-z0-9._@-]+|var:[A-Za-z0-9_-]{1,30}|text:[A-Za-z0-9._@-]+|titleof:[A-Za-z0-9._@-]+)\}/g;
+const VAR_RE_G = /\{(page|pages|section|title|date|contents|pageof:([A-Za-z0-9._-]+)|break:(?:line|optional|column|frame)|span|caption:[A-Za-z0-9._@-]+|var:[A-Za-z0-9_-]{1,30}|text:[A-Za-z0-9._@-]+|titleof:[A-Za-z0-9._@-]+|state:[^{}\n]{1,40})\}/g;
 const VAR_LABEL = { page: 'page no.', pages: 'page count', section: 'section', title: 'title',
                     date: 'date', contents: 'contents', pageof: 'page of',
                     'break:line': '↵ line break', 'break:optional': '⁝ may break',
@@ -3445,6 +3445,7 @@ const varChipHtml = (name, ref) =>
              : name.startsWith('var:') ? userVarLabel(name.slice(4))
              : name.startsWith('text:') ? '⇄ ' + linkedPreview(name.slice(5))
              : name.startsWith('titleof:') ? '“' + titlePreview(name.slice(8)) + '”'
+             : name.startsWith('state:') ? '⇥ tab: ' + name.slice(6).trim()
 
              : VAR_LABEL[name] + (ref ? ' ' + ref : ''))}</span>`;
 // A variable of your own (INDESIGN_PARITY.md 60) shows its text, so the chip
@@ -4698,6 +4699,20 @@ function buildVarRows(d, m, host, range) {
         b.addEventListener('click', () => put(k));
         sub.appendChild(b);
       });
+    // Tabs and slides (84): a new state starts here, on a line of its own —
+    // in a text box, which then shows tabs on the web.
+    if ((host.closest('[data-el]') || {}).dataset && /^text\./.test(host.closest('[data-el]').dataset.el || '')) {
+      const b = d.createElement('button');
+      b.textContent = 'A new tab here…';
+      b.addEventListener('click', async () => {
+        closeMenu(d);
+        const got = await dsForm('A new tab', [{ name: 'label', type: 'text', label: 'The tab says', value: '' }],
+          { okLabel: 'Insert', validate: v => /^[^{}\n]{1,40}$/.test(v.label.trim()) ? '' : 'a short label, up to 40 characters' });
+        if (got == null) return;
+        await insertNodeAt(d, host, range, makeVarChip(d, 'state:' + got.label.trim()));
+      });
+      sub.appendChild(b);
+    }
   });
   // Its own row, not nested in Insert: a submenu of a submenu closes the
   // moment the pointer leaves the first one for the second.
@@ -6211,6 +6226,16 @@ function layerMenu(d, el, e) {
     if (clonable || (tableOf(id) && !tableOf(id).flow))
       item('Step and repeat…', () => { if (!selIds.has(id)) setSel(d, [id]); stepRepeatDialog(d); });
     if (lastXform) item('Transform again', () => { if (!selIds.has(id)) setSel(d, [id]); transformAgain(d); });
+    // Tabs and slides (84): a box whose words have {state:} lines.
+    if (boxOf(id) && /^[ \t]*\{state:[^{}\n]{1,40}\}[ \t]*$/m.test(boxOf(id).md || '')) {
+      const bx = boxOf(id);
+      item(bx.states === 'slides' ? 'Show the states as tabs' : 'Show the states as slides', async () => {
+        pushHistory();
+        if (bx.states === 'slides') delete bx.states; else bx.states = 'slides';
+        markDirty(); await render();
+        $('stat').textContent = `on the web this box shows ${bx.states === 'slides' ? 'slides' : 'tabs'}; in print, every state`;
+      });
+    }
     // The library (50): keep this — and whatever else is selected with it.
     if (clonable || (tableOf(id) && !tableOf(id).flow))
       item('Save to library…', () => { closeMenu(d); if (!selIds.has(id)) setSel(d, [id]); return saveToLibraryDialog(); });
