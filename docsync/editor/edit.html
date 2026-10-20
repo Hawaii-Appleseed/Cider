@@ -3516,9 +3516,12 @@ function titlePreview(ref) {
  *  and page — for Page reference, Heading words and Link to a place. */
 function reportPlaces(d) {
   const pages = [...d.querySelectorAll('section.page')];
-  return [...d.querySelectorAll('section.page h1[data-slot], section.page h2[data-slot],'
-    + ' section.page h3[data-slot], section.page [data-slot] > h1, section.page [data-slot] > h2')]
-    .map(h => h.dataset.slot ? h : h.parentElement)
+  // The slot is the heading, wraps it, or — most renderers' pattern,
+  // <h1 data-el><span data-slot> — sits inside it; that last was missed, and
+  // the staff toolkit, retitc and the primer offered no place at all.
+  return [...d.querySelectorAll('section.page :is(h1, h2, h3)')]
+    .map(h => h.dataset.slot ? h : h.querySelector(':scope > [data-slot]')
+      || (h.parentElement && h.parentElement.matches('[data-slot]') ? h.parentElement : null))
     .filter((h, i, a) => h && h.dataset.slot && a.indexOf(h) === i
       && !h.closest('.ds-textbox') && (h.textContent || '').trim())
     .map(h => ({ key: h.dataset.slot, words: (h.textContent || '').replace(/\s+/g, ' ').trim(),
