@@ -1135,8 +1135,28 @@ Google Doc import exist, and were never listed here.
 
 ### Smaller wins
 
-64. Named **gradient swatches**, and a gradient feather (a fade to clear,
-    not just the edge feather of 39). Gradients exist; naming them does not.
+64. **Named gradient swatches, and a fade to clear. — CLOSED 2026-10-19.**
+    A swatch in `layout.swatches` may be a gradient — the `{type, angle,
+    stops}` a fill takes, its stops plain hex or `@Solid` swatches — and
+    `"@Name"` in a fill that can be a gradient (a shape's, a text box's, a
+    page's or a placed piece's) wears it; `"@Name 40%"` tints every stop,
+    keeping a stop's own alpha. Named where only a colour goes (a text
+    colour, a stroke, a table or cell fill) it is refused, saying so.
+    Redefining it changes every fill that names it. In the fill menu:
+    **Save as gradient swatch…** under the gradient editor, and the
+    gradient swatches as chips there and in the solid list (one chip each,
+    no tint ladder); never in a text-colour or stroke list. Deleting a solid
+    swatch writes its colour into the stops of a gradient swatch that named
+    it, and a solid swatch only a gradient swatch in use names is not
+    "unused". **Fade to clear** (InDesign's gradient feather): `fade:
+    {angle, from, to}` on a text box, a table or a placed piece — a mask
+    opaque up to `from` and clear by `to` along `angle` (180 fades toward
+    the bottom), intersected with `feather` when both are set; Effects ▸
+    Fade to clear (four directions and where it begins). A drawn shape is
+    refused: it fades through its own fill, a gradient whose last stop is
+    clear. Every bound report's published bytes unchanged (all 14 built
+    before and after). Pilot `defineSwatch(name, gradient)`, `fade(id,
+    {angle, from, to} | null)`.
 65. **Eyedropper for looks.** The colour eyedropper picks colour only, and
     the format painter misses some keys (a shape's blend and glow, a box's
     padding, radius and border) and never works on a run of text.
@@ -1194,7 +1214,9 @@ bound report's published bytes identical — and then (47) and (52), which
 are the editor's alone and touch no published byte; then (59) and (53);
 then (61), (66), (68) and (70); then (80), (77) and (75); then (76),
 (79), (81) and (78), each keeping every published byte; then (57),
-which is the editor's alone. Next: (64) and (82). (48) and (62) are the large ones, worth
+which is the editor's alone; then (64) and (82), each keeping every
+published byte. Next: (83) and (85), the small ones, then (51) Quick
+Apply. (48) and (62) are the large ones, worth
 it when a report asks for footnotes or a local review round.
 
 ## A fifth pass: InDesign's panel menus — scoped 2026-10-19
@@ -1285,10 +1307,22 @@ here by now; what is not, ranked the same way. Numbering continues from
     stay, one undo step. A designed element nobody turned is not pinned
     into `positions` just to be cleared; locked objects are left alone.
     Pilot `clearTransforms(id | [ids])`.
-82. **Internal links and cross-reference text.** Link words to another
-    place in the report (a slot, a heading), clickable in the PDF and on
-    the web; and `{titleof:<slot>}`, the heading's own words, so "see
-    *Who pays* on page {pageof:…}" follows a renamed heading too. **S–M.**
+82. **Internal links and cross-reference text. — CLOSED 2026-10-19.**
+    `[words](#<slot key>)` (or `#text.N`) links to another place in the
+    report: `md_inline` writes `a.ds-xref`, the slot it names is hooked on
+    the published page the way a `{pageof:…}` target is (`data-anc-host`),
+    and `XREF_JS` — emitted once, only by a report that has such a link —
+    gives the target the id the link names (or points the link at the id
+    it has), so it jumps on the web and is a live link in the printed PDF.
+    `{titleof:<slot key | text.N>}` is the heading's own words, its `##`,
+    `{span}` and footnote markers off, written in at every render like
+    linked text (59), so "see *{titleof:whopays.h1}* on page
+    {pageof:whopays.h1}" follows a retitle as well as a move; a reference
+    to nothing stays as typed. Right-click in the words ▸ **Link to a place
+    in this report…** (the headings by their words and page) and **Heading
+    words ▸** beside Page reference ▸; the token is a chip showing the
+    words. The Hyperlinks panel counts a link to a slot or box as found.
+    Published bytes unchanged for every bound report.
 83. **Export some pages.** A PDF of a page range or the current page, for
     sending one section; the export takes one page as PNG today, not a
     range as PDF. **S.**

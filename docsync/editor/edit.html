@@ -3357,7 +3357,7 @@ const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 // content.py's CHAR_STYLE_RE: `[words]{.Name}`, a text style on a run of words.
 const CHAR_STYLE_RE_G = /\[([^\]^][^\]]*)\]\{\.([^}\n]+)\}/g;
 // content.py's VAR_RE, and the one place the editor spells it.
-const VAR_RE_G = /\{(page|pages|section|title|date|contents|pageof:([A-Za-z0-9._-]+)|break:(?:line|optional|column|frame)|span|caption:[A-Za-z0-9._@-]+|var:[A-Za-z0-9_-]{1,30}|text:[A-Za-z0-9._@-]+)\}/g;
+const VAR_RE_G = /\{(page|pages|section|title|date|contents|pageof:([A-Za-z0-9._-]+)|break:(?:line|optional|column|frame)|span|caption:[A-Za-z0-9._@-]+|var:[A-Za-z0-9_-]{1,30}|text:[A-Za-z0-9._@-]+|titleof:[A-Za-z0-9._@-]+)\}/g;
 const VAR_LABEL = { page: 'page no.', pages: 'page count', section: 'section', title: 'title',
                     date: 'date', contents: 'contents', pageof: 'page of',
                     'break:line': '↵ line break', 'break:optional': '⁝ may break',
@@ -3386,6 +3386,8 @@ const varChipHtml = (name, ref) =>
   + `${escAttr(name.startsWith('caption:') ? 'caption of ' + name.slice(8)
              : name.startsWith('var:') ? userVarLabel(name.slice(4))
              : name.startsWith('text:') ? '⇄ ' + linkedPreview(name.slice(5))
+             : name.startsWith('titleof:') ? '“' + titlePreview(name.slice(8)) + '”'
+
              : VAR_LABEL[name] + (ref ? ' ' + ref : ''))}</span>`;
 // A variable of your own (INDESIGN_PARITY.md 60) shows its text, so the chip
 // reads as the words it stands for; one nobody defined says so.
@@ -3396,6 +3398,31 @@ function linkedSource(ref) {
   const md = ref.startsWith('text.') ? (boxOf(ref) || {}).md : (slotRe(ref).test(source) ? readSlot(ref) : null);
   if (typeof md !== 'string') return null;
   return md.trim().split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ').trim();
+}
+/** {titleof:<ref>} (INDESIGN_PARITY 82): the heading's words, its markup off
+ *  — layout.title_source's twin, for the chip only. */
+function titleSource(ref) {
+  const t = linkedSource(ref);
+  return t == null ? null : t.replace(/^#{1,6}\s+/, '').replace(/\{span\}\s*/g, '')
+    .replace(/\[\^[^\]]+\]/g, '').trim();
+}
+function titlePreview(ref) {
+  const t = titleSource(ref);
+  if (t == null) return `${ref} (nothing there)`;
+  const plain = t.replace(/[*_`]/g, '');
+  return plain.length > 26 ? plain.slice(0, 25) + '…' : plain;
+}
+/** The places in the report worth pointing at — its headings, by their words
+ *  and page — for Page reference, Heading words and Link to a place. */
+function reportPlaces(d) {
+  const pages = [...d.querySelectorAll('section.page')];
+  return [...d.querySelectorAll('section.page h1[data-slot], section.page h2[data-slot],'
+    + ' section.page h3[data-slot], section.page [data-slot] > h1, section.page [data-slot] > h2')]
+    .map(h => h.dataset.slot ? h : h.parentElement)
+    .filter((h, i, a) => h && h.dataset.slot && a.indexOf(h) === i
+      && !h.closest('.ds-textbox') && (h.textContent || '').trim())
+    .map(h => ({ key: h.dataset.slot, words: (h.textContent || '').replace(/\s+/g, ' ').trim(),
+                 page: pages.indexOf(h.closest('section.page')) + 1 }));
 }
 function linkedPreview(ref) {
   const t = linkedSource(ref);
@@ -4350,13 +4377,14 @@ function wireMarkState(d) {
   });
 }
 
-async function link(d, host) {
+async function link(d, host, dest) {
   const range = saveRange(d, host);
-  const url = await dsPrompt('Link URL', 'https://', { title: 'Add a link' });
+  const url = dest || await dsPrompt('Link URL', 'https://', { title: 'Add a link' });
   if (!url) return;
   const r = range && host.contains(range.commonAncestorContainer) ? range : null;
   const a = d.createElement('a');
-  a.href = url;
+  a.setAttribute('href', url);
+  if (url.startsWith('#')) a.className = 'ds-xref';
   if (r && !r.collapsed) {
     // Wrap the selection's contents in the link, preserving any bold/italic
     // already inside it (surroundContents throws on a partial overlap —
@@ -4534,6 +4562,19 @@ function textMenu(d, host, e) {
   item('Italic', () => { restoreRange(d, range); toggleMark(d, host, 'i'); },
        hasRange && !boldItalicBlocked(d, 'italic'));
   item('Link…', () => { restoreRange(d, range); return link(d, host); }, hasRange);
+  // Internal links (82): to a heading in this report — a jump on the web, a
+  // live link in the PDF. Written [words](#<slot key>); the target follows
+  // the heading wherever it moves.
+  item('Link to a place in this report…', async () => {
+    const places = reportPlaces(d);
+    if (!places.length) { $('stat').textContent = 'no headings to link to yet'; return; }
+    const got = await dsForm('Link to a place in this report', [{ name: 'to', type: 'select', value: places[0].key,
+      label: 'Jump to', options: places.map(p => ({ value: p.key, label: `${p.words.slice(0, 60)} · p. ${p.page || ''}` })) }],
+      { okLabel: 'Link' });
+    if (got == null) return;
+    restoreRange(d, range);
+    return link(d, host, '#' + got.to);
+  }, hasRange);
   // Change case (66): rewrites the selected words themselves; the `case`
   // style key only changes how they look. Formatting inside the selection
   // is not kept — the run becomes plain text, as typing over it would.
@@ -4602,27 +4643,25 @@ function buildVarRows(d, m, host, range) {
   // Its own row, not nested in Insert: a submenu of a submenu closes the
   // moment the pointer leaves the first one for the second.
   {
-    const heads = [...d.querySelectorAll('section.page h1[data-slot], section.page h2[data-slot],'
-      + ' section.page h3[data-slot], section.page [data-slot] > h1, section.page [data-slot] > h2')]
-      .map(h => h.dataset.slot ? h : h.parentElement)
-      .filter((h, i, a) => h && h.dataset.slot && a.indexOf(h) === i
-        && !h.closest('.ds-textbox') && (h.textContent || '').trim());
-    submenuRow(d, m, 'Page reference ▸', sub2 => {
-      if (!heads.length) {
-        const none = d.createElement('div');
-        none.className = 'ds-menu-head'; none.textContent = 'no headings to point at';
-        sub2.appendChild(none);
-        return;
-      }
-      heads.slice(0, 60).forEach(h => {
-        const b = d.createElement('button');
-        const pg = h.closest('section.page');
-        const n = pg ? [...d.querySelectorAll('section.page')].indexOf(pg) + 1 : '';
-        b.textContent = `${(h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 48)}  · p. ${n}`;
-        b.addEventListener('click', () => put('pageof', h.dataset.slot));
-        sub2.appendChild(b);
-      });
-    });
+    const heads = reportPlaces(d);
+    // Page reference: the page a heading is on. Heading words (82): the
+    // heading's own words, so "see *Who pays* on page 4" follows a retitle.
+    [['Page reference ▸', h => put('pageof', h.key)],
+     ['Heading words ▸', h => put('titleof:' + h.key)]].forEach(([label, pick]) =>
+      submenuRow(d, m, label, sub2 => {
+        if (!heads.length) {
+          const none = d.createElement('div');
+          none.className = 'ds-menu-head'; none.textContent = 'no headings to point at';
+          sub2.appendChild(none);
+          return;
+        }
+        heads.slice(0, 60).forEach(h => {
+          const b = d.createElement('button');
+          b.textContent = `${h.words.slice(0, 48)}  · p. ${h.page || ''}`;
+          b.addEventListener('click', () => pick(h));
+          sub2.appendChild(b);
+        });
+      }));
   }
 }
 
@@ -5230,14 +5269,35 @@ async function eyedrop(onPick) {
 // when it reads the layout, so redefining a swatch recolours everything. This
 // mirror is for previews in the editor's own controls only.
 const swatches = () => layout.swatches || {};
+/** A swatch is a hex, or a gradient (INDESIGN_PARITY 64) that only a fill
+ *  may name. */
+const isGradSwatch = n => { const v = swatches()[n]; return !!v && typeof v === 'object'; };
+function tintHex(hx, pct) {
+  const h = hx.replace('#', ''), t = Math.min(100, +pct) / 100;
+  const six = h.length <= 4 ? [...h.slice(0, 3)].map(c => c + c).join('') : h.slice(0, 6);
+  const a = h.length === 8 ? h.slice(6) : h.length === 4 ? h[3] + h[3] : '';
+  return '#' + [0, 2, 4].map(i => Math.round(255 - (255 - parseInt(six.slice(i, i + 2), 16)) * t)
+    .toString(16).padStart(2, '0')).join('').toUpperCase() + a.toUpperCase();
+}
+/** "@Name" / "@Name 40%" -> its colour; a gradient swatch -> a copy of its
+ *  gradient, every stop tinted and every stop's own "@Solid" resolved. Anything
+ *  else passes through. The engine's resolve_swatches is the real one; this is
+ *  for the editor's own previews (and swatchUnlink). */
 function swatchHex(v) {
-  const m = /^@([A-Za-z0-9 _-]{1,30}?)(?:\s+(\d{1,3})%)?$/.exec((v || '').trim());
+  const m = /^@([A-Za-z0-9 _-]{1,30}?)(?:\s+(\d{1,3})%)?$/.exec(typeof v === 'string' ? v.trim() : '');
   if (!m) return v;
   const hx = swatches()[m[1].trim()];
-  if (!hx || !m[2]) return hx || v;
-  const h = hx.replace('#', ''), t = Math.min(100, +m[2]) / 100;
-  return '#' + [0, 2, 4].map(i => Math.round(255 - (255 - parseInt(h.slice(i, i + 2), 16)) * t)
-    .toString(16).padStart(2, '0')).join('').toUpperCase();
+  if (!hx) return v;
+  if (typeof hx === 'object') {
+    const g = clone(hx);
+    (g.stops || []).forEach(st => {
+      let c = typeof st.color === 'string' && st.color.startsWith('@') ? swatchHex(st.color) : st.color;
+      if (typeof c !== 'string' || !c.startsWith('#')) c = '#000000';
+      st.color = m[2] ? tintHex(c, m[2]) : c;
+    });
+    return g;
+  }
+  return m[2] ? tintHex(hx, m[2]) : hx;
 }
 /** Dropping a swatch writes its colour (or tint) into everything that named
  *  it — a reference to a swatch that is gone would stop the document loading. */
@@ -5254,11 +5314,24 @@ function swatchUnlink(name) {
     });
   };
   Object.keys(layout).forEach(k => { if (k !== 'swatches') walk(layout[k]); });
+  // and the stops of a gradient swatch that names it
+  Object.keys(swatches()).forEach(n => { if (n !== name && isGradSwatch(n)) walk(swatches()[n]); });
 }
-function swatchRow(d, host, current, onPick) {
-  const names = Object.keys(swatches());
+function swatchRow(d, host, current, onPick, opts = {}) {
+  const names = Object.keys(swatches()).filter(n => !isGradSwatch(n));
   const row = d.createElement('div');
   row.className = 'ds-swatches ds-named';
+  // A fill that can be a gradient lists the gradient swatches first, one chip
+  // each: a tint of a gradient is a thing the engine draws, but three chips
+  // of nearly the same rainbow are noise.
+  if (opts.gradients) Object.keys(swatches()).filter(isGradSwatch).forEach(n => {
+    const b = d.createElement('button');
+    b.className = 'ds-sw ds-sw-grad' + (current === `@${n}` ? ' on' : '');
+    b.style.background = cssFill(swatchHex(`@${n}`));
+    b.title = `${n} (gradient swatch)`;
+    b.addEventListener('click', () => onPick(`@${n}`));
+    row.appendChild(b);
+  });
   names.forEach(n => [100, 60, 30].forEach(t => {
     const ref = t === 100 ? `@${n}` : `@${n} ${t}%`;
     const b = d.createElement('button');
@@ -5284,8 +5357,8 @@ function swatchRow(d, host, current, onPick) {
   }
   if (row.children.length) host.appendChild(row);
 }
-function colorExtras(d, host, current, onPick) {
-  swatchRow(d, host, current, onPick);
+function colorExtras(d, host, current, onPick, opts = {}) {
+  swatchRow(d, host, current, onPick, opts);
   const inUse = colorsInUse().filter(c => c.slice(0, 7) !== (current || '').slice(0, 7));
   if (hasEyeDropper() || inUse.length) {
     const row = d.createElement('div');
@@ -5315,6 +5388,7 @@ function colorExtras(d, host, current, onPick) {
 // exists so a slider drag updates the swatch without a full re-render, and it
 // matches that one on purpose.
 function cssFill(v) {
+  if (typeof v === 'string' && v.startsWith('@')) v = swatchHex(v);
   if (!v || typeof v === 'string') return v || 'transparent';
   const stops = v.stops.map(s => `${s.color} ${(+s.at * 100).toFixed(1)}%`).join(', ');
   return v.type === 'radial'
@@ -5375,7 +5449,7 @@ function fillRow(d, m, id) {
   function redraw() { drawModes(); body.innerHTML = ''; mode === 'solid' ? solidBody() : gradBody(); }
 
   function solidBody() {
-    const current = (typeof val === 'string' ? val : '').toUpperCase();
+    const current = (typeof val === 'string' && !val.startsWith('@') ? val : '').toUpperCase();
     const rgb6 = current.slice(0, 7);
     // Opacity rides the 8th/9th hex digits — is_light_bg composites it over
     // white, so a translucent tile still gets a readable text colour.
@@ -5397,7 +5471,8 @@ function fillRow(d, m, id) {
     custom.addEventListener('change', () => commit(custom.value + alphaHex()));
     row.appendChild(custom);
     body.appendChild(row);
-    colorExtras(d, body, current, c => commit(c + alphaHex()));
+    colorExtras(d, body, (typeof val === 'string' ? val : ''),
+      c => commit(c.startsWith('@') ? c : c + alphaHex()), { gradients: !isLine });
     const arow = d.createElement('label');
     arow.className = 'ds-menu-slider'; arow.textContent = 'opacity';
     const ain = d.createElement('input');
@@ -5455,6 +5530,34 @@ function fillRow(d, m, id) {
     apply.className = 'ds-apply'; apply.textContent = 'Apply gradient';
     apply.addEventListener('click', () => { g.stops.sort((a, b) => a.at - b.at); commit(g); });
     body.appendChild(apply);
+    // Named gradient swatches (64): save this one under a name and the fill
+    // wears "@Name", so redefining the swatch changes every fill that names it.
+    const save = d.createElement('button');
+    save.textContent = 'Save as gradient swatch…';
+    save.addEventListener('click', async () => {
+      const got = await dsForm('New gradient swatch', [{ name: 'name', type: 'text', label: 'Name', value: '' }],
+        { okLabel: 'Save', validate: v => !/^[A-Za-z0-9 _-]{1,30}$/.test(v.name.trim()) ? 'letters, digits, spaces, - and _'
+          : swatches()[v.name.trim()] ? 'there is already a swatch by that name' : '' });
+      if (got == null) return;
+      const n = got.name.trim();
+      g.stops.sort((a, b) => a.at - b.at);
+      pushHistory();
+      (layout.swatches = layout.swatches || {})[n] = clone(g);
+      t.set(`@${n}`); markDirty(); closeMenu(d); await render();
+      $('stat').textContent = `gradient swatch "${n}" saved — any fill can wear it now`;
+    });
+    body.appendChild(save);
+    const gnames = Object.keys(swatches()).filter(isGradSwatch);
+    if (gnames.length) {
+      const row = d.createElement('div'); row.className = 'ds-swatches';
+      gnames.forEach(n => {
+        const b = d.createElement('button'); b.className = 'ds-sw ds-sw-grad';
+        b.style.background = cssFill(`@${n}`); b.title = `${n} (gradient swatch)`;
+        b.addEventListener('click', () => commit(`@${n}`));
+        row.appendChild(b);
+      });
+      body.appendChild(row);
+    }
     if (t.resettable) {
       const rb = d.createElement('button');
       rb.textContent = t.resetLabel;
@@ -11220,6 +11323,21 @@ function fillVars(d) {
   }
   try { w.__dsVars(); } catch (e) { /* a half-built document; the next render fills */ }
 }
+// Internal links (82): layout.XREF_JS gives each linked place its id. Run here
+// after each render for the same reason as the variables.
+let XREF_SRC = null;
+function fillXrefs(d) {
+  if (!d || !d.querySelector('a.ds-xref')) return;
+  const w = d.defaultView;
+  if (!w.__dsXref) {
+    if (XREF_SRC === null) {
+      try { XREF_SRC = py.runPython('from docsync.layout import XREF_JS\nXREF_JS'); }
+      catch (e) { XREF_SRC = ''; }
+    }
+    try { w.eval(XREF_SRC); } catch (e) { return; }
+  }
+  try { w.__dsXref(); } catch (e) { /* the next render fills */ }
+}
 // ------------------------------------------------------ threaded frames
 // layout.THREAD_JS pours each thread's story through its frames after layout
 // (INDESIGN_PARITY.md 4). Evaluated here after each render, like the anchors
@@ -16095,13 +16213,13 @@ function coloursInUse() {
       const m = v.match(/^@(.+?)(?:\s+(\d{1,3})%)?$/);
       if (!m || !sw[m[1].trim()]) return;
       swatch = m[1].trim() + (m[2] ? ` ${m[2]}%` : '');
-      hex = m[2] ? null : normHex(sw[m[1].trim()]);
+      hex = m[2] || typeof sw[m[1].trim()] !== 'string' ? null : normHex(sw[m[1].trim()]);
       if (!hex) hex = '@' + swatch;
     } else hex = normHex(v);
     const e = by.get(hex) || { hex, swatch: null, uses: [] };
     e.uses.push(colourOwner(path));
     if (swatch) e.swatch = swatch;
-    else if (!e.swatch) e.swatch = Object.keys(sw).find(n => normHex(sw[n]) === hex) || null;
+    else if (!e.swatch) e.swatch = Object.keys(sw).find(n => typeof sw[n] === 'string' && normHex(sw[n]) === hex) || null;
     by.set(hex, e);
   });
   return [...by.values()].map(e => ({ ...e, named: !!e.swatch, raw: !e.hex.startsWith('@') }))
@@ -16112,7 +16230,7 @@ function coloursInUse() {
 function replaceColour(from, to) {
   const f = normHex(from);
   const sw = layout.swatches || {};
-  const fromNames = Object.keys(sw).filter(n => normHex(sw[n]) === f);
+  const fromNames = Object.keys(sw).filter(n => typeof sw[n] === 'string' && normHex(sw[n]) === f);
   let n = 0;
   walkColours(v => {
     if ((HEX_RE.test(v) && normHex(v) === f) || fromNames.some(nm => v === '@' + nm)) { n++; return to; }
@@ -16128,7 +16246,7 @@ function nameAllColours() {
   walkColours(v => {
     if (!HEX_RE.test(v)) return;
     const hx = normHex(v);
-    let name = Object.keys(sw).find(nm => normHex(sw[nm]) === hx);
+    let name = Object.keys(sw).find(nm => typeof sw[nm] === 'string' && normHex(sw[nm]) === hx);
     if (!name) { name = hx.slice(1); sw[name] = hx; made++; }
     linked++;
     return '@' + name;
@@ -16188,7 +16306,7 @@ function coloursRender() {
   });
 }
 const tintOfRef = ref => { const m = ref.match(/^@(.+?)(?:\s+(\d{1,3})%)?$/); const hx = m && (layout.swatches || {})[m[1].trim()];
-  if (!hx) return '#ccc'; if (!m[2]) return hx; const p = +m[2] / 100, v = [1, 3, 5].map(i => parseInt(normHex(hx).slice(i, i + 2), 16));
+  if (!hx) return '#ccc'; if (typeof hx === 'object') return cssFill(ref); if (!m[2]) return hx; const p = +m[2] / 100, v = [1, 3, 5].map(i => parseInt(normHex(hx).slice(i, i + 2), 16));
   return '#' + v.map(x => Math.round(255 - (255 - x) * p).toString(16).padStart(2, '0')).join(''); };
 $('file-loadstyles').addEventListener('click', () => {
   document.querySelectorAll('.pop:not(.docked)').forEach(p => { p.hidden = true; });
@@ -16310,6 +16428,9 @@ function unusedStyles() {
     else if (o && typeof o === 'object') Object.values(o).forEach(scan);
   };
   scan(keep);
+  // A gradient swatch in use keeps the solid swatches its stops name.
+  Object.keys(layout.swatches || {}).filter(n => named.has(n) && isGradSwatch(n))
+    .forEach(n => scan(layout.swatches[n]));
   out.swatches = Object.keys(layout.swatches || {}).filter(n => !named.has(n)).sort();
   return out;
 }
@@ -16687,7 +16808,10 @@ function hyperlinkList() {
   parseSources().forEach(s => { if (s.url) add(s.url, 'source ' + s.id, s.text.slice(0, 60)); });
   return [...by.values()].map(e => {
     const internal = e.url.startsWith('#');
-    const st = internal ? { status: d && d.getElementById(decodeURIComponent(e.url.slice(1))) ? 200 : 404 } : linkStatus.get(e.url);
+    const frag = internal ? decodeURIComponent(e.url.slice(1)) : '';
+    const st = internal ? { status: d && (d.getElementById(frag) || d.querySelector(
+      `[data-slot="${CSS.escape(frag)}"], [data-el="${CSS.escape(frag)}"], [data-anc-host="${CSS.escape(frag)}"]`)) ? 200 : 404 }
+      : linkStatus.get(e.url);
     return { url: e.url, uses: e.uses, text: [...e.text], internal,
              status: st ? st.status : null, final: st && st.final,
              state: !st ? 'unchecked' : st.status >= 200 && st.status < 400 ? 'ok'
@@ -17002,6 +17126,7 @@ document.querySelectorAll('.ar-al').forEach(b => b.addEventListener('click', () 
 // The Fill swatch on a selected shape/text box: a hex preview, or a gradient
 // bar. Mirrors the text-colour button's preview.
 function fillPreview(v) {
+  if (typeof v === 'string' && v.startsWith('@')) v = swatchHex(v);
   if (typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v)) return v;
   if (v && typeof v === 'object' && Array.isArray(v.stops))
     return 'linear-gradient(90deg,' + v.stops.map(s => s.color).join(',') + ')';
@@ -17166,6 +17291,31 @@ function fxExtras(body, owner, commit, isShape, rebuild) {
     r.addEventListener('change', async () => { if (+r.value) owner.feather = +r.value; else delete owner.feather; await commit(); });
     w.append(document.createTextNode('Feather'), r);
     body.appendChild(w);
+    // Fade to clear (INDESIGN_PARITY 64, InDesign's gradient feather): opaque
+    // up to `from`, gone by the far edge, toward one of four sides. A drawn
+    // shape fades through its own fill instead — a gradient with a clear stop.
+    const fw = document.createElement('label'); fw.className = 'ar-slide';
+    const fcb = document.createElement('input'); fcb.type = 'checkbox'; fcb.checked = !!owner.fade;
+    fcb.id = 'fx-fade';
+    const dir = document.createElement('select'); dir.id = 'fx-fade-dir'; dir.title = 'Fades toward';
+    [[180, '↓'], [0, '↑'], [90, '→'], [270, '←']].forEach(([a, t]) => {
+      const o = document.createElement('option'); o.value = a; o.textContent = t; dir.appendChild(o);
+    });
+    dir.value = String(owner.fade ? owner.fade.angle ?? 180 : 180);
+    const fr = document.createElement('input'); fr.type = 'range'; fr.min = 0; fr.max = 0.9; fr.step = 0.05;
+    fr.id = 'fx-fade-from'; fr.title = 'Where the fade begins';
+    fr.value = owner.fade ? owner.fade.from ?? 0.4 : 0.4;
+    dir.disabled = fr.disabled = !owner.fade;
+    fcb.addEventListener('change', async () => {
+      pushHistory();
+      if (fcb.checked) owner.fade = { angle: +dir.value, from: +fr.value, to: 1 }; else delete owner.fade;
+      rebuild(); await commit();
+    });
+    dir.addEventListener('change', async () => { pushHistory(); owner.fade.angle = +dir.value; await commit(); });
+    fr.addEventListener('pointerdown', () => pushHistory());
+    fr.addEventListener('change', async () => { owner.fade.from = +fr.value; await commit(); });
+    fw.append(fcb, document.createTextNode('Fade to clear'), dir, fr);
+    body.appendChild(fw);
   }
 }
 
@@ -22774,6 +22924,7 @@ function wire(roots) {
   }
   applyZoom();
   fillVars(d);                 // page numbers and contents first: they change widths
+  fillXrefs(d);                // internal links (82): their targets get ids
   applyAuto(d);                // automatic formatting, before stories are poured
   applyTabs(d);                // tab stops set widths the pour then measures
   applyGrid(d);                // baseline grid defined before the pour runs it per frame
@@ -29552,6 +29703,11 @@ const TABLE_PATCH_KEYS = ['header', 'headerRows', 'footerRows', 'footerFill', 'i
   'headerCols', 'bandCols', 'bandColStroke',
   'bandStroke', 'band', 'fill', 'headerFill', 'headerColor', 'border', 'colw', 'colAlign', 'cells', 'merges', 'style'];
 /** One batch verb on its own, its result unwrapped onto the status. */
+/** Is `g` a gradient a swatch can hold? The engine checks it properly. */
+const gradientShape = g => !!g && typeof g === 'object' && ['linear', 'radial'].includes(g.type)
+  && Array.isArray(g.stops) && g.stops.length >= 2
+  && g.stops.every(st => st && typeof st.color === 'string' && (HEX_RE.test(st.color) || /^@/.test(st.color))
+    && typeof st.at === 'number' && st.at >= 0 && st.at <= 1);
 /** Select `ids` (and the key object, if `o.key`), run an Arrange action on
  *  them and settle with one render. `run` returns an error string to refuse. */
 async function _pilotArrange(ids, o, run) {
@@ -29651,6 +29807,23 @@ const PILOT_BATCH_VERBS = {
         || (Array.isArray(keys) && keys.every(k => typeof k === 'string'))) ? { ok: true }
       : { ok: false, error: 'clearOverrides(key | [keys] | null) — null clears every override' },
     apply: keys => ({ cleared: clearOverrides(keys) }) },
+  // Fade to clear (INDESIGN_PARITY 64): a text box, a table or a placed
+  // piece; a shape fades through its own gradient fill.
+  fade: { validate: (id, f) => {
+      const v = _pilotValidateExists(id); if (!v.ok) return v;
+      if (shapeOf(id)) return { ok: false, error: 'a drawn shape fades through its fill — give it a gradient whose last stop is clear' };
+      if (f == null) return { ok: true };
+      if (typeof f !== 'object' || Object.keys(f).some(k => !['angle', 'from', 'to'].includes(k)))
+        return { ok: false, error: 'fade(id, {angle, from, to} | null) — angle in degrees (180 fades toward the bottom), from and to 0..1' };
+      const lo = f.from ?? 0.4, hi = f.to ?? 1;
+      if (!(lo >= 0 && lo <= 1 && hi >= 0 && hi <= 1 && hi > lo)) return { ok: false, error: "from and to are 0..1, and 'to' past 'from'" };
+      return { ok: true };
+    }, apply: (id, f) => {
+      const o = boxOf(id) || tableOf(id) || (layout.positions[id] = layout.positions[id] || {});
+      if (f == null) delete o.fade;
+      else o.fade = { angle: f.angle ?? 180, from: f.from ?? 0.4, to: f.to ?? 1 };
+      return { id, fade: o.fade || null };
+    } },
   clearTransforms: { validate: ids => {
       const list = Array.isArray(ids) ? ids : [ids];
       if (!list.length || list.some(i => typeof i !== 'string')) return { ok: false, error: 'clearTransforms(id | [ids])' };
@@ -29772,9 +29945,10 @@ const PILOT_BATCH_VERBS = {
   setCondition: { validate: (n, on) => /^[A-Za-z0-9_-]{1,20}$/.test(n || '') ? { ok: true } : { ok: false, error: 'a condition name: letters, digits, - and _' },
                   apply: (n, on) => { layout.conditions = layout.conditions || {}; if (on === false) layout.conditions[n] = false; else delete layout.conditions[n];
                                       if (!Object.keys(layout.conditions).length) delete layout.conditions; return { condition: n, visible: on !== false }; } },
-  defineSwatch: { validate: (n, hx) => (/^[A-Za-z0-9 _-]{1,30}$/.test(n || '') && (hx == null || /^#[0-9a-f]{3,8}$/i.test(hx)))
-                    ? { ok: true } : { ok: false, error: 'defineSwatch(name, "#RRGGBB" | null) — a name of letters, digits, spaces, - and _' },
-                  apply: (n, hx) => { if (hx == null) { swatchUnlink(n); delete swatches()[n]; } else (layout.swatches = layout.swatches || {})[n] = hx.toUpperCase();
+  defineSwatch: { validate: (n, hx) => (/^[A-Za-z0-9 _-]{1,30}$/.test(n || '') && (hx == null || /^#[0-9a-f]{3,8}$/i.test(hx) || gradientShape(hx)))
+                    ? { ok: true } : { ok: false, error: 'defineSwatch(name, "#RRGGBB" | {type: "linear" | "radial", angle?, stops: [{color, at}, …]} | null) — a name of letters, digits, spaces, - and _' },
+                  apply: (n, hx) => { if (hx == null) { swatchUnlink(n); delete swatches()[n]; }
+                                      else (layout.swatches = layout.swatches || {})[n] = typeof hx === 'string' ? hx.toUpperCase() : clone(hx);
                                       if (layout.swatches && !Object.keys(layout.swatches).length) delete layout.swatches;
                                       return { swatch: n, hex: hx || null }; } },
   addPath: { validate: o => (o && Array.isArray(o.points) && o.points.length >= 2) ? { ok: true }
@@ -30434,8 +30608,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async pathfinder(ids, op) { return docsync.api.batch([{ verb: 'pathfinder', args: [ids, op] }]); },
   async release(id) { return docsync.api.batch([{ verb: 'release', args: [id] }]); },
   async masterOverride(id, on) { return docsync.api.batch([{ verb: 'masterOverride', args: [id, on] }]); },
-  /** Named swatches: defineSwatch(name, hex | null). Any colour may then be
-   *  '@Name' or '@Name 40%'; redefining the swatch recolours them all. */
+  /** Named swatches: defineSwatch(name, hex | gradient | null). Any colour may
+   *  then be '@Name' or '@Name 40%'; redefining the swatch recolours them all.
+   *  A gradient swatch ({type, angle, stops}) goes only where a fill can be a
+   *  gradient — a shape, a text box, a page or a placed piece. */
   /** Step and Repeat: stepRepeat(ids, count, dx, dy) — `count` copies of
    *  each shape / text box / placed table, each dx, dy inches on from the last. */
   /** Margins and columns: setMargins({top, bottom, left, right, columns,
@@ -30494,6 +30670,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   /** clearTransforms(id | [ids]) — rotation, skew, flip and scale back to
    *  none; place and size kept. */
   async clearTransforms(ids) { return _pilotOne('clearTransforms', [ids]); },
+  /** fade(id, {angle, from, to} | null) — InDesign's gradient feather: opaque
+   *  up to `from`, clear by `to` (0..1 along `angle`, 180 = toward the
+   *  bottom). A text box, a table or a placed piece. */
+  async fade(id, f) { return _pilotOne('fade', [id, f ?? null]); },
   /** Preflight: every problem at once — audit()'s kinds plus missing-image,
    *  low-res, no-alt, low-contrast (WCAG AA) and font-failed, each with a
    *  severity (error / warning). */

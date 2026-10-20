@@ -347,6 +347,7 @@ ids it returns:
 | `overrides()` / `clearOverrides(key \| [keys] \| null)` / `highlightOverrides(on)` | text whose own keys differ from the style it wears; take them off (null = every one); outline them in the editor (never published) |
 | `defaultStyles()` / `setDefaultStyle('text' \| 'box' \| 'shape' \| 'table', name \| null)` | the styles new text boxes, boxes, shapes and tables wear (`layout.defaultStyles`; editor-only, no published byte) |
 | `clearTransforms(id \| [ids])` | rotation, skew, flip and scale back to none; place and size kept |
+| `fade(id, {angle?, from?, to?} \| null)` | fade to clear (gradient feather) on a text box, table or placed piece; 180 fades toward the bottom |
 | `align(ids, mode, {to?, key?})` | Align left / hcenter / right / top / vcenter / bottom; `to` auto / selection / key / page; `key` (one of ids) stays still; returns the boxes after |
 | `distribute(ids, 'h' \| 'v', {gap?, key?})` | no gap: spread evenly (3+); `gap` in inches: that exact space, out from the key or the first (2+) |
 | `keyObject(id \| null)` / `alignTo(v?)` | the key object in the current selection; the Arrange strip's Align to (remembered per editor) |
@@ -356,7 +357,7 @@ ids it returns:
 | words, not a verb | **linked text**: `{text:<slot key>}` or `{text:text.N}` repeats that slot's or box's first paragraph, kept in step at every render |
 | `setPageSection(sheet, {start, style, prefix} \| null)` | page numbering from that sheet (1 = first in reading order): `decimal`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, a start and a prefix; `{page}`, `{pageof}` and the contents follow |
 | `setReadingOrder(page, ids \| null)` | the order a screen reader and the tagged PDF read a page's objects in; the rest follow. The PDF export is tagged and bookmarked from the headings |
-| `defineSwatch(name, hex \| null)` / `setCondition(name, on)` | named swatches (any colour may then say `"@Name"` or `"@Name 40%"`) / conditional text (`[words]{?name}`; `print` and `web` are built in) |
+| `defineSwatch(name, hex \| gradient \| null)` / `setCondition(name, on)` | named swatches (any colour may then say `"@Name"` or `"@Name 40%"`; a gradient swatch only in a fill) / conditional text (`[words]{?name}`; `print` and `web` are built in) |
 | shapes, not a verb | a text box may carry `vAlign` (`top`/`middle`/`bottom`/`justify`) and `firstBaseline` (`leading`/`ascent`/`cap`/`x`); `addShape` kinds also include `polygon` (`sides`), `star` (`points`, `inner`) and `qr` (`data`, a link up to 213 bytes); a rect may carry `corner: bevel\|inset` with `r`. Effects on boxes, tables and placed elements: `glow`, `innerShadow`, `innerGlow` `{size, color, alpha}`, `feather` (inches). `{caption:<id>}` in words is that image's description |
 | `place(id, {x,y,w,h})` | move/size in inches — placer's coordinate correction, clamps to the page like a drag; returns where it really landed |
 | `recolor(id, fill)` | shape/box/mark id or `'page.<pid>'`; `null` resets to the design |
