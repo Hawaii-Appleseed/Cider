@@ -1105,10 +1105,24 @@ Google Doc import exist, and were never listed here.
     Neighbours are siblings — a card's title is not a neighbour of the
     card beside it. Pilot `align(ids, mode, {to, key})`,
     `distribute(ids, axis, {gap, key})`, `keyObject(id)`, `alignTo(v)`.
-58. **Paste Into — a picture inside a shape.** An image framed by an
-    ellipse, polygon, star or path: the shape becomes the mask (SVG
-    `clipPath`, which Pathfinder already writes). Headshots in circles are
-    drawn by CSS radius today, and nothing else is possible. **M.**
+58. **Paste Into — a picture inside a shape. — CLOSED 2026-10-19.**
+    `image: {src, fit, align}` on a closed shape — rect, ellipse,
+    triangle, arrow, polygon, star, or a closed Pen path. One `<g>`
+    carries the shape's id, turn, opacity and effects; inside it the
+    outline is drawn three times: as the `clipPath`, filled under the
+    picture, and stroked over it — so the frame's stroke sits on the photo
+    and a turn turns both. `fit` cover (fill the shape, the default) or
+    contain (the whole picture); `align` center, top, bottom, left,
+    right. Right-click a shape ▸ **Picture inside ▸** lists the project's
+    pictures, Upload a picture…, Fill the shape / Show the whole picture,
+    Remove the picture; with a picture box (Insert image's) and a shape
+    both selected, **Put the picture inside this shape** moves the picture
+    in and the box goes. The Links panel lists it on the shape and Relink
+    swaps it; the HTML export inlines it. A shape without a picture draws
+    what it did. Not done: moving or scaling the picture inside its frame
+    (InDesign's content grabber) — fit and align only. Pilot
+    `shapeImage(id, {src, fit, align} | null)`, `pasteInto(shapeId,
+    pictureBoxId)`.
 59. **Linked text. — CLOSED 2026-10-19.** `{text:<slot key>}` or
     `{text:text.N}` in any slot, box or table cell repeats that slot's or
     box's first paragraph, as one line, written in at every render — so the

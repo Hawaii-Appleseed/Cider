@@ -5023,6 +5023,11 @@ function showLocalImages(d, roots) {
     const local = localImages.get(img.getAttribute('src'));
     if (local) { img.dataset.dsSrc = img.getAttribute('src'); img.src = local; }
   });
+  // A picture inside a shape (58) is an SVG <image>.
+  within(d, roots, 'image[href^="assets/"]').forEach(img => {
+    const local = localImages.get(img.getAttribute('href'));
+    if (local) { img.dataset.dsSrc = img.getAttribute('href'); img.setAttribute('href', local); }
+  });
 }
 
 // ------------------------------------------------------------------ fills
@@ -6498,6 +6503,29 @@ function layerMenu(d, el, e) {
       closeMenu(d);
       pathPointEdit(d, one, d.querySelector(`[data-shape="${CSS.escape(id)}"]`));
     });
+    // A picture inside the shape (INDESIGN_PARITY 58, Paste Into).
+    if (one && shapeTakesImage(one)) {
+      const pic = [...selIds].map(i => boxPictureSrc(i) && i).find(Boolean);
+      if (pic && selIds.size === 2) item('Put the picture inside this shape', async () => {
+        closeMenu(d); pushHistory();
+        const r = _pasteIntoApply(id, pic);
+        markDirty(); await render(); setSel($('out').contentDocument, [r.id]);
+        $('stat').textContent = 'the picture is inside the shape — right-click it for Fill or Fit';
+      });
+      submenuRow(d, m, 'Picture inside ▸', sub => {
+        const btn = (label, fn) => { const b = d.createElement('button'); b.textContent = label;
+          b.addEventListener('click', async () => { closeMenu(d); await fn(); }); sub.appendChild(b); };
+        const put = async im => { pushHistory(); _shapeImageApply(id, im); markDirty(); await render(); };
+        projectImages().slice(0, 30).forEach(n => btn(n, () => put({ ...(one.image || {}), src: 'assets/' + n })));
+        btn('Upload a picture…', () => uploadImageFile($('out').contentDocument, path => put({ ...(one.image || {}), src: path })));
+        if (one.image) {
+          const sep = d.createElement('div'); sep.className = 'ds-menu-sep'; sub.appendChild(sep);
+          btn((one.image.fit || 'cover') === 'cover' ? '✓ Fill the shape' : 'Fill the shape', () => put({ ...one.image, fit: 'cover' }));
+          btn(one.image.fit === 'contain' ? '✓ Show the whole picture' : 'Show the whole picture', () => put({ ...one.image, fit: 'contain' }));
+          btn('Remove the picture', () => put(null));
+        }
+      });
+    }
   }
   if (fitKind(id)) item('Add a caption', async () => {
     // A live caption (INDESIGN_PARITY.md 43): a box under the picture whose
@@ -17204,6 +17232,14 @@ function linksList(d) {
       }
       by.set(src, e);
     });
+    // A picture inside a shape (58): its file, and the shape it is in.
+    pg.querySelectorAll('[data-shape] > image[href]').forEach(img => {
+      const src = img.dataset.dsSrc || img.getAttribute('href');
+      if (!src || src.startsWith('data:')) return;
+      const e = by.get(src) || { src, uses: [], missing: false, ppi: null, size: null };
+      e.uses.push({ page: pid, id: idOf(img.parentElement) });
+      by.set(src, e);
+    });
   });
   return [...by.values()];
 }
@@ -17213,6 +17249,7 @@ function relinkSource(d, oldSrc, newSrc) {
   const re = new RegExp(`\\]\\(${rxEsc(oldSrc)}(?=[\\s)])`, 'g');
   const swap = md => md.replace(re, `](${newSrc}`);
   Object.values(layout.img || {}).forEach(g => { if (g.src === oldSrc) { g.src = newSrc; n++; } });
+  (layout.shapes || []).forEach(sh => { if (sh.image && sh.image.src === oldSrc) { sh.image.src = newSrc; n++; } });
   [...boxes(), ...Object.values(layout.masters || {}).flatMap(m => m.boxes || [])].forEach(b => {
     if (typeof b.md === 'string' && swap(b.md) !== b.md) { b.md = swap(b.md); n++; }
   });
@@ -17289,6 +17326,33 @@ $('ar-back').addEventListener('click', () => layerStep($('out').contentDocument,
 
 $('ar-dup').addEventListener('click', () => duplicateSel($('out').contentDocument));
 $('ar-del').addEventListener('click', () => deleteSel($('out').contentDocument));
+// A picture inside a shape (INDESIGN_PARITY 58). layout.py's IMAGE_SHAPE_KINDS.
+const IMAGE_SHAPE_KINDS = ['rect', 'ellipse', 'triangle', 'arrow', 'polygon', 'star', 'path'];
+const shapeTakesImage = sh => !!sh && IMAGE_SHAPE_KINDS.includes(sh.kind) && (sh.kind !== 'path' || !!sh.closed);
+/** The picture a text box IS, when its words are one picture and nothing
+ *  else — what Insert image places. */
+function boxPictureSrc(id) {
+  const b = boxOf(id);
+  const m = b && /^\s*!\[[^\]]*\]\(([^)\s]+)\)\s*$/.exec(b.md || '');
+  return m ? m[1] : null;
+}
+function _shapeImageApply(id, im) {
+  const sh = shapeOf(id);
+  if (im && im.src) sh.image = { src: im.src, ...(im.fit && im.fit !== 'cover' ? { fit: im.fit } : {}),
+                                 ...(im.align && im.align !== 'center' ? { align: im.align } : {}) };
+  else delete sh.image;
+  return { id, image: sh.image || null };
+}
+/** Paste Into: the picture box's picture goes inside the shape, and the box
+ *  goes — one object, as InDesign leaves it. */
+function _pasteIntoApply(shapeId, boxId) {
+  const src = boxPictureSrc(boxId);
+  _shapeImageApply(shapeId, { ...(shapeOf(shapeId).image || {}), src });
+  unlinkFrame(boxId);
+  layout.boxes = boxes().filter(b => b.id !== boxId.replace(/^text\./, ''));
+  return { id: shapeId, image: shapeOf(shapeId).image, removed: boxId };
+}
+
 // Insert image: one upload flow (uploadImageFile — local disk or GitHub,
 // mode-appropriate), then the image lands as a floating BOX whose markdown
 // is just the image. A box is already movable, resizable, layerable and
@@ -28981,6 +29045,12 @@ async function inlineEverything(doc) {
       img.setAttribute('src', localImages.get(src) || await asDataUrl(withBase(src)));
     } catch (e) { /* keep the relative path rather than lose the image tag */ }
   }
+  for (const img of [...doc.querySelectorAll('image[href]')]) {     // a picture in a shape (58)
+    const src = img.getAttribute('href') || '';
+    if (/^(data:|https?:|#)/i.test(src)) continue;
+    try { img.setAttribute('href', localImages.get(src) || await asDataUrl(withBase(src))); }
+    catch (e) { /* keep the relative path */ }
+  }
 }
 
 /** Resolve a single @media feature against the design viewport.
@@ -30132,6 +30202,19 @@ const PILOT_BATCH_VERBS = {
       else o.fade = { angle: f.angle ?? 180, from: f.from ?? 0.4, to: f.to ?? 1 };
       return { id, fade: o.fade || null };
     } },
+  // A picture inside a shape (58): shapeImage(id, {src, fit, align} | null);
+  // pasteInto(shapeId, pictureBoxId) moves a picture box's picture inside.
+  shapeImage: { validate: (id, im) => {
+      if (!shapeTakesImage(shapeOf(id))) return { ok: false, error: `'${id}' is not a closed shape — ${IMAGE_SHAPE_KINDS.join(', ')} (a path when closed)` };
+      if (im == null) return { ok: true };
+      if (typeof im !== 'object' || typeof im.src !== 'string' || !im.src.trim()) return { ok: false, error: 'shapeImage(id, {src, fit: "cover" | "contain", align} | null)' };
+      if (im.fit != null && !['cover', 'contain'].includes(im.fit)) return { ok: false, error: 'fit: cover or contain' };
+      if (im.align != null && !['center', 'top', 'bottom', 'left', 'right'].includes(im.align)) return { ok: false, error: 'align: center, top, bottom, left or right' };
+      return { ok: true };
+    }, apply: (id, im) => _shapeImageApply(id, im) },
+  pasteInto: { validate: (sid, bid) => !shapeTakesImage(shapeOf(sid)) ? { ok: false, error: `'${sid}' is not a closed shape` }
+      : !boxPictureSrc(bid) ? { ok: false, error: `'${bid}' is not a picture box (a text box holding one picture)` } : { ok: true },
+    apply: (sid, bid) => _pasteIntoApply(sid, bid) },
   clearTransforms: { validate: ids => {
       const list = Array.isArray(ids) ? ids : [ids];
       if (!list.length || list.some(i => typeof i !== 'string')) return { ok: false, error: 'clearTransforms(id | [ids])' };
@@ -30985,6 +31068,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   /** clearTransforms(id | [ids]) — rotation, skew, flip and scale back to
    *  none; place and size kept. */
   async clearTransforms(ids) { return _pilotOne('clearTransforms', [ids]); },
+  /** A picture inside a shape (58): shapeImage(id, {src, fit, align} | null);
+   *  pasteInto(shapeId, pictureBoxId) — Paste Into, the box goes. */
+  async shapeImage(id, im) { return _pilotOne('shapeImage', [id, im ?? null]); },
+  async pasteInto(sid, bid) { return _pilotOne('pasteInto', [sid, bid]); },
   /** fade(id, {angle, from, to} | null) — InDesign's gradient feather: opaque
    *  up to `from`, clear by `to` (0..1 along `angle`, 180 = toward the
    *  bottom). A text box, a table or a placed piece. */

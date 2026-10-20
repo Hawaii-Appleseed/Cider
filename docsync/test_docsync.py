@@ -4581,6 +4581,27 @@ for _bad, _says in (({"continue": "9x"}, "names the list"), ({"levels": "deep"},
     check_eq(f"55: list is refused: {_says}",
              _says in _layout_error({"text": {"x": {"list": _bad}}}), True)
 
+# --- INDESIGN_PARITY.md 58: a picture inside a shape ------------------------------
+_S58 = {"id": "s", "page": 1, "kind": "ellipse", "x": 1, "y": 1, "w": 2, "h": 2, "fill": "#EEEEEE",
+        "stroke": "#000000", "image": {"src": "assets/a.jpg"}}
+_h58 = _layout({"shapes": [_S58]}).layer(1)
+check_eq("58: the picture is clipped to the shape's own outline, fill under and stroke over, one node",
+         ['<clipPath id="ds-pi-s"><ellipse' in _h58, 'clip-path="url(#ds-pi-s)"' in _h58,
+          _h58.count('data-shape="s"'), 'preserveAspectRatio="xMidYMid slice"' in _h58,
+          _h58.index('stroke="none"') < _h58.index("<image") < _h58.index('fill="none"')],
+         [True, True, 1, True, True])
+check_eq("58: fit contain, aligned to the top",
+         'preserveAspectRatio="xMidYMin meet"' in _layout({"shapes": [dict(_S58, image={"src": "a.png", "fit": "contain", "align": "top"})]}).layer(1),
+         True)
+check_eq("58: a shape without a picture draws what it did",
+         _layout({"shapes": [dict(_S58, image=None)]}).layer(1),
+         _layout({"shapes": [{k: v for k, v in _S58.items() if k != "image"}]}).layer(1))
+for _bad, _says in (({"kind": "line"}, "closed shape"), ({"image": {"src": ""}}, "src"),
+                    ({"image": {"src": "a.png", "fit": "stretch"}}, "fit must be"),
+                    ({"image": {"src": 'a" onload="x'}}, "not a picture"),
+                    ({"kind": "path", "points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]}, "closed shape")):
+    check_eq(f"58: refused: {_says}", _says in _layout_error({"shapes": [dict(_S58, **_bad)]}), True)
+
 # --- INDESIGN_PARITY.md 68: flip on shapes, boxes and tables ----------------------
 _fl = _layout({"boxes": [_tf(id="f", md="x", flip="h", skew=10)],
                "shapes": [{"id": "s", "page": 1, "kind": "rect", "x": 1, "y": 1, "w": 2, "h": 1, "flip": "v"}],

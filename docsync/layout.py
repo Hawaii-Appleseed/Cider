@@ -3459,6 +3459,35 @@ def _check_blend(v, where: str) -> None:
         raise LayoutError(f"{where}.blend: {v!r} must be one of {', '.join(BLENDS)}")
 
 
+# A picture inside a shape (INDESIGN_PARITY.md 58, InDesign's Paste Into):
+# `image: {src, fit, align}` on a closed shape. The shape's own outline is the
+# frame — its fill under the picture, its stroke over it — so a headshot in a
+# circle, a photo in a star or in a path drawn with the Pen is one object.
+IMAGE_SHAPE_KINDS = ("rect", "ellipse", "triangle", "arrow", "polygon", "star", "path")
+IMAGE_FITS = {"cover": "slice", "contain": "meet"}
+IMAGE_ALIGNS = ("center", "top", "bottom", "left", "right")
+_SVG_ALIGN = {"center": "xMidYMid", "top": "xMidYMin", "bottom": "xMidYMax",
+              "left": "xMinYMid", "right": "xMaxYMid"}
+
+
+def _check_shape_image(s: dict, where: str) -> None:
+    im = s["image"]
+    if s.get("kind") not in IMAGE_SHAPE_KINDS or (s.get("kind") == "path" and not s.get("closed")):
+        raise LayoutError(f"{where}.image: a picture goes inside a closed shape — "
+                          f"{', '.join(IMAGE_SHAPE_KINDS)} (a path when it is closed)")
+    if not isinstance(im, dict) or not isinstance(im.get("src"), str) or not im["src"].strip():
+        raise LayoutError(f"{where}.image: expected {{src, fit, align}} with the picture's src")
+    if re.search(r'["<>]|^\s*javascript:', im["src"], re.I):
+        raise LayoutError(f"{where}.image.src: not a picture's address")
+    bad = [k for k in im if k not in ("src", "fit", "align")]
+    if bad:
+        raise LayoutError(f"{where}.image: unknown {', '.join(bad)} — src, fit, align")
+    if im.get("fit") is not None and im["fit"] not in IMAGE_FITS:
+        raise LayoutError(f"{where}.image.fit must be one of {', '.join(IMAGE_FITS)}")
+    if im.get("align") is not None and im["align"] not in IMAGE_ALIGNS:
+        raise LayoutError(f"{where}.image.align must be one of {', '.join(IMAGE_ALIGNS)}")
+
+
 def _check_shape_look(s: dict, where: str) -> None:
     """The presentation half of a shape — everything an object style may set.
     Run on the RESOLVED shape, so a style cannot hand a shape a value the
@@ -5995,6 +6024,8 @@ class Layout:
         # carry; the style's own keys were checked where it is defined.
         _check_object_use(s, "shape", self.object_styles, where)
         _check_shape_look(self.dressed(s), where)
+        if s.get("image") is not None:
+            _check_shape_image(s, where)
         if s.get("rot") is not None:
             _num(s["rot"], f"{where}.rot")
         _check_skew(s, where)
@@ -7415,6 +7446,42 @@ class Layout:
 
     def _shape(self, s: dict) -> str:
         s = self.dressed(s)
+        if s.get("image") and s.get("kind") in IMAGE_SHAPE_KINDS:
+            return self._image_shape(s)
+        return self._shape_plain(s)
+
+    def _image_shape(self, s: dict) -> str:
+        """A shape with a picture inside (58): one <g> carrying the shape's
+        id, turn, opacity and effects, holding its outline three times — as
+        the clip, filled under the picture, and stroked over it."""
+        x, y, w, h = (float(s[k]) for k in ("x", "y", "w", "h"))
+        bare = dict(s, id=s["id"], fill="none", stroke="none", alpha=None,
+                    shadow=None, glow=None, blend=None, rot=None, skew=None, flip=None,
+                    anim=None, image=None, dash=None)
+        bare.pop("_master", None)
+        geom = self._shape_plain(bare)
+        # The outline alone: its own attributes off, so the three copies can
+        # each be painted differently, and only the group carries the id.
+        geom = re.sub(r'\s(fill|stroke|stroke-width|data-shape|data-ox|data-oy|data-ow|data-oh|id|class)="[^"]*"',
+                      "", geom)
+        geom = geom.replace("/>", " />", 1) if geom.endswith("/>") else geom
+        sid = s["id"]
+        im = s["image"]
+        par = f'{_SVG_ALIGN[im.get("align") or "center"]} {IMAGE_FITS[im.get("fit") or "cover"]}'
+        src = im["src"].replace("&", "&amp;")
+        # The group is the shape: the id, the transform, the opacity and the
+        # effects ride it, exactly as on a plain shape's one node. Stamped
+        # with its box, so the editor moves it as a transform until it redraws.
+        outer = self._shape_plain(dict(s, kind="rect", r=0, corner=None, image=None))
+        attrs = re.match(r"<rect [^>]*?(fill=.*?)/>$", outer).group(1).strip()
+        o = f'data-ox="{x}" data-oy="{y}" data-ow="{w}" data-oh="{h}"'
+        under = geom.replace(" />", ' stroke="none"/>', 1)
+        over = geom.replace(" />", ' fill="none"/>', 1)
+        return (f'<g {o} {attrs}><clipPath id="ds-pi-{sid}">{geom.replace(" />", "/>")}</clipPath>'
+                f'{under}<image href="{src}" x="{x}" y="{y}" width="{w}" height="{h}" '
+                f'preserveAspectRatio="{par}" clip-path="url(#ds-pi-{sid})"/>{over}</g>')
+
+    def _shape_plain(self, s: dict) -> str:
         x, y, w, h = (float(s[k]) for k in ("x", "y", "w", "h"))
         # Publish-mode hook for a shape some toggle reveals — on the same one
         # node that carries data-shape, whatever kind it is. .ds-tglable's
