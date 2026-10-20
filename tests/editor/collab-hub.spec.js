@@ -166,14 +166,16 @@ test.afterAll(async () => {
 test('the hub lists the project and links into its editor', async () => {
   const page = await ctxA.newPage();
   await page.goto(`${hubAs(ADA_PORT)}/primer/index.html`);
-  // The nav's own entry, lit.
-  await expect(page.locator('.site-nav a[aria-current="page"]')).toHaveText(/Editor/);
+  // The nav's own entry, lit (the hub calls it Cider since its ec0f50b).
+  await expect(page.locator('.site-nav a[aria-current="page"]')).toHaveText(/Cider/);
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
   await expect(tile).toBeVisible();
   // Named from docsync.yml (`name:`), not the id.
   await expect(tile).toContainText('Demo report');
-  // Nobody has narrowed this document, so a person through Access may edit it.
-  await expect(tile.locator('.tag')).toHaveText(/can edit/);
+  // Nobody has narrowed this document, so a person through Access may edit
+  // it — and the hub says nothing then (its 8d9f66b: "can edit" on every
+  // tile was a column of noise); only view only / owner carry a tag.
+  await expect(tile.locator('.tag.t-viewer')).toHaveCount(0);
   await expect(page.locator('#meta')).toContainText(ADA);
   // The tiles are prerendered on hover (Speculation Rules), the tiles only.
   const rules = await page.evaluate(() => JSON.parse(document.querySelector('script[type="speculationrules"][data-tiles]').textContent));
@@ -1693,7 +1695,7 @@ test('the list says what changed since you looked, and the Editor tab counts it'
   await page.goto(`${hubAs(GRACE_PORT)}/primer/index.html`);
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
   await expect(tile.locator('.tag.t-changed')).toBeVisible();
-  await expect(tile).toContainText('modified');   // the door says "modified <date, time> by" since the vendor stamp landed
+  await expect(tile).toContainText(/modified/i);   // the door says "Modified <date, time> by" since the vendor stamp landed
   await expect(page.locator('#meta')).toContainText('changed since you looked');
   // On another page of the hub the Editor tab wears the count.
   await page.goto(`${hubAs(GRACE_PORT)}/resources.html`);
