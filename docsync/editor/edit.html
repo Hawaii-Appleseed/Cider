@@ -28317,7 +28317,9 @@ function siteLine(site) {
  *  version (about a minute), and say how it went. A new commit starts the job;
  *  an unchanged one starts nothing, so its report is the one already there. */
 async function docStoreAwaitSite(version, head, unchanged) {
-  const say = t => { $('stat').textContent = head + ' · ' + t; };
+  // The site's answer first: the status line is clipped to the toolbar's width,
+  // and it is the part people are waiting for. All of it on hover.
+  const say = t => { $('stat').textContent = t + ' · ' + head; $('stat').title = $('stat').textContent; };
   const tries = unchanged ? 1 : 30;                       // 30 x 10 s = 5 minutes
   for (let i = 0; i < tries; i++) {
     const site = await docStoreSite();
