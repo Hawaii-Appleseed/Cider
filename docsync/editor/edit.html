@@ -7836,6 +7836,19 @@ function closeOnOutsideClick(target, insideChrome) {
 }
 
 addEventListener('mousedown', e => closeOnOutsideClick(e.target, true));
+// Escape closes an open menu or panel the way a click away does — File,
+// Download, Colours, Layers and the rest only closed on a click. Not while a
+// modal is up, and not from a field inside a pop (Find's box, Glyphs' search
+// have their own Escape); first, so the same key does not also drop the
+// selection.
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  const open = [...document.querySelectorAll('.pop:not(.docked):not([hidden])')];
+  const t = e.target;
+  if (!open.length || (t.closest && t.closest('.pop') && t.matches('input, textarea, select, [contenteditable]'))) return;
+  e.preventDefault(); e.stopPropagation();
+  open.forEach(p => { if (p.id === 'glyphpop') closeGlyphs(); else p.hidden = true; });
+}, true);
 
 /** The same rule, for clicks on the REPORT. The canvas is an iframe, and a
  *  mousedown inside one does not bubble to this document at all — so clicking
