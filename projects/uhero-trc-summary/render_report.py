@@ -68,9 +68,20 @@ TAX_MIX = [("General excise & use tax", 40.4), ("Individual income tax", 28.7),
 WHERE = [("Savings go to", [("Residents", 214.1), ("Visitors", 53.3)]),
          ("Revenue lost by", [("State", 237.7), ("Counties", 29.7)])]
 
-# Table 1 is a real table (layout.json `tables`, id "swaps", flow); this is only
-# what draws if that entry is ever missing
-SWAPS_DEFAULT = {"header": True, "rows": [["The change", "The make-up change"]]}
+# Table 1 is a real table (layout.json `tables`, id "swaps", flow). This is what
+# draws when a stored copy has no such entry — the hub's copy was saved before
+# the table moved into layout.json — so it is the whole table, and the editor
+# seeds it into that copy's layout.json the first time anyone touches it.
+SWAPS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFFF",
+                 "band": "#F4F6F4", "colw": [47, 53],
+                 "rows": [
+             ["The change", "The make-up change"],
+             ["No GET on groceries", "Raise all income-tax rates by the same percentage"],
+             ["No GET on groceries", "Cut the food/excise tax credit"],
+             ["Tax long-term capital gains like ordinary income", "Lower the top three income-tax rates"],
+             ["Raise the top income-tax rate by 1 point", "Lower the bottom three rates, or enlarge the food/excise credit"],
+             ["Exempt long-term capital gains from tax", "Raise the top three income-tax rates"],
+             ["Raise the GET rate by half a point", "Lower all income-tax rates by the same percentage"]]}
 
 CONTENTS = [("1", "contents.1"), ("2", "contents.2"),
             ("3", "contents.3"), ("4", "contents.4")]
