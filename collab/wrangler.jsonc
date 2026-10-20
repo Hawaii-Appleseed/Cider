@@ -42,8 +42,14 @@
   //   EXPORT_KEY           shared with the hub (its EXPORT_KEY env var): what a
   //                        caller must present to trigger an export. Without it
   //                        /export/* answers 501.
-  //   GITHUB_EXPORT_TOKEN  a fine-grained PAT, Contents: read and write, on the
-  //                        repositories in ALLOWED_REPOS and nothing else. The
-  //                        only GitHub credential anywhere on the hub path.
+  //   GITHUB_APP_ID        the id of the "Cider Publisher" GitHub App (5402715),
+  //   GITHUB_APP_PRIVATE_KEY  and a private key for it (the .pem as downloaded).
+  //                        The Worker mints a one-hour token for the room's
+  //                        repository from these (src/githubApp.js): Contents:
+  //                        read and write, nothing to renew. The only GitHub
+  //                        credential anywhere on the hub path.
+  //   GITHUB_EXPORT_TOKEN  optional fallback: a fine-grained PAT, Contents: read
+  //                        and write, on the repositories in ALLOWED_REPOS. The
+  //                        app wins when both are set.
   // GITHUB_API (a var) overrides https://api.github.com for a test double.
 }

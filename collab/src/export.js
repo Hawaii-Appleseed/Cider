@@ -96,7 +96,7 @@ function github({ token, api, fetch: f, nwo }) {
 export async function exportRoom({ bucket, room, token, api = DEFAULT_API, fetch: f = globalThis.fetch, now = () => new Date() }) {
   const parsed = parseRoom(room);
   if (!parsed) throw new Error(`not a room: ${room}`);
-  if (!token) throw new Error('no GitHub token to export with (GITHUB_EXPORT_TOKEN)');
+  if (!token) throw new Error('no GitHub credential to export with (GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY, or GITHUB_EXPORT_TOKEN)');
 
   const meta = await readJson(bucket, key(room, 'meta.json'));
   if (!meta || typeof meta.version !== 'string') return { status: 'nothing', room };
@@ -117,7 +117,10 @@ export async function exportRoom({ bucket, room, token, api = DEFAULT_API, fetch
              repo: parsed.nwo, url: `https://github.com/${parsed.nwo}/commit/${state.sha}` };
   }
 
-  const gh = github({ token, api, fetch: f, nwo: parsed.nwo });
+  // `token` is a string (the personal token the Worker used to hold) or a function
+  // nwo -> token (a GitHub App installation token, src/githubApp.js). Asked only
+  // now, after the unchanged-version early return, so a quiet sweep mints nothing.
+  const gh = github({ token: typeof token === 'function' ? await token(parsed.nwo) : token, api, fetch: f, nwo: parsed.nwo });
 
   // The branch, created from the deploy branch the first time.
   let ref = await gh(`git/ref/heads/${encodeURIComponent(branch)}`);

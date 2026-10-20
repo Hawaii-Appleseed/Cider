@@ -718,8 +718,15 @@ never touched: a pipeline report builds from main on a machine, and an
 editor-native one is published by a person merging what this wrote.
 
 Two ways it runs, both in this Worker, because this is the one place a
-GitHub credential may live — `GITHUB_EXPORT_TOKEN`, a fine-grained PAT with
-Contents read/write on the repositories in `ALLOWED_REPOS` and nothing else:
+GitHub credential may live. The credential is a **GitHub App** (src/githubApp.js):
+the Worker holds the app's id and private key (`GITHUB_APP_ID`,
+`GITHUB_APP_PRIVATE_KEY`, the `.pem` exactly as GitHub gave it), and for each
+export asks GitHub for a token that works for the room's repository alone and
+expires in an hour — nothing to renew, and any repository the app is installed on
+works with no further setup. (`GITHUB_EXPORT_TOKEN`, a fine-grained PAT with
+Contents read/write on the repositories in `ALLOWED_REPOS`, still works as the
+fallback; the app wins when both are set.) `ALLOWED_REPOS` still decides which
+rooms are served at all:
 
 - **Publish, from the hub.** The editor's Publish on the store path POSTs
   `/api/docs/<room>/publish`; the hub's Function asks this Worker's

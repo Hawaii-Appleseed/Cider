@@ -22,6 +22,7 @@ import {
 } from './auth.js';
 
 import { exportRoom, exportAll, recordSite, readSite } from './export.js';
+import { exportToken } from './githubApp.js';
 
 export { PrimerRoom } from './room.js';
 
@@ -77,11 +78,12 @@ export default {
    *  the branch does not have yet gets one commit. */
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
-      if (!env.PRIMER_DOCS || !env.GITHUB_EXPORT_TOKEN) {
-        console.warn('export sweep skipped: PRIMER_DOCS or GITHUB_EXPORT_TOKEN not bound');
+      const token = exportToken(env);
+      if (!env.PRIMER_DOCS || !token) {
+        console.warn('export sweep skipped: PRIMER_DOCS or a GitHub credential (GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY, or GITHUB_EXPORT_TOKEN) not bound');
         return;
       }
-      const out = await exportAll({ bucket: env.PRIMER_DOCS, token: env.GITHUB_EXPORT_TOKEN, api: env.GITHUB_API, allowed: allowedRepos(env) });
+      const out = await exportAll({ bucket: env.PRIMER_DOCS, token, api: env.GITHUB_API, allowed: allowedRepos(env) });
       console.log('export sweep', JSON.stringify(out.map(r => [r.room, r.status, r.sha || r.error || r.reason || ''])));
     })());
   },
@@ -101,7 +103,8 @@ async function handleExport(request, env, url) {
   const given = request.headers.get('x-export-key') || '';
   if (!timingSafeEqual(given, env.EXPORT_KEY)) return json({ error: 'export key required' }, { status: 401 });
   if (!env.PRIMER_DOCS) return json({ error: 'the document store is not bound (PRIMER_DOCS)' }, { status: 501 });
-  if (!env.GITHUB_EXPORT_TOKEN) return json({ error: 'export is not configured (GITHUB_EXPORT_TOKEN)' }, { status: 501 });
+  const token = exportToken(env);
+  if (!token) return json({ error: 'export is not configured (GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY, or GITHUB_EXPORT_TOKEN)' }, { status: 501 });
   const allowed = allowedRepos(env);
   const nwo = parseRoom(room).nwo.toLowerCase();
   if (allowed.length && !allowed.includes(nwo)) return json({ error: `repository ${nwo} is not served here` }, { status: 403 });
@@ -112,7 +115,7 @@ async function handleExport(request, env, url) {
   }
   if (request.method !== 'POST') return json({ error: 'GET or POST' }, { status: 405 });
   try {
-    const r = await exportRoom({ bucket: env.PRIMER_DOCS, room, token: env.GITHUB_EXPORT_TOKEN, api: env.GITHUB_API });
+    const r = await exportRoom({ bucket: env.PRIMER_DOCS, room, token, api: env.GITHUB_API });
     return json(r, { status: r.status === 'unexportable' ? 409 : 200 });
   } catch (e) {
     return json({ error: String(e.message || e) }, { status: 502 });
