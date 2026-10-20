@@ -4336,10 +4336,15 @@ ANCHOR_JS = (
     "el.style.margin=wrap==='right'?'0 0 '+pad+' '+pad:'0 '+pad+' '+pad+' 0';"
     "continue;}"
     "var pr=pg.getBoundingClientRect();if(!pr.width)continue;"
-    "var op=el.offsetParent;var ar=(op&&op!==pg&&pg.contains(op))?op.getBoundingClientRect():pr;"
+    # `top` is measured from inside the containing block's border, its
+    # rect from outside it: a 2px border-top on UHERO's figure grid put every
+    # piece anchored in it 2px lower than it was put.
+    "var op=el.offsetParent;var cb=(op&&op!==pg&&pg.contains(op))?op:pg;"
+    "var ar=cb===pg?pr:cb.getBoundingClientRect();"
+    "var bt=cb.offsetHeight?cb.clientTop*ar.height/cb.offsetHeight:0;"
     "var hr=host.getBoundingClientRect();var ppi=pr.width/W;"
     "var edge=bottom?hr.bottom:hr.top;"
-    "var top=(edge-ar.top)/ppi+parseFloat(el.getAttribute('data-anc-dy')||'0');"
+    "var top=(edge-ar.top-bt)/ppi+parseFloat(el.getAttribute('data-anc-dy')||'0');"
     "el.style.top=top.toFixed(3)+'in';}}"
     "window.__dsAnchor=go;go();addEventListener('load',go);addEventListener('resize',go);"
     "if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);})();"
