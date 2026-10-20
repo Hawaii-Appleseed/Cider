@@ -1161,10 +1161,18 @@ Google Doc import exist, and were never listed here.
     in content.md (CriticMarkup), drawn as insert and strike, Accept and
     Reject per change and for all, and refused at build so a marked draft
     cannot publish by accident. **L.**
-63. **Story editor.** Every slot and box of a report as one plain column of
-    markdown in reading order (34), edited fast without the page — for the
-    rewrite pass where layout is a distraction. Writes back through
-    `writeSlot` and box `md`. **M.**
+63. **Story editor. — CLOSED 2026-10-19.** File ▸ Story editor (or
+    Quick Apply): every slot and text box as plain markdown, one column,
+    page by page as the sheets run — on a page, what its reading order
+    (34) lists first, then the page's own order. Each piece is labelled by
+    what it is (heading, words, label, text box; its key on hover) with a
+    "show on the page" link, and writes back when you leave it — through
+    `writeSlot` or the box's `md`, one undo step each, the same refusals as
+    typing on the page (a slot marker on its own line, a malformed source
+    line), marked red when refused. A slot the document has not got yet
+    and a picture box are left out; a slot shown twice is listed once.
+    The Budget Primer fixture: 97 pieces on 12 pages, open in ~12 ms.
+    Pilot `stories()`.
 
 ### Smaller wins
 

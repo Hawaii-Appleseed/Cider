@@ -1573,6 +1573,22 @@
         font:11.5px system-ui; color:var(--dim); }
   .ar-pos input { width:58px !important; }
   .ar-pos select { font:11.5px system-ui; }
+  /* Story editor (INDESIGN_PARITY 63): the words, without the page. */
+  #story { position:fixed; inset:0; z-index:99990; background:rgba(20,30,35,.25); }
+  #story .st-card { position:absolute; left:50%; top:3vh; bottom:3vh; transform:translateX(-50%);
+        width:min(760px, calc(100vw - 32px)); background:#fff; border-radius:var(--r-card, 12px);
+        box-shadow:0 24px 60px rgba(20,30,35,.35); display:flex; flex-direction:column; font:13px system-ui; color:#2F3E46; }
+  #story .st-head { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid #E8EEEA; }
+  #story .st-head b { flex:1; font-size:14px; }
+  #story .st-list { overflow:auto; padding:6px 16px 24px; }
+  #story .st-page { margin:16px 0 4px; font:600 11px system-ui; letter-spacing:.06em; text-transform:uppercase; color:#7A8B84; }
+  #story .st-item { margin:8px 0; }
+  #story .st-lab { display:flex; gap:8px; font-size:11px; color:#7A8B84; margin-bottom:2px; }
+  #story .st-lab button { border:0; background:none; color:#52796F; font:11px system-ui; padding:0; cursor:pointer; }
+  #story textarea { width:100%; box-sizing:border-box; resize:vertical; border:1px solid #DCE5DF; border-radius:6px;
+        padding:8px 10px; font:14px/1.5 ui-serif, Georgia, serif; color:#1E2A30; min-height:2.4em; }
+  #story textarea:focus { outline:2px solid #6B9E78; outline-offset:0; border-color:transparent; }
+  #story .st-item.bad textarea { outline:2px solid #C0392B; }
   /* Quick Apply (INDESIGN_PARITY 51): one box, ⌘↩, everything by name. */
   #qa { position:fixed; inset:0; z-index:100000; background:rgba(20,30,35,.18); }
   #qa .qa-card { position:absolute; left:50%; top:14%; transform:translateX(-50%);
@@ -2061,6 +2077,9 @@
       ><path d="M8 2.4v7"/><path d="M5.1 6.5 8 9.4l2.9-2.9"/><path
         d="M2.9 11.4v1.2a1 1 0 0 0 1 1h8.2a1 1 0 0 0 1-1v-1.2"/></svg
       ><span class="shp-t">Import text from the Doc…</span></button>
+    <button class="shp" id="file-story" aria-label="Story editor — every slot and text box as plain words, in reading order"><svg class="shp-i" viewBox="0 0 16 16"
+      ><path d="M4 2.5h8M4 5.5h8M4 8.5h8M4 11.5h5"/></svg
+      ><span class="shp-t">Story editor</span></button>
     <button class="shp" id="file-loadstyles"><svg class="shp-i" viewBox="0 0 16 16"
       ><path d="M3 3.5h7M3 6.5h5M3 9.5h7"/><path d="M11.5 8.5v5M9 11l2.5 2.5L14 11"/></svg
       ><span class="shp-t">Load styles from another report…</span></button>
@@ -15754,6 +15773,115 @@ function _dropLayer(name) {
   layout.layers = docLayers().filter(x => x.name !== name);
   if (!layout.layers.length) delete layout.layers;
 }
+// ---------------------------------------------------------- Story editor
+// Every slot and text box of the report as one plain column of markdown, in
+// reading order (INDESIGN_PARITY.md 63) — for the rewrite pass where the
+// layout is in the way. Page by page as the sheets run; on a page, what its
+// reading order (34) lists first, then the rest as the page has it. Each
+// piece writes back when you leave it: writeSlot for a slot, `md` for a text
+// box — one undo step each, the same validation as typing on the page.
+
+/** [{page, pid, items: [{kind, key, label, md}]}] for every sheet. */
+function storyPieces() {
+  const d = $('out').contentDocument;
+  if (!d) return [];
+  const seen = new Set(), out = [];
+  docSheets().forEach(({ pg, id: pid }, i) => {
+    const ro = (layout.readingOrder || {})[String(pid)] || [];
+    const hits = [];
+    pg.querySelectorAll('[data-slot], [data-el^="text."]').forEach(el => {
+      let key, kind;
+      if (el.dataset.slot) {
+        if (el.closest('[data-el^="text."]') && boxOf(idOf(el.closest('[data-el^="text."]')))) return;
+        key = el.dataset.slot;
+        if (!slotRe(key).test(source)) return;     // a renderer default with no slot yet
+        kind = el.closest('svg') ? 'label' : /^H[1-6]$/.test(el.tagName) || el.querySelector('h1,h2,h3') ? 'heading' : 'words';
+      } else {
+        key = el.dataset.el;
+        if (!boxOf(key) || boxPictureSrc(key)) return;
+        kind = 'text box';
+      }
+      if (seen.has(key)) return;
+      seen.add(key);
+      const host = el.closest('[data-el]');
+      const r = host ? ro.indexOf(host.dataset.el) : -1;
+      hits.push({ key, kind, el, rank: r < 0 ? Infinity : r });
+    });
+    // Reading order first, then the page's own order (DOM order is stable).
+    hits.sort((a, b) => a.rank - b.rank || (a.el.compareDocumentPosition(b.el) & 4 ? -1 : 1));
+    out.push({ page: i + 1, pid, items: hits.map(h => ({ kind: h.kind, key: h.key,
+      md: h.key.startsWith('text.') ? (boxOf(h.key).md || '') : readSlot(h.key) })) });
+  });
+  return out.filter(p => p.items.length);
+}
+/** Write one piece back. True when it landed; false when the write refused
+ *  it (a slot marker, a malformed source line — the status line says why). */
+function storyWrite(key, md) {
+  if (key.startsWith('text.')) {
+    const b = boxOf(key);
+    if (!b) return false;
+    if (!md.trim()) { $('stat').textContent = 'a text box needs words — delete it on the page instead'; return false; }
+    b.md = md; return true;
+  }
+  writeSlot(key, md);
+  return readSlot(key) === md.replace(/\n{3,}/g, '\n\n').trim();
+}
+function openStoryEditor() {
+  if ($('story')) return;
+  document.querySelectorAll('.pop:not(.docked)').forEach(p => { p.hidden = true; });
+  const wrap = document.createElement('div'); wrap.id = 'story';
+  wrap.innerHTML = '<div class="st-card" role="dialog" aria-label="Story editor"><div class="st-head">'
+    + '<b>Story editor</b><span class="st-note">the words, in reading order — each one saves when you leave it</span>'
+    + '<button id="story-close" class="sw-default">Done</button></div><div class="st-list" id="story-list"></div></div>';
+  document.body.appendChild(wrap);
+  const list = $('story-list');
+  const size = ta => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
+  storyPieces().forEach(p => {
+    const h = document.createElement('div'); h.className = 'st-page'; h.textContent = `Page ${p.page}`;
+    list.appendChild(h);
+    p.items.forEach(it => {
+      const box = document.createElement('div'); box.className = 'st-item'; box.dataset.key = it.key;
+      const lab = document.createElement('div'); lab.className = 'st-lab';
+      const k = document.createElement('span'); k.textContent = it.kind; k.title = it.key;
+      const go = document.createElement('button'); go.textContent = 'show on the page';
+      go.addEventListener('click', () => {
+        closeStoryEditor();
+        const d = $('out').contentDocument;
+        const el = d.querySelector(`[data-el="${CSS.escape(it.key)}"], [data-slot="${CSS.escape(it.key)}"]`);
+        if (el) { el.scrollIntoView({ block: 'center' }); const host = el.closest('[data-el]'); if (host) setSel(d, [idOf(host)]); }
+      });
+      lab.append(k, go);
+      const ta = document.createElement('textarea');
+      ta.value = it.md; ta.spellcheck = true; ta.dataset.key = it.key; ta.dataset.was = it.md;
+      ta.addEventListener('input', () => size(ta));
+      ta.addEventListener('change', async () => {
+        if (ta.value === ta.dataset.was) return;
+        pushHistory();
+        if (!storyWrite(it.key, ta.value)) { past.pop(); box.classList.add('bad'); return; }
+        box.classList.remove('bad');
+        ta.dataset.was = ta.value;
+        markDirty(); await render();
+      });
+      box.append(lab, ta);
+      list.appendChild(box);
+      requestAnimationFrame(() => size(ta));
+    });
+  });
+  if (!list.children.length) list.textContent = 'This report has no words of its own to edit here.';
+  $('story-close').addEventListener('click', closeStoryEditor);
+  wrap.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); closeStoryEditor(); } });
+  wrap.addEventListener('mousedown', e => { if (e.target === wrap) closeStoryEditor(); });
+  const first = list.querySelector('textarea'); if (first) first.focus();
+}
+/** Close it — committing the piece being typed in first, as leaving it would. */
+function closeStoryEditor() {
+  const w = $('story'); if (!w) return;
+  const ta = document.activeElement;
+  if (ta && ta.tagName === 'TEXTAREA' && w.contains(ta) && ta.value !== ta.dataset.was) ta.dispatchEvent(new Event('change'));
+  w.remove();
+}
+$('file-story').addEventListener('click', () => { $('filepop').hidden = true; openStoryEditor(); });
+
 // ---------------------------------------------------------- Quick Apply
 // InDesign's fastest path (INDESIGN_PARITY.md 51): ⌘↩ opens one box that
 // finds, by a few letters, any text style, character style (while typing in
@@ -31128,6 +31256,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async defineLayer(name, opts) { return docsync.api.batch([{ verb: 'defineLayer', args: [name, opts || {}] }]); },
   async toLayer(ids, name) { return docsync.api.batch([{ verb: 'toLayer', args: [ids, name] }]); },
   async dropLayer(name) { return docsync.api.batch([{ verb: 'dropLayer', args: [name] }]); },
+  /** Story editor (63): stories() lists every slot and text box, page by
+   *  page in reading order, with its markdown — what File ▸ Story editor
+   *  shows. Writing one back is setSlot / setBoxText. */
+  stories() { return { ok: true, pages: storyPieces() }; },
   /** Quick Apply (51): quickApplyItems(query?) lists what the box would offer
    *  for the current selection, best match first ({kind, label}); quickApply
    *  (query) applies the best match, as Enter in the box would. */
