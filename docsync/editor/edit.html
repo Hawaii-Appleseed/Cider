@@ -442,8 +442,8 @@
   #bar > button:disabled { opacity:.45; cursor:default; border-color:var(--ctl-line);
                          background:var(--ctl); }
   #bar > button.on { background:var(--sage); border-color:var(--sage); color:#fff; }
-  #undo, #redo, #history { font-size:15px; line-height:1; padding:4px 6px; }
-  #history { font-size:13px; }
+  #undo, #redo, #steps { font-size:15px; line-height:1; padding:4px 6px; }
+  #steps { font-size:13px; }
   #histpop { width:340px; max-height:60vh; overflow:auto; }
   #histpop .hrow { display:flex; gap:8px; align-items:baseline; width:100%; text-align:left; border:0; background:none;
         padding:6px 8px; border-radius:6px; font:12.5px system-ui; color:inherit; cursor:pointer; }
@@ -2165,7 +2165,7 @@
   <span class="bar-sep"></span>
   <button id="undo" disabled aria-label="Undo (⌘Z)">↶</button>
   <button id="redo" disabled aria-label="Redo (⌘⇧Z)">↷</button>
-  <button id="history" aria-label="History — every step you can undo, to jump back to one">⏱</button>
+  <button id="steps" aria-label="History — every step you can undo, to jump back to one">⏱</button>
   <button id="save" disabled>Save draft</button>
   <button id="push" hidden disabled aria-label="Send commits saved locally to GitHub">Push</button>
   <!-- Publish sits with Save and Push because it is the same kind of act —
@@ -4942,7 +4942,7 @@ function openGlyphs(d, host, range) {
   glyphRender();
   const pop = $('glyphpop');
   pop.hidden = false;
-  const anchor = $('history');
+  const anchor = $('steps');
   const r = anchor.getBoundingClientRect();
   pop.style.position = 'fixed'; pop.style.top = (r.bottom + 6) + 'px';
   pop.style.left = Math.max(8, Math.min(innerWidth - 380, r.left - 160)) + 'px';
@@ -19184,7 +19184,7 @@ function historyRender() {
     host.appendChild(b);
   });
 }
-$('history').addEventListener('click', () => { if ($('histpop').hidden) historyRender(); togglePop($('histpop'), $('history')); });
+$('steps').addEventListener('click', () => { if ($('histpop').hidden) historyRender(); togglePop($('histpop'), $('steps')); });
 
 function dragify(d, roots) {
   within(d, roots, '[data-el], [data-shape]').forEach(el => {

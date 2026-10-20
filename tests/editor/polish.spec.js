@@ -90,7 +90,7 @@ test.describe('69 undo history', () => {
     expect(rows[1].label).toContain(`added text box ${b.slice(5)}`);
     expect(rows[2].label).toContain(`shape ${a}`);
     expect(rows[3].label).toContain(`added shape ${a}`);
-    await page.click('#history');
+    await page.click('#steps');
     await expect(page.locator('#histpop .hrow')).toHaveCount(rows.length);
     // Back three steps — before the shape — then forward one.
     await page.locator('#histpop .hrow').nth(3).click();

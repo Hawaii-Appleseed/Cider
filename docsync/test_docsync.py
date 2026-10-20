@@ -3861,6 +3861,16 @@ _decls = re.findall(r"^(?:async )?function\*? ?([A-Za-z_$][\w$]*)",
 check_eq("no function is declared twice in the editor's script",
          sorted({n for n in _decls if _decls.count(n) > 1}), [])
 
+# The same for an element id in the editor's markup: $('x') finds the FIRST,
+# so a second #x is dead and the first one runs the second's handlers too.
+# The undo History button (⏱) and the hub's saved-versions History were both
+# #history: the hub's never showed, and ⏱ also opened the versions panel.
+_markup = re.sub(r"<(script|style)\b.*?</\1>", "",
+                 (Path(__file__).parent / "editor" / "edit.html").read_text(), flags=re.S)
+_ids = re.findall(r'<[a-zA-Z][^>]*?\sid="([^"]+)"', _markup)
+check_eq("no id is given twice in the editor's markup",
+         sorted({n for n in _ids if _ids.count(n) > 1}), [])
+
 # ---- every attribute said once -------------------------------------------------
 # A start tag naming an attribute twice keeps the first and drops the rest,
 # silently. Each case below was one tag two helpers wrote into, each right on
