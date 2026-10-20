@@ -4837,6 +4837,37 @@ from docsync.publish_page import semantic_tags  # noqa: E402
 check_eq("semantic_tags writes <b>/<i> as <strong>/<em> and leaves <br>, <body>, <i class=..> alone",
          semantic_tags('<p><b>x</b> <i>y</i><br><i class="ic"></i></p><body>'),
          '<p><strong>x</strong> <em>y</em><br><i class="ic"></i></p><body>')
+# ------------------------------------------------- fidelity: the markup check (no browser)
+import tempfile as _tf  # noqa: E402
+from docsync.fidelity import static_check  # noqa: E402
+
+with _tf.TemporaryDirectory() as _d:
+    _d = Path(_d)
+    (_d / "assets").mkdir()
+    (_d / "assets" / "site.css").write_text(
+        ".lbl strong{color:teal} .note p:last-child{margin:0} /* .ghost{} */ @media (max-width:600px){.lbl{font-size:12px}}")
+    _cur = _d / "page" / "index.html"
+    _cur.parent.mkdir()
+    _cur.write_text('<html><head><link rel="stylesheet" href="../assets/site.css?v=2"></head><body>'
+                    '<div class="lbl">in <strong>lost</strong> credits</div><p>Act 163 raised it.</p>'
+                    '<div class="note"><p>a</p><p>b</p></div></body></html>')
+    _h = _cur.read_text()
+    check_eq("fidelity: an identical page passes", static_check(_cur, _h), [])
+    check_eq("fidelity: bare editable-sentence spans draw nothing and pass",
+             static_check(_cur, _h.replace("<p>Act 163 raised it.</p>", "<p><span>Act 163</span> <span>raised it.</span></p>")), [])
+    check("fidelity: <b> where the page had <strong> is caught (the credits-page bug)",
+          " ".join(static_check(_cur, _h.replace("strong>", "b>"))), "never had: div.lbl > b")
+    check_eq("fidelity: an editor's word change passes", static_check(_cur, _h.replace("raised", "lifted")), [])
+    check_eq("fidelity: an editor bolding a word with a tag the page already uses passes",
+             static_check(_cur, _h.replace("raised", "<strong>raised</strong>")), [])
+    check("fidelity: a class dropped with the words unchanged is caught",
+          " ".join(static_check(_cur, _h.replace('class="lbl"', ""))), "same words, different markup")
+    check("fidelity: a span that moves a :last-child target is NOT inert",
+          " ".join(static_check(_cur, _h.replace("<p>b</p></div>", "<span><p>b</p></span></div>"))),
+          "same words, different markup")
+    check_eq("fidelity: a class only named inside a CSS comment does not count",
+             static_check(_cur, _h.replace("<p>Act", '<p class="ghost">Act')), [])
+
 try:
     sheet_inner("<html><body><p>no sheet</p></body></html>")
     FAILS.append("a render with no sheet must be refused")
