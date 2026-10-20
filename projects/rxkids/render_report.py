@@ -487,7 +487,6 @@ MODERN_CSS = """
   .tfc-expand-btn, .tfc-cta-section .tfc-btn, .tfc-cta-section .tfc-btn:hover { background-color: #CD2C40; }
   .tfc-cta-section .tfc-btn { background: #CD2C40; }
   .tfc-cta-section .tfc-btn.tfc-btn-outline, .tfc-cta-section .tfc-btn.tfc-btn-outline:hover { background: none; }
-  .tfc-section-subtitle.tfc-subtitle-box { background: #CD2C40; }
   .tfc-tanf-option-num { color: var(--rx-muted); }
   .tfc-tanf-card--free .tfc-tanf-option-num { color: #067453; }
   .tfc-tanf-tag--good, .tfc-tanf-card--free .tfc-tanf-tag { color: #067453; }
@@ -538,7 +537,6 @@ MODERN_CSS = """
     .rxk-tab { padding: 15px 14px; font-size: .95rem; }
     .tfc-section-title { font-size: 1.75rem; }
     .tfc-section-subtitle { font-size: 1.05rem; }
-    .tfc-section-subtitle.tfc-subtitle-box { padding: 24px 20px; font-size: 1.05rem; }
     .rxk-facts { margin-top: -28px; }
     .rxk-fact { padding: 18px 22px; }
     .rxk-fact-value { font-size: 1.8rem; }
@@ -675,6 +673,28 @@ MODERN_CSS = """
     .rxk-fact { padding: 16px 18px 18px; }
   }
   /*ICON_CSS*/
+
+
+  /* "What is RxKeiki?" lead box: a calm panel with a heart badge, not a red slab */
+  .tfc-section-subtitle.tfc-subtitle-box { position: relative; box-sizing: border-box; max-width: 880px; margin: 0 auto 52px;
+    padding: 34px 44px 34px 116px; background: var(--rx-tint); color: var(--rx-navy);
+    border: 1px solid var(--rx-line); border-radius: 20px; box-shadow: none; text-shadow: none; text-align: left;
+    font-size: 1.4rem; font-weight: 500; line-height: 1.5; letter-spacing: -.005em; }
+  .tfc-subtitle-box::before { content: ""; position: absolute; left: 34px; top: 34px; width: 58px; height: 58px;
+    border-radius: 50%; background: #fff; border: 1px solid var(--rx-line); }
+  .tfc-subtitle-box::after { content: ""; position: absolute; left: 50px; top: 50px; width: 26px; height: 26px;
+    background: #CD2C40; -webkit-mask-image: url("{_HEART}"); mask-image: url("{_HEART}");
+    -webkit-mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat;
+    mask-position: center; mask-size: contain; mask-repeat: no-repeat; }
+  .tfc-subtitle-box .tfc-subtitle-eyebrow { color: #CD2C40; opacity: 1; margin-bottom: 10px; font-size: .8rem; letter-spacing: 2px; }
+  .tfc-subtitle-box strong, .tfc-subtitle-box b { font-weight: 700; color: var(--rx-navy);
+    background-image: linear-gradient(rgba(238,48,60,.20), rgba(238,48,60,.20)); background-repeat: no-repeat;
+    background-position: 0 92%; background-size: 100% .5em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  @media (max-width: 820px) {
+    .tfc-section-subtitle.tfc-subtitle-box { padding: 88px 24px 26px; font-size: 1.12rem; margin-bottom: 36px; }
+    .tfc-subtitle-box::before { left: 24px; top: 24px; width: 50px; height: 50px; }
+    .tfc-subtitle-box::after { left: 36px; top: 36px; width: 26px; height: 26px; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
