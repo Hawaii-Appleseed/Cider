@@ -27,11 +27,12 @@ test.describe('File menu', () => {
     // Find & Change sits above the report rows, under its own Document heading
     // — it acts on the words in the draft, not on the report as a file. Its own
     // flow is find-change.spec.js; what it owes this list is being IN it.
+    // Load styles (INDESIGN_PARITY.md 75) brings another report's styles in.
     await expect(page.locator('#filepop button')).toHaveText(
       ['Find & Change…',
        'Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
        'Sources…', 'Share…',
-       /^Google Doc/, 'Import text from the Doc…', 'Download…',
+       /^Google Doc/, 'Import text from the Doc…', 'Load styles from another report…', 'Download…',
        'Restore deleted…', 'Token…', 'Force quit']);
   });
 

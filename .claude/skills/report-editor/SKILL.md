@@ -341,6 +341,8 @@ ids it returns:
 | `setMargins({top, bottom, left, right, columns, gutter} \| null, master?)` / `createGuides({rows, columns, gutter, fit})` | margins and columns as editor guides that objects snap to (no published change); `createGuides` adds a grid of ruler guides fitted to the `margins` or the `page` |
 | `findChange({find, change, grep, cased, whole, inStyle, applyStyle})` / `fontsInUse()` / `replaceFont(from, to)` | Find/Change: `grep` makes `find` a regular expression and `change` may use `$1`; `inStyle` limits it to text wearing a named style; `applyStyle` wraps each change in that character style. Returns `{hits, places}` |
 | `links()` / `relink(oldSrc, newSrc)` | every placed picture by file (uses, pages, pixel size, effective ppi, `missing`); relink swaps a file everywhere it is used |
+| `colours()` / `replaceColour(from, to)` / `nameAllColours()` | every colour layout.json sets, by value with its uses and swatch; replace one everywhere; make swatches of the unnamed ones and link their uses |
+| `loadStyles(project, {textStyles, objectStyles, cellStyles, swatches, variables})` | take another report's styles: per kind `'add'` (default), `'replace'` or `'skip'` |
 | `notes()` / `setNotes(key, [texts])` | writers' notes: HTML comments in a slot's block, never published; `setNotes` replaces a slot's notes and leaves its words alone |
 | `flip(id, 'h'\|'v'\|'hv'\|null)` | mirror a shape, box, table or placed piece |
 | `setVariable(name, text \| null)` | a text variable: `{var:name}` in any words shows the text, so a bill number used forty times changes once |
