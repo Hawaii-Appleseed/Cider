@@ -1,0 +1,462 @@
+{
+  "positions": {},
+  "shapes": [],
+  "boxes": [],
+  "tables": [
+    {
+      "id": "wfc.table-1",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Income (AGI)",
+          "Before and after 2027",
+          "2023 to 2027"
+        ],
+        [
+          "Under $5,000",
+          "$110",
+          "$220"
+        ],
+        [
+          "$5,000 to $10,000",
+          "$100",
+          "$220"
+        ],
+        [
+          "$10,000 to $15,000",
+          "$85",
+          "$220"
+        ],
+        [
+          "$15,000 to $20,000",
+          "$70",
+          "$200"
+        ],
+        [
+          "$20,000 to $25,000",
+          "$55",
+          "$170"
+        ],
+        [
+          "$25,000 to $30,000",
+          "$55",
+          "$140"
+        ],
+        [
+          "$30,000 to $40,000",
+          "$45*",
+          "$110"
+        ],
+        [
+          "$40,000 to $50,000",
+          "$35*",
+          "$90*"
+        ],
+        [
+          "$50,000 to $60,000",
+          "$0",
+          "$70*"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-2",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Tax year",
+          "State EITC, renewed",
+          "State EITC, expired",
+          "Food/excise, renewed",
+          "Food/excise, expired",
+          "Lost"
+        ],
+        [
+          "2028",
+          "85.6",
+          "42.8",
+          "53.0",
+          "19.3",
+          "76.5"
+        ],
+        [
+          "2029",
+          "87.0",
+          "43.5",
+          "50.9",
+          "18.6",
+          "75.7"
+        ],
+        [
+          "2030",
+          "89.7",
+          "44.8",
+          "49.3",
+          "17.7",
+          "76.5"
+        ],
+        [
+          "2031",
+          "94.8",
+          "47.4",
+          "48.2",
+          "17.4",
+          "78.2"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-2a",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Credit",
+          "With the expansion",
+          "Without it",
+          "Added by the expansion",
+          "Share of the credit"
+        ],
+        [
+          "State earned income tax credit",
+          "85.6",
+          "42.8",
+          "42.8",
+          "50%"
+        ],
+        [
+          "Food/excise tax credit",
+          "53.0",
+          "19.3",
+          "33.7",
+          "64%"
+        ],
+        [
+          "Both credits",
+          "138.6",
+          "62.1",
+          "76.5",
+          "55%"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-3",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Family type",
+          "Households",
+          "Percent losing",
+          "Average loss if losing",
+          "Total ($ millions)"
+        ],
+        [
+          "Single parent",
+          "63,854",
+          "64",
+          "$817",
+          "33.5"
+        ],
+        [
+          "Couple with children",
+          "110,285",
+          "35",
+          "$746",
+          "28.7"
+        ],
+        [
+          "Single, no children",
+          "185,239",
+          "36",
+          "$125",
+          "8.4"
+        ],
+        [
+          "Couple, no children",
+          "133,773",
+          "25",
+          "$179",
+          "6.0"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-4",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Household income",
+          "Households",
+          "Percent losing",
+          "Average loss if losing",
+          "Total ($ millions)"
+        ],
+        [
+          "Lowest 20 percent",
+          "98,592",
+          "75",
+          "$460",
+          "34.2"
+        ],
+        [
+          "Second 20 percent",
+          "98,665",
+          "36",
+          "$533",
+          "18.8"
+        ],
+        [
+          "Middle 20 percent",
+          "98,522",
+          "25",
+          "$356",
+          "8.9"
+        ],
+        [
+          "Fourth 20 percent",
+          "98,675",
+          "19",
+          "$366",
+          "6.9"
+        ],
+        [
+          "Top 20 percent",
+          "98,697",
+          "26",
+          "$292",
+          "7.6"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-5",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Measure",
+          "Department of Taxation",
+          "Model",
+          ""
+        ],
+        [
+          "State EITC dollars, 2024",
+          "$77.0M",
+          "$77.0M",
+          "Fitted"
+        ],
+        [
+          "State EITC claims, 2024",
+          "78,399",
+          "82,672",
+          "Check"
+        ],
+        [
+          "State EITC dollars, 2023",
+          "$77.1M",
+          "$73.7M",
+          "Check"
+        ],
+        [
+          "State EITC claims, 2023",
+          "84,470",
+          "82,824",
+          "Check"
+        ],
+        [
+          "Food/excise dollars, 2023",
+          "$64.0M",
+          "$64.0M",
+          "Fitted"
+        ],
+        [
+          "Food/excise claims, 2023",
+          "249,806",
+          "249,580",
+          "Check"
+        ],
+        [
+          "Food/excise dollars, 2022 (old table)",
+          "$25.0M",
+          "$24.5M",
+          "Check"
+        ],
+        [
+          "Food/excise claims, 2022 (old table)",
+          "208,786",
+          "205,246",
+          "Check"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-6",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Federal AGI",
+          "Claims, Department",
+          "Claims, model",
+          "Dollars, Department ($M)",
+          "Dollars, model ($M)"
+        ],
+        [
+          "Under $15,000",
+          "28,306",
+          "33,437",
+          "15.3",
+          "16.9"
+        ],
+        [
+          "$15,000 to $29,999",
+          "21,269",
+          "16,911",
+          "32.8",
+          "29.4"
+        ],
+        [
+          "$30,000 to $44,999",
+          "17,880",
+          "19,261",
+          "22.8",
+          "23.5"
+        ],
+        [
+          "$45,000 to $54,999",
+          "8,552",
+          "8,695",
+          "5.2",
+          "5.7"
+        ],
+        [
+          "$55,000 or more",
+          "2,392",
+          "4,367",
+          "0.8",
+          "1.4"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-7",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Filing status",
+          "Share of claims, Department",
+          "Share of claims, model",
+          "Share of dollars, Department",
+          "Share of dollars, model"
+        ],
+        [
+          "Single",
+          "35.2%",
+          "29.6%",
+          "15.3%",
+          "6.6%"
+        ],
+        [
+          "Joint",
+          "23.2%",
+          "30.3%",
+          "28.9%",
+          "41.8%"
+        ],
+        [
+          "Married filing separately",
+          "0.3%",
+          "0.0%",
+          "0.3%",
+          "0.0%"
+        ],
+        [
+          "Head of household",
+          "41.3%",
+          "40.1%",
+          "55.5%",
+          "51.5%"
+        ]
+      ]
+    },
+    {
+      "id": "wfc.table-8",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "rows": [
+        [
+          "Estimate, tax year 2028",
+          "Estimate",
+          "Margin of error",
+          "90 percent range"
+        ],
+        [
+          "Total loss, $ millions",
+          "76.5",
+          "±0.9",
+          "75.6 to 77.3"
+        ],
+        [
+          "State earned income tax credit loss, $ millions",
+          "42.8",
+          "±0.7",
+          "42.1 to 43.5"
+        ],
+        [
+          "Food/excise credit loss, $ millions",
+          "33.7",
+          "±0.5",
+          "33.2 to 34.1"
+        ],
+        [
+          "Households that receive less",
+          "179,600",
+          "±4,300",
+          "175,400 to 183,900"
+        ],
+        [
+          "More people in poverty",
+          "2,100",
+          "±1,500",
+          "700 to 3,600"
+        ],
+        [
+          "More children in poverty",
+          "500",
+          "±500",
+          "0 to 1,000"
+        ],
+        [
+          "Poverty gap increase, $ millions",
+          "16.0",
+          "±2.1",
+          "13.8 to 18.1"
+        ]
+      ]
+    }
+  ]
+}

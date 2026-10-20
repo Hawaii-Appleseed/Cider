@@ -545,3 +545,30 @@ bindings:
       layout: projects/itep-act24-estimate/layout.json
       palette: ["#00907A", "#C4602F", "#2F3E46", "#354F52", "#52796F", "#84A98C", "#CAD2C5", "#EDF1EC", "#FFFFFF"]
       page: [8.5, 11.0]
+
+  # Saving the Working Families Tax Credit Expansions | Hawaiʻi Appleseed Estimates — scaffolded by docsync.scaffold as STAGE ONE: openable in the
+  # draft editor, not yet editable. STAGE TWO (wiring slots/graphics) is a
+  # per-page job — see the report-editor skill. page height is a generous
+  # no-clip default for a scrolling web page; trim once visible.
+  - id: wfc-credits
+    content: projects/wfc-credits/content.md
+    # STAGE ONE is expected to be full of unwired text, so editability
+    # findings only warn for now. Flip to `editability: strict` when the
+    # STAGE TWO wiring pass is done — that is what "done" means.
+    editability: wip
+    build: python3 projects/wfc-credits/render_report.py
+    outputs:
+      - projects/wfc-credits/index.html
+    editor:
+      dir: docs/wfc-credits
+      render: projects/wfc-credits/render_report.py
+      out: projects/wfc-credits/index.html
+      layout: projects/wfc-credits/layout.json
+      palette: ["#52796F", "#84A98C", "#2F3E46", "#354F52", "#CAD2C5", "#E5E9E2", "#F4F7F4", "#FFFFFF"]
+      page: [12.5, 160]
+      margins: [0.3, 0.3]
+      engine:
+        # Files render_report.py reads MUST be listed here or the browser's
+        # virtual filesystem won't have them ("draft does not build").
+        - projects/wfc-credits/original.html
+        - projects/wfc-credits/body.slotted.html
