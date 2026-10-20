@@ -147,43 +147,43 @@ Example: Flint Michigan
 Case Study · Flint, Michigan
 
 [[flint.lead]]
-Comparing Flint moms eligible for Rx Kids in 2024 with 2023—every hardship and mental-health measure improved.[^ajph-flint]
+Compared with Flint moms in 2023 and with moms outside the city, mothers eligible for Rx Kids in 2024 improved significantly on six of 11 hardship measures, none got worse, and mental-health measures improved too.[^ajph-flint]
 
 [[flint.stat.rent.value]]
-13.0%
+13.0 pts
 
 [[flint.stat.rent.desc]]
-Reduction in owing back rent or mortgage
+Percentage-point drop in moms owing back rent or mortgage
 
 [[flint.stat.eviction.value]]
-4.2%
+4.2 pts
 
 [[flint.stat.eviction.desc]]
-Reduction in eviction risk after birth
+Percentage-point drop in the risk of eviction after birth
 
 [[flint.stat.food.value]]
-14.0%
+14.0 pts
 
 [[flint.stat.food.desc]]
-Reduction in food insecurity
+Percentage-point drop in moms not having enough of the kinds of food they want
 
 [[flint.stat.backrent.value]]
 $1,004
 
 [[flint.stat.backrent.desc]]
-Less back rent/mortgage owed on average
+Less back rent or mortgage owed, among moms who owed any
 
 [[flint.stat.depression.value]]
-14.0%
+14.0 pts
 
 [[flint.stat.depression.desc]]
-Reduction in screening positive for postpartum depression
+Percentage-point drop in moms screening positive for postpartum depression
 
 [[flint.stat.worrying.value]]
-6.0%
+6.0 pts
 
 [[flint.stat.worrying.desc]]
-Reduction in uncontrollable worrying
+Percentage-point drop in moms unable to stop or control worrying
 
 [[carousel.h2]]
 Why Hawaiʻi's families need RxKeiki
