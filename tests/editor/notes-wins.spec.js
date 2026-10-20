@@ -33,6 +33,29 @@ test.describe('61 notes', () => {
   });
 });
 
+test.describe('61 notes: where the mark sits', () => {
+  test('on a slot that is not drawn, no mark in the page corner', async ({ page }) => {
+    // our-mission's note is on words in a carousel panel the page hides.
+    await gotoEditor(page, '?project=our-mission');
+    const marks = await page.evaluate(() => [...$('out').contentDocument.querySelectorAll('.ds-notemark')]
+      .map(m => [m.style.left, m.style.top]));
+    expect(marks).toEqual([]);
+  });
+  test('the mark is beside its words once the page has settled', async ({ page }) => {
+    // rxkids' mark was placed before the fonts and pictures moved the
+    // paragraph, and stayed 30px above it.
+    await gotoEditor(page, '?project=rxkids');
+    await page.waitForTimeout(1500);
+    const r = await page.evaluate(() => {
+      const d = $('out').contentDocument, m = d.querySelector('.ds-notemark');
+      const el = d.querySelector('[data-slot="partner.statement"]');
+      return m && [m.getBoundingClientRect().top + 6, el.getBoundingClientRect().top];
+    });
+    expect(r).not.toBeNull();
+    expect(Math.abs(r[0] - r[1])).toBeLessThan(2);
+  });
+});
+
 test.describe('66 change case, placeholder text, paste without formatting', () => {
   test('case rewrites words, placeholder fills a frame, ⇧⌘V pastes plain', async ({ page }) => {
     await gotoEditor(page);

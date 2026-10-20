@@ -16788,7 +16788,17 @@ async function addNoteDialog(k, i = null) {
   await render();
   if (!$('notespop').hidden) notesRender();
 }
+/** Marks are placed by measuring their words, so they are measured again
+ *  once what moves words after a render has landed — the fonts, a picture
+ *  above them: rxkids' mark sat 30px over its paragraph until the next edit
+ *  happened to redraw it. */
 function drawNoteMarks(d) {
+  drawNoteMarksNow(d);
+  const again = () => { if ($('out').contentDocument === d) drawNoteMarksNow(d); };
+  if (d.fonts && d.fonts.ready) d.fonts.ready.then(() => d.defaultView.requestAnimationFrame(again));
+  [...d.images].filter(i => !i.complete).forEach(i => i.addEventListener('load', again, { once: true }));
+}
+function drawNoteMarksNow(d) {
   d.querySelectorAll('.ds-notemark').forEach(n => n.remove());
   const by = new Map();
   notesList().forEach(n => { if (n.key) by.set(n.key, (by.get(n.key) || []).concat(n.text)); });
@@ -16797,7 +16807,9 @@ function drawNoteMarks(d) {
   by.forEach((texts, k) => {
     const el = d.querySelector(`[data-slot="${CSS.escape(k)}"]`);
     const pg = el && el.closest('section.page');
-    if (!pg) return;
+    // Words not drawn (a carousel's hidden panel on our-mission) have no
+    // place to mark: measured, they put the mark in the page's corner.
+    if (!pg || !el.getClientRects().length) return;
     const b = inchBox(el, pg);
     const mk = d.createElement('div');
     mk.className = 'ds-notemark';
