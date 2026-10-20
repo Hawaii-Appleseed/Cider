@@ -293,16 +293,12 @@ MODERN_CSS = """
           --rx-lift:0 2px 4px rgba(16,18,90,.06), 0 14px 32px rgba(16,18,90,.10); }
 
   /* Cards: hairline + one soft shadow, no coloured top rules */
-  .tfc-scene-tag, .tfc-step, .tfc-total-banner, .tfc-tanf-card, .tfc-benefit-text-box,
+  .tfc-scene-tag, .tfc-total-banner, .tfc-tanf-card, .tfc-benefit-text-box,
   .tfc-highlight-box, .rxk-cost-wrap, .tfc-carousel-container {
     border: 1px solid var(--rx-line); border-top: 1px solid var(--rx-line);
     border-radius: var(--rx-radius); box-shadow: var(--rx-shadow); }
   .tfc-tanf-card--free { border-top-color: var(--rx-line); }
-  .tfc-step:hover, .tfc-scene-tag:hover { transform: translateY(-2px); box-shadow: var(--rx-lift); }
-  .tfc-step--alt { background: #fff; }
-  .tfc-step-number { background: var(--rx-red); box-shadow: none; }
-  .tfc-step--alt .tfc-step-number { background: var(--rx-magenta); }
-  .tfc-step:not(:last-child)::after, .rxk-hiw-bg .tfc-step:not(:last-child)::after { background: var(--rx-line); }
+  .tfc-scene-tag:hover { transform: translateY(-2px); box-shadow: var(--rx-lift); }
   .tfc-highlight-box { background: var(--rx-tint); }
   .tfc-highlight-box h3 { color: var(--rx-navy); }
   .tfc-carousel-container { background: var(--rx-tint); }
@@ -323,7 +319,7 @@ MODERN_CSS = """
   h1, h2, h3 { text-wrap: balance; }
   p, li { text-wrap: pretty; }
   .tfc-section-subtitle { line-height: 1.65; font-size: 1.15rem; color: var(--rx-ink); }
-  .tfc-step-title, .tfc-scene-title, .tfc-tanf-card h3 { letter-spacing: -.01em; }
+  .tfc-scene-title, .tfc-tanf-card h3 { letter-spacing: -.01em; }
 
   /* Buttons: solid fills, no gradients or glows */
   .tfc-expand-btn { background-color: var(--rx-red); box-shadow: none; padding: 14px 28px; font-size: 1.1rem; }
@@ -584,7 +580,7 @@ MODERN_CSS = """
   .tfc-full-width.rxk-band-white { background-color: #fff; }
 
   /* The $7,500 summary: total on top, then how it adds up */
-  .tfc-total-banner { max-width: 880px; padding: 30px 34px 30px; }
+  .tfc-total-banner { max-width: 960px; padding: 30px 34px 30px; }
   .rxk-sum-caption { display: block; margin: 26px 0 14px; font-size: .78rem; font-weight: 700; letter-spacing: 1.6px;
     text-transform: uppercase; color: var(--rx-muted); }
   .rxk-sum { display: flex; align-items: flex-start; justify-content: center; gap: 12px; text-align: left; }
@@ -615,6 +611,30 @@ MODERN_CSS = """
     .rxk-sum-row { flex-direction: column; gap: 4px; }
     .rxk-sum-op { align-self: center; margin-bottom: 0; }
     .rxk-sum-value { font-size: 1.7rem; }
+  }
+
+
+  /* Summary only: an enrollment line, and the $500-a-month payments carry the weight */
+  .rxk-enroll { display: inline-flex; align-items: center; gap: 10px; margin: 18px auto 0; padding: 9px 20px;
+    border-radius: 999px; background: var(--rx-tint); border: 1px solid var(--rx-line); font-size: .98rem;
+    font-weight: 600; color: var(--rx-navy); }
+  .rxk-enroll::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--rx-red); flex: none; }
+  .rxk-sum-group--sure { flex: 2.7 1 0; }
+  .rxk-sum-group--maybe { flex: 1.5 1 0; }
+  .rxk-sum-tile--1 { flex: 1 1 0; }
+  .rxk-sum-tile--monthly { flex: 1.5 1 0; padding: 18px 20px 16px; }
+  .rxk-sum-tile--2 { border-width: 2px; background: rgba(0,131,202,.10); border-color: #0272B9; }
+  .rxk-sum-tile--monthly .rxk-sum-value { font-size: 2.7rem; line-height: 1; }
+  .rxk-sum-per { display: inline-block; margin-left: 8px; font-size: 1.1rem; font-weight: 600; letter-spacing: 0;
+    color: var(--rx-ink); font-family: OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Book', Arial, sans-serif; }
+  .rxk-sum-tile--monthly .rxk-sum-label { margin-top: 6px; font-size: 1rem; color: var(--rx-navy); font-weight: 600; }
+  .rxk-sum-total { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rx-line);
+    font-size: .88rem; color: var(--rx-ink); }
+  .rxk-sum-same { display: block; margin-top: 20px; font-size: .95rem; color: var(--rx-ink); text-align: center; }
+  @media (max-width: 820px) {
+    .rxk-sum-tile--monthly { padding: 16px 18px 14px; }
+    .rxk-sum-tile--monthly .rxk-sum-value { font-size: 2.3rem; }
+    .rxk-enroll { padding: 8px 16px; font-size: .92rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1021,7 +1041,6 @@ def poverty_bar(key: str, height_px: int) -> str:
 
 # ---- how it works (4 steps) --------------------------------------------------
 def how_it_works() -> str:
-    steps = "\n".join(step(i) for i in (1, 2, 3, 4))
     return f"""
 <div class="tfc-full-width rxk-hiw-bg rxk-band-white tfc-reveal"{L.sec("band.how")}>
     <div class="tfc-content-container">
@@ -1032,28 +1051,26 @@ def how_it_works() -> str:
             <div class="tfc-total-banner"{L.attr("steps.banner.amount")}>
                 <span class="tfc-total-label">{C.t("steps.banner.label")}</span>
                 <span class="tfc-total-amount">{C.t("steps.banner.amount")}</span>
+                <span class="rxk-enroll">{C.t("steps.enroll")}</span>
                 <span class="rxk-sum-caption">{C.t("steps.sum.caption")}</span>
                 <div class="rxk-sum">
                     <div class="rxk-sum-group rxk-sum-group--sure">
                         <div class="rxk-sum-row">
                             <div class="rxk-sum-tile rxk-sum-tile--1"><span class="rxk-sum-value">{C.t("steps.sum.1.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.1.label")}</span></div>
                             <span class="rxk-sum-op rxk-sum-op--in" aria-hidden="true"></span>
-                            <div class="rxk-sum-tile rxk-sum-tile--2"><span class="rxk-sum-value">{C.t("steps.sum.2.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.2.label")}</span></div>
+                            <div class="rxk-sum-tile rxk-sum-tile--2 rxk-sum-tile--monthly"><span class="rxk-sum-value">{C.t("steps.sum.2.value")}<span class="rxk-sum-per">{C.t("steps.sum.2.per")}</span></span><span class="rxk-sum-label">{C.t("steps.sum.2.label")}</span><span class="rxk-sum-total">{C.t("steps.sum.2.total")}</span></div>
                         </div>
                         <span class="rxk-sum-note">{C.t("steps.sum.note.1")}</span>
                     </div>
                     <span class="rxk-sum-op" aria-hidden="true"></span>
                     <div class="rxk-sum-group rxk-sum-group--maybe">
                         <div class="rxk-sum-row">
-                            <div class="rxk-sum-tile rxk-sum-tile--3"><span class="rxk-sum-value">{C.t("steps.sum.3.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.3.label")}</span></div>
+                            <div class="rxk-sum-tile rxk-sum-tile--3 rxk-sum-tile--monthly"><span class="rxk-sum-value">{C.t("steps.sum.3.value")}<span class="rxk-sum-per">{C.t("steps.sum.3.per")}</span></span><span class="rxk-sum-label">{C.t("steps.sum.3.label")}</span><span class="rxk-sum-total">{C.t("steps.sum.3.total")}</span></div>
                         </div>
                         <span class="rxk-sum-note">{C.t("steps.sum.note.2")}</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="tfc-steps">
-                {steps}
+                <span class="rxk-sum-same">{C.t("steps.sum.same")}</span>
             </div>
 
             {L.spacer("steps.note")}<p class="tfc-steps-note"{L.attr("steps.note")}>{C.t("steps.note")}</p>
@@ -1061,24 +1078,6 @@ def how_it_works() -> str:
         </div>
     </div>
 </div>"""
-
-
-def step(n: int) -> str:
-    key = f"steps.{n}"
-    has_amount = n != 1
-    # Step 4 (months 4–12) is the OTHER-FUNDING stretch — purple, matching the
-    # TANF timeline's colour language, so it reads apart from the TANF steps.
-    alt = " tfc-step--alt" if n == 4 else ""
-    amount = (f'<div class="tfc-step-amount">{C.t(f"{key}.amount")}'
-              f'<span class="tfc-step-amount-note">{C.t(f"{key}.amountnote")}</span></div>'
-              if has_amount else "")
-    return f"""{L.spacer(key)}<div class="tfc-step{alt}"{L.attr(key)}>
-        <div class="tfc-step-phase">{C.t(f"{key}.phase")}</div>
-        <div class="tfc-step-number">{n}</div>
-        <h3 class="tfc-step-title">{C.t(f"{key}.title")}</h3>
-        {amount}
-        <p class="tfc-step-text">{C.t(f"{key}.text")}</p>
-    </div>"""
 
 
 # Cost estimate table (from the program's own cost slide) — hand-set here like
@@ -1750,7 +1749,6 @@ html = f"""<!DOCTYPE html>
      cost button all pop harder on blue than they did on the cream — and that
      green is the TANF/money colour, so it previews the section below. */
   .rxk-hiw-bg {{ background-color: #D1E8F5; }}
-  .rxk-hiw-bg .tfc-step:not(:last-child)::after {{ background: #7FB9DE; }}
   .rxk-hiw-bg .tfc-steps-note {{ color: #3F6B8C; }}
   /* Heading goes back to the brand navy — it was only espresso-brown to cope
      with the warm cream, and navy is the correct ink on a cool blue field. */
@@ -1774,11 +1772,6 @@ html = f"""<!DOCTYPE html>
      / orange / magenta / gold), each tab's active fill + left rule + its
      panel's bullets sharing one colour. Gold gets dark text for contrast. */
   {_benefit_rainbow_css()}
-  /* Step 4 = the other-funding stretch: purple, matching the timeline. */
-  .tfc-step--alt {{ background: #F7F0FA; }}
-  .tfc-step--alt .tfc-step-number {{ background: linear-gradient(135deg, #9B4DB8, #7A3E9D); }}
-  .tfc-step--alt .tfc-step-phase {{ color: #8E3B9C; }}
-  .tfc-step--alt .tfc-step-amount {{ color: #7A3E9D; }}
   /* The Cost expandable's button features the statewide TANF figure — a tall
      green pill (TANF colour) with the amount big and the rest small, instead
      of the flat red text button the other expandables use. */

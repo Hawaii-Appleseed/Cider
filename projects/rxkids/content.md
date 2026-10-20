@@ -254,6 +254,9 @@ A Hawaiʻi family could receive
 [[steps.banner.amount]]
 up to $7,500
 
+[[steps.enroll]]
+Enroll once you are at least 16 weeks pregnant
+
 [[steps.sum.caption]]
 How it adds up
 
@@ -261,79 +264,40 @@ How it adds up
 $1,500
 
 [[steps.sum.1.label]]
-During pregnancy
+Once, during pregnancy
 
 [[steps.sum.2.value]]
-$3,000
+$500
+
+[[steps.sum.2.per]]
+a month
 
 [[steps.sum.2.label]]
-Months 1–6, at $500 a month
+For six months after birth
+
+[[steps.sum.2.total]]
+6 payments, $3,000 in all
 
 [[steps.sum.note.1]]
 $4,500 in the first six months
 
 [[steps.sum.3.value]]
-$3,000
+$500
+
+[[steps.sum.3.per]]
+a month
 
 [[steps.sum.3.label]]
-Months 7–12, at $500 a month
+For six more months, as funding allows
+
+[[steps.sum.3.total]]
+6 payments, $3,000 in all
 
 [[steps.sum.note.2]]
 Up to $3,000 more, as funding allows
 
-[[steps.1.phase]]
-From 16 Weeks
-
-[[steps.1.title]]
-Pregnancy Enrollment
-
-[[steps.1.text]]
-Expecting moms can enroll once they are at least 16 weeks pregnant.
-
-[[steps.2.phase]]
-Before Birth
-
-[[steps.2.title]]
-Initial Payment
-
-[[steps.2.amount]]
-$1,500
-
-[[steps.2.amountnote]]
-one-time
-
-[[steps.2.text]]
-A lump sum during pregnancy to prepare for baby's arrival—the same for every eligible mom.
-
-[[steps.3.phase]]
-Months 1–6
-
-[[steps.3.title]]
-Monthly Support
-
-[[steps.3.amount]]
-$500
-
-[[steps.3.amountnote]]
-per month
-
-[[steps.3.text]]
-Six monthly payments after birth, the same for every family.
-
-[[steps.4.phase]]
-Months 7–12
-
-[[steps.4.title]]
-Additional Support
-
-[[steps.4.amount]]
-$500
-
-[[steps.4.amountnote]]
-per month
-
-[[steps.4.text]]
-Six more monthly payments through age one, as funding allows.
+[[steps.sum.same]]
+Every eligible family gets the same amounts.
 
 [[steps.note]]
 Amounts follow the draft 2027 bill.[^rxkeiki-bill] A nonprofit administrator would issue the payments, with administrative costs capped at 5 percent of spending.
