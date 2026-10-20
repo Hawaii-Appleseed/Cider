@@ -21,10 +21,13 @@ test.describe('hub publish: how the public site took it', () => {
       failed: siteLine({ ok: false, message: 'SITE_PUBLISH_TOKEN is not set' }),
       failedBare: siteLine({ ok: false }),
     }));
-    expect(lines.updated).toBe('public site updated ✓ — https://example.github.io/Site/p/');
-    expect(lines.matched).toBe('public site already matched ✓');
-    expect(lines.failed).toBe('public site NOT updated: SITE_PUBLISH_TOKEN is not set');
-    expect(lines.failedBare).toBe('public site NOT updated: the publish job failed');
+    // [what the clipped toolbar shows, what its hover says]
+    expect(lines.updated).toEqual(['site updated ✓', 'public site updated ✓ — https://example.github.io/Site/p/']);
+    expect(lines.matched).toEqual(['site up to date ✓', 'public site already matched ✓']);
+    expect(lines.failed).toEqual(['site NOT updated — hover for why', 'public site NOT updated: SITE_PUBLISH_TOKEN is not set']);
+    expect(lines.failedBare[1]).toBe('public site NOT updated: the publish job failed');
+    // ~24 characters show before the toolbar clips the line
+    for (const l of Object.values(lines)) expect(l[0].length).toBeLessThanOrEqual(32);
   });
 
   test('a report is news, never a failure: docStoreSite is null on any trouble', async ({ page }) => {
@@ -71,9 +74,9 @@ test.describe('hub publish: how the public site took it', () => {
       return result;
     });
     expect(out.n).toBe(3);
-    expect(out.stats[1]).toMatch(/^public site: publishing… · published ✓/);
-    expect(out.last).toBe('public site updated ✓ — https://example.github.io/Site/p/ · published ✓ — Hawaii-Appleseed/Cider@hub/p abc1234');
-    expect(out.title).toBe(out.last);                // all of it on hover, since the toolbar clips the line
+    expect(out.stats[1]).toBe('site: publishing…');
+    expect(out.last).toBe('site updated ✓');          // short: the toolbar clips the line
+    expect(out.title).toBe('public site updated ✓ — https://example.github.io/Site/p/ · published ✓ — Hawaii-Appleseed/Cider@hub/p abc1234');
   });
 
   test('an unchanged publish asks once; a job that never reports ends with where to look', async ({ page }) => {
@@ -84,18 +87,19 @@ test.describe('hub publish: how the public site took it', () => {
       window.docStoreSite = async () => { n++; return null; };
       const stat = document.getElementById('stat');
       await docStoreAwaitSite('v3', 'already published — hub/p is at abc1234', true);
-      const unchanged = { n, last: stat.textContent };
+      const unchanged = { n, last: stat.textContent, title: stat.title };
       n = 0;
       await docStoreAwaitSite('v4', 'published ✓ — x', false);
-      const silent = { n, last: stat.textContent };
+      const silent = { n, last: stat.textContent, title: stat.title };
       window.docStoreSite = realSite; window.setTimeout = realTimeout;
       return { unchanged, silent };
     });
     expect(out.unchanged.n).toBe(1);
-    expect(out.unchanged.last).toContain('no report for this version');
+    expect(out.unchanged.last).toBe('site: no report — hover');
+    expect(out.unchanged.title).toContain('no report for this version');
     expect(out.silent.n).toBe(30);
-    expect(out.silent.last).toContain('no report after 5 minutes');
-    expect(out.silent.last).toContain('Actions tab');
+    expect(out.silent.title).toContain('no report after 5 minutes');
+    expect(out.silent.title).toContain('Actions tab');
   });
 
   test('the confirm says the public page is rebuilt, and keeps its old words for a page with none', async ({ page }) => {
