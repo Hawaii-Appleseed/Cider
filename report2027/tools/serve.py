@@ -3027,6 +3027,11 @@ def _publish_site(pid: str, trigger):
         from docsync import publish as _pub
     finally:
         sys.path.remove(str(SELF_ROOT))
+    if cfg.home != "local":
+        # One editing home per page: two routes publishing different copies of
+        # the same page would just overwrite each other.
+        return _pub.Result(True, False, "not published from here: this page is edited on the staff hub "
+                           "(home: hub in its publish: block)", url=cfg.url)
     # The same token the editor's Push uses (File > Connect GitHub), passed inline
     # so nothing is persisted and a machine whose keychain already works is untouched.
     auth = []
