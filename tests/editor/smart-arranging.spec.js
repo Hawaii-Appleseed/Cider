@@ -21,6 +21,27 @@ const boxOf = (page, id) => page.evaluate(id => {
 }, id);
 
 test.describe('smarter arranging', () => {
+  test('shift-click adds to the selection even from words being typed', async ({ page }) => {
+    // A click in a box types there; a shift-click on another object then
+    // closed the words and selected nothing more, so "click this, shift-click
+    // that" never made a selection of two to align or put a picture into.
+    await gotoEditor(page);
+    const ids = await page.evaluate(async () => ({
+      t: (await docsync.api.addTextBox({ page: 3, x: 1, y: 2, w: 2, md: 'Words here' })).id,
+      r: (await docsync.api.addShape({ page: 3, kind: 'rect', x: 5, y: 2, w: 1.5, h: 1, fill: '#cccccc' })).id }));
+    await page.evaluate(s => $('out').contentDocument.querySelector(s).scrollIntoView({ block: 'center' }), `[data-el="${ids.t}"]`);
+    await page.waitForTimeout(800);
+    const box = async s => { const fr = await page.locator('#out[data-ds-live]').boundingBox();
+      const r = await page.evaluate(s => { const b = $('out').contentDocument.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; }, s);
+      return [fr.x + r[0] + r[2] / 2, fr.y + r[1] + r[3] / 2]; };
+    const [tx, ty] = await box(`[data-el="${ids.t}"]`);
+    await page.mouse.click(tx, ty);
+    await expect.poll(() => page.evaluate(() => editing)).toBe(true);
+    const [rx, ry] = await box(`[data-shape="${ids.r}"]`);
+    await page.keyboard.down('Shift'); await page.mouse.click(rx, ry); await page.keyboard.up('Shift');
+    await expect.poll(() => page.evaluate(() => [...selIds].sort())).toEqual([ids.t, ids.r].sort());
+    expect(await page.evaluate(() => editing)).toBe(false);
+  });
   test('a second click on a selected thing makes it the key object, and Align keeps it still',
     async ({ page }) => {
       await gotoEditor(page, '?project=demo-report');

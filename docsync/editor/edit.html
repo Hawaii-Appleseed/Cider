@@ -19278,7 +19278,15 @@ function dragify(d, roots) {
     // Keyboard moves work on the SELECTION at the document level (keysFor), so
     // arrows still nudge a selected element without any element owning focus.
     el.addEventListener('mousedown', e => {
-      if (editing || e.button !== 0) return;
+      if (e.button !== 0) return;
+      // Shift adds to the selection, from words being typed too: leave them
+      // (kept — blur commits) and go on. A click types in a box, so without
+      // this "click one, shift-click another" never selected two.
+      if (editing && e.shiftKey) {
+        const a = d.activeElement;
+        if (a && a.isContentEditable && !el.contains(a)) a.blur();
+      }
+      if (editing) return;
       // A movable object grabs from ANYWHERE on itself — including over its own
       // words. A callout is nearly all text; the old rule "a click on text
       // never moves" left it with no grab handle at all. Editing the words is
