@@ -340,6 +340,21 @@ test.describe('arranging', () => {
     expect(near(r.b1.y, r.b0.y + 0.1), `y ${r.b0.y} -> ${r.b1.y}`).toBe(true);
   });
 
+  test('a report\'s entrance animation does not play again on every render', async ({ page }) => {
+    // rxkids' panels rise and fade in (rxkIn, .35s). A render replaces the
+    // page's nodes, so it replayed after every edit: the page flickered at
+    // each keystroke and a piece just moved was measured mid-rise.
+    await gotoEditor(page, '?project=rxkids');
+    const running = await page.evaluate(async () => {
+      const d = $('out').contentDocument;
+      setSel(d, ['what.scene.right']); nudgeSel(d, [0, 0.1]);
+      await render();
+      return $('out').contentDocument.getAnimations()
+        .filter(a => a.animationName === 'rxkIn' && a.playState === 'running').length;
+    });
+    expect(running).toBe(0);
+  });
+
   test('icons line up by the box they are drawn in, not the stroke inside it', async ({ page }) => {
     // An icon's painted glyph sits inside its declared square: aligned by its
     // right edge with the stroke's width, the box it is drawn in overshot.

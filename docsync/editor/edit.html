@@ -23965,10 +23965,26 @@ function stageChainWire(d) {
   }, { passive: true });
 }
 
+/** A render replaces the page's nodes, so a report's entrance animation
+ *  (rxkids' panels rise and fade in over .35s) played again after every
+ *  edit: the page flickered at each keystroke, and what was just moved was
+ *  measured mid-rise. The editor shows where things are, so a one-shot
+ *  animation on new nodes is finished at once. Loops (a pulsing dot) run
+ *  on, and so do the editor's own entrance previews (replayAnims). */
+function stillEntrances(d, roots) {
+  const CA = d.defaultView.CSSAnimation;
+  d.getAnimations().forEach(a => {
+    const el = a.effect && a.effect.target;
+    if (!(a instanceof CA) || !el || (roots && roots.length && !roots.some(r => r.contains(el)))) return;
+    if (el.closest('[data-ds-anim]') || a.effect.getComputedTiming().iterations === Infinity) return;
+    try { a.finish(); } catch (e) { /* an animation that cannot end: leave it */ }
+  });
+}
 function wire(roots) {
   const d = $('out').contentDocument;
   const fresh = !(roots && roots.length);
   healStrandedEditor();   // see its own comment; wire() is one of two callers
+  stillEntrances(d, roots);
   showLocalImages(d, roots);
   // Native image-drag steals the gesture before the editor's mousemove ever
   // fires — grab a placed photo and a ghost image flies while the box stays
