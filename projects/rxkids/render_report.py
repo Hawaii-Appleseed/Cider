@@ -445,7 +445,7 @@ MODERN_CSS = """
   .rxk-next-btn::after { content: "\\2192"; margin-left: 10px; }
 
   /* Home: teaser cards that open the other tabs */
-  .rxk-teaser-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 40px; }
+  .rxk-teaser-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 40px; }
   .rxk-teaser { appearance: none; text-align: left; font: inherit; cursor: pointer; background: #fff;
     border: 1px solid var(--rx-line); border-radius: var(--rx-radius); box-shadow: var(--rx-shadow);
     padding: 26px 24px 28px; transition: transform .2s, box-shadow .2s; }
@@ -453,8 +453,8 @@ MODERN_CSS = """
   .rxk-teaser h3 { margin: 0 0 8px; font-size: 1.2rem; letter-spacing: -.01em; color: var(--rx-navy); }
   .rxk-teaser h3::after { content: "\\2192"; margin-left: 8px; color: var(--rx-red); }
   .rxk-teaser p { margin: 0; font-size: .98rem; line-height: 1.55; color: var(--rx-ink); }
-  .rxk-works-band .rxk-works { background: var(--rx-tint); box-shadow: none; border: 1px solid var(--rx-line); margin-bottom: 0; }
-  @media (max-width: 900px) { .rxk-teaser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .rxk-works-band .rxk-works { background: #fff; box-shadow: var(--rx-shadow); border: 1px solid var(--rx-line); margin-bottom: 0; }
+  @media (max-width: 900px) { .rxk-teaser-grid { grid-template-columns: 1fr; } }
   @media (max-width: 560px) { .rxk-teaser-grid { grid-template-columns: 1fr; } }
 
   /* Funding: the headline total is a stat, not a button */
@@ -589,6 +589,44 @@ MODERN_CSS = """
     .tfc-full-width { break-inside: avoid; }
   }
 
+
+  /* Home absorbed the Why Hawaii section; steps band reads white between two tinted ones */
+  .tfc-full-width.rxk-band-white { background-color: #fff; }
+
+  /* The $7,500 summary: total on top, then how it adds up */
+  .tfc-total-banner { max-width: 880px; padding: 30px 34px 30px; }
+  .rxk-sum-caption { display: block; margin: 26px 0 14px; font-size: .78rem; font-weight: 700; letter-spacing: 1.6px;
+    text-transform: uppercase; color: var(--rx-muted); }
+  .rxk-sum { display: flex; align-items: flex-start; justify-content: center; gap: 12px; text-align: left; }
+  .rxk-sum-group { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
+  .rxk-sum-group--sure { flex: 2 1 0; }
+  .rxk-sum-row { display: flex; align-items: stretch; gap: 10px; flex: 1; }
+  .rxk-sum-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 17px;
+    border-radius: 14px; border: 1px solid var(--rx-line); background: var(--rx-tint); }
+  .rxk-sum-tile--1 { background: rgba(238,48,60,.07); border-color: rgba(238,48,60,.28); }
+  .rxk-sum-tile--2 { background: rgba(0,131,202,.07); border-color: rgba(0,131,202,.30); }
+  .rxk-sum-tile--3 { background: #fff; border: 2px dashed #9FA0BD; }
+  .rxk-sum-value { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; color: var(--rx-navy);
+    font-family: OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Heavy', Arial, sans-serif; }
+  .rxk-sum-tile--1 .rxk-sum-value { color: #CD2C40; }
+  .rxk-sum-tile--2 .rxk-sum-value { color: #0272B9; }
+  .rxk-sum-label { font-size: .92rem; line-height: 1.4; color: var(--rx-ink); }
+  .rxk-sum-op { flex: none; align-self: center; width: 26px; text-align: center; font-size: 1.7rem; font-weight: 700;
+    line-height: 1; color: var(--rx-muted); margin-bottom: 38px; }
+  .rxk-sum-op::before { content: "+"; }
+  .rxk-sum-op--in { width: 20px; margin-bottom: 0; font-size: 1.4rem; }
+  .rxk-sum-note { display: block; margin-top: 12px; padding-top: 10px; border-top: 3px solid var(--rx-navy);
+    text-align: center; font-size: .95rem; font-weight: 700; line-height: 1.35; color: var(--rx-navy); }
+  .rxk-sum-group--maybe .rxk-sum-note { border-top: 3px dashed #9FA0BD; color: var(--rx-ink); }
+  @media (max-width: 820px) {
+    .tfc-total-banner { padding: 24px 18px 24px; }
+    .rxk-sum { flex-direction: column; align-items: stretch; gap: 6px; }
+    .rxk-sum-group--sure, .rxk-sum-group { flex: none; }
+    .rxk-sum-row { flex-direction: column; gap: 4px; }
+    .rxk-sum-op { align-self: center; margin-bottom: 0; }
+    .rxk-sum-value { font-size: 1.7rem; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -649,7 +687,7 @@ SCRIPT = (SCRIPT
 
 TAB_JS = """
 (function () {
-  var IDS = ['home', 'why', 'evidence', 'funding', 'bill'];
+  var IDS = ['home', 'evidence', 'funding', 'bill'];
   function show(id, fromHash, quiet) {
     if (IDS.indexOf(id) < 0) id = 'home';
     IDS.forEach(function (k) {
@@ -817,7 +855,7 @@ def works_strip() -> str:
 
 def works_band() -> str:
     return f"""
-<div class="tfc-full-width tfc-bg-white rxk-works-band tfc-reveal"{L.sec("band.works")}>
+<div class="tfc-full-width tfc-bg-blue rxk-works-band tfc-reveal"{L.sec("band.works")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {works_strip()}
@@ -922,7 +960,7 @@ def bar_w(key: str) -> str:
 
 def stats_carousel() -> str:
     return f"""
-<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.stats")}>
+<div class="tfc-full-width tfc-bg-blue tfc-reveal"{L.sec("band.stats")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("carousel.h2")}<h2 class="tfc-section-title"{L.attr("carousel.h2")}>{C.t("carousel.h2")}</h2>
@@ -1005,7 +1043,7 @@ def poverty_bar(key: str, height_px: int) -> str:
 def how_it_works() -> str:
     steps = "\n".join(step(i) for i in (1, 2, 3, 4))
     return f"""
-<div class="tfc-full-width rxk-hiw-bg tfc-reveal"{L.sec("band.how")}>
+<div class="tfc-full-width rxk-hiw-bg rxk-band-white tfc-reveal"{L.sec("band.how")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("steps.h2")}<h2 class="tfc-section-title"{L.attr("steps.h2")}>{C.t("steps.h2")}</h2>
@@ -1014,7 +1052,24 @@ def how_it_works() -> str:
             <div class="tfc-total-banner"{L.attr("steps.banner.amount")}>
                 <span class="tfc-total-label">{C.t("steps.banner.label")}</span>
                 <span class="tfc-total-amount">{C.t("steps.banner.amount")}</span>
-                <span class="tfc-total-sub">{C.t("steps.banner.sub")}</span>
+                <span class="rxk-sum-caption">{C.t("steps.sum.caption")}</span>
+                <div class="rxk-sum">
+                    <div class="rxk-sum-group rxk-sum-group--sure">
+                        <div class="rxk-sum-row">
+                            <div class="rxk-sum-tile rxk-sum-tile--1"><span class="rxk-sum-value">{C.t("steps.sum.1.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.1.label")}</span></div>
+                            <span class="rxk-sum-op rxk-sum-op--in" aria-hidden="true"></span>
+                            <div class="rxk-sum-tile rxk-sum-tile--2"><span class="rxk-sum-value">{C.t("steps.sum.2.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.2.label")}</span></div>
+                        </div>
+                        <span class="rxk-sum-note">{C.t("steps.sum.note.1")}</span>
+                    </div>
+                    <span class="rxk-sum-op" aria-hidden="true"></span>
+                    <div class="rxk-sum-group rxk-sum-group--maybe">
+                        <div class="rxk-sum-row">
+                            <div class="rxk-sum-tile rxk-sum-tile--3"><span class="rxk-sum-value">{C.t("steps.sum.3.value")}</span><span class="rxk-sum-label">{C.t("steps.sum.3.label")}</span></div>
+                        </div>
+                        <span class="rxk-sum-note">{C.t("steps.sum.note.2")}</span>
+                    </div>
+                </div>
             </div>
 
             <div class="tfc-steps">
@@ -1317,8 +1372,8 @@ def sources_section() -> str:
 
 
 # ---- tabs: Home summary + four deeper pages, one embed -----------------------
-TABS = ["home", "why", "evidence", "funding", "bill"]
-NEXT_TAB = {"why": "evidence", "evidence": "funding", "funding": "bill", "bill": "home"}
+TABS = ["home", "evidence", "funding", "bill"]
+NEXT_TAB = {"evidence": "funding", "funding": "bill", "bill": "home"}
 
 
 def tab_bar() -> str:
@@ -1360,7 +1415,7 @@ def evidence_stats() -> str:
 </div>"""
 
 
-TEASERS = ["why", "evidence", "funding", "bill"]
+TEASERS = ["evidence", "funding", "bill"]
 
 
 def teasers() -> str:
@@ -1369,7 +1424,7 @@ def teasers() -> str:
             <h3>{C.t(f"teaser.{k}.title")}</h3><p>{C.t(f"teaser.{k}.body")}</p></button>"""
         for k in TEASERS)
     return f"""
-<div class="tfc-full-width rxk-hiw-bg tfc-reveal"{L.sec("band.teasers")}>
+<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.teasers")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("teaser.h2")}<h2 class="tfc-section-title"{L.attr("teaser.h2")}>{C.t("teaser.h2")}</h2>
@@ -1404,6 +1459,7 @@ def bill_section() -> str:
 HOME_PANEL = f"""{hero()}
 {facts_strip()}
 {what_is_rxkids()}
+{stats_carousel()}
 {how_it_works()}
 {works_band()}
 {teasers()}"""
@@ -1411,7 +1467,6 @@ HOME_PANEL = f"""{hero()}
 MAIN_BODY = f"""<div class="tfc-container">
 {tab_bar()}
 {panel("home", HOME_PANEL)}
-{panel("why", stats_carousel() + next_link("why"))}
 {panel("evidence", evidence_stats() + benefits_widget() + next_link("evidence"))}
 {panel("funding", tanf_section() + cost_section() + next_link("funding"))}
 {panel("bill", bill_section() + next_link("bill"))}"""

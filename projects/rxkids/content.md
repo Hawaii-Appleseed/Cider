@@ -257,8 +257,32 @@ A Hawaiʻi family could receive
 [[steps.banner.amount]]
 up to $7,500
 
-[[steps.banner.sub]]
-$4,500 through the first six months, and up to $3,000 more through age one as funding allows
+[[steps.sum.caption]]
+How it adds up
+
+[[steps.sum.1.value]]
+$1,500
+
+[[steps.sum.1.label]]
+During pregnancy
+
+[[steps.sum.2.value]]
+$3,000
+
+[[steps.sum.2.label]]
+Months 1–6, at $500 a month
+
+[[steps.sum.note.1]]
+$4,500 in the first six months
+
+[[steps.sum.3.value]]
+$3,000
+
+[[steps.sum.3.label]]
+Months 7–12, at $500 a month
+
+[[steps.sum.note.2]]
+Up to $3,000 more, as funding allows
 
 [[steps.1.phase]]
 From 16 Weeks
@@ -524,9 +548,6 @@ $95,805,000
 [[tabs.home]]
 Home
 
-[[tabs.why]]
-Why Hawaiʻi
-
 [[tabs.evidence]]
 Evidence
 
@@ -535,9 +556,6 @@ Funding & TANF
 
 [[tabs.bill]]
 The bill
-
-[[next.why]]
-Next: Evidence
 
 [[next.evidence]]
 Next: Funding & TANF
@@ -550,12 +568,6 @@ Back to Home
 
 [[teaser.h2]]
 Go deeper
-
-[[teaser.why.title]]
-Why Hawaiʻi
-
-[[teaser.why.body]]
-More than 1 in 4 children with single mothers lives in poverty, and childcare takes nearly half a single parent's income.
 
 [[teaser.evidence.title]]
 The evidence
