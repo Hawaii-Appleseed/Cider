@@ -347,6 +347,10 @@ ids it returns:
 | `overrides()` / `clearOverrides(key \| [keys] \| null)` / `highlightOverrides(on)` | text whose own keys differ from the style it wears; take them off (null = every one); outline them in the editor (never published) |
 | `defaultStyles()` / `setDefaultStyle('text' \| 'box' \| 'shape' \| 'table', name \| null)` | the styles new text boxes, boxes, shapes and tables wear (`layout.defaultStyles`; editor-only, no published byte) |
 | `clearTransforms(id \| [ids])` | rotation, skew, flip and scale back to none; place and size kept |
+| `quickApplyItems(q?)` / `quickApply(q)` | Quick Apply: what ⌘↩ offers for the selection (styles, swatches, commands), best match first; apply the best match |
+| `shapeImage(id, {src, fit?, align?} \| null)` / `pasteInto(shapeId, pictureBoxId)` | a picture inside a closed shape, clipped to it; Paste Into moves a picture box's picture in and drops the box |
+| `stories()` | every slot and text box as markdown, page by page in reading order (the Story editor) |
+| `library()` / `saveToLibrary(name)` / `placeFromLibrary(name, {x, y}?)` / `dropFromLibrary(name)` | the library of reusable pieces, with the styles and swatches they wear |
 | `mergeLayers([names], into)` / `dropUnusedLayers()` / `selectLayer(name)` | layer housekeeping: move what is on layers onto one and drop them; drop empty layers; select what is on a layer |
 | `fade(id, {angle?, from?, to?} \| null)` | fade to clear (gradient feather) on a text box, table or placed piece; 180 fades toward the bottom |
 | `align(ids, mode, {to?, key?})` | Align left / hcenter / right / top / vcenter / bottom; `to` auto / selection / key / page; `key` (one of ids) stays still; returns the boxes after |
