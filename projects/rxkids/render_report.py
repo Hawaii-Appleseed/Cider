@@ -349,16 +349,6 @@ MODERN_CSS = """
   .rxk-cost tr.rxk-cost-total th, .rxk-cost tr.rxk-cost-total td { background: var(--rx-tint); }
 
 
-  /* Phase 2: the two charts sit side by side (no carousel) */
-  .tfc-carousel-container { max-width: none; overflow: visible; background: none; border: none;
-                            box-shadow: none; padding: 0; margin: 0 auto 24px; }
-  .tfc-carousel-track { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px;
-                        transform: none !important; transition: none; }
-  .tfc-carousel-slide { min-width: 0; padding: 32px 28px; background: var(--rx-tint);
-                        border: 1px solid var(--rx-line); border-radius: var(--rx-radius); }
-  .tfc-carousel-arrow { display: none; }
-  @media (max-width: 768px) { .tfc-carousel-track { grid-template-columns: 1fr; } }
-
   /* Phase 2: benefit tabs are pills over one card */
   .tfc-benefits-layout { flex-direction: column; align-items: stretch; gap: 24px; }
   .tfc-benefits-tabs { flex: none; display: grid; grid-template-columns: repeat(3, max-content);
@@ -546,7 +536,12 @@ MODERN_CSS = """
     .tfc-benefits-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .tfc-benefits-tabs .tfc-benefit-tab { padding: 9px 14px; font-size: .9rem; }
     .tfc-benefit-text-box { padding: 22px 20px; }
+    .tfc-carousel-container { max-width: 100%; padding-bottom: 66px; }
     .tfc-carousel-slide { padding: 24px 14px; }
+    .tfc-carousel-arrow { top: auto; bottom: 12px; transform: none; }
+    .tfc-carousel-arrow:hover { transform: scale(1.08); }
+    .tfc-carousel-prev { left: calc(50% - 54px); }
+    .tfc-carousel-next { right: calc(50% - 54px); }
     .tfc-pullout-quote .tfc-quote-text { padding: 0 18px; font-size: 1.2rem; }
     .tfc-total-banner { padding: 22px 18px; }
     .tfc-total-amount { font-size: 2.6rem; }
@@ -940,16 +935,6 @@ def flint_expandable() -> str:
 
 
 # ---- stats carousel (2 slides) -----------------------------------------------
-def bar_w(key: str) -> str:
-    """Bar width from its own slot ("49.0%" -> "49.0"). The original page set it in
-    script when the slide scrolled into view; with both charts on show at once
-    the width has to be in the markup."""
-    try:
-        return f"{float(C.text(key).strip().rstrip('%')):g}"
-    except ValueError:
-        return "0"
-
-
 def stats_carousel() -> str:
     return f"""
 <div class="tfc-full-width tfc-bg-blue tfc-reveal"{L.sec("band.stats")}>
@@ -959,6 +944,9 @@ def stats_carousel() -> str:
             {C.html("carousel.lead", "tfc-section-subtitle")}
 
             <div class="tfc-carousel-container"{L.frame("panel.carousel")}>
+                <button class="tfc-carousel-arrow tfc-carousel-prev" onclick="moveCarousel(-1)"{describe(C, "carousel.prev.desc", "Previous chart", role="")}>&#10094;</button>
+                <button class="tfc-carousel-arrow tfc-carousel-next" onclick="moveCarousel(1)"{describe(C, "carousel.next.desc", "Next chart", role="")}>&#10095;</button>
+
                 <div class="tfc-carousel-track" id="statsTrack">
                     <div class="tfc-carousel-slide">
                         {L.spacer("carousel.poverty.quote")}
@@ -994,7 +982,7 @@ def stats_carousel() -> str:
                                 {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.single")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.single.label")}</span>
                                     <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill single" id="bar-single" style="width:{bar_w("carousel.childcare.bar.single.value")}%">{C.t("carousel.childcare.bar.single.value")}</div>
+                                        <div class="tfc-bar-fill single" id="bar-single">{C.t("carousel.childcare.bar.single.value")}</div>
                                     </div>
                                     <p style="font-size: 0.9rem; color: #718096; margin-top: 8px;">{C.t("carousel.childcare.bar.single.note")}</p>
                                 </div>
@@ -1002,7 +990,7 @@ def stats_carousel() -> str:
                                 {L.spacer("carousel.childcare.bar.married")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.married")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.married.label")}</span>
                                     <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill married" id="bar-married" style="width:{bar_w("carousel.childcare.bar.married.value")}%">{C.t("carousel.childcare.bar.married.value")}</div>
+                                        <div class="tfc-bar-fill married" id="bar-married">{C.t("carousel.childcare.bar.married.value")}</div>
                                     </div>
                                 </div>
                             </div>
