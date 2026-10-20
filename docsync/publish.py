@@ -283,6 +283,51 @@ def _has_name(root: Path, pid: str) -> bool:
     return False
 
 
+def github_target(repo: str) -> tuple[str, str]:
+    """(owner, name) when `repo` is a GitHub repository, else ("", "") — a local
+    path or another host has no installation token to mint."""
+    m = re.fullmatch(r"(?:https://github\.com/)?([\w.-]+)/([\w.-]+?)(?:\.git)?/?", repo.strip())
+    if not m or Path(os.path.expanduser(repo)).is_dir():
+        return "", ""
+    return m.group(1), m.group(2)
+
+
+CALLER_WORKFLOW = """name: Publish sites
+
+# Publishes this repository's website projects (a `publish:` block in docsync.yml)
+# when the staff hub's Publish writes a hub/<project> branch. The work is in
+# Cider's reusable workflow; this file only calls it. Needs the organization
+# secrets PUBLISH_APP_ID and PUBLISH_APP_PRIVATE_KEY (docsync/publish.py explains).
+
+on:
+  push:
+    branches: ["hub/**"]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project id to publish from its hub branch (hub/<id>)"
+        required: true
+
+jobs:
+  publish:
+    uses: Hawaii-Appleseed/Cider/.github/workflows/publish-sites.yml@main
+    with:
+      project: ${{ inputs.project }}
+    secrets: inherit
+    permissions:
+      contents: read
+      statuses: write
+"""
+
+
+def init_workflow(repo_root: Path) -> Path:
+    """Write the caller workflow into a repository that vendors the engine."""
+    dest = repo_root / ".github" / "workflows" / "publish-sites.yml"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(CALLER_WORKFLOW)
+    return dest
+
+
 def main(argv: list[str] | None = None) -> int:
     """`python3 -m docsync.publish --hub-branch hub/<id>` — publish one project
     now, from what the hub saved. Exit 0 also when the project has nothing to
@@ -298,14 +343,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--report-to", default=os.environ.get("HUB_REPORT_URL", ""),
                     help="the collab Worker's URL: tell it the result (needs HUB_EXPORT_KEY)")
     ap.add_argument("--doctor", action="store_true", help="check the project's publish setup and say what is missing")
+    ap.add_argument("--print-target", action="store_true",
+                    help="write the site repository's owner and name to $GITHUB_OUTPUT (the workflow mints its token from them)")
+    ap.add_argument("--init-workflow", action="store_true",
+                    help="write .github/workflows/publish-sites.yml here, calling Cider's reusable workflow")
     ap.add_argument("--pull-hub", action="store_true",
                     help="copy the hub's latest content for this project into the working tree (to move its home "
                          "back to local); review and commit it yourself")
     a = ap.parse_args(argv)
+    root = Path(__file__).resolve().parent.parent
+    if a.init_workflow:
+        print("wrote", init_workflow(root))
+        return 0
     pid = a.id or (a.hub_branch or "").removeprefix("hub/")
     if not pid:
         ap.error("--id or --hub-branch is required")
-    root = Path(__file__).resolve().parent.parent
     if a.doctor:
         return doctor(pid, token_env=a.token_env)
     sys.path.insert(0, str(root))
@@ -314,6 +366,16 @@ def main(argv: list[str] | None = None) -> int:
         b = get(pid)
     except RegistryError as e:
         print(f"::notice::{e} — nothing to publish")
+        return 0
+    if a.print_target:
+        cfg = b.publish
+        owner, name = github_target(a.site_repo or cfg.repo) if cfg and cfg.home == "hub" else ("", "")
+        out = os.environ.get("GITHUB_OUTPUT")
+        text = f"owner={owner}\nname={name}\n"
+        if out:
+            with open(out, "a") as f:
+                f.write(text)
+        print(text, end="")
         return 0
     if a.pull_hub:
         took = _overlay(root, b, a.ref or f"origin/hub/{pid}")

@@ -554,11 +554,17 @@ make a new website project publish on Save, in this order:
 5. Check it without GitHub: point `repo:` at a bare clone of the site, run
    `publish.run(...)` (as `test_docsync.py` does), and look at the commit.
 
-6. **The staff hub** publishes the same project with no extra setup in the
-   binding: Publish there commits to `hub/<id>`, and the `Publish sites` workflow
-   in this repo turns that branch into the public page (needs the
-   `SITE_PUBLISH_TOKEN` secret, a `name:` on the binding for `docsync.hub`, and an
-   `assets:` path on the editor block so uploaded images land in the project).
+6. **The staff hub** publishes the same project once the binding says
+   `home: hub`: Publish there commits to `hub/<id>`, and the `Publish sites`
+   workflow turns that branch into the public page. The credential is one GitHub
+   App installed on the whole organization, its id and private key held as
+   ORGANIZATION secrets `PUBLISH_APP_ID` / `PUBLISH_APP_PRIVATE_KEY` — the job mints
+   a token for the one target repository each run, so a new site repo needs no
+   secret of its own. Also needed: a `name:` on the binding (for `docsync.hub`) and
+   an `assets:` path on the editor block (so uploaded images land in the project).
+   A source repo other than Cider runs `python3 -m docsync.publish --init-workflow`
+   for a caller of a few lines, and is added to the Worker's `ALLOWED_REPOS`.
+   `python3 -m docsync.publish --doctor --id <id>` checks all of it.
    Test it without GitHub: `python3 -m docsync.publish --hub-branch hub/<id>
    --site-repo <local bare clone>` from a clone with the hub branch fetched.
 

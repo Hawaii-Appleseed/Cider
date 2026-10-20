@@ -10,13 +10,22 @@ name: Publish sites
 # Security: this job runs the code and docsync.yml of the DEFAULT branch, and
 # takes only the project's content, layout and assets from the hub branch — the
 # branch also carries a docsync.yml, and a command in it must never run with the
-# publish token in the environment. The token is an Actions secret,
-# SITE_PUBLISH_TOKEN: a fine-grained token (or app installation token) with
-# Contents: read and write on the site repositories named in `publish:` blocks,
-# and nothing else.
+# publish token in the environment.
+#
+# The credential: a GitHub App installed on the whole organization (Contents:
+# read and write). The job reads which repository the project publishes to, then
+# mints a token for THAT repository alone, good for an hour — no personal token to
+# renew, and any repository the app can see works without further setup. The app's
+# id and private key are ORGANIZATION secrets (PUBLISH_APP_ID,
+# PUBLISH_APP_PRIVATE_KEY), so every repository that calls this workflow has them.
+# A repository secret SITE_PUBLISH_TOKEN (a fine-grained token) is the fallback for
+# an organization without the app.
 #
 # The push that starts this is made by the Worker with its own token, which is
 # why it triggers a workflow (a push made with Actions' GITHUB_TOKEN would not).
+#
+# Other repositories that keep website projects call this one (workflow_call);
+# `python3 -m docsync.publish --init-workflow` writes the caller.
 
 on:
   push:
@@ -26,11 +35,17 @@ on:
       project:
         description: "Project id to publish from its hub branch (hub/<id>)"
         required: true
+  workflow_call:
+    inputs:
+      project:
+        description: "Project id (a manual run); a push names its own"
+        required: false
+        type: string
 
 # One publish per project at a time, none cancelled: each one commits to the
 # site, and a cancelled one would leave the hub's last save unpublished.
 concurrency:
-  group: publish-sites-${{ github.ref_name }}-${{ inputs.project }}
+  group: publish-sites-${{ github.repository }}-${{ github.ref_name }}-${{ inputs.project }}
   cancel-in-progress: false
 
 permissions:
@@ -40,6 +55,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
+      APP_ID: ${{ secrets.PUBLISH_APP_ID }}
     steps:
       # Shallow: the default branch for the code, and only the tip of the hub
       # branch for the project's files. No history is needed for either.
@@ -49,8 +67,6 @@ jobs:
           fetch-depth: 1
 
       - name: Fetch the hub branch
-        env:
-          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
         run: git fetch --no-tags --depth=1 origin "+refs/heads/$HUB_BRANCH:refs/remotes/origin/$HUB_BRANCH"
 
       - uses: actions/setup-python@v5
@@ -60,15 +76,31 @@ jobs:
       - name: Install Python dependencies
         run: pip install --quiet pyyaml
 
+      # Which repository does this project publish to? Empty when it has no
+      # publish: block, is edited locally, or publishes to something that is not
+      # a GitHub repository: then there is nothing to mint a token for.
+      - name: Find the site repository
+        id: target
+        run: python3 -m docsync.publish --hub-branch "$HUB_BRANCH" --print-target
+
+      - name: Mint a token for it
+        id: app
+        if: steps.target.outputs.name != '' && env.APP_ID != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISH_APP_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+          owner: ${{ steps.target.outputs.owner }}
+          repositories: ${{ steps.target.outputs.name }}
+
       - name: Publish
         id: publish
         env:
-          SITE_PUBLISH_TOKEN: ${{ secrets.SITE_PUBLISH_TOKEN }}
+          SITE_PUBLISH_TOKEN: ${{ steps.app.outputs.token || secrets.SITE_PUBLISH_TOKEN }}
           # Optional: tell the collab Worker what happened, so the hub can say so
           # (POST /site/<room>). HUB_REPORT_URL is a repository variable, the key a secret.
           HUB_REPORT_URL: ${{ vars.HUB_REPORT_URL }}
           HUB_EXPORT_KEY: ${{ secrets.HUB_EXPORT_KEY }}
-          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
         run: python3 -m docsync.publish --hub-branch "$HUB_BRANCH"
 
       # The same result on the hub branch's commit, so it shows beside the export
@@ -77,7 +109,6 @@ jobs:
         if: always() && steps.publish.outputs.ok != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
           OK: ${{ steps.publish.outputs.ok }}
           LIVE_URL: ${{ steps.publish.outputs.url }}
           MESSAGE: ${{ steps.publish.outputs.message }}

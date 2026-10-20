@@ -328,10 +328,21 @@ Rules that bite:
   (collab/src/export.js), and `.github/workflows/publish-sites.yml` runs
   `python3 -m docsync.publish --hub-branch hub/<id>` — the default branch's
   code, with only that project's content, layout and assets overlaid from the
-  hub branch (a branch's own docsync.yml never runs with the token). It needs
-  the `SITE_PUBLISH_TOKEN` Actions secret (Contents: write on the site repo)
-  and a `name:` on the binding so `docsync.hub` vendors the project. A project
-  with no `publish:` block is ignored. The local `when:` does not apply to it.
+  hub branch (a branch's own docsync.yml never runs with the token). The
+  credential is ONE GitHub App installed on the whole organization (Contents:
+  read and write): the job reads the project's `publish.repo`, mints a one-hour
+  token for that repository alone, and pushes — so any repository in the org
+  works with no per-site secret, and nothing to renew. The app's id and private
+  key are ORGANIZATION secrets `PUBLISH_APP_ID` / `PUBLISH_APP_PRIVATE_KEY`
+  (repository secret `SITE_PUBLISH_TOKEN`, a fine-grained token, is the
+  fallback). The workflow is also reusable: a repository that keeps website
+  projects runs `python3 -m docsync.publish --init-workflow` to get a caller of
+  a few lines, and its source repo must be in the Worker's `ALLOWED_REPOS`.
+  A binding also needs a `name:` so `docsync.hub` vendors the project, and
+  `home: hub` (one editing home per page; the editor app skips a hub-home page,
+  the job skips a local-home one). `python3 -m docsync.publish --doctor --id
+  <id>` checks the setup; `--pull-hub` moves a page's content back from the
+  hub. A project with no `publish:` block is ignored.
 - **Bringing in a static HTML page**: `python3 -m docsync.scaffold page.html
   --id <slug>` does STAGE ONE (openable) automatically — project dir, wrapper
   renderer, docsync.yml binding, build + stage. Then `python3 -m

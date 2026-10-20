@@ -4798,6 +4798,20 @@ with tempfile.TemporaryDirectory() as _td:
     check_eq("and nothing else: the registry stays the trusted branch's",
              (_td / "docsync.yml").read_text(), "command: trusted")
 
+# ------------------------------------------------- publish: any GitHub repo, one token minted per target
+for _repo, _want in (("Hawaii-Appleseed/Census-Forecaster", ("Hawaii-Appleseed", "Census-Forecaster")),
+                     ("https://github.com/Hawaii-Appleseed/Some.Site.git", ("Hawaii-Appleseed", "Some.Site")),
+                     ("dtomkatsu/personal-site", ("dtomkatsu", "personal-site")),
+                     ("git@example.com:team/site.git", ("", "")),
+                     ("/tmp/not-github", ("", ""))):
+    check_eq(f"github_target({_repo!r})", _pub.github_target(_repo), _want)
+with tempfile.TemporaryDirectory() as _wd:
+    _dest = _pub.init_workflow(Path(_wd))
+    check_eq("init_workflow writes the caller into .github/workflows/",
+             (_dest.relative_to(_wd).as_posix(), "uses: Hawaii-Appleseed/Cider/.github/workflows/publish-sites.yml@main" in _dest.read_text(),
+              "secrets: inherit" in _dest.read_text()),
+             (".github/workflows/publish-sites.yml", True, True))
+
 # ------------------------------------------------- publish_page: a project back into its page
 import base64 as _b64  # noqa: E402
 from docsync.publish_page import into_shell, sheet_inner, swap_asset  # noqa: E402
