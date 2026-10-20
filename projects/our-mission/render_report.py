@@ -58,6 +58,13 @@ SRC = (HERE / "original.html").read_text()
 _body_m = re.search(r"<body[^>]*>(.*)</body>", SRC, re.S | re.I)
 _head_src = SRC[:_body_m.start()] if _body_m else ""
 STYLE = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", _head_src, re.S | re.I))
+# The import map, carried over with the styles. The hero mark's script does
+# `import * as THREE from 'three'`, a bare name only the map resolves; with
+# the map left behind in the original's head every build threw "Failed to
+# resolve module specifier 'three'" and the mark never drew. The module is
+# vendored beside the page (assets/vendor/three.module.js, r160, the same file
+# hiappleseed.org serves), and the map points there relative to the page.
+IMPORTMAP = "\n".join(re.findall(r'<script type="importmap">.*?</script>', _head_src, re.S | re.I))
 # Manrope and Poppins have no U+02BB, so every ʻokina in "Hawaiʻi" fell back to
 # the system UI font. okinafy() rewrites the inherited stacks rather than
 # hand-editing original.html, which stays a pristine copy of the live page.
@@ -122,6 +129,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
+{IMPORTMAP}
 <style>
 {OKINA_FACES}
   body {{ margin:0; background:#EDF1EE; }}
