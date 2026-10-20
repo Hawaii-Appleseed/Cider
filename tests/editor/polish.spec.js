@@ -99,6 +99,14 @@ test.describe('69 undo history', () => {
     await page.locator('#histpop .hrow.ahead').last().click();
     await expect.poll(() => page.evaluate(a => !!shapeOf(a), a)).toBe(true);
   });
+  test('a change to words is named by its slot', async ({ page }) => {
+    await gotoEditor(page);
+    const key = await page.evaluate(() => docsync.api.inventory().pages.flatMap(p => p.slots)[0].key);
+    const r = await api(page, `setSlot(${JSON.stringify(key)}, 'Different words entirely.')`);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    const rows = await page.evaluate(() => historyList());
+    expect(rows[1].label).toContain(`words of ${key}`);
+  });
 });
 
 test.describe('71 more ways out', () => {
