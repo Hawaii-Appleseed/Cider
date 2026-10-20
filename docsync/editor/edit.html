@@ -2552,6 +2552,11 @@
     <label><span>Marker colour</span><select id="ty-lcol"></select></label>
     <label><span>List indent</span><input id="ty-lind" type="number" step="0.05" min="0" max="2"
       placeholder="in"></label>
+    <label title="Sub-lists numbered 1.1, 1.1.1 — or lettered a, then i"><span>Sub-levels</span><select id="ty-llev">
+      <option value="">as marked</option><option value="nested">1.1, 1.1.1</option>
+      <option value="outline">1, a, i</option></select></label>
+    <label title="Every numbered list wearing this name counts on from the last — a list split by a chart, or set in two boxes. Empty: each list starts again. (A list's first item typed as 4. starts it at 4.)"><span>Numbering continues</span><input id="ty-lcont" type="text"
+      placeholder="list name" spellcheck="false" autocomplete="off"></label>
     <p class="pop-h">Rules, border and shading</p>
     <label><span>Rule above</span><select id="ty-raw" class="ty-w"></select><select id="ty-rac"></select></label>
     <label><span>…gap, length</span><input id="ty-rao" type="number" step="0.02" min="0" max="1"
@@ -3758,7 +3763,8 @@ function indentListItem(d, dir) {
 function listToMd(el, depth) {
   const lines = [];
   const ordered = el.tagName === 'OL';
-  let n = 0;
+  // A list that starts past 1 keeps its start (INDESIGN_PARITY 55).
+  let n = ordered && +el.getAttribute('start') > 1 ? +el.getAttribute('start') - 1 : 0;
   [...el.children].forEach(li => {
     if (li.tagName !== 'LI') return;
     n++;
@@ -10996,6 +11002,8 @@ function fillParaPop(key) {
     .forEach(([id, key]) => { $(id).value = eff[key] ?? ''; });
   const lst = eff.list || {};
   $('ty-lmark').value = lst.marker || '';
+  $('ty-llev').value = lst.levels || '';
+  $('ty-lcont').value = lst.continue || '';
   const col = $('ty-lcol');
   col.textContent = '';
   const opts = [['', "text's own"], ...(M.palette || []).map(c => [c.toUpperCase(), c.toUpperCase()])];
@@ -12376,6 +12384,12 @@ function wireType() {
   };
   $('ty-lmark').addEventListener('change', () => listSet('marker', $('ty-lmark').value));
   $('ty-lcol').addEventListener('change', () => listSet('color', $('ty-lcol').value));
+  $('ty-llev').addEventListener('change', () => listSet('levels', $('ty-llev').value));
+  $('ty-lcont').addEventListener('change', () => {
+    const v = $('ty-lcont').value.trim().replace(/\s+/g, '-');
+    if (v && !/^[A-Za-z][A-Za-z0-9-]{0,29}$/.test(v)) { $('stat').textContent = 'a list name: a letter, then letters, digits and -'; return; }
+    listSet('continue', v);
+  });
   $('ty-lind').addEventListener('change', () =>
     listSet('indent', $('ty-lind').value === '' ? '' : Math.max(0, Math.min(2, +$('ty-lind').value))));
   // A rule or a border is one object; each control rewrites the whole of it,

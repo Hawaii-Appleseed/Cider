@@ -4560,6 +4560,27 @@ _xc = _content(_layout({}), body="[[a.h]]\n## Who pays\n\n[[a.p]]\nSee [it](#a.h
 check_eq("82: a slot an internal link names is hooked on the published page",
          'data-anc-host="a.h"' in _xc._style("a.h") and "data-anc-host" not in _xc._style("a.p"), True)
 
+# --- INDESIGN_PARITY.md 55: numbered lists past one block ------------------------
+from docsync.content import block_html as _bh55   # noqa: E402
+from docsync.layout import list_css as _lcss      # noqa: E402
+check_eq("55: a numbered list starts where its first item says",
+         ('<ol class="extra-numbers" start="4">' in _bh55("4. four\n5. five"),
+          "start=" in _bh55("1. one\n2. two")), (True, False))
+check_eq("55: a nested numbered list keeps its own start",
+         '<ol start="3">' in _bh55("1. one\n  3. three\n  4. four"), True)
+_l55 = _layout({"textStyles": {"Recs": {"list": {"continue": "recs", "levels": "nested"}}},
+                "boxes": [_tf(id="a", md="1. one\n2. two", style={"use": "Recs"}),
+                          _tf(id="b", md="1. three", style={"use": "Recs"}, y=5)]})
+_h55 = _l55.layer(1) + _l55.text_boxes(1)
+check_eq("55: list.continue counts every list wearing it on, one counter for the document",
+         ["--ds-lc:[recs]" in _h55, "body{counter-reset:ds-lc-recs}" in _h55,
+          "counter-increment:ds-lc-recs" in _h55, "counters(list-item,'.')" in _h55], [True] * 4)
+check_eq("55: a report with lists but neither key keeps TYPE_CSS's bytes",
+         _lcss([{"list": {"marker": "decimal"}}]), "")
+for _bad, _says in (({"continue": "9x"}, "names the list"), ({"levels": "deep"}, "one of nested, outline")):
+    check_eq(f"55: list is refused: {_says}",
+             _says in _layout_error({"text": {"x": {"list": _bad}}}), True)
+
 # --- INDESIGN_PARITY.md 68: flip on shapes, boxes and tables ----------------------
 _fl = _layout({"boxes": [_tf(id="f", md="x", flip="h", skew=10)],
                "shapes": [{"id": "s", "page": 1, "kind": "rect", "x": 1, "y": 1, "w": 2, "h": 1, "flip": "v"}],

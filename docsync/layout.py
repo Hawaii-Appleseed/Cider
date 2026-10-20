@@ -966,7 +966,14 @@ LIST_MARKERS = {"disc": "disc", "circle": "circle", "square": "square",
                 "lower-alpha": "lower-alpha", "upper-alpha": "upper-alpha",
                 "lower-roman": "lower-roman", "upper-roman": "upper-roman",
                 "none": "none"}
-LIST_KEYS = ("marker", "color", "indent")
+LIST_KEYS = ("marker", "color", "indent", "continue", "levels")
+# Numbered lists past one block (INDESIGN_PARITY.md 55). `continue: <name>`
+# — every numbered list wearing a style with that name counts on through the
+# report in reading order, so a recommendations list split by a chart (or
+# set in two boxes that are not threaded) reads 1–4, then 5–7. `levels`:
+# "nested" numbers a sub-list 1.1, 1.1.1; "outline" letters it a, then i.
+LIST_LEVELS = ("nested", "outline")
+LIST_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9-]{0,29}")
 # Paragraph spacing and indents (INDESIGN_PARITY.md 14), in inches. They act
 # on PARAGRAPHS: the slot when it is one (C.html's <p>), the paragraphs inside
 # it when it is a wrapper (a text box, a card), a heading's span made a block.
@@ -1267,6 +1274,34 @@ TYPE_CSS = (
     "[style*='--ds-li:'] ul,[style*='--ds-li:'] ol,"
     "ul[style*='--ds-li:'],ol[style*='--ds-li:']{padding-left:var(--ds-li)}"
 )
+
+
+def list_css(dicts) -> str:
+    """The rules `list.continue` and `list.levels` need (55), only for what
+    the styles use — a report using neither keeps TYPE_CSS's bytes."""
+    names = sorted({(st.get("list") or {}).get("continue") for st in dicts} - {None, ""})
+    levels = {(st.get("list") or {}).get("levels") for st in dicts}
+    out = ""
+    if names:
+        # One counter per name, reset once for the whole document: CSS
+        # counters run in document order across every container, which is
+        # reading order here — so two lists in two boxes count as one.
+        out += "body{counter-reset:" + " ".join(f"ds-lc-{n}" for n in names) + "}"
+        for n in names:
+            sel = (f"[style*='--ds-lc:[{n}]'] ol:not(ol ol)>li,"
+                   f"ol[style*='--ds-lc:[{n}]']>li")
+            out += (f"{sel}{{counter-increment:ds-lc-{n}}}"
+                    + ",".join(x + "::marker" for x in sel.split(","))
+                    + f"{{content:counter(ds-lc-{n},var(--ds-lt,decimal)) '. '}}")
+    if "nested" in levels:
+        out += ("[style*='--ds-lv:nested'] ol ol>li::marker,"
+                "ol[style*='--ds-lv:nested'] ol>li::marker{content:counters(list-item,'.') '. '}")
+    if "outline" in levels:
+        out += ("[style*='--ds-lv:outline'] ol ol,ol[style*='--ds-lv:outline'] ol{list-style-type:lower-alpha}"
+                "[style*='--ds-lv:outline'] ol ol ol,ol[style*='--ds-lv:outline'] ol ol{list-style-type:lower-roman}")
+    return out
+
+
 # What a CHARACTER style may set — a run of words inside a paragraph has a
 # face, a size, a colour and letterforms, but no alignment, line breaking,
 # leading, keep, drop cap or list of its own; those belong to the paragraph.
@@ -1387,6 +1422,10 @@ def text_css(st: dict) -> str:
         out.append(f'--ds-mk:{lst["color"]}')
     if lst.get("indent") is not None:
         out.append(f'--ds-li:{float(lst["indent"]):g}in')
+    if lst.get("continue"):
+        out.append(f'--ds-lc:[{lst["continue"]}]')
+    if lst.get("levels"):
+        out.append(f'--ds-lv:{lst["levels"]}')
     if st.get("spaceBefore") is not None:
         out.append(f'--ds-sb:{float(st["spaceBefore"]):g}in')
     if st.get("spaceAfter") is not None:
@@ -1567,6 +1606,12 @@ def _check_text(st: dict, where: str) -> None:
             v = _num(lst["indent"], f"{where}.list.indent")
             if not 0 <= v <= 2:
                 raise LayoutError(f"{where}.list.indent is inches, 0 to 2 — {v} is not")
+        if lst.get("continue") is not None and not (
+                isinstance(lst["continue"], str) and LIST_NAME_RE.fullmatch(lst["continue"])):
+            raise LayoutError(f"{where}.list.continue names the list that numbers on — "
+                              "a letter, then letters, digits and -, up to 30")
+        if lst.get("levels") is not None and lst["levels"] not in LIST_LEVELS:
+            raise LayoutError(f"{where}.list.levels must be one of {', '.join(LIST_LEVELS)}")
     for k in ("size", "tracking", "leading"):
         if st.get(k) is not None:
             _num(st[k], f"{where}.{k}")
@@ -5602,7 +5647,7 @@ class Layout:
         if not (typ or spc or par or aut):
             return ""
         self._type_sent = True
-        return (f"<style>{TYPE_CSS if typ else ''}{SPACE_CSS if spc else ''}"
+        return (f"<style>{TYPE_CSS + list_css(dicts) if typ else ''}{SPACE_CSS if spc else ''}"
                 f"{PARA_CSS if par else ''}</style>"
                 + (f"<script>{GREP_JS}</script>" if aut else ""))
 

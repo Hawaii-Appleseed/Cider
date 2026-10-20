@@ -292,8 +292,9 @@ def md_inline(s: str) -> str:
 _ITEM_RE = re.compile(r"^(\s*)(?:-\s+|(\d+)[.)]\s+)(.*)$")
 
 
-def _list_items(text: str) -> list[tuple[int, bool, str]]:
-    """List lines -> [(depth, ordered, inline_html)], depth 0 at the margin.
+def _list_items(text: str) -> list[tuple]:
+    """List lines -> [(depth, ordered, inline_html, number)], depth 0 at the
+    margin; number is what a numbered item was typed with (None for a bullet).
 
     Non-item lines are ignored, which is what every caller wants: bullets()
     rejects a block with no items at all, and block_html() has already peeled
@@ -309,11 +310,12 @@ def _list_items(text: str) -> list[tuple[int, bool, str]]:
             depth = min(depth, out[-1][0] + 1)   # no skipping a level
         else:
             depth = 0                            # the first item is the margin
-        out.append((depth, m.group(2) is not None, md_inline(m.group(3).strip())))
+        out.append((depth, m.group(2) is not None, md_inline(m.group(3).strip()),
+                    int(m.group(2)) if m.group(2) is not None else None))
     return out
 
 
-def _list_html(items: list[tuple[int, bool, str]], i: int, depth: int,
+def _list_html(items: list[tuple], i: int, depth: int,
                top: bool) -> tuple[str, int]:
     """One <ul>/<ol> and everything nested under it, from items[i:].
 
@@ -328,9 +330,15 @@ def _list_html(items: list[tuple[int, bool, str]], i: int, depth: int,
     cls = ""
     if top:
         cls = ' class="extra-numbers"' if ordered else ' class="extra-bullets"'
+    # A numbered list starts where its first item says (INDESIGN_PARITY.md
+    # 55): "4. …" picks a list up again after a chart split it. "1." — the
+    # usual case — writes nothing, so every existing list keeps its bytes.
+    n0 = items[i][3] if len(items[i]) > 3 else None
+    if ordered and n0 is not None and n0 != 1:
+        cls += f' start="{n0}"'
     parts = [f"<{tag}{cls}>"]
     while i < len(items):
-        d, o, html = items[i]
+        d, o, html = items[i][:3]
         if d < depth:
             break
         if d > depth:
@@ -349,7 +357,7 @@ def _list_html(items: list[tuple[int, bool, str]], i: int, depth: int,
     return "".join(parts), i
 
 
-def _lists_html(items: list[tuple[int, bool, str]], top: bool = True) -> str:
+def _lists_html(items: list[tuple], top: bool = True) -> str:
     """Every top-level list in a run — a bulleted run followed by a numbered
     one is two lists, not one with mixed markers."""
     out, i = [], 0
@@ -382,7 +390,7 @@ def bullets(block: str) -> list[str]:
         while i < len(parsed) and parsed[i][0] > 0:
             i += 1
         if i > start:
-            sub = [(d - 1, o, h) for d, o, h in parsed[start:i]]
+            sub = [(it[0] - 1,) + tuple(it[1:]) for it in parsed[start:i]]
             html += _lists_html(sub, top=False)
         items.append(html)
     if not items:

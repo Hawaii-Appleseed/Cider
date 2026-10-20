@@ -1065,11 +1065,21 @@ Google Doc import exist, and were never listed here.
     a page ▸ Numbering and section…; pilot `setPageSection(sheet,
     {start, style, prefix} | null)`. A section is pinned to a sheet number,
     not to a page, so moving the page it starts on does not move it.
-55. **Numbered lists past one paragraph block.** Restart or continue
-    numbering, a list continuing across boxes that are not threaded, and
-    multi-level numbering (1, 1.1, a.) — recommendations lists in policy
-    reports are numbered and often split by a chart. `list.marker` already
-    has decimal, alpha and roman. **M.**
+55. **Numbered lists past one paragraph block. — CLOSED 2026-10-19.**
+    A numbered list starts where its first item says: `4.` writes
+    `<ol start="4">` (and editing it keeps the 4), so a list split by a
+    chart picks up by hand; `1.` writes what it always did. A text style's
+    `list.continue: "<name>"` (Paragraph ▸ Numbering continues) makes every
+    numbered list wearing that name count on through the report in reading
+    order — two boxes that are not threaded, or a slot either side of a
+    chart, read 1–2 then 3: one CSS counter per name, reset once on the
+    body, so print and web agree. `list.levels`: `nested` numbers
+    sub-lists 1.1, 1.1.1 (`counters(list-item)`); `outline` letters them
+    a, then i (Paragraph ▸ Sub-levels). Only what a style uses is emitted.
+    Checked with real Chrome: "1. one 2. two 2.1. two-a", then "3. three"
+    in a second box. Not done: restarting part-way through a continued
+    list (use a second name), and a continued list with nested levels
+    numbers its sub-items from the item's own place in its box.
 56. **Widows, orphans and word spacing. — CLOSED 2026-10-19.** Text-style
     keys `widows` and `orphans` (1–9 lines; CSS honours them across columns,
     threaded frames and PDF pages) and `wordSpacing` (em added between
