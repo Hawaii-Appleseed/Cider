@@ -65,4 +65,15 @@ test.describe('50 library', () => {
     await expect.poll(() => page.evaluate(() => boxes().length)).toBe(before + 1);
     await api(page, `dropFromLibrary(${JSON.stringify(name)})`);
   });
+  test('opened from the File menu, Escape closes it, and its head reads on one line', async ({ page }) => {
+    await gotoEditor(page);
+    await page.click('#file');
+    await page.locator('#file-library').click();
+    await expect(page.locator('#library')).toBeVisible();
+    // The title and the note each on one line, not folded under wide buttons.
+    expect(await page.evaluate(() => [...document.querySelectorAll('#library .st-head b, #library .st-note')]
+      .map(e => e.getBoundingClientRect().height).every(h => h < 24))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#library')).toHaveCount(0);
+  });
 });

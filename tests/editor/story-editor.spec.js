@@ -44,4 +44,10 @@ test.describe('63 story editor', () => {
     await page.evaluate(() => undo());
     expect(await page.evaluate(k => k.startsWith('text.') ? boxOf(k).md : readSlot(k), key)).toBe(before);
   });
+  test('its head reads on one line', async ({ page }) => {
+    await gotoEditor(page);
+    await page.evaluate(() => openStoryEditor());
+    expect(await page.evaluate(() => [...document.querySelectorAll('#story .st-head b, #story .st-note')]
+      .map(e => e.getBoundingClientRect().height).every(h => h < 24))).toBe(true);
+  });
 });
