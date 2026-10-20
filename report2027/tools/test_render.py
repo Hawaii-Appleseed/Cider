@@ -133,6 +133,30 @@ def main():
         os.unlink(empty_draft)
 
     os.unlink(draft)
+
+    # A PDF of some pages (INDESIGN_PARITY.md 83): the range is parsed and
+    # checked before a build; the sheets left out are hidden, not removed, so
+    # page numbers count as they do in the whole report.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import serve as _sv
+    for spec, n, want in (("3", 5, [3]), ("2-4", 5, [2, 3, 4]), (" 1, 4-5 ", 5, [1, 4, 5]),
+                          ("6", 5, "the report has 5 pages"), ("4-2", None, "not a range"),
+                          ("a", None, "a range like"), ("0", None, "from 1 upward")):
+        got = _sv._parse_pages(spec, n)
+        if not (got == want if isinstance(want, list) else isinstance(got, str) and want in got):
+            FAILS.append(f"_parse_pages({spec!r}, {n}) = {got!r}, wanted {want!r}")
+    html = ("<html><head></head><body>" + "".join(
+        f'<section class="page" data-page="{i}"><p>{{p{i}}}</p></section>' for i in range(1, 5)) + "</body></html>")
+    only = _sv._only_pages(html, [2, 3])
+    if (only.count("data-ds-skip class=\"page") != 2 or only.count('<section class="page"') != 2
+            or "section.page[data-ds-skip]{display:none" not in only.split("</head>")[0]):
+        FAILS.append("_only_pages should hide pages 1 and 4 and keep 2 and 3:\n" + only)
+    for req, msg in (({"pages": "2-x"}, "a range like"), ({"fmt": "png", "pages": "2"}, "for a PDF"),
+                     ({"pages": "2-3"}, None), ({"pages": ""}, None)):
+        got = _sv._export_bad_args(req)
+        if (msg is None) != (got is None) or (msg and msg not in got):
+            FAILS.append(f"_export_bad_args({req}) = {got!r}, wanted {msg!r}")
+
     if FAILS:
         print("RENDER TESTS FAILED:\n" + "\n\n".join(FAILS))
         sys.exit(1)
