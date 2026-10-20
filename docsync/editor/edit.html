@@ -12607,6 +12607,23 @@ function wireType() {
     fillParaPop(selected);
     togglePop($('ty-parapop'), $('ty-parabtn'));
   });
+  // A press on the card while typing ends the typing (on pointerdown), and
+  // the card trades its B/I/U group for a narrower one at once: everything to
+  // its right (Case, colour, spacing, ¶, effects, Reset) slid out from under
+  // the pointer, and the click landed on the strip. The press is still aimed
+  // at the button it hit, so a button that no longer holds the pointer has
+  // moved: it gets the click when the press comes up.
+  let typePress = null;
+  $('type').addEventListener('mousedown', e => {
+    const b = e.target.closest && e.target.closest('button');
+    const r = b && b.getBoundingClientRect();
+    typePress = b && !b.disabled && e.button === 0 && !(e.clientX >= r.left && e.clientX <= r.right
+      && e.clientY >= r.top && e.clientY <= r.bottom) ? b : null;
+  }, true);
+  addEventListener('mouseup', () => {
+    const b = typePress; typePress = null;
+    if (b && b.isConnected && !b.disabled && b.offsetParent) setTimeout(() => b.click(), 0);
+  }, true);
   // One write path for the whole panel: a patch through setStyle, a render,
   // and the type bar re-read — exactly what the case picker does.
   const paraSet = async patch => {
