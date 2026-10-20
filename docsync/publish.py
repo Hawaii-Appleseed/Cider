@@ -259,7 +259,24 @@ def doctor(pid: str, *, hub_dir: Path | None = None, token_env: str = "SITE_PUBL
         line(False, f"cannot reach {cfg.repo}: {str(e)[-160:]}", f"set {token_env} (a token that can read it), or check the repo name")
     wf = root / ".github" / "workflows" / "publish-sites.yml"
     line(wf.exists(), "the hub route's workflow exists (.github/workflows/publish-sites.yml)", "restore it from the hub-publish branch")
-    line(None, f"cannot check from here: the {token_env} Actions secret (Settings > Secrets and variables > Actions)")
+    owner = origin.split("/")[-2] if origin.startswith("https://") else ""
+    have = None
+    if owner:
+        try:
+            names = subprocess.run(
+                ["gh", "secret", "list", "--org", owner, "--json", "name", "-q", ".[].name"],
+                capture_output=True, text=True, timeout=30)
+            if names.returncode == 0:
+                have = set(names.stdout.split())
+        except (OSError, subprocess.SubprocessError):
+            have = None
+    if have is None:
+        line(None, f"cannot check from here: the organization secrets PUBLISH_APP_ID and PUBLISH_APP_PRIVATE_KEY "
+                   f"(GitHub > {owner or 'the org'} > Settings > Secrets and variables > Actions)")
+    else:
+        missing = [n for n in ("PUBLISH_APP_ID", "PUBLISH_APP_PRIVATE_KEY") if n not in have]
+        line(not missing, f"the organization secrets PUBLISH_APP_ID and PUBLISH_APP_PRIVATE_KEY exist on {owner}",
+             "run ~/scripts/cider-publisher-secrets.sh, or add them under the organization's Actions secrets")
     hub = hub_dir or Path.home() / "staff-updates-internal"
     pj = hub / "primer" / "projects.json"
     if pj.exists():
