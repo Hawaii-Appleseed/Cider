@@ -571,7 +571,7 @@ bindings:
       # One home at a time, or the two overwrite each other. To move it to the hub,
       # set this to hub; to move it back, `python3 -m docsync.publish --pull-hub
       # --id wfc-credits`, commit, then set it to local.
-      home: local
+      home: hub
       when: save
       command: >-
         python3 -m docsync.publish_page --id wfc-credits
