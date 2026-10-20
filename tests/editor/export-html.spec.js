@@ -63,7 +63,11 @@ test.describe('HTML export', () => {
         text,
         slots: d.querySelectorAll('[data-slot]').length,
         els: d.querySelectorAll('[data-el]').length,
-        links: d.querySelectorAll('link[rel~="stylesheet"]').length,
+        links: [...d.querySelectorAll('link[rel~="stylesheet"]')]
+          .filter(l => !/^(https?:)?\/\//i.test(l.getAttribute('href') || '')).length,
+        webFonts: [...d.querySelectorAll('link[rel~="stylesheet"]')]
+          .filter(l => /fonts\.googleapis\.com/.test(l.getAttribute('href') || '')).length,
+        errorPages: [...d.querySelectorAll('style')].filter(st => /<html|File not found|Error response/i.test(st.textContent)).length,
         relImgs: [...d.querySelectorAll('img')]
           .filter(i => !/^(data:|https?:)/i.test(i.getAttribute('src') || '')).length,
       };
@@ -77,6 +81,11 @@ test.describe('HTML export', () => {
     // Self-contained: nothing left to fetch from a folder that will not be there.
     expect(got.links).toBe(0);
     expect(got.relImgs).toBe(0);
+    // …but a web font's stylesheet is fetched from the web, so it stays a link
+    // — it used to be joined onto the project folder, 404, and the error page
+    // took its place inside a <style>.
+    expect(got.webFonts).toBeGreaterThan(0);
+    expect(got.errorPages).toBe(0);
   });
 
   test('the editor is still editable after an export', async ({ page }) => {
@@ -117,6 +126,10 @@ test.describe('HTML export', () => {
     expect(html).toContain('dsx-scale');
     expect(html).toMatch(/'scale\(' \+ s \+ '\)'/);
     expect(html).toMatch(/ResizeObserver|addEventListener\('resize'/);
+    // The report's web fonts come with it — font stylesheets only define
+    // families, so a link cannot restyle the host — or it sets in the host's.
+    expect(html).toMatch(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\//);
+    expect(styles).not.toMatch(/File not found|Error response/);
   });
 
   // The block is a fixed-width design scaled into someone else's column, so

@@ -29879,8 +29879,15 @@ const asDataUrl = async url => {
  *  does. Session uploads already live in memory as data URLs. */
 async function inlineEverything(doc) {
   for (const link of [...doc.querySelectorAll('link[rel~="stylesheet"]')]) {
+    const href = link.getAttribute('href') || '';
+    // A web font's stylesheet stays a link — it is fetched from the web
+    // wherever the file is opened. Joined onto the project's folder it 404'd,
+    // and a 404 does not throw: the error page replaced the link, as CSS.
+    if (/^(https?:)?\/\//i.test(href)) continue;
     try {
-      const css = await (await fetch(withBase(link.getAttribute('href')))).text();
+      const r = await fetch(withBase(href));
+      if (!r.ok) continue;
+      const css = await r.text();
       const st = doc.createElement('style');
       st.textContent = css;
       link.replaceWith(st);
@@ -30146,6 +30153,11 @@ async function exportHtml(forSquarespace) {
       const view = VIEW_W;
       let css = [...doc.querySelectorAll('style')].map(n => n.textContent).join('\n');
       css = freezeViewportUnits(flattenMedia(css, view), view);
+      // The report's web fonts come along as links: a font stylesheet only
+      // defines families (@font-face), so it cannot restyle the host page,
+      // and without it the block set itself in whatever the host loads.
+      const fonts = [...doc.querySelectorAll('link[rel~="stylesheet"]')].map(l => l.getAttribute('href') || '')
+        .filter(h => /^https:\/\/fonts\.(googleapis|bunny)\.(com|net)\//i.test(h));
       doc.querySelectorAll('style, script, link').forEach(n => n.remove());
       // Inline styles carry the same vw leak as the stylesheet does.
       doc.querySelectorAll('[style]').forEach(el => {
@@ -30163,6 +30175,7 @@ async function exportHtml(forSquarespace) {
      Its media queries and vw lengths were resolved at export too — a pasted
      block must not re-answer them against the host page's viewport. -->
 <div id="${uid}" class="dsx-wrap">
+${fonts.map(h => `<link rel="stylesheet" href="${h.replace(/"/g, '&quot;')}">`).join('\n')}
 <style>
 #${uid}.dsx-wrap { all:initial; display:block; width:100%; overflow:hidden; }
 #${uid} .dsx-scale { transform-origin:top left; width:${design}px; display:flow-root; }
