@@ -93,6 +93,11 @@ def manifest(b: Binding) -> dict:
         # the file picker. Names only; they resolve as "assets/<name>"
         # relative to the editor's page like every other asset src.
         "images": _asset_images(b),
+        # A page published to a public site from the hub (a `publish:` block with
+        # home: hub): the editor waits for the site job's report after Publish and
+        # says how it went. None for everything else — no job will ever report.
+        "site": ({"repo": b.publish.repo, "url": b.publish.url or ""}
+                 if getattr(b, "publish", None) and b.publish.home == "hub" else None),
     }
 
 

@@ -28274,7 +28274,9 @@ async function docStorePublish() {
   }
   if (!docVersion) { $('stat').textContent = 'nothing to publish yet — make an edit and Save first'; return; }
   if (!await dsConfirm('Publish this document to GitHub?\n\nOne commit of it as saved, on the hub/'
-      + M.id + ' branch of ' + (REPO || 'its repository') + '. The live report is not changed by this.',
+      + M.id + ' branch of ' + (REPO || 'its repository') + '. '
+      + (M.site ? 'The public page' + (M.site.url ? ' (' + M.site.url + ')' : '') + ' is then rebuilt from it.'
+                : 'The live report is not changed by this.'),
       { okLabel: 'Publish' })) return;
   $('publish').disabled = true;
   $('stat').textContent = 'publishing…';
@@ -28283,14 +28285,49 @@ async function docStorePublish() {
     const j = await hubJson(r);
     if (!r.ok) throw new Error(j.error || j.reason || `the hub answered ${r.status}`);
     const sha = String(j.sha || '').slice(0, 7);
-    $('stat').textContent = j.status === 'unchanged'
+    const head = j.status === 'unchanged'
       ? `already published — ${j.branch} is at ${sha}`
       : `published ✓ — ${j.repo}@${j.branch} ${sha}`;
+    $('stat').textContent = head;
+    if (M.site && j.version) docStoreAwaitSite(j.version, head, j.status === 'unchanged');
   } catch (e) {
     $('stat').textContent = 'publish failed: ' + e.message;
   } finally {
     $('publish').disabled = false;
   }
+}
+
+/** What the public site made of the last Publish: the site job (publish-sites.yml)
+ *  reports to the relay, and the hub reads it back as {exported, site}. null when
+ *  it cannot say — a report is news, never a reason for Publish to fail. */
+async function docStoreSite() {
+  try {
+    const r = await fetch(`${docStore()}/publish`, { cache: 'no-store' });
+    return r.ok ? (await hubJson(r)).site || null : null;
+  } catch { return null; }
+}
+
+function siteLine(site) {
+  const where = site.url ? ' — ' + site.url : '';
+  if (!site.ok) return 'public site NOT updated: ' + (site.message || 'the publish job failed');
+  return (site.changed ? 'public site updated ✓' : 'public site already matched ✓') + where;
+}
+
+/** After Publish on a page with a public site: wait for the job's report on THIS
+ *  version (about a minute), and say how it went. A new commit starts the job;
+ *  an unchanged one starts nothing, so its report is the one already there. */
+async function docStoreAwaitSite(version, head, unchanged) {
+  const say = t => { $('stat').textContent = head + ' · ' + t; };
+  const tries = unchanged ? 1 : 30;                       // 30 x 10 s = 5 minutes
+  for (let i = 0; i < tries; i++) {
+    const site = await docStoreSite();
+    if (site && site.version === version) { say(siteLine(site)); return; }
+    if (unchanged) break;
+    if (i === 0) say('public site: publishing…');
+    await new Promise(res => setTimeout(res, 10000));
+  }
+  say(unchanged ? 'public site: no report for this version — Publish again after an edit to rebuild it'
+                : 'public site: no report after 5 minutes — look at the repository\'s Actions tab');
 }
 
 /** The hub's answer as JSON — or the reason it is not one. An Access
