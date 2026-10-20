@@ -86,7 +86,9 @@ test.describe('51 Quick Apply', () => {
       r.setStart(tn, at); r.setEnd(tn, at + 3);
       d.getSelection().removeAllRanges(); d.getSelection().addRange(r);
     }, id);
-    await page.evaluate(() => quickApply());
+    // ⌘↩ pressed in the words themselves (the page's own document).
+    await page.keyboard.press(`${MOD}+Enter`);
+    await expect(page.locator('#qa-in')).toBeFocused();
     await page.keyboard.type('stress');
     await expect(page.locator('#qa-list li.on .qa-k')).toHaveText('character style');
     await page.keyboard.press('Enter');

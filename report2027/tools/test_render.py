@@ -151,6 +151,10 @@ def main():
     if (only.count("data-ds-skip class=\"page") != 2 or only.count('<section class="page"') != 2
             or "section.page[data-ds-skip]{display:none" not in only.split("</head>")[0]):
         FAILS.append("_only_pages should hide pages 1 and 4 and keep 2 and 3:\n" + only)
+    alone = _sv._page_alone(html, 3)
+    if (alone.count("data-ds-skip class=\"page") != 3 or "body>:not(section.page):not(:has(section.page))" not in alone
+            or alone.index("section.page{margin:0") > alone.index("</head>")):
+        FAILS.append("_page_alone should keep page 3 alone at the top-left:\n" + alone[:400])
     for req, msg in (({"pages": "2-x"}, "a range like"), ({"fmt": "png", "pages": "2"}, "for a PDF"),
                      ({"pages": "2-3"}, None), ({"pages": ""}, None)):
         got = _sv._export_bad_args(req)
