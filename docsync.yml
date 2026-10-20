@@ -551,6 +551,7 @@ bindings:
   # per-page job — see the report-editor skill. page height is a generous
   # no-clip default for a scrolling web page; trim once visible.
   - id: wfc-credits
+    name: "Estimates: Saving the Working Families Tax Credit Expansions"
     content: projects/wfc-credits/content.md
     # STAGE ONE is expected to be full of unwired text, so editability
     # findings only warn for now. Flip to `editability: strict` when the
@@ -582,6 +583,7 @@ bindings:
       render: projects/wfc-credits/render_report.py
       out: projects/wfc-credits/index.html
       layout: projects/wfc-credits/layout.json
+      assets: projects/wfc-credits/assets
       palette: ["#52796F", "#84A98C", "#2F3E46", "#354F52", "#CAD2C5", "#E5E9E2", "#F4F7F4", "#FFFFFF"]
       page: [12.5, 160]
       margins: [0.3, 0.3]

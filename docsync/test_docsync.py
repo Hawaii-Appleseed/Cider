@@ -4761,6 +4761,34 @@ with tempfile.TemporaryDirectory() as _td:
              (_r.ok, "did not write" in _r.message), (False, True))
     del os.environ["CIDER_PUBLISH_HOME"]
 
+# ------------------------------------------------- publish: the hub route takes only a project's own files
+from types import SimpleNamespace as _NS  # noqa: E402
+
+with tempfile.TemporaryDirectory() as _td:
+    _td = Path(_td)
+
+    def _g(*a):
+        return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", str(_td), *a],
+                              capture_output=True, text=True, check=True).stdout
+
+    _g("init", "-q", "-b", "main")
+    (_td / "projects" / "p").mkdir(parents=True)
+    (_td / "projects" / "p" / "content.md").write_text("main words")
+    (_td / "docsync.yml").write_text("command: trusted")
+    _g("add", "-A")
+    _g("commit", "-q", "-m", "main")
+    _g("checkout", "-q", "-b", "hub/p")
+    (_td / "projects" / "p" / "content.md").write_text("hub words")
+    (_td / "docsync.yml").write_text("command: rm -rf /")           # what a hub branch must never get to run
+    _g("commit", "-q", "-am", "hub version")
+    _g("checkout", "-q", "main")
+    _bind = _NS(id="p", content=_td / "projects" / "p" / "content.md", editor=None)
+    _took = _pub._overlay(_td, _bind, "hub/p")
+    check_eq("the hub route takes the project's content from the hub branch",
+             (_took, (_td / "projects" / "p" / "content.md").read_text()), (["projects/p/content.md"], "hub words"))
+    check_eq("and nothing else: the registry stays the trusted branch's",
+             (_td / "docsync.yml").read_text(), "command: trusted")
+
 # ------------------------------------------------- publish_page: a project back into its page
 import base64 as _b64  # noqa: E402
 from docsync.publish_page import into_shell, sheet_inner, swap_asset  # noqa: E402

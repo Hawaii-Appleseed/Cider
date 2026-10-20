@@ -322,8 +322,16 @@ Rules that bite:
   for a scaffolded page (project -> the page's own shell). A site with its own
   generator must stop rewriting the page (Census-Forecaster lists such slugs in
   `site/cider-managed.txt`). Setup recipe: the report-editor skill, "Publishing
-  a website project". Local editor only: the staff hub's Publish is a
-  different path (the Worker commits to `hub/<id>`).
+  a website project".
+  **On the staff hub** the same block applies, by another trigger: Publish
+  there makes the Worker commit the saved content to `hub/<id>`
+  (collab/src/export.js), and `.github/workflows/publish-sites.yml` runs
+  `python3 -m docsync.publish --hub-branch hub/<id>` — the default branch's
+  code, with only that project's content, layout and assets overlaid from the
+  hub branch (a branch's own docsync.yml never runs with the token). It needs
+  the `SITE_PUBLISH_TOKEN` Actions secret (Contents: write on the site repo)
+  and a `name:` on the binding so `docsync.hub` vendors the project. A project
+  with no `publish:` block is ignored. The local `when:` does not apply to it.
 - **Bringing in a static HTML page**: `python3 -m docsync.scaffold page.html
   --id <slug>` does STAGE ONE (openable) automatically — project dir, wrapper
   renderer, docsync.yml binding, build + stage. Then `python3 -m

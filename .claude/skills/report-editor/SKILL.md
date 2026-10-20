@@ -554,6 +554,14 @@ make a new website project publish on Save, in this order:
 5. Check it without GitHub: point `repo:` at a bare clone of the site, run
    `publish.run(...)` (as `test_docsync.py` does), and look at the commit.
 
+6. **The staff hub** publishes the same project with no extra setup in the
+   binding: Publish there commits to `hub/<id>`, and the `Publish sites` workflow
+   in this repo turns that branch into the public page (needs the
+   `SITE_PUBLISH_TOKEN` secret, a `name:` on the binding for `docsync.hub`, and an
+   `assets:` path on the editor block so uploaded images land in the project).
+   Test it without GitHub: `python3 -m docsync.publish --hub-branch hub/<id>
+   --site-repo <local bare clone>` from a clone with the hub branch fetched.
+
 The first publish also normalises the page's markup (slot spans, `<b>` for
 `<strong>`): one cosmetic diff, then only real edits. Numbers in a published
 page are the project's text — a model rerun does not update them.
