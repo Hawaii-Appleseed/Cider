@@ -4798,6 +4798,27 @@ with tempfile.TemporaryDirectory() as _td:
     check_eq("and nothing else: the registry stays the trusted branch's",
              (_td / "docsync.yml").read_text(), "command: trusted")
 
+# ------------------------------------------------- publish: what the staged manifest tells the editor
+from docsync.registry import Binding as _Binding, Editor as _Editor  # noqa: E402
+from docsync.stage import manifest as _manifest  # noqa: E402
+
+
+def _staged(publish):
+    from docsync.registry import ROOT as _ROOT
+    td = _ROOT / "projects" / "ds-manifest-test"          # nothing is read from it: only paths are made relative
+    return _manifest(_Binding(id="t", content=td / "c.md", publish=publish,
+                              editor=_Editor(render=td / "r.py", engine=[], out=td / "out.html", dir=td / "d")))
+
+
+check_eq("a project with no publish: block stages no site entry", _staged(None)["site"], None)
+check_eq("a local-home page stages none either: only the hub follows the site job",
+         _staged(Publish(repo="o/r", command="c", paths=["p"], home="local", url="https://x/"))["site"], None)
+check_eq("a hub-home page stages its repository and public url for the Publish dialog and status",
+         _staged(Publish(repo="o/r", command="c", paths=["p"], home="hub", url="https://x/"))["site"],
+         {"repo": "o/r", "url": "https://x/"})
+check_eq("a hub-home page with no url stages an empty one, not null",
+         _staged(Publish(repo="o/r", command="c", paths=["p"], home="hub"))["site"], {"repo": "o/r", "url": ""})
+
 # ------------------------------------------------- publish: any GitHub repo, one token minted per target
 for _repo, _want in (("Hawaii-Appleseed/Census-Forecaster", ("Hawaii-Appleseed", "Census-Forecaster")),
                      ("https://github.com/Hawaii-Appleseed/Some.Site.git", ("Hawaii-Appleseed", "Some.Site")),
