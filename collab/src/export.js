@@ -177,6 +177,36 @@ export async function exportRoom({ bucket, room, token, api = DEFAULT_API, fetch
   return { status: 'exported', room, ...record, repo: parsed.nwo, url: `https://github.com/${parsed.nwo}/commit/${commit.sha}` };
 }
 
+/**
+ * What the last publish to the public site did, for a room (step 06).
+ *
+ * The hub's Publish makes one commit on `hub/<project>`; a GitHub Actions job
+ * (.github/workflows/publish-sites.yml in the repository) then builds the page
+ * and pushes it to the site's own repository. The job reports back here, so the
+ * hub can say "public site: updated / publishing / failed" next to the version
+ * it exported. Stored beside export.json; `version` is the hub version the job
+ * published, so a reader can tell whether it has caught up with `exported`.
+ */
+export async function recordSite({ bucket, room, report, now = () => new Date() }) {
+  if (!parseRoom(room)) throw new Error(`not a room: ${room}`);
+  const r = report && typeof report === 'object' ? report : {};
+  const url = typeof r.url === 'string' && /^https?:\/\/[^\s]{1,300}$/.test(r.url) ? r.url : '';
+  const record = {
+    version: typeof r.version === 'string' ? r.version.slice(0, 80) : '',
+    ok: r.ok === true,
+    changed: r.changed === true,
+    message: typeof r.message === 'string' ? r.message.slice(0, 400) : '',
+    url,
+    sha: typeof r.sha === 'string' ? r.sha.replace(/[^0-9a-f]/gi, '').slice(0, 40) : '',
+    at: now().toISOString(),
+  };
+  await bucket.put(key(room, 'site.json'), JSON.stringify(record), { httpMetadata: { contentType: 'application/json' } });
+  return record;
+}
+
+/** The last recorded publish to the public site, or null. */
+export const readSite = (bucket, room) => readJson(bucket, key(room, 'site.json'));
+
 /** Every room the store holds. */
 export async function listRooms(bucket) {
   const rooms = [];

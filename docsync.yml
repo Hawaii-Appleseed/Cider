@@ -566,6 +566,12 @@ bindings:
     publish:
       repo: Hawaii-Appleseed/Census-Forecaster
       branch: main
+      # Where the page is edited: the editor app here ("local": Save publishes, per
+      # `when`), or the staff hub ("hub": its Publish does, through the Actions job).
+      # One home at a time, or the two overwrite each other. To move it to the hub,
+      # set this to hub; to move it back, `python3 -m docsync.publish --pull-hub
+      # --id wfc-credits`, commit, then set it to local.
+      home: local
       when: save
       command: >-
         python3 -m docsync.publish_page --id wfc-credits

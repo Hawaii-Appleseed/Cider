@@ -191,6 +191,98 @@ def _overlay(root: Path, binding, ref: str) -> list[str]:
     return took
 
 
+def _version_of(root: Path, ref: str) -> str:
+    """The hub version a `hub/<id>` commit was exported from (collab/src/export.js
+    writes it into the commit message)."""
+    try:
+        m = re.search(r"hub version (\S+)", _git(root, "log", "-1", "--format=%s", ref))
+        return m.group(1) if m else ""
+    except RuntimeError:
+        return ""
+
+
+def _report(base: str, key: str, room: str, payload: dict) -> str:
+    """Tell the Worker what happened, so the hub can show it (collab/src/index.js,
+    POST /site/<room>). Never fatal: the page is already published or not."""
+    import json
+    import urllib.request
+    try:
+        req = urllib.request.Request(f"{base.rstrip('/')}/site/{room}", method="POST",
+                                     data=json.dumps(payload).encode(),
+                                     headers={"content-type": "application/json", "x-export-key": key})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return f"reported to the hub ({r.status})"
+    except Exception as e:  # noqa: BLE001 — a report that fails must not fail the publish
+        return f"could not report to the hub: {e}"
+
+
+def doctor(pid: str, *, hub_dir: Path | None = None, token_env: str = "SITE_PUBLISH_TOKEN") -> int:
+    """Check, from here, everything a project needs to publish — and say what to do about each gap."""
+    root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(root))
+    from docsync.registry import RegistryError, get
+    bad = 0
+
+    def line(ok, msg, fix=""):
+        nonlocal bad
+        mark = "ok  " if ok is True else "FIX " if ok is False else "note"
+        bad += ok is False
+        print(f"  {mark} {msg}" + (f"\n       -> {fix}" if fix and ok is not True else ""))
+
+    print(f"publish doctor: {pid}")
+    try:
+        b = get(pid)
+    except RegistryError as e:
+        line(False, str(e), "add the project to docsync.yml (docsync.scaffold does)")
+        return 1
+    cfg = b.publish
+    if cfg is None:
+        line(False, "the binding has no publish: block", "add one — see the report-editor skill, 'Publishing a website project'")
+        return 1
+    line(True, f"publish: {cfg.repo}@{cfg.branch}, paths {', '.join(cfg.paths)}, home {cfg.home}"
+               + (f", when {cfg.when}" if cfg.home == "local" else ""))
+    ed = b.editor
+    line(bool(ed and ed.assets), "the editor block names an assets: path (uploaded images land inside the project)",
+         "add `assets: projects/<id>/assets` under editor:")
+    line(_has_name(root, pid), "the binding has a name: (docsync.hub skips a project without one)",
+         "add `name: \"...\"` to the binding")
+    if "$CIDER_SITE" not in cfg.command:
+        line(False, "the command never mentions $CIDER_SITE, so it cannot be writing into the site clone",
+             "write the page under \"$CIDER_SITE/<path>\"")
+    origin = _origin(cfg.repo)
+    token = os.environ.get(token_env, "")
+    auth = (["-c", f"url.https://x-access-token:{token}@github.com/.insteadOf=https://github.com/"] if token else [])
+    try:
+        out = _git(root, "ls-remote", "--heads", origin, cfg.branch, auth=auth, timeout=30)
+        line(bool(out.strip()), f"{cfg.repo} has a branch {cfg.branch}", "check `repo:` and `branch:`")
+    except RuntimeError as e:
+        line(False, f"cannot reach {cfg.repo}: {str(e)[-160:]}", f"set {token_env} (a token that can read it), or check the repo name")
+    wf = root / ".github" / "workflows" / "publish-sites.yml"
+    line(wf.exists(), "the hub route's workflow exists (.github/workflows/publish-sites.yml)", "restore it from the hub-publish branch")
+    line(None, f"cannot check from here: the {token_env} Actions secret (Settings > Secrets and variables > Actions)")
+    hub = hub_dir or Path.home() / "staff-updates-internal"
+    pj = hub / "primer" / "projects.json"
+    if pj.exists():
+        import json
+        try:
+            listed = pid in (json.loads(pj.read_text()).get("projects") or json.loads(pj.read_text()))
+        except (ValueError, AttributeError):
+            listed = pid in pj.read_text()
+        line(listed, f"the staff hub lists {pid}", "run `python3 -m docsync.hub` from the main checkout, review and push the hub")
+    else:
+        line(None, f"no hub checkout at {hub} — cannot check that {pid} is vendored there")
+    print("all set" if not bad else f"{bad} thing(s) to fix")
+    return 1 if bad else 0
+
+
+def _has_name(root: Path, pid: str) -> bool:
+    import yaml
+    for b in (yaml.safe_load((root / "docsync.yml").read_text()) or {}).get("bindings") or []:
+        if b.get("id") == pid:
+            return bool(b.get("name"))
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     """`python3 -m docsync.publish --hub-branch hub/<id>` — publish one project
     now, from what the hub saved. Exit 0 also when the project has nothing to
@@ -203,11 +295,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--site-repo", help="publish to this repository instead of the binding's (tests, forks)")
     ap.add_argument("--token-env", default="SITE_PUBLISH_TOKEN",
                     help="the environment variable holding a token that can push to the site repo")
+    ap.add_argument("--report-to", default=os.environ.get("HUB_REPORT_URL", ""),
+                    help="the collab Worker's URL: tell it the result (needs HUB_EXPORT_KEY)")
+    ap.add_argument("--doctor", action="store_true", help="check the project's publish setup and say what is missing")
+    ap.add_argument("--pull-hub", action="store_true",
+                    help="copy the hub's latest content for this project into the working tree (to move its home "
+                         "back to local); review and commit it yourself")
     a = ap.parse_args(argv)
     pid = a.id or (a.hub_branch or "").removeprefix("hub/")
     if not pid:
         ap.error("--id or --hub-branch is required")
     root = Path(__file__).resolve().parent.parent
+    if a.doctor:
+        return doctor(pid, token_env=a.token_env)
     sys.path.insert(0, str(root))
     from docsync.registry import RegistryError, get
     try:
@@ -215,13 +315,22 @@ def main(argv: list[str] | None = None) -> int:
     except RegistryError as e:
         print(f"::notice::{e} — nothing to publish")
         return 0
+    if a.pull_hub:
+        took = _overlay(root, b, a.ref or f"origin/hub/{pid}")
+        print("took from the hub branch:", ", ".join(took) or "(nothing there)")
+        print("review with `git diff`, commit, then set `home: local` in the publish: block")
+        return 0
     cfg = b.publish
     if cfg is None:
         print(f"::notice::{pid} has no publish: block — nothing to publish")
         return 0
+    if cfg.home != "hub":
+        print(f"::notice::{pid} is edited locally (home: local), not on the hub — not published from the hub branch")
+        return 0
     if a.site_repo:
         cfg.repo = a.site_repo
     ref = a.ref or (f"origin/{a.hub_branch}" if a.hub_branch else "")
+    version = _version_of(root, ref) if ref else ""
     try:
         if ref:
             print("source files from", ref + ":", ", ".join(_overlay(root, b, ref)) or "(none)")
@@ -234,13 +343,24 @@ def main(argv: list[str] | None = None) -> int:
                 if token else [])
         r = run(cfg, root, pid, "hub", auth=auth)
     except RuntimeError as e:
-        print(f"::error::{e}")
-        return 1
-    print(("::notice::" if r.ok else "::error::") + r.message + (f" — {r.url}" if r.ok and r.url else ""))
-    summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a") as f:
-            f.write(f"**{pid}**: {r.message}" + (f" — {r.url}" if r.ok and r.url else "") + "\n")
+        r = Result(False, False, str(e))
+    text = r.message + (f" — {r.url}" if r.ok and r.url else "")
+    print(("::notice::" if r.ok else "::error::") + text)
+    note = ""
+    key = os.environ.get("HUB_EXPORT_KEY", "")
+    repo_env = os.environ.get("GITHUB_REPOSITORY", "")
+    if a.report_to and key and repo_env:
+        room = f"{repo_env.replace('/', '~')}~{pid}"
+        note = _report(a.report_to, key, room, {"version": version, "ok": r.ok, "changed": r.changed,
+                                                "message": r.message, "url": r.url, "sha": r.sha})
+        print(note)
+    for path, body in ((os.environ.get("GITHUB_STEP_SUMMARY"), f"**{pid}**: {text}\n"),
+                       (os.environ.get("GITHUB_OUTPUT"), "".join(
+                           f"{k}={v}\n" for k, v in (("ok", str(r.ok).lower()), ("url", r.url if r.ok else ""),
+                                                      ("message", r.message.replace("\n", " ")[:200]))))):
+        if path:
+            with open(path, "a") as f:
+                f.write(body)
     return 0 if r.ok else 1
 
 

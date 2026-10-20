@@ -59,6 +59,7 @@ class Publish:
     when: str = "push"         # "save": every Save publishes; "push": the editor's Push does
     message: str = ""          # commit message in the site repo
     url: str = ""              # the live page, said back to the person after a publish
+    home: str = "local"        # where this page is EDITED: "local" (the editor app) or "hub" (the staff hub)
 
 
 @dataclass
@@ -185,6 +186,9 @@ def _publish(p: dict | None, where: str) -> Publish | None:
         parts = Path(x).parts
         if Path(x).is_absolute() or ".." in parts or ".git" in parts:
             raise RegistryError(f"{where}: path '{x}' must be inside the site repo")
+    home = str(p.get("home", "local"))
+    if home not in ("local", "hub"):
+        raise RegistryError(f"{where}: home '{home}' must be local or hub")
     return Publish(
         repo=str(_require(p, "repo", where)),
         command=str(_require(p, "command", where)),
@@ -193,6 +197,7 @@ def _publish(p: dict | None, where: str) -> Publish | None:
         when=when,
         message=str(p.get("message") or ""),
         url=str(p.get("url") or ""),
+        home=home,
     )
 
 

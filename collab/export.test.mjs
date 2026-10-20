@@ -7,7 +7,7 @@
 // sweep survives one room failing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { exportRoom, exportAll, listRooms, safeRepoPath, exportBranch } from './src/export.js';
+import { exportRoom, exportAll, listRooms, safeRepoPath, exportBranch, recordSite, readSite } from './src/export.js';
 
 const ROOM = 'Hawaii-Appleseed~Cider~retitc';
 const NWO = 'Hawaii-Appleseed/Cider';
@@ -218,4 +218,32 @@ test('an unreadable shelf stops the sweep rather than exporting hub-made documen
   assert.equal(out[0].status, 'failed');
   assert.match(out[0].error, /shelf unreadable/);
   assert.equal(gh.calls.length, 0);
+});
+
+test('the publish job\'s report is stored, cleaned, and read back beside the export', async () => {
+  const b = bucket();
+  assert.equal(await readSite(b, ROOM), null, 'nothing before any report');
+  const at = new Date('2026-10-20T12:00:00Z');
+  const rec = await recordSite({ bucket: b, room: ROOM, now: () => at, report: {
+    version: 'v7', ok: true, changed: true, message: 'published to Hawaii-Appleseed/Census-Forecaster (abc1234)',
+    url: 'https://hawaii-appleseed.github.io/Census-Forecaster/working-family-credits/', sha: 'abc1234' } });
+  assert.deepEqual(await readSite(b, ROOM), rec);
+  assert.equal(rec.version, 'v7');
+  assert.equal(rec.at, at.toISOString());
+  assert.equal(rec.ok, true);
+});
+
+test('a report cannot smuggle a script URL, a long message or a non-hex sha into the hub', async () => {
+  const b = bucket();
+  const rec = await recordSite({ bucket: b, room: ROOM, report: {
+    ok: 'yes', url: 'javascript:alert(1)', message: 'x'.repeat(5000), sha: 'zz<xyz>12ab', version: 7 } });
+  assert.equal(rec.ok, false, 'only a real true counts as ok');
+  assert.equal(rec.url, '', 'a url must be http(s)');
+  assert.equal(rec.message.length, 400);
+  assert.equal(rec.sha, '12ab');
+  assert.equal(rec.version, '', 'a version is a string');
+});
+
+test('a report for something that is not a room is refused', async () => {
+  await assert.rejects(() => recordSite({ bucket: bucket(), room: 'not-a-room', report: {} }), /not a room/);
 });

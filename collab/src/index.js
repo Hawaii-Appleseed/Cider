@@ -21,7 +21,7 @@ import {
   corsHeaders, allowedRepos, signingSecret, TICKET_TTL_SECONDS,
 } from './auth.js';
 
-import { exportRoom, exportAll } from './export.js';
+import { exportRoom, exportAll, recordSite, readSite } from './export.js';
 
 export { PrimerRoom } from './room.js';
 
@@ -47,6 +47,10 @@ export default {
 
     if (url.pathname.startsWith('/export/')) {
       return handleExport(request, env, url);
+    }
+
+    if (url.pathname.startsWith('/site/')) {
+      return handleSite(request, env, url);
     }
 
     if (url.pathname === '/auth') {
@@ -104,7 +108,7 @@ async function handleExport(request, env, url) {
 
   if (request.method === 'GET') {
     const o = await env.PRIMER_DOCS.get(`docs/${room}/export.json`);
-    return json({ room, exported: o ? await o.json() : null });
+    return json({ room, exported: o ? await o.json() : null, site: await readSite(env.PRIMER_DOCS, room) });
   }
   if (request.method !== 'POST') return json({ error: 'GET or POST' }, { status: 405 });
   try {
@@ -113,6 +117,28 @@ async function handleExport(request, env, url) {
   } catch (e) {
     return json({ error: String(e.message || e) }, { status: 502 });
   }
+}
+
+/**
+ * POST /site/<room>: the publish job reporting what it did to the public site.
+ * Keyed like /export, by the same EXPORT_KEY (the job holds it as a secret).
+ * It can record a status line for a room and nothing else; the hub reads it
+ * back on GET /export/<room> as `site`.
+ */
+async function handleSite(request, env, url) {
+  const room = decodeURIComponent(url.pathname.slice('/site/'.length));
+  if (!parseRoom(room)) return json({ error: 'room must be "owner~repo~project"' }, { status: 400 });
+  if (request.method !== 'POST') return json({ error: 'POST required' }, { status: 405 });
+  if (!env.EXPORT_KEY) return json({ error: 'not configured (EXPORT_KEY)' }, { status: 501 });
+  const given = request.headers.get('x-export-key') || '';
+  if (!timingSafeEqual(given, env.EXPORT_KEY)) return json({ error: 'export key required' }, { status: 401 });
+  if (!env.PRIMER_DOCS) return json({ error: 'the document store is not bound (PRIMER_DOCS)' }, { status: 501 });
+  const allowed = allowedRepos(env);
+  const nwo = parseRoom(room).nwo.toLowerCase();
+  if (allowed.length && !allowed.includes(nwo)) return json({ error: `repository ${nwo} is not served here` }, { status: 403 });
+  let report;
+  try { report = await request.json(); } catch { return json({ error: 'a JSON body is required' }, { status: 400 }); }
+  return json({ ok: true, site: await recordSite({ bucket: env.PRIMER_DOCS, room, report }) });
 }
 
 function timingSafeEqual(a, b) {

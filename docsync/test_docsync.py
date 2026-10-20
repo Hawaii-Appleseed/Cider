@@ -4692,6 +4692,15 @@ with tempfile.TemporaryDirectory() as _td:
     _reg.write_text(_body + "      when: save\n      branch: gh-pages\n")
     _p = load_registry(_reg)[0].publish
     check_eq("publish takes when and branch", (_p.when, _p.branch), ("save", "gh-pages"))
+    check_eq("publish home defaults to local", _p.home, "local")
+    _reg.write_text(_body + "      home: hub\n")
+    check_eq("publish takes home: hub", load_registry(_reg)[0].publish.home, "hub")
+    _reg.write_text(_body + "      home: both\n")
+    try:
+        load_registry(_reg)
+        FAILS.append("publish home: both must not load")
+    except RegistryError as e:
+        check("publish home must be local or hub", str(e), "must be local or hub")
     check_eq("a binding with no publish block has none", (
         _reg.write_text("bindings:\n  - id: t-plain\n    content: c.md\n"), load_registry(_reg)[0].publish)[1], None)
     for _bad, _says in (("      when: always\n", "must be save or push"),

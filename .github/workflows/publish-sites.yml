@@ -35,15 +35,23 @@ concurrency:
 
 permissions:
   contents: read
+  statuses: write        # the result is shown on the hub commit, next to the export
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Shallow: the default branch for the code, and only the tip of the hub
+      # branch for the project's files. No history is needed for either.
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 1
+
+      - name: Fetch the hub branch
+        env:
+          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
+        run: git fetch --no-tags --depth=1 origin "+refs/heads/$HUB_BRANCH:refs/remotes/origin/$HUB_BRANCH"
 
       - uses: actions/setup-python@v5
         with:
@@ -53,7 +61,30 @@ jobs:
         run: pip install --quiet pyyaml
 
       - name: Publish
+        id: publish
         env:
           SITE_PUBLISH_TOKEN: ${{ secrets.SITE_PUBLISH_TOKEN }}
+          # Optional: tell the collab Worker what happened, so the hub can say so
+          # (POST /site/<room>). HUB_REPORT_URL is a repository variable, the key a secret.
+          HUB_REPORT_URL: ${{ vars.HUB_REPORT_URL }}
+          HUB_EXPORT_KEY: ${{ secrets.HUB_EXPORT_KEY }}
           HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
         run: python3 -m docsync.publish --hub-branch "$HUB_BRANCH"
+
+      # The same result on the hub branch's commit, so it shows beside the export
+      # on GitHub. Skipped when the project had nothing to publish to.
+      - name: Mark the hub commit
+        if: always() && steps.publish.outputs.ok != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
+          OK: ${{ steps.publish.outputs.ok }}
+          LIVE_URL: ${{ steps.publish.outputs.url }}
+          MESSAGE: ${{ steps.publish.outputs.message }}
+        run: |
+          sha=$(git rev-parse "origin/$HUB_BRANCH")
+          state=failure; [ "$OK" = "true" ] && state=success
+          target="${LIVE_URL:-$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$sha" \
+            -f state="$state" -f context="publish-sites" \
+            -f description="${MESSAGE:0:140}" -f target_url="$target"
