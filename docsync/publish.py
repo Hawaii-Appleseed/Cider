@@ -36,6 +36,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -160,3 +161,88 @@ def run(cfg, root: Path, pid: str, trigger: str, *, auth: list[str] = (), path_e
                 raise
         except (RuntimeError, OSError, subprocess.SubprocessError) as e:
             return Result(False, False, str(e))
+
+
+# ---- the hub's route: a GitHub Actions job (see .github/workflows/publish-sites.yml)
+
+def _overlay(root: Path, binding, ref: str) -> list[str]:
+    """Take the project's own source files — and only those — from `ref`.
+
+    The staff hub's Publish commits what the editor saved (content, layout,
+    assets) to a branch `hub/<project>` of this repository. The job runs this
+    repo's TRUSTED code from the default branch and overlays just those files
+    from the hub branch: the branch also carries a docsync.yml, and a command in
+    it must never be run with a publish credential in the environment.
+    """
+    ed = binding.editor
+    wanted = [binding.content]
+    if ed and ed.layout:
+        wanted.append(ed.layout)
+    if ed:
+        wanted.append(ed.assets or (ed.out.parent / "assets"))
+    took = []
+    for p in wanted:
+        rel = os.path.relpath(p, root)
+        if rel.startswith(".."):
+            raise RuntimeError(f"{binding.id}: {p} is outside the repository")
+        if _git(root, "ls-tree", "-r", "--name-only", ref, "--", rel).strip():
+            _git(root, "checkout", ref, "--", rel)
+            took.append(rel)
+    return took
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`python3 -m docsync.publish --hub-branch hub/<id>` — publish one project
+    now, from what the hub saved. Exit 0 also when the project has nothing to
+    publish to (the hub exports every project; most are not websites)."""
+    import argparse
+    ap = argparse.ArgumentParser(prog="python3 -m docsync.publish", description=main.__doc__)
+    ap.add_argument("--id", help="the project's binding id")
+    ap.add_argument("--hub-branch", help="hub/<id>, the branch the hub's Publish wrote")
+    ap.add_argument("--ref", help="take the project's source files from this ref (default origin/<hub-branch>)")
+    ap.add_argument("--site-repo", help="publish to this repository instead of the binding's (tests, forks)")
+    ap.add_argument("--token-env", default="SITE_PUBLISH_TOKEN",
+                    help="the environment variable holding a token that can push to the site repo")
+    a = ap.parse_args(argv)
+    pid = a.id or (a.hub_branch or "").removeprefix("hub/")
+    if not pid:
+        ap.error("--id or --hub-branch is required")
+    root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(root))
+    from docsync.registry import RegistryError, get
+    try:
+        b = get(pid)
+    except RegistryError as e:
+        print(f"::notice::{e} — nothing to publish")
+        return 0
+    cfg = b.publish
+    if cfg is None:
+        print(f"::notice::{pid} has no publish: block — nothing to publish")
+        return 0
+    if a.site_repo:
+        cfg.repo = a.site_repo
+    ref = a.ref or (f"origin/{a.hub_branch}" if a.hub_branch else "")
+    try:
+        if ref:
+            print("source files from", ref + ":", ", ".join(_overlay(root, b, ref)) or "(none)")
+        token = os.environ.get(a.token_env, "")
+        if not token and not Path(os.path.expanduser(cfg.repo)).is_dir():
+            raise RuntimeError(
+                f"{a.token_env} is not set — add a token that can push to {cfg.repo} "
+                f"as that repository secret (Settings > Secrets and variables > Actions)")
+        auth = (["-c", f"url.https://x-access-token:{token}@github.com/.insteadOf=https://github.com/"]
+                if token else [])
+        r = run(cfg, root, pid, "hub", auth=auth)
+    except RuntimeError as e:
+        print(f"::error::{e}")
+        return 1
+    print(("::notice::" if r.ok else "::error::") + r.message + (f" — {r.url}" if r.ok and r.url else ""))
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a") as f:
+            f.write(f"**{pid}**: {r.message}" + (f" — {r.url}" if r.ok and r.url else "") + "\n")
+    return 0 if r.ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,59 @@
+name: Publish sites
+
+# The staff hub's Publish writes what an editor saved to a branch `hub/<project>`
+# of THIS repository (collab/src/export.js — the Worker, not this workflow).
+# For a project whose binding in docsync.yml has a `publish:` block, this turns
+# that branch into the project's public page, in the repository that deploys it
+# (docsync/publish.py). A project with no such block is ignored: the hub exports
+# every project and most are not websites.
+#
+# Security: this job runs the code and docsync.yml of the DEFAULT branch, and
+# takes only the project's content, layout and assets from the hub branch — the
+# branch also carries a docsync.yml, and a command in it must never run with the
+# publish token in the environment. The token is an Actions secret,
+# SITE_PUBLISH_TOKEN: a fine-grained token (or app installation token) with
+# Contents: read and write on the site repositories named in `publish:` blocks,
+# and nothing else.
+#
+# The push that starts this is made by the Worker with its own token, which is
+# why it triggers a workflow (a push made with Actions' GITHUB_TOKEN would not).
+
+on:
+  push:
+    branches: ["hub/**"]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project id to publish from its hub branch (hub/<id>)"
+        required: true
+
+# One publish per project at a time, none cancelled: each one commits to the
+# site, and a cancelled one would leave the hub's last save unpublished.
+concurrency:
+  group: publish-sites-${{ github.ref_name }}-${{ inputs.project }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install --quiet pyyaml
+
+      - name: Publish
+        env:
+          SITE_PUBLISH_TOKEN: ${{ secrets.SITE_PUBLISH_TOKEN }}
+          HUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || format('hub/{0}', inputs.project) }}
+        run: python3 -m docsync.publish --hub-branch "$HUB_BRANCH"
