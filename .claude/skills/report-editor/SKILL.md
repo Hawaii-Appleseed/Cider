@@ -347,6 +347,9 @@ ids it returns:
 | `overrides()` / `clearOverrides(key \| [keys] \| null)` / `highlightOverrides(on)` | text whose own keys differ from the style it wears; take them off (null = every one); outline them in the editor (never published) |
 | `defaultStyles()` / `setDefaultStyle('text' \| 'box' \| 'shape' \| 'table', name \| null)` | the styles new text boxes, boxes, shapes and tables wear (`layout.defaultStyles`; editor-only, no published byte) |
 | `clearTransforms(id \| [ids])` | rotation, skew, flip and scale back to none; place and size kept |
+| `align(ids, mode, {to?, key?})` | Align left / hcenter / right / top / vcenter / bottom; `to` auto / selection / key / page; `key` (one of ids) stays still; returns the boxes after |
+| `distribute(ids, 'h' \| 'v', {gap?, key?})` | no gap: spread evenly (3+); `gap` in inches: that exact space, out from the key or the first (2+) |
+| `keyObject(id \| null)` / `alignTo(v?)` | the key object in the current selection; the Arrange strip's Align to (remembered per editor) |
 | `notes()` / `setNotes(key, [texts])` | writers' notes: HTML comments in a slot's block, never published; `setNotes` replaces a slot's notes and leaves its words alone |
 | `flip(id, 'h'\|'v'\|'hv'\|null)` | mirror a shape, box, table or placed piece |
 | `setVariable(name, text \| null)` | a text variable: `{var:name}` in any words shows the text, so a bill number used forty times changes once |

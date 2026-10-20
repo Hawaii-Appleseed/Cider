@@ -1569,6 +1569,7 @@
   .ar-pos { display:inline-flex; align-items:center; gap:4px;
         font:11.5px system-ui; color:var(--dim); }
   .ar-pos input { width:58px !important; }
+  .ar-pos select { font:11.5px system-ui; }
   /* modal dialogs (native <dialog>): replace prompt()/confirm()/alert() with a
      focus-trapped modal that can gather several fields at once. */
   .dsdlg { border:0; border-radius:12px; padding:0; width:min(440px, 92vw);
@@ -2690,6 +2691,10 @@
       viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
       <path d="M2 1.5h10M2 12.5h10M4.5 7h5"/></svg></button>
   </span>
+  <label class="ar-pos ar-multi" title="What Align lines things up with. Auto: the page for one thing, the key object when there is one (click a selected thing again), otherwise the selection">To<select id="ar-alto" aria-label="Align to">
+    <option value="auto">auto</option><option value="selection">selection</option>
+    <option value="key">key object</option><option value="page">page</option></select></label>
+  <label class="ar-pos ar-multi" title="Distribute with this exact space between each, in inches, out from the key object (or the first). Empty spreads them evenly">gap<input id="ar-gap" type="number" step="0.05" min="0" max="5" placeholder="even"></label>
   <span class="ty-sep"></span>
   <span class="ty-seg" title="Layer">
     <button id="ar-front" aria-label="Bring to front (⌘⌥])"><svg width="14" height="14"
@@ -12377,6 +12382,13 @@ function wireType() {
 // shows them — rather than to whatever the mouse happens to cross.
 const selIds = new Set();
 const idOf = el => el.dataset.shape || el.dataset.el;
+// The KEY OBJECT (InDesign's): in a selection of several, a second click on
+// one already in it — without moving it — makes it the one that stays still.
+// Align lines the rest up with it, and Distribute with a gap spaces out from
+// it. Only meaningful while it is in a selection of two or more, so keyOf()
+// is the one test and a stale id simply stops counting.
+let keyId = null, keyCandidate = null;
+const keyOf = () => keyId && selIds.size > 1 && selIds.has(keyId) ? keyId : null;
 const selEls = d => [...selIds].map(id =>
   d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`))
   .filter(Boolean);
@@ -12467,8 +12479,8 @@ function shapeBox(el, page) {
 }
 
 function paintSel(d) {
-  d.querySelectorAll('.ds-sel, .ds-grouped').forEach(el =>
-    el.classList.remove('ds-sel', 'ds-grouped'));
+  d.querySelectorAll('.ds-sel, .ds-grouped, .ds-key').forEach(el =>
+    el.classList.remove('ds-sel', 'ds-grouped', 'ds-key'));
   d.querySelectorAll('.ds-selbox').forEach(el => el.remove());
   hideHandles(d);
   // The page ring: a quiet outline round the sheet, no handles. A page has no
@@ -12502,12 +12514,14 @@ function paintSel(d) {
       const page = el.closest('section.page') || d.querySelector('section.page');
       const b = shapeBox(el, page);
       const ring = d.createElement('div');
-      ring.className = 'ds-selbox' + (wholeGroup ? ' grouped' : '');
+      ring.className = 'ds-selbox' + (wholeGroup ? ' grouped' : '')
+        + (idOf(el) === keyOf() ? ' ds-key' : '');
       ring.dataset.for = el.dataset.shape;   // so a drag can carry it along
       ring.style.cssText = `left:${b.x}in;top:${b.y}in;width:${b.w}in;height:${b.h}in`;
       page.appendChild(ring);
     } else {
       el.classList.add(wholeGroup ? 'ds-grouped' : 'ds-sel');
+      el.classList.toggle('ds-key', idOf(el) === keyOf());
     }
   });
   if (els.length === 1 && !isLocked(idOf(els[0]))) {
@@ -12663,6 +12677,7 @@ const pageFillId = pid => 'page.' + pid;
  *  it cannot also mean "drill in" without the two fighting. */
 function selectClick(d, id, e) {
   const members = withGroups([id]);
+  keyCandidate = null;
   if (e.shiftKey) {
     const on = members.every(m => selIds.has(m));
     members.forEach(m => on ? selIds.delete(m) : selIds.add(m));
@@ -12675,8 +12690,11 @@ function selectClick(d, id, e) {
   // into — and a double-click meant for the words would only ever re-drill.
   if (selIds.size === 1 && selIds.has(id)) return true;
   // Clicking inside the current selection keeps it (so the group/multi drags);
-  // clicking outside replaces it.
+  // clicking outside replaces it. Inside a selection of more than this one
+  // thing, the click — if it does not travel — names the key object
+  // (startDrag's mouseup); a drag moves them all and names nothing.
   if (!members.every(m => selIds.has(m))) setSel(d, members);
+  else if (selIds.size > members.length) keyCandidate = id;
   return true;
 }
 
@@ -12764,7 +12782,8 @@ function arrangeBar(d) {
   document.querySelectorAll('.ar-al').forEach(b => { b.disabled = !n; });
   $('ar-front').disabled = $('ar-back').disabled = !n;
   $('ar-del').disabled = !n || [...selIds].every(isLocked);
-  $('ar-dh').disabled = $('ar-dv').disabled = n < 3;
+  $('ar-dh').disabled = $('ar-dv').disabled = n < (arrangeGap() == null ? 3 : 2);
+  document.querySelectorAll('.ar-multi').forEach(x => { x.hidden = n < 2; });
   $('ar-dup').disabled = !n || ![...selIds].every(id =>
     dupModeOf($('out').contentDocument, id));
   $('ar-group').disabled = !canGroup();
@@ -12779,7 +12798,7 @@ function arrangeBar(d) {
   $('ar-lock').setAttribute('aria-label', locked ? 'Unlock' : 'Lock — a locked element cannot be dragged');
   // The numbers panel: one element, typed placement in inches.
   const one = n === 1 && d ? selEls(d)[0] : null;
-  document.querySelectorAll('.ar-pos, #ar-possep').forEach(x => { x.hidden = !one; });
+  document.querySelectorAll('.ar-pos:not(.ar-multi), #ar-possep').forEach(x => { x.hidden = !one; });
   // Fill control: one selected shape or text box carries its own colour, so it
   // gets a Fill swatch right here in the toolbar (no more right-click needed).
   const fillId = one ? idOf(one) : null;
@@ -12949,7 +12968,7 @@ function arrangeUnits(d, page, els) {
     const Ps = members.map(m => placer(d, m, page));
     const bs = Ps.map(P => P.box);
     const x1 = Math.min(...bs.map(b => b.x)), y1 = Math.min(...bs.map(b => b.y));
-    units.push({ Ps, b: { x: x1, y: y1,
+    units.push({ Ps, ids: members.map(idOf), b: { x: x1, y: y1,
       w: Math.max(...bs.map(b => b.x + b.w)) - x1, h: Math.max(...bs.map(b => b.y + b.h)) - y1 } });
   }
   return units;
@@ -12958,17 +12977,43 @@ function arrangeUnits(d, page, els) {
 const moveUnit = (u, x, y) => u.Ps.forEach(P =>
   P.commit(P.put(P.box.x + (x - u.b.x), P.box.y + (y - u.b.y), false)));
 
+/** Where Align lines things up: 'auto' (the page for one thing, the
+ *  selection's own bounds for several — or the key object when there is one),
+ *  'selection', 'key' or 'page'. Remembered per editor, not per report: it is
+ *  how this person likes to work. */
+const ALIGN_TO = ['auto', 'selection', 'key', 'page'];
+let alignTo = (() => { try { const v = localStorage.getItem('primer-align-to');
+  return ALIGN_TO.includes(v) ? v : 'auto'; } catch { return 'auto'; } })();
+function setAlignTo(v) {
+  alignTo = ALIGN_TO.includes(v) ? v : 'auto';
+  try { localStorage.setItem('primer-align-to', alignTo); } catch {}
+  const s = $('ar-alto'); if (s) s.value = alignTo;
+  return alignTo;
+}
+/** The arrange unit holding the key object, if it is in this selection. */
+const keyUnit = items => { const k = keyOf();
+  return k ? items.find(u => u.ids.includes(k)) || null : null; };
+
 // Align: a single thing aligns to the page (edges = the text column's
 // margins, centres = the true page centre — flush beats touching the trim);
-// several align to their own bounding box, which is what "align these" means.
-// A whole group is one thing (arrangeUnits).
-function alignSel(d, mode) {
+// several align to their own bounding box, which is what "align these" means,
+// or to the key object, which stays where it is. Align to (alignTo) can say
+// the page or the selection instead. A whole group is one thing
+// (arrangeUnits). `to` overrides alignTo for one call (the pilot).
+function alignSel(d, mode, to = alignTo) {
   const { page, els } = pageMembers(d);
   if (!els.length) return;
-  pushHistory();
   const items = arrangeUnits(d, page, els);
+  const key = to === 'page' || to === 'selection' ? null : keyUnit(items);
+  if (to === 'key' && !key) {
+    $('stat').textContent = 'no key object — click one of the selected things again to make it the key';
+    return;
+  }
+  pushHistory();
   let ref;
-  if (items.length === 1) {
+  if (key) {
+    ref = { ...key.b };
+  } else if (items.length === 1 || to === 'page') {
     // The page as laid out, not PAGE_H_IN: a pageless document's PAGE_H_IN is
     // a sentinel no report reaches (PAGELESS_H), so "align bottom" sent the
     // piece a couple of hundred inches below the last line of the page.
@@ -12985,6 +13030,7 @@ function alignSel(d, mode) {
     ref = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
   }
   items.forEach(u => {
+    if (u === key) return;                 // the key object stays still
     const { b } = u;
     let { x, y } = b;
     if (mode === 'left') x = ref.x;
@@ -12999,11 +13045,34 @@ function alignSel(d, mode) {
   paintSel(d);
 }
 
-function distributeSel(d, axis) {
+/** Distribute: evenly across the selection's own extent, or — with `gap`
+ *  (inches) — that exact space between each neighbour, InDesign's "Use
+ *  spacing". An exact gap spaces outward from the key object, or from the
+ *  first thing in the row when there is none, so it works on two things as
+ *  well as twenty. `gap` defaults to the Arrange strip's gap field. */
+function distributeSel(d, axis, gap = arrangeGap()) {
   const { page, els } = pageMembers(d);
-  if (els.length < 3) return;
+  if (els.length < 2) return;
   const items = arrangeUnits(d, page, els)
     .sort((a, q) => axis === 'h' ? a.b.x - q.b.x : a.b.y - q.b.y);
+  if (gap != null) {
+    if (items.length < 2) return;
+    pushHistory();
+    const [P, S] = axis === 'h' ? ['x', 'w'] : ['y', 'h'];
+    const ai = Math.max(0, items.indexOf(keyUnit(items)));
+    const at = u => axis === 'h' ? (v => moveUnit(u, v, u.b.y)) : (v => moveUnit(u, u.b.x, v));
+    let next = items[ai].b[P] + items[ai].b[S] + gap;
+    for (let i = ai + 1; i < items.length; i++) {
+      at(items[i])(next); next += items[i].b[S] + gap;
+    }
+    let prev = items[ai].b[P] - gap;
+    for (let i = ai - 1; i >= 0; i--) {
+      at(items[i])(prev - items[i].b[S]); prev -= items[i].b[S] + gap;
+    }
+    clearGuides(d);
+    paintSel(d);
+    return;
+  }
   if (items.length < 3) return;          // a group and one other thing: nothing to space
   pushHistory();
   // The span is the selection's own extent — leftmost edge to rightmost edge
@@ -16916,6 +16985,15 @@ $('ar-more').addEventListener('click', () => {
 $('ar-lock').addEventListener('click', () => toggleLockSel($('out').contentDocument));
 $('ar-group').addEventListener('click', () => groupSel($('out').contentDocument));
 $('ar-ungroup').addEventListener('click', () => ungroupSel($('out').contentDocument));
+/** The Arrange strip's gap field, in inches; null = spread evenly. */
+function arrangeGap() {
+  const f = $('ar-gap'), v = f ? f.value.trim() : '';
+  if (!v || !isFinite(+v)) return null;
+  return Math.max(0, Math.min(5, +v));
+}
+$('ar-gap').addEventListener('input', () => arrangeBar($('out').contentDocument));
+$('ar-alto').value = alignTo;
+$('ar-alto').addEventListener('change', e => setAlignTo(e.target.value));
 $('ar-dh').addEventListener('click', () => distributeSel($('out').contentDocument, 'h'));
 $('ar-dv').addEventListener('click', () => distributeSel($('out').contentDocument, 'v'));
 document.querySelectorAll('.ar-al').forEach(b => b.addEventListener('click', () =>
@@ -17691,6 +17769,7 @@ function snapLines(d, page, moving) {
   const skip = Array.isArray(moving) ? moving : [moving];   // a group skips itself
   const xs = [0, MARGIN_IN, PAGE_W_IN / 2, PAGE_W_IN - MARGIN_IN, PAGE_W_IN];
   const ys = [0, TOP_IN, PAGE_H_IN / 2, PAGE_H_IN - 0.9, PAGE_H_IN];
+  const boxes = [];                 // for equal spacing (spaceSnap)
   page.querySelectorAll('[data-el], [data-shape], h1, h2.sub, .card, .branch, .photo')
       .forEach(el => {
     if (skip.some(m => el === m || m.contains(el) || el.contains(m))) return;
@@ -17698,6 +17777,12 @@ function snapLines(d, page, moving) {
     if (b.w < 0.1 || b.h < 0.1) return;
     xs.push(b.x, b.x + b.w / 2, b.x + b.w);
     ys.push(b.y, b.y + b.h / 2, b.y + b.h);
+    // Spacing is between SIBLINGS: a box inside another one (a card's title
+    // in its card) is not a neighbour of anything beside the card.
+    if (!boxes.some(o => o.el.contains(el))) {
+      for (let i = boxes.length - 1; i >= 0; i--) if (el.contains(boxes[i].el)) boxes.splice(i, 1);
+      boxes.push({ el, ...b });
+    }
   });
   // Your own ruler guides are snap targets too, when they are showing — and
   // the page's margins and columns.
@@ -17707,7 +17792,61 @@ function snapLines(d, page, moving) {
     const mg = marginGuides(sheet ? sheet.id : null);
     if (mg) { xs.push(mg.l, mg.r, ...mg.cols); ys.push(mg.t, mg.b); }
   }
-  return { xs, ys };
+  return { xs, ys, boxes };
+}
+
+/**
+ * Smart spacing: while dragging, the gap to a neighbour clicks to the gap
+ * that is already there — between the two neighbours either side (centred
+ * between them), or between any two things in the same row or column.
+ * `axis` 'x' moves along the row of things that overlap the box vertically;
+ * 'y' along the column. Returns { at, gaps: [{axis, a, b, c}] } — each gap
+ * from a to b along the axis, drawn at c across it — or null.
+ */
+function spaceSnap(boxes, axis, x, y, w, h) {
+  const [P, S, Q, T] = axis === 'x' ? ['x', 'w', 'y', 'h'] : ['y', 'h', 'x', 'w'];
+  const lo = axis === 'x' ? x : y, size = axis === 'x' ? w : h;
+  const clo = axis === 'x' ? y : x, chi = clo + (axis === 'x' ? h : w);
+  const row = boxes.filter(b => b[Q] < chi && b[Q] + b[T] > clo)
+    .sort((a, b) => a[P] - b[P]);
+  if (!row.length) return null;
+  const mid = (a, b) => (Math.max(a[Q], b[Q]) + Math.min(a[Q] + a[T], b[Q] + b[T])) / 2;
+  const me = { [Q]: clo, [T]: chi - clo };
+  const gapsIn = [];                        // gaps already on the page in this row
+  for (let i = 0; i + 1 < row.length; i++) {
+    const a = row[i], b = row[i + 1], g = b[P] - (a[P] + a[S]);
+    if (g > 0.02) gapsIn.push({ g, a, b });
+  }
+  const before = row.filter(b => b[P] + b[S] <= lo + SNAP_IN && b[P] < lo)
+    .sort((a, b) => (b[P] + b[S]) - (a[P] + a[S]))[0];
+  const after = row.filter(b => b[P] >= lo + size - SNAP_IN && b[P] + b[S] > lo + size)
+    .sort((a, b) => a[P] - b[P])[0];
+  const seg = (a, b, c) => ({ axis, a, b, c });
+  const cands = [];
+  if (before && after) {
+    const g = (after[P] - (before[P] + before[S]) - size) / 2;
+    if (g > 0.02) {
+      const at = before[P] + before[S] + g;
+      cands.push({ at, gaps: [seg(at - g, at, mid(before, me)), seg(at + size, after[P], mid(after, me))] });
+    }
+  }
+  for (const { g, a, b } of gapsIn) {
+    const shown = seg(a[P] + a[S], b[P], mid(a, b));
+    if (before && before !== a) {
+      const at = before[P] + before[S] + g;
+      cands.push({ at, gaps: [shown, seg(at - g, at, mid(before, me))] });
+    }
+    if (after && after !== b) {
+      const at = after[P] - g - size;
+      cands.push({ at, gaps: [shown, seg(at + size, after[P], mid(after, me))] });
+    }
+  }
+  let best = null;
+  for (const c of cands) {
+    const dist = Math.abs(c.at - lo);
+    if (dist <= SNAP_IN && (!best || dist < best.d)) best = { d: dist, ...c };
+  }
+  return best;
 }
 
 /** Nearest line within the threshold, given the three edges we align on. */
@@ -17722,16 +17861,25 @@ function snapAxis(lines, lo, size) {
   return best;
 }
 
-function showGuides(d, page, vx, hy) {
+function showGuides(d, page, vx, hy, gaps = []) {
   d.querySelectorAll('.ds-guide').forEach(g => g.remove());
   const add = (cls, style) => {
     const g = d.createElement('div');
     g.className = 'ds-guide ' + cls;
     g.style.cssText = style;
     page.appendChild(g);
+    return g;
   };
   if (vx !== null) add('v', `left:${vx}in;top:0;height:${PAGE_H_IN}in`);
   if (hy !== null) add('h', `top:${hy}in;left:0;width:${PAGE_W_IN}in`);
+  // Equal spacing: a capped bar across each matching gap, its size on it.
+  for (const g of gaps) {
+    const len = g.b - g.a;
+    const el = g.axis === 'x'
+      ? add('gx', `left:${g.a}in;top:${g.c}in;width:${len}in`)
+      : add('gy', `top:${g.a}in;left:${g.c}in;height:${len}in`);
+    el.dataset.gap = len.toFixed(2);
+  }
 }
 
 const clearGuides = d => d.querySelectorAll('.ds-guide').forEach(g => g.remove());
@@ -18286,12 +18434,18 @@ function placer(d, el, page) {
   };
 
   const put = (x, y, snap = true) => {
-    let vx = null, hy = null;
+    let vx = null, hy = null, gaps = [];
     if (snap) {
       const sx = snapAxis(lines().xs, x, box.w);
       const sy = snapAxis(lines().ys, y, box.h);
+      // An edge or centre line wins; equal spacing is tried on an axis that
+      // found none, so the two never fight over one pixel.
+      const gx = sx ? null : spaceSnap(lines().boxes, 'x', x, sy ? sy.at : y, box.w, box.h);
+      const gy = sy ? null : spaceSnap(lines().boxes, 'y', sx ? sx.at : x, y, box.w, box.h);
       if (sx) { x = +sx.at.toFixed(3); vx = sx.line; }
+      else if (gx) { x = +gx.at.toFixed(3); gaps.push(...gx.gaps); }
       if (sy) { y = +sy.at.toFixed(3); hy = sy.line; }
+      else if (gy) { y = +gy.at.toFixed(3); gaps.push(...gy.gaps); }
     }
     // Clamp inside the page: .page is overflow:hidden, so "off the edge" is
     // not bleed, it is gone. Better to refuse the pixel than fail the build.
@@ -18346,9 +18500,10 @@ function placer(d, el, page) {
       }
       if (zNew !== null) el.style.zIndex = String(zNew);   // and the layer it will keep
     }
-    showGuides(d, page, vx, hy);
+    showGuides(d, page, vx, hy, gaps);
     $('stat').textContent = `${id} → ${x.toFixed(2)}in, ${y.toFixed(2)}in`
-                          + (vx !== null || hy !== null ? '  · aligned' : '');
+                          + (vx !== null || hy !== null ? '  · aligned' : '')
+                          + (gaps.length ? `  · equal spacing ${(gaps[0].b - gaps[0].a).toFixed(2)}in` : '');
     return { x, y };
   };
 
@@ -18596,15 +18751,20 @@ function startDrag(d, el, e0, drillIn = false) {
     }
     // Group: snap and clamp the GROUP box, then place members by their offsets.
     let gx = group.x + dx, gy = group.y + dy, vx = null, hy = null;
+    const gaps = [];
     const sx = snapAxis(glines.xs, gx, group.w), sy = snapAxis(glines.ys, gy, group.h);
+    const ex = sx ? null : spaceSnap(glines.boxes, 'x', gx, sy ? sy.at : gy, group.w, group.h);
+    const ey = sy ? null : spaceSnap(glines.boxes, 'y', sx ? sx.at : gx, gy, group.w, group.h);
     if (sx) { gx = +sx.at.toFixed(3); vx = sx.line; }
+    else if (ex) { gx = +ex.at.toFixed(3); gaps.push(...ex.gaps); }
     if (sy) { gy = +sy.at.toFixed(3); hy = sy.line; }
+    else if (ey) { gy = +ey.at.toFixed(3); gaps.push(...ey.gaps); }
     gx = Math.min(Math.max(gx, 0), PAGE_W_IN - Math.min(group.w, PAGE_W_IN));
     gy = Math.min(Math.max(gy, 0), PAGE_H_IN - Math.min(group.h, PAGE_H_IN));
     Ps.forEach((P, i) => {
       at[i] = P.put(starts[i].x - group.x + gx, starts[i].y - group.y + gy, false);
     });
-    showGuides(d, page, vx, hy);
+    showGuides(d, page, vx, hy, gaps);
     $('stat').textContent = `${members.length} elements → ${gx.toFixed(2)}in, ${gy.toFixed(2)}in`;
   };
   const up = async () => {
@@ -18631,6 +18791,14 @@ function startDrag(d, el, e0, drillIn = false) {
         lastDrill = { id: idOf(el), t: Date.now() };
         $('stat').textContent = 'inside the group — drag the handles to resize '
           + 'this piece, Escape to leave';
+        clearGuides(d); paintSel(d); return;
+      }
+      if (keyCandidate === idOf(el) && selIds.size > 1) {
+        keyId = keyOf() === keyCandidate ? null : keyCandidate;   // again = off
+        keyCandidate = null;
+        $('stat').textContent = keyId
+          ? 'key object — Align and Distribute keep it still; click it again to clear'
+          : 'key object cleared';
         clearGuides(d); paintSel(d); return;
       }
       clearGuides(d); paintSel(d);
@@ -22862,6 +23030,9 @@ function wire(roots) {
     .ds-selbox { position:absolute; z-index:9995; pointer-events:none;
        outline:2px solid #6B9E78; outline-offset:2px; }
     .ds-selbox.grouped { outline:1.5px dashed #52796F; outline-offset:3px; }
+    /* The key object: the same ring, heavier — InDesign's thick key outline. */
+    .ds-sel.ds-key, .ds-grouped.ds-key { outline:3.5px solid #2F6B4F !important; }
+    .ds-selbox.ds-key { outline:3.5px solid #2F6B4F; }
     /* A whole group selected reads as one object: a softer, dashed shared ring
        instead of N hard outlines. */
     .ds-grouped { outline:1.5px dashed #52796F !important; outline-offset:3px; }
@@ -22927,6 +23098,15 @@ function wire(roots) {
     .ds-guide { position:absolute; z-index:9998; pointer-events:none; }
     .ds-guide.v { width:1px; background:#E8776B; box-shadow:0 0 0 .5px rgba(232,119,107,.35); }
     .ds-guide.h { height:1px; background:#E8776B; box-shadow:0 0 0 .5px rgba(232,119,107,.35); }
+    .ds-guide.gx { height:9px; margin-top:-4.5px; border:solid #D6457A; border-width:0 1px;
+       background:linear-gradient(#D6457A,#D6457A) center/100% 1px no-repeat; }
+    .ds-guide.gy { width:9px; margin-left:-4.5px; border:solid #D6457A; border-width:1px 0;
+       background:linear-gradient(#D6457A,#D6457A) center/1px 100% no-repeat; }
+    .ds-guide.gx::after, .ds-guide.gy::after { content:attr(data-gap); position:absolute;
+       font:600 9.5px/1 system-ui; color:#fff; background:#D6457A; padding:2px 3px;
+       border-radius:3px; white-space:nowrap; }
+    .ds-guide.gx::after { left:50%; top:-14px; transform:translateX(-50%); }
+    .ds-guide.gy::after { top:50%; left:8px; transform:translateY(-50%); }
     /* Ruler guides: persistent teal lines you place, distinct from the hot
        snap flashes above. The rulers themselves sit inside the page's own
        padding gutter so they never cover content. */
@@ -29372,6 +29552,37 @@ const TABLE_PATCH_KEYS = ['header', 'headerRows', 'footerRows', 'footerFill', 'i
   'headerCols', 'bandCols', 'bandColStroke',
   'bandStroke', 'band', 'fill', 'headerFill', 'headerColor', 'border', 'colw', 'colAlign', 'cells', 'merges', 'style'];
 /** One batch verb on its own, its result unwrapped onto the status. */
+/** Select `ids` (and the key object, if `o.key`), run an Arrange action on
+ *  them and settle with one render. `run` returns an error string to refuse. */
+async function _pilotArrange(ids, o, run) {
+  if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+  const d = $('out').contentDocument;
+  const list = [].concat(ids || []).map(String);
+  if (!list.length) return { ok: false, error: 'give the ids to arrange' };
+  for (const id of list) {
+    const v = _pilotValidateExists(id);
+    if (!v.ok) return v;
+  }
+  if (o.key != null && !list.includes(o.key)) return { ok: false, error: `key '${o.key}' is not one of the ids` };
+  setSel(d, list);
+  if (o.key != null) keyId = o.key;
+  const before = historySeq;
+  const err = run(d);
+  if (typeof err === 'string') return { ok: false, error: err };
+  if (historySeq === before) return { ok: false, error: $('stat').textContent || 'nothing to arrange' };
+  markDirty();
+  await render();
+  const d2 = $('out').contentDocument;
+  const boxes = {};
+  for (const id of list) {
+    const el = d2.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`);
+    const pg = el && (el.closest('section.page') || d2.querySelector('section.page'));
+    if (!el) continue;
+    const b = shapeOf(id) ? shapeBox(el, pg) : inchBox(el, pg);
+    boxes[id] = { x: +b.x.toFixed(2), y: +b.y.toFixed(2), w: +b.w.toFixed(2), h: +b.h.toFixed(2) };
+  }
+  return { ...docsync.api.status(), boxes, key: keyOf() };
+}
 async function _pilotOne(verb, args) {
   const r = await docsync.api.batch([{ verb, args }]);
   if (!r || !r.ok || !Array.isArray(r.results)) return r;
@@ -30358,6 +30569,43 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     markDirty();
     await render();
     return { ...docsync.api.status(), ...r };
+  },
+
+  /** Align and Distribute, as the Arrange strip does them (INDESIGN_PARITY
+   *  57). align(ids, 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' |
+   *  'bottom', {to: 'auto' | 'selection' | 'key' | 'page', key: id});
+   *  distribute(ids, 'h' | 'v', {gap: inches, key: id}) — no gap spreads
+   *  evenly (three or more), a gap spaces exactly, out from the key or the
+   *  first. keyObject(id | null) sets the key object in the selection.
+   *  alignTo(v) sets the strip's own Align to. Each move is one undo step;
+   *  returns the boxes after, in page inches. */
+  async align(ids, mode, o = {}) {
+    return _pilotArrange(ids, o, d => {
+      if (!['left', 'hcenter', 'right', 'top', 'vcenter', 'bottom'].includes(mode))
+        return "align(ids, 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom', {to, key})";
+      if (o.to != null && !ALIGN_TO.includes(o.to)) return `to must be one of ${ALIGN_TO.join(', ')}`;
+      alignSel(d, mode, o.to || alignTo);
+    });
+  },
+  async distribute(ids, axis, o = {}) {
+    return _pilotArrange(ids, o, d => {
+      if (!['h', 'v'].includes(axis)) return "distribute(ids, 'h' | 'v', {gap, key})";
+      const gap = o.gap == null ? null : +o.gap;
+      if (gap != null && !(gap >= 0 && gap <= 5)) return 'gap is inches, 0 to 5';
+      if (gap == null && selIds.size < 3) return 'an even spread needs three or more — or give a gap';
+      distributeSel(d, axis, gap);
+    });
+  },
+  keyObject(id) {
+    const d = $('out').contentDocument;
+    if (id != null && !selIds.has(id)) return { ok: false, error: `'${id}' is not in the selection — select() first` };
+    keyId = id == null ? null : String(id);
+    paintSel(d);
+    return { ok: true, key: keyOf() };
+  },
+  alignTo(v) {
+    if (v != null && !ALIGN_TO.includes(v)) return { ok: false, error: `alignTo(${ALIGN_TO.map(x => `'${x}'`).join(' | ')})` };
+    return { ok: true, alignTo: v == null ? alignTo : setAlignTo(v) };
   },
 
   /** lock(id) / lock(id, false). Locked means hands off: drag, place(),

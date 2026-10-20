@@ -1068,10 +1068,24 @@ Google Doc import exist, and were never listed here.
     every paragraph in it. In the Paragraph panel. Not done, and said so:
     InDesign's minimum / desired / maximum spacing for justified text —
     CSS has one word-spacing value, not a range.
-57. **Smarter arranging.** Align to a **key object** (the last one
-    clicked stays still), distribute with an **exact gap**, and smart
-    guides that show **equal spacing** while dragging. `alignSel` and
-    `distributeSel` do the rest already. **S–M.**
+57. **Smarter arranging. — CLOSED 2026-10-19.** **Key object**: with
+    several selected, a click that does not travel on one already in the
+    selection makes it the key (a heavier ring; click it again to clear) —
+    InDesign's gesture. Align lines the rest up with it and leaves it
+    still. **Align to** in the Position pop (auto / selection / key object
+    / page, remembered per editor): auto is the page for one thing, the key
+    when there is one, otherwise the selection's bounds. **Distribute with
+    a gap**: the pop's gap field (inches) spaces each neighbour exactly
+    that far apart, out from the key object or the first in the row, so it
+    works on two things; empty spreads evenly as before. **Equal spacing
+    while dragging**: a dragged thing (or group) clicks to the middle of
+    the two neighbours either side of it, or to a gap already standing
+    between two things in the same row or column, with a capped bar and
+    its size across each matching gap. An edge or centre line still wins
+    on its axis; spacing is tried only on an axis that found none.
+    Neighbours are siblings — a card's title is not a neighbour of the
+    card beside it. Pilot `align(ids, mode, {to, key})`,
+    `distribute(ids, axis, {gap, key})`, `keyObject(id)`, `alignTo(v)`.
 58. **Paste Into — a picture inside a shape.** An image framed by an
     ellipse, polygon, star or path: the shape becomes the mask (SVG
     `clipPath`, which Pathfinder already writes). Headshots in circles are
@@ -1179,8 +1193,8 @@ layout).
 bound report's published bytes identical — and then (47) and (52), which
 are the editor's alone and touch no published byte; then (59) and (53);
 then (61), (66), (68) and (70); then (80), (77) and (75); then (76),
-(79), (81) and (78), each keeping every published byte. Next: (57), (64)
-and (82). (48) and (62) are the large ones, worth
+(79), (81) and (78), each keeping every published byte; then (57),
+which is the editor's alone. Next: (64) and (82). (48) and (62) are the large ones, worth
 it when a report asks for footnotes or a local review round.
 
 ## A fifth pass: InDesign's panel menus — scoped 2026-10-19
