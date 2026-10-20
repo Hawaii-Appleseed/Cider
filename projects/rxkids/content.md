@@ -17,23 +17,32 @@ RxKeiki Hawaiʻi—A Prescription for Health, Hope, and Opportunity: Cash for Mo
 [[hero.image.alt]]
 Moms, babies and children in Hawaiʻi
 
+[[facts.1.eyebrow]]
+Who qualifies
+
 [[facts.1.value]]
 14,808
 
 [[facts.1.label]]
-babies born in Hawaiʻi in a year, and every family would qualify
+babies born in Hawaiʻi in a year, all eligible
+
+[[facts.2.eyebrow]]
+What families get
 
 [[facts.2.value]]
 $4,500
 
 [[facts.2.label]]
-for each family over the first six months
+per family in the first six months
+
+[[facts.3.eyebrow]]
+How long
 
 [[facts.3.value]]
 6–12 months
 
 [[facts.3.label]]
-of $500 monthly payments after birth, as funding allows
+of $500 payments after birth, as funding allows
 
 [[what.h2]]
 What is RxKeiki?
@@ -554,11 +563,17 @@ What it would cost
 [[cost.lead]]
 Because RxKeiki is universal, these figures price the first payments for every baby born in Hawaiʻi, and show how much TANF could cover.
 
+[[evidence.stat.1.eyebrow]]
+Healthier births
+
 [[evidence.stat.1.value]]
 Up to 18%
 
 [[evidence.stat.1.label]]
 fewer preterm births in Flint[^flint-preterm]
+
+[[evidence.stat.2.eyebrow]]
+Child safety
 
 [[evidence.stat.2.value]]
 32%
@@ -566,11 +581,17 @@ fewer preterm births in Flint[^flint-preterm]
 [[evidence.stat.2.label]]
 fewer infant maltreatment allegations[^rxkids-maltreatment]
 
+[[evidence.stat.3.eyebrow]]
+Stable housing
+
 [[evidence.stat.3.value]]
 91%
 
 [[evidence.stat.3.label]]
 fewer evictions among participants[^rxkids-impact]
+
+[[evidence.stat.4.eyebrow]]
+Financial security
 
 [[evidence.stat.4.value]]
 88%

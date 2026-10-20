@@ -283,6 +283,26 @@ def brand_colors(markup: str) -> str:
 # beside FN_CSS), so they win on order instead of !important. Cards go flat
 # (hairline + one soft shadow), bands go white / pale-navy / navy, buttons go
 # solid, the cost table loses its colour columns. No markup changed.
+ICONS = {
+    "heart": "<path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/>",
+    "dollar": "<line x1='12' y1='1' x2='12' y2='23'/><path d='M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/>",
+    "calendar": "<rect x='3' y='4' width='18' height='18' rx='2' ry='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/>",
+    "activity": "<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>",
+    "shield": "<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
+    "home": "<path d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/>",
+    "smile": "<circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/>",
+}
+
+
+def _icon_uri(body: str) -> str:
+    return ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' "
+            "stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" + body + "</svg>")
+
+
+ICON_CSS = "".join(
+    f'  .rxk-ic-{k}::before {{ -webkit-mask-image: url("{_icon_uri(b)}"); mask-image: url("{_icon_uri(b)}"); }}\n'
+    for k, b in ICONS.items())
+
 MODERN_CSS = """
   .page { --rx-navy:#10125A; --rx-ink:#40417B; --rx-muted:#555689;
           --rx-line:#E4E4EE; --rx-tint:#F5F5F9;
@@ -397,9 +417,6 @@ MODERN_CSS = """
   .rxk-fact + .rxk-fact { border-left: 1px solid var(--rx-line); }
   .rxk-fact-value { display: block; font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1;
     color: var(--rx-navy); font-family: OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Heavy', Arial, sans-serif; }
-  .rxk-fact:nth-child(1) .rxk-fact-value { color: var(--rx-red); }
-  .rxk-fact:nth-child(2) .rxk-fact-value { color: var(--rx-blue); }
-  .rxk-fact:nth-child(3) .rxk-fact-value { color: var(--rx-magenta); }
   .rxk-fact-label { display: block; margin-top: 6px; font-size: .98rem; line-height: 1.45; color: var(--rx-ink); }
   @media (max-width: 768px) { .rxk-facts { grid-template-columns: 1fr; margin-top: -24px; }
     .rxk-fact + .rxk-fact { border-left: none; border-top: 1px solid var(--rx-line); } }
@@ -483,7 +500,6 @@ MODERN_CSS = """
   /* Quality pass: a real page heading, four-up stats, a soft tab transition */
   .rxk-h1 { display: contents; margin: 0; font: inherit; }
   .rxk-facts--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 auto; }
-  .rxk-facts--4 .rxk-fact:nth-child(4) .rxk-fact-value { color: #067453; }
   @media (max-width: 768px) { .rxk-facts--4 { grid-template-columns: 1fr 1fr; } .rxk-facts--4 .rxk-fact:nth-child(3) { border-left: none; } }
   @keyframes rxkIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .rxk-panel:not([hidden]) { animation: rxkIn .35s ease-out; }
@@ -637,6 +653,29 @@ MODERN_CSS = """
     .rxk-enroll { padding: 8px 16px; font-size: .92rem; }
   }
 
+
+  /* Stat tiles: icon, eyebrow, number, label. Used by the Home facts and the Evidence results */
+  .rxk-facts { background: none; border: none; box-shadow: none; border-radius: 0; gap: 14px; max-width: 1040px; }
+  .rxk-fact { background: #fff; border: 1px solid var(--rx-line); border-radius: 16px; box-shadow: var(--rx-shadow);
+    padding: 20px 22px 22px; }
+  .rxk-fact + .rxk-fact { border-left: 1px solid var(--rx-line); }
+  .rxk-fact-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; margin-bottom: 14px; }
+  .rxk-fact-icon::before { content: ""; width: 22px; height: 22px; background: currentColor;
+    -webkit-mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat;
+    mask-position: center; mask-size: contain; mask-repeat: no-repeat; }
+  .rxk-fact:nth-child(1) .rxk-fact-icon { color: #CD2C40; background: rgba(238,48,60,.10); }
+  .rxk-fact:nth-child(2) .rxk-fact-icon { color: #0272B9; background: rgba(0,131,202,.10); }
+  .rxk-fact:nth-child(3) .rxk-fact-icon { color: #AB3192; background: rgba(171,49,146,.10); }
+  .rxk-fact:nth-child(4) .rxk-fact-icon { color: #067453; background: rgba(0,168,79,.12); }
+  .rxk-fact-eyebrow { display: block; font-size: .84rem; font-weight: 600; letter-spacing: .2px; color: var(--rx-ink); }
+  .rxk-fact-value { color: var(--rx-navy); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .rxk-fact-label { margin-top: 4px; font-size: .95rem; }
+  @media (max-width: 768px) {
+    .rxk-fact + .rxk-fact, .rxk-facts--4 .rxk-fact:nth-child(3) { border: 1px solid var(--rx-line); }
+    .rxk-fact { padding: 16px 18px 18px; }
+  }
+  /*ICON_CSS*/
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -649,7 +688,7 @@ _HEART = ("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewB
           "<path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 "
           "3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86"
           "-8.55 11.54L12 21.35z'/></svg>")
-MODERN_CSS = MODERN_CSS.replace("{_HEART}", _HEART)
+MODERN_CSS = MODERN_CSS.replace("{_HEART}", _HEART).replace("/*ICON_CSS*/", ICON_CSS)
 BRAND_CSS = f"""
   .tfc-benefit-list li::before {{
     content: ""; width: 15px; height: 15px; top: 5px; left: 1px;
@@ -748,6 +787,39 @@ TAB_JS = """
 })();
 """
 
+COUNT_JS = """
+(function () {
+  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  var NUM = /\\d[\\d,]*(?:\\.\\d+)?/g;
+  function render(final, e) {
+    return final.replace(NUM, function (m) {
+      var dec = (m.split('.')[1] || '').length;
+      var v = parseFloat(m.replace(/,/g, '')) * e;
+      if (dec) return v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+      return m.indexOf(',') > -1 ? Math.round(v).toLocaleString('en-US') : String(Math.round(v));
+    });
+  }
+  function run(el) {
+    var final = el.getAttribute('data-final'), t0 = null, dur = 1100;
+    function frame(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = p < 1 ? render(final, e) : final;
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    setTimeout(function () { el.textContent = final; }, dur + 500);
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); run(en.target); } });
+  }, { threshold: 0.6 });
+  Array.prototype.forEach.call(document.querySelectorAll('.rxk-fact-value'), function (el) {
+    var t = el.textContent;
+    if (/\\d/.test(t)) { el.setAttribute('data-final', t); io.observe(el); }
+  });
+})();
+""" if not EDIT else ""
+
 EDIT_OVERRIDES = """
   /* DOCSYNC_EDIT only: the scroll-reveal IntersectionObserver above doesn't
      reliably fire inside the editor's iframe, which otherwise leaves every
@@ -776,12 +848,17 @@ def hero() -> str:
 FACT_KEYS = ["1", "2", "3"]
 
 
+def fact_tile(prefix: str, icon: str) -> str:
+    """One stat tile: tinted icon, a short eyebrow, the number, a one-line label."""
+    return (f'<div class="rxk-fact"><span class="rxk-fact-icon rxk-ic-{icon}" aria-hidden="true"></span>'
+            f'<span class="rxk-fact-eyebrow">{C.t(f"{prefix}.eyebrow")}</span>'
+            f'<span class="rxk-fact-value">{C.t(f"{prefix}.value")}</span>'
+            f'<span class="rxk-fact-label">{C.t(f"{prefix}.label")}</span></div>')
+
+
 def facts_strip() -> str:
     """Three headline numbers straddling the hero's bottom edge."""
-    items = "".join(
-        f'<div class="rxk-fact"><span class="rxk-fact-value">{C.t(f"facts.{k}.value")}</span>'
-        f'<span class="rxk-fact-label">{C.t(f"facts.{k}.label")}</span></div>'
-        for k in FACT_KEYS)
+    items = "".join(fact_tile(f"facts.{k}", ic) for k, ic in zip(FACT_KEYS, ("heart", "dollar", "calendar")))
     return f"""{L.spacer("facts")}<div class="rxk-facts"{L.attr("facts")}>{items}</div>"""
 
 
@@ -1380,10 +1457,8 @@ STAT_KEYS = ["1", "2", "3", "4"]
 
 def evidence_stats() -> str:
     """Four headline results from the benefit bullets below it (same sources)."""
-    items = "".join(
-        f'<div class="rxk-fact"><span class="rxk-fact-value">{C.t(f"evidence.stat.{k}.value")}</span>'
-        f'<span class="rxk-fact-label">{C.t(f"evidence.stat.{k}.label")}</span></div>'
-        for k in STAT_KEYS)
+    items = "".join(fact_tile(f"evidence.stat.{k}", ic)
+                    for k, ic in zip(STAT_KEYS, ("activity", "shield", "home", "smile")))
     return f"""
 <div class="tfc-full-width tfc-bg-white tfc-reveal" style="padding-top:44px !important;padding-bottom:12px !important;"{L.sec("band.evstats")}>
     <div class="tfc-content-container">
@@ -1842,6 +1917,7 @@ html = f"""<!DOCTYPE html>
 <script>
 {SCRIPT}
 {TAB_JS}
+{COUNT_JS}
 // Generic expand/collapse for sections added on the Hawaii page (the Cost
 // table) — same max-height dance as the original page's toggleFlintSection,
 // which is hard-wired to #flint-content and can't be reused.
