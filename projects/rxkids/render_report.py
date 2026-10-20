@@ -216,7 +216,7 @@ BRAND_COLORS = {
     "#64b5f6": "#66b5df",
     "#6b4423": "#bd742c",
     "#6b8aa3": "#70719c",
-    "#718096": "#70719c",
+    "#718096": "#40417b",
     "#7a5d3a": "#d48026",
     "#7d1319": "#b62844",
     "#7fb9de": "#66b5df",
@@ -284,7 +284,7 @@ def brand_colors(markup: str) -> str:
 # (hairline + one soft shadow), bands go white / pale-navy / navy, buttons go
 # solid, the cost table loses its colour columns. No markup changed.
 MODERN_CSS = """
-  .page { --rx-navy:#10125A; --rx-ink:#40417B; --rx-muted:#70719C;
+  .page { --rx-navy:#10125A; --rx-ink:#40417B; --rx-muted:#555689;
           --rx-line:#E4E4EE; --rx-tint:#F5F5F9;
           --rx-red:#EE303C; --rx-blue:#0083CA; --rx-green:#00A84F;
           --rx-orange:#F7941D; --rx-magenta:#AB3192;
@@ -475,6 +475,31 @@ MODERN_CSS = """
   .rxk-bill-card p { margin: 0; font-size: 1.02rem; line-height: 1.65; color: var(--rx-ink); }
   @media (max-width: 768px) { .rxk-bill-grid { grid-template-columns: 1fr; } }
 
+
+  /* Contrast pass (WCAG AA): every text/background pair below measured < 4.5:1 (3:1 large) */
+  a.fn { color: #0272B9; }
+  @media screen { a.fn { color: #0272B9; } }
+  .tfc-expand-btn, .tfc-cta-section .tfc-btn, .tfc-cta-section .tfc-btn:hover { background-color: #CD2C40; }
+  .tfc-cta-section .tfc-btn { background: #CD2C40; }
+  .tfc-cta-section .tfc-btn.tfc-btn-outline, .tfc-cta-section .tfc-btn.tfc-btn-outline:hover { background: none; }
+  .tfc-section-subtitle.tfc-subtitle-box { background: #CD2C40; }
+  .tfc-tanf-option-num { color: var(--rx-muted); }
+  .tfc-tanf-card--free .tfc-tanf-option-num { color: #067453; }
+  .tfc-tanf-tag--good, .tfc-tanf-card--free .tfc-tanf-tag { color: #067453; }
+  .rxk-cost-stat .rxk-cost-btn-eyebrow { color: var(--rx-ink); }
+  .tfc-cost-title { color: var(--rx-navy); }
+  .tfc-3d-bar-group:nth-child(1) .tfc-3d-bar-value, .tfc-3d-bar-group:nth-child(2) .tfc-3d-bar-value { color: var(--rx-navy); }
+  .tfc-bar-fill.married { color: var(--rx-navy); }
+
+
+  /* Quality pass: a real page heading, four-up stats, a soft tab transition */
+  .rxk-h1 { display: contents; margin: 0; font: inherit; }
+  .rxk-facts--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 auto; }
+  .rxk-facts--4 .rxk-fact:nth-child(4) .rxk-fact-value { color: #067453; }
+  @media (max-width: 768px) { .rxk-facts--4 { grid-template-columns: 1fr 1fr; } .rxk-facts--4 .rxk-fact:nth-child(3) { border-left: none; } }
+  @keyframes rxkIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .rxk-panel:not([hidden]) { animation: rxkIn .35s ease-out; }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -594,7 +619,7 @@ def hero() -> str:
     logo_src = data_uri(HERE / "assets" / "rxkeiki-logo.png")
     return f"""
 <div class="tfc-hero tfc-reveal"{L.sec("band.hero")}>
-    {img_el("header.logo", "rxkeiki-logo", logo_src, esc(C.text("header.logo.alt")))}
+    <h1 class="rxk-h1">{img_el("header.logo", "rxkeiki-logo", logo_src, esc(C.text("header.logo.alt")))}</h1>
     <div class="tfc-hero-content">
         <div class="tfc-hero-badge"{L.attr("hero.badge")}>{C.t("hero.badge")}</div>
     </div>
@@ -655,6 +680,7 @@ BENEFIT_COLORS = ["#EE303C", "#0083CA", "#00A84F", "#F7941D", "#AB3192", "#FFC20
 # under 3.2:1). The same three headings take navy: orange and yellow on
 # white are 2.2:1 and 1.6:1.
 LIGHT_FILLS = {"#00A84F", "#F7941D", "#FFC20E"}
+ACTIVE_FILL = {"#EE303C": "#CD2C40", "#0083CA": "#0272B9"}   # white text needs >= 4.5:1
 
 
 def _benefit_rainbow_css() -> str:
@@ -668,7 +694,7 @@ def _benefit_rainbow_css() -> str:
         out.append(
             f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i})::before {{ background: {col}; }} "
             f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active::before {{ background: {ink}; }} "
-            f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active {{ background: {col}; border-left-color: {col}; color: {ink}; }} "
+            f".tfc-benefits-tabs .tfc-benefit-tab:nth-child({i}).active {{ background: {ACTIVE_FILL.get(col, col)}; border-left-color: {ACTIVE_FILL.get(col, col)}; color: {ink}; }} "
             f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) .tfc-benefit-list li::before {{ color: {col}; }} "
             f".tfc-benefits-display .tfc-benefit-content:nth-child({i}) h3 {{ color: {head}; }}"
         )
@@ -1210,6 +1236,25 @@ def next_link(tab: str) -> str:
             f'<span{C.slot_attr(f"next.{tab}")}>{C.text(f"next.{tab}")}</span></button></div>')
 
 
+STAT_KEYS = ["1", "2", "3", "4"]
+
+
+def evidence_stats() -> str:
+    """Four headline results from the benefit bullets below it (same sources)."""
+    items = "".join(
+        f'<div class="rxk-fact"><span class="rxk-fact-value">{C.t(f"evidence.stat.{k}.value")}</span>'
+        f'<span class="rxk-fact-label">{C.t(f"evidence.stat.{k}.label")}</span></div>'
+        for k in STAT_KEYS)
+    return f"""
+<div class="tfc-full-width tfc-bg-white tfc-reveal" style="padding-top:44px !important;padding-bottom:12px !important;"{L.sec("band.evstats")}>
+    <div class="tfc-content-container">
+        <div class="tfc-section" style="margin-bottom: 0;">
+            {L.spacer("evidence.stats")}<div class="rxk-facts rxk-facts--4"{L.attr("evidence.stats")}>{items}</div>
+        </div>
+    </div>
+</div>"""
+
+
 TEASERS = ["why", "evidence", "funding", "bill"]
 
 
@@ -1262,7 +1307,7 @@ MAIN_BODY = f"""<div class="tfc-container">
 {tab_bar()}
 {panel("home", HOME_PANEL)}
 {panel("why", stats_carousel() + next_link("why"))}
-{panel("evidence", benefits_widget() + next_link("evidence"))}
+{panel("evidence", evidence_stats() + benefits_widget() + next_link("evidence"))}
 {panel("funding", tanf_section() + cost_section() + next_link("funding"))}
 {panel("bill", bill_section() + next_link("bill"))}"""
 

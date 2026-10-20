@@ -578,6 +578,30 @@ What it would cost
 [[cost.lead]]
 Because RxKeiki is universal, these figures price the first payments for every baby born in Hawaiʻi, and show how much TANF could cover.
 
+[[evidence.stat.1.value]]
+Up to 18%
+
+[[evidence.stat.1.label]]
+fewer preterm births in Flint[^flint-preterm]
+
+[[evidence.stat.2.value]]
+32%
+
+[[evidence.stat.2.label]]
+fewer infant maltreatment allegations[^rxkids-maltreatment]
+
+[[evidence.stat.3.value]]
+91%
+
+[[evidence.stat.3.label]]
+fewer evictions among participants[^rxkids-impact]
+
+[[evidence.stat.4.value]]
+88%
+
+[[evidence.stat.4.label]]
+say it helped them make ends meet[^rxkids-survey-nov2024]
+
 [[bill.status]]
 Draft · 2027 session
 
