@@ -326,7 +326,6 @@ MODERN_CSS = """
   .tfc-step-title, .tfc-scene-title, .tfc-tanf-card h3 { letter-spacing: -.01em; }
 
   /* Buttons: solid fills, no gradients or glows */
-  .tfc-hero-badge { background: var(--rx-navy); box-shadow: none; }
   .tfc-expand-btn { background-color: var(--rx-red); box-shadow: none; padding: 14px 28px; font-size: 1.1rem; }
   .tfc-expand-btn:hover { background-color: var(--rx-red); transform: none; box-shadow: none; filter: brightness(.92); }
   .rxk-cost-btn { background: var(--rx-navy) !important; box-shadow: none !important; }
@@ -403,7 +402,7 @@ MODERN_CSS = """
 
   /* Phase 3: a larger hero photo and a facts strip straddling its bottom edge */
   .tfc-hero { gap: 56px; }
-  .tfc-hero-badge { font-size: .84rem; letter-spacing: .6px; padding: 8px 16px; }
+  .tfc-hero-image-container { margin-left: auto; }
   .tfc-hero-image-container { max-width: 540px; }
   .rxk-facts { position: relative; z-index: 3; max-width: 1000px; margin: -40px auto 0; display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)); background: #fff; border: 1px solid var(--rx-line);
@@ -528,10 +527,6 @@ MODERN_CSS = """
     .page .tfc-hero .rxkeiki-logo[style] { position: static !important; left: auto !important; top: auto !important;
       width: min(100%, 460px) !important; max-width: 460px !important; margin: 0 auto !important; display: block;
       transform: none !important; }
-    .tfc-hero-content { margin: 0; max-width: none; text-align: center; }
-    .page .tfc-hero-content .tfc-hero-badge[style] { position: static !important; left: auto !important; top: auto !important;
-      width: auto !important; max-width: 100%; white-space: normal; text-align: center; margin: 0 auto !important;
-      display: inline-block; line-height: 1.35; }
     .tfc-hero-image-container { max-width: 640px; width: 100%; margin: 0 auto; }
     .tfc-hero-image { max-height: none; }
   }
@@ -757,9 +752,6 @@ def hero() -> str:
     return f"""
 <div class="tfc-hero tfc-reveal"{L.sec("band.hero")}>
     <h1 class="rxk-h1">{img_el("header.logo", "rxkeiki-logo", logo_src, esc(C.text("header.logo.alt")))}</h1>
-    <div class="tfc-hero-content">
-        <div class="tfc-hero-badge"{L.attr("hero.badge")}>{C.t("hero.badge")}</div>
-    </div>
     <div class="tfc-hero-image-container">
         {img_el("hero.image", "tfc-hero-image", "https://images.squarespace-cdn.com/content/63c215f8a268791349c9f04a/1673931525935-N3GTMH2YO0HVT68BZOA0/unsplash-image-5zp0jym2w9M.jpg?content-type=image%2Fjpeg", esc(C.text("hero.image.alt")))}
     </div>
@@ -1645,7 +1637,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
-<meta name="description" content="{esc(C.text("hero.badge"))}. A proposed statewide, no-strings program modeled on Rx Kids.">
+<meta name="description" content="{esc(C.text("title"))}: a proposed universal, no-strings cash program for Hawaiʻi moms and babies, modeled on Rx Kids.">
 {FONT_LINK}
 <style>
 {OKINA_FACES}
