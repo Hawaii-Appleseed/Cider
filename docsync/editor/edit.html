@@ -1589,6 +1589,17 @@
         padding:8px 10px; font:14px/1.5 ui-serif, Georgia, serif; color:#1E2A30; min-height:2.4em; }
   #story textarea:focus { outline:2px solid #6B9E78; outline-offset:0; border-color:transparent; }
   #story .st-item.bad textarea { outline:2px solid #C0392B; }
+  #library { position:fixed; inset:0; z-index:99990; background:rgba(20,30,35,.25); }
+  #library .lib-card { position:absolute; left:50%; top:10vh; max-height:76vh; transform:translateX(-50%);
+        width:min(560px, calc(100vw - 32px)); background:#fff; border-radius:var(--r-card, 12px);
+        box-shadow:0 24px 60px rgba(20,30,35,.35); display:flex; flex-direction:column; font:13px system-ui; color:#2F3E46; }
+  #library .st-head { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid #E8EEEA; }
+  #library .st-head b { font-size:14px; }
+  #library .st-note { flex:1; font-size:11.5px; color:#7A8B84; }
+  #library .st-list { overflow:auto; padding:8px 16px 16px; }
+  #library .lib-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #F0F4F1; }
+  #library .lib-n { flex:1; min-width:0; font-weight:600; }
+  #library .lib-meta { font-weight:400; font-size:11.5px; color:#7A8B84; }
   /* Quick Apply (INDESIGN_PARITY 51): one box, ⌘↩, everything by name. */
   #qa { position:fixed; inset:0; z-index:100000; background:rgba(20,30,35,.18); }
   #qa .qa-card { position:absolute; left:50%; top:14%; transform:translateX(-50%);
@@ -2080,6 +2091,9 @@
     <button class="shp" id="file-story" aria-label="Story editor — every slot and text box as plain words, in reading order"><svg class="shp-i" viewBox="0 0 16 16"
       ><path d="M4 2.5h8M4 5.5h8M4 8.5h8M4 11.5h5"/></svg
       ><span class="shp-t">Story editor</span></button>
+    <button class="shp" id="file-library" aria-label="Library — pieces saved from any report, to drop into this one"><svg class="shp-i" viewBox="0 0 16 16"
+      ><rect x="2.5" y="2.5" width="4.5" height="11" rx=".8"/><rect x="9" y="2.5" width="4.5" height="5" rx=".8"/><rect x="9" y="9" width="4.5" height="4.5" rx=".8"/></svg
+      ><span class="shp-t">Library…</span></button>
     <button class="shp" id="file-loadstyles"><svg class="shp-i" viewBox="0 0 16 16"
       ><path d="M3 3.5h7M3 6.5h5M3 9.5h7"/><path d="M11.5 8.5v5M9 11l2.5 2.5L14 11"/></svg
       ><span class="shp-t">Load styles from another report…</span></button>
@@ -6197,6 +6211,9 @@ function layerMenu(d, el, e) {
     if (clonable || (tableOf(id) && !tableOf(id).flow))
       item('Step and repeat…', () => { if (!selIds.has(id)) setSel(d, [id]); stepRepeatDialog(d); });
     if (lastXform) item('Transform again', () => { if (!selIds.has(id)) setSel(d, [id]); transformAgain(d); });
+    // The library (50): keep this — and whatever else is selected with it.
+    if (clonable || (tableOf(id) && !tableOf(id).flow))
+      item('Save to library…', () => { closeMenu(d); if (!selIds.has(id)) setSel(d, [id]); return saveToLibraryDialog(); });
     item('Copy style', () => { setSel(d, [id]); copyStyle(d); }, !!styleType(d, id));
     if (styleClip) item('Paste style',
       () => { if (!selIds.has(id)) setSel(d, [id]); pasteStyle(d); },
@@ -15773,6 +15790,182 @@ function _dropLayer(name) {
   layout.layers = docLayers().filter(x => x.name !== name);
   if (!layout.layers.length) delete layout.layers;
 }
+// ------------------------------------------------------------- library
+// A library of reusable pieces (INDESIGN_PARITY.md 50): a callout, a stat
+// card, a figure frame — the selection's shapes, text boxes and tables saved
+// under a name, with the text, object and cell styles and swatches they wear
+// brought along, and dropped into any report on the page in view with fresh
+// ids. With the local server the library is one file every report on this
+// machine shares (serve.py /__library); without one (the hub) it lives in
+// this browser. A dropped piece adds only the styles this report lacks — a
+// same-named style here is this report's, and wins.
+const LIB_KEY = 'cider-library';
+async function libraryList() {
+  if (local) { const r = JSON.parse(await get('/__library')); return r.pieces || []; }
+  try { return JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); } catch (e) { return []; }
+}
+async function libraryChange(op, piece, name) {
+  if (local) {
+    const r = await postLocal('/__library', { op, piece, name });
+    if (!r.ok) throw new Error(r.error || 'the library refused that');
+    return r.pieces;
+  }
+  let all = await libraryList();
+  const n = (piece && piece.name) || name;
+  all = all.filter(p => p.name !== n);
+  if (op === 'add') all.push(piece);
+  try { localStorage.setItem(LIB_KEY, JSON.stringify(all)); }
+  catch (e) { throw new Error('this browser would not keep it (storage full?)'); }
+  return all;
+}
+/** The text, object and cell styles and swatches `items` wear — followed
+ *  through `from`, an object style's text style, nested and GREP styles,
+ *  and the swatches every one of those names (a gradient swatch's stops too). */
+function stylesWornBy(items) {
+  const text = new Set(), object = new Set(), cell = new Set(), sw = new Set();
+  const walk = (o, key, above) => {
+    if (Array.isArray(o)) { o.forEach(v => walk(v, key, above)); return; }
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.use === 'string')
+      (key === 'style' || above === 'text' ? text : above === 'cells' ? cell : object).add(o.use);
+    Object.entries(o).forEach(([k, v]) => { if (v && typeof v === 'object') walk(v, k, key); });
+  };
+  items.forEach(it => walk(it.data, it.kind, null));
+  for (const m of JSON.stringify(items).matchAll(CHAR_STYLE_RE_G)) text.add(m[2].trim());
+  const close = (set, all, more) => {
+    const q = [...set];
+    while (q.length) {
+      const st = all[q.pop()];
+      if (!st) continue;
+      [st.from, ...more(st)].forEach(n => { if (n && !set.has(n)) { set.add(n); q.push(n); } });
+    }
+  };
+  close(object, objectStyles(), () => []);
+  object.forEach(n => { const u = ((objectStyles()[n] || {}).style || {}).use; if (u) text.add(u); });
+  close(text, textStyles(), st => [...(st.grep || []), ...(st.nested || [])].map(r => r && r.style));
+  close(cell, layout.cellStyles || {}, () => []);
+  const pick = (all, names) => Object.fromEntries([...names].filter(n => all[n]).map(n => [n, clone(all[n])]));
+  const styles = { textStyles: pick(textStyles(), text), objectStyles: pick(objectStyles(), object),
+                   cellStyles: pick(layout.cellStyles || {}, cell) };
+  const scanSw = o => {
+    if (typeof o === 'string') { const m = o.trim().match(SWATCH_REF_RE); if (m && swatches()[m[1].trim()] && !sw.has(m[1].trim())) { sw.add(m[1].trim()); scanSw(swatches()[m[1].trim()]); } }
+    else if (o && typeof o === 'object') Object.values(o).forEach(scanSw);
+  };
+  scanSw(items); scanSw(styles);
+  styles.swatches = pick(swatches(), sw);
+  Object.keys(styles).forEach(k => { if (!Object.keys(styles[k]).length) delete styles[k]; });
+  return styles;
+}
+/** The selection as a piece: its objects at their own place, the styles
+ *  they wear, and the pictures they point at (named, not carried). */
+function pieceFromSelection(name) {
+  const items = [];
+  [...selIds].forEach(id => {
+    const sh = shapeOf(id), b = boxOf(id), t = tableOf(id);
+    if (sh) items.push({ kind: 'shape', data: clone(sh) });
+    else if (b) items.push({ kind: 'box', data: standaloneCopy(b) });
+    else if (t && !t.flow) items.push({ kind: 'table', data: clone(t) });
+  });
+  if (!items.length) return null;
+  const x0 = Math.min(...items.map(i => +i.data.x || 0)), y0 = Math.min(...items.map(i => +i.data.y || 0));
+  items.forEach(i => { i.data.x = +((+i.data.x || 0) - x0).toFixed(3); i.data.y = +((+i.data.y || 0) - y0).toFixed(3);
+    delete i.data.page; delete i.data.anchor; delete i.data.wrap; delete i.data.layer; delete i.data.thread; delete i.data.next; });
+  const wasGroup = selGroups().length === 1 && selGroups()[0].length === selIds.size
+    && selGroups()[0].every(id => selIds.has(id));
+  const pictures = [...new Set([...JSON.stringify(items).matchAll(/assets\/[^"')\s]+/g)].map(m => m[0]))];
+  return { name, made: new Date().toISOString().slice(0, 10), from: M.id, items, wasGroup,
+           styles: stylesWornBy(items), pictures,
+           w: +Math.max(...items.map(i => (+i.data.x || 0) + (+i.data.w || 0))).toFixed(2),
+           h: +Math.max(...items.map(i => (+i.data.y || 0) + (+i.data.h || 0.5))).toFixed(2) };
+}
+/** Drop a piece on the page in view at (x, y) inches: the styles this
+ *  report lacks first, then the objects with fresh ids — one undo step. */
+async function placePiece(piece, at) {
+  const d = $('out').contentDocument;
+  pushHistory();
+  const merged = mergeStyles(piece.styles || {}, { textStyles: 'add', objectStyles: 'add', cellStyles: 'add', swatches: 'add' });
+  const page = visiblePageId();
+  const ox = at && at.x != null ? +at.x : Math.max(0, (PAGE_W_IN - (piece.w || 0)) / 2);
+  const oy = at && at.y != null ? +at.y : 1;
+  const ids = [];
+  piece.items.forEach(it => {
+    const x = +Math.min(Math.max(0, ox + it.data.x), PAGE_W_IN - Math.min(+it.data.w || 0.5, PAGE_W_IN)).toFixed(3);
+    const y = +Math.min(Math.max(0, oy + it.data.y), PAGE_H_IN - Math.min(+it.data.h || 0.4, PAGE_H_IN)).toFixed(3);
+    if (it.kind === 'shape') {
+      const nid = freeShapeId(it.data.kind);
+      layout.shapes = layout.shapes || [];
+      layout.shapes.push({ ...clone(it.data), id: nid, page, x, y });
+      ids.push(nid);
+    } else if (it.kind === 'box') {
+      const nid = freeBoxId();
+      boxes().push({ ...clone(it.data), id: nid, page, x, y });
+      ids.push('text.' + nid);
+    } else if (it.kind === 'table') {
+      const nid = freeTableId();
+      tables().push({ ...clone(it.data), id: nid, page, x, y });
+      ids.push('table.' + nid);
+    }
+  });
+  if (piece.wasGroup && ids.length > 1) { layout.groups = layout.groups || []; layout.groups.push(ids); }
+  markDirty();
+  await render();
+  setSel($('out').contentDocument, ids);
+  const added = Object.values(merged).reduce((n, v) => n + v.added.length, 0);
+  $('stat').textContent = `${piece.name} placed — ${ids.length} object${ids.length === 1 ? '' : 's'}`
+    + (added ? `, ${added} style${added === 1 ? '' : 's'} and swatch${added === 1 ? '' : 'es'} brought along` : '');
+  return { ids, styles: merged };
+}
+async function saveToLibraryDialog() {
+  if (!selIds.size) { $('stat').textContent = 'select the pieces to save first'; return; }
+  const got = await dsForm('Save to library', [{ name: 'name', type: 'text', label: 'Name it — a stat card, a pull quote…', value: '' }],
+    { okLabel: 'Save', validate: v => v.name.trim() ? '' : 'a name, so you can find it' });
+  if (got == null) return;
+  const piece = pieceFromSelection(got.name.trim());
+  if (!piece) { $('stat').textContent = 'nothing here can go in the library — shapes, text boxes and placed tables can'; return; }
+  try {
+    await libraryChange('add', piece);
+    $('stat').textContent = `"${piece.name}" is in the library` + (piece.pictures.length
+      ? ` — its picture${piece.pictures.length === 1 ? ' stays' : 's stay'} linked (${piece.pictures.join(', ')}); a report without the file shows it missing` : '');
+  } catch (e) { $('stat').textContent = 'not saved: ' + e.message; }
+}
+async function libraryDialog() {
+  document.querySelectorAll('.pop:not(.docked)').forEach(p => { p.hidden = true; });
+  let pieces;
+  try { pieces = await libraryList(); } catch (e) { $('stat').textContent = 'the library could not be read: ' + e.message; return; }
+  const wrap = document.createElement('div'); wrap.id = 'library';
+  wrap.innerHTML = '<div class="st-card lib-card" role="dialog" aria-label="Library"><div class="st-head"><b>Library</b>'
+    + `<span class="st-note">${local ? 'shared by every report on this computer' : 'kept in this browser'}</span>`
+    + '<button id="lib-save" class="sw-default">Save the selection…</button><button id="lib-close" class="sw-default">Done</button></div>'
+    + '<div class="st-list" id="lib-list"></div></div>';
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  const draw = () => {
+    const list = $('lib-list'); list.textContent = '';
+    if (!pieces.length) { list.textContent = 'Nothing saved yet. Select a callout, a stat card or a figure frame, then Save the selection.'; return; }
+    pieces.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
+      const row = document.createElement('div'); row.className = 'lib-row';
+      const n = document.createElement('div'); n.className = 'lib-n';
+      n.textContent = p.name;
+      const meta = document.createElement('div'); meta.className = 'lib-meta';
+      const nst = Object.values(p.styles || {}).reduce((k, v) => k + Object.keys(v).length, 0);
+      meta.textContent = `${p.items.length} object${p.items.length === 1 ? '' : 's'}`
+        + (nst ? ` · ${nst} style${nst === 1 ? '' : 's'} and swatches` : '') + (p.from ? ` · from ${p.from}` : '');
+      n.appendChild(meta);
+      const put = document.createElement('button'); put.className = 'sw-default'; put.textContent = 'Place';
+      put.addEventListener('click', async () => { close(); await placePiece(p); });
+      const del = document.createElement('button'); del.className = 'sw-default'; del.textContent = '✕'; del.title = 'Take it out of the library';
+      del.addEventListener('click', async () => { pieces = await libraryChange('delete', null, p.name); draw(); });
+      row.append(n, put, del); list.appendChild(row);
+    });
+  };
+  draw();
+  $('lib-close').addEventListener('click', close);
+  $('lib-save').addEventListener('click', async () => { close(); await saveToLibraryDialog(); });
+  wrap.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); });
+}
+$('file-library').addEventListener('click', () => { $('filepop').hidden = true; libraryDialog(); });
+
 // ---------------------------------------------------------- Story editor
 // Every slot and text box of the report as one plain column of markdown, in
 // reading order (INDESIGN_PARITY.md 63) — for the rewrite pass where the
@@ -31256,6 +31449,27 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async defineLayer(name, opts) { return docsync.api.batch([{ verb: 'defineLayer', args: [name, opts || {}] }]); },
   async toLayer(ids, name) { return docsync.api.batch([{ verb: 'toLayer', args: [ids, name] }]); },
   async dropLayer(name) { return docsync.api.batch([{ verb: 'dropLayer', args: [name] }]); },
+  /** Library (50): library() lists the saved pieces; saveToLibrary(name)
+   *  saves the selection (with the styles and swatches it wears);
+   *  placeFromLibrary(name, {x, y}?) drops one on the page in view, one
+   *  undo step; dropFromLibrary(name) takes one out. */
+  async library() { return { ok: true, pieces: (await libraryList()).map(p => ({ name: p.name, items: p.items.length,
+      styles: Object.fromEntries(Object.entries(p.styles || {}).map(([k, v]) => [k, Object.keys(v)])), pictures: p.pictures || [] })) }; },
+  async saveToLibrary(name) {
+    if (!name || !String(name).trim()) return { ok: false, error: 'saveToLibrary(name) — with the pieces selected' };
+    const piece = pieceFromSelection(String(name).trim());
+    if (!piece) return { ok: false, error: 'select shapes, text boxes or placed tables first' };
+    try { await libraryChange('add', piece); } catch (e) { return { ok: false, error: e.message }; }
+    return { ok: true, name: piece.name, items: piece.items.length, styles: piece.styles, pictures: piece.pictures };
+  },
+  async placeFromLibrary(name, at) {
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    const p = (await libraryList()).find(x => x.name === name);
+    if (!p) return { ok: false, error: `no piece called '${name}' in the library` };
+    const r = await placePiece(p, at);
+    return { ...docsync.api.status(), ...r };
+  },
+  async dropFromLibrary(name) { try { await libraryChange('delete', null, name); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; } },
   /** Story editor (63): stories() lists every slot and text box, page by
    *  page in reading order, with its markdown — what File ▸ Story editor
    *  shows. Writing one back is setSlot / setBoxText. */

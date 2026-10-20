@@ -992,11 +992,26 @@ Google Doc import exist, and were never listed here.
     ascender, cap height or x-height with `text-box`. A box's `h` is still
     a minimum, so these need a box with room to spare. In the box's style
     pop. Not done: a fixed first-baseline offset in inches.
-50. **A library of reusable pieces** (was 26). Select a callout, stat card
-    or figure frame ▸ Save to library; drop it into any report from the
-    library panel, with its text styles and swatches brought along. Lives
-    beside the templates (a library project the editor reads), so the hub
-    and local mode share it. **M.**
+50. **A library of reusable pieces** (was 26). **— CLOSED 2026-10-19.**
+    Right-click ▸ **Save to library…** (or File ▸ Library… ▸ Save the
+    selection): the selected shapes, text boxes and placed tables, at
+    their places relative to each other, a group kept a group, with the
+    text, object and cell styles and swatches they wear — followed through
+    `from`, an object style's text style, nested and GREP styles, and a
+    gradient swatch's stops. File ▸ **Library…** lists the pieces (how
+    many objects and styles, which report they came from); **Place** drops
+    one on the page in view with fresh ids, adding only the styles this
+    report lacks (a same-named style here wins), one undo step. Where it
+    lives, changed from the sketch above: with the local server, one file
+    every report on the computer shares (`~/.cider/library.json`, or
+    `CIDER_LIBRARY`; `GET`/`POST /__library`) — not beside the templates,
+    because those are engine files that vendor into every consumer, and a
+    consumer's engine must stay clean; without a server (the hub) it is
+    kept in that browser. So the hub's library and a computer's are
+    separate. Pictures are named, not carried: a piece that shows
+    `assets/…` says so on saving, and a report without the file shows it
+    missing. Pilot `library()`, `saveToLibrary(name)`,
+    `placeFromLibrary(name, {x, y}?)`, `dropFromLibrary(name)`.
 51. **Quick Apply. — CLOSED 2026-10-19.** ⌘↩ (Ctrl+Enter) anywhere —
     on the page, in the chrome, or while typing in words — opens one box:
     a few letters, ↑/↓, Enter. It offers what fits the selection: text

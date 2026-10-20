@@ -157,6 +157,27 @@ def main():
         if (msg is None) != (got is None) or (msg and msg not in got):
             FAILS.append(f"_export_bad_args({req}) = {got!r}, wanted {msg!r}")
 
+    # The library of pieces (INDESIGN_PARITY.md 50): add replaces by name,
+    # delete takes one out, a bad piece is refused, and the file is atomic.
+    lib = Path(tempfile.mkdtemp()) / "lib.json"
+    old_env = os.environ.get("CIDER_LIBRARY"), os.environ.pop("PRIMER_TEST_SAFE", None)
+    os.environ["CIDER_LIBRARY"] = str(lib)
+    try:
+        r1 = _sv._library_change({"op": "add", "piece": {"name": "A", "items": [{"kind": "box", "data": {}}]}})
+        r2 = _sv._library_change({"op": "add", "piece": {"name": "A", "items": [{"kind": "shape", "data": {}}]}})
+        r3 = _sv._library_change({"op": "add", "piece": {"name": "B", "items": []}})
+        r4 = _sv._library_change({"op": "delete", "name": "A"})
+        if not (r1["ok"] and len(r2["pieces"]) == 1 and r2["pieces"][0]["items"][0]["kind"] == "shape"
+                and not r3["ok"] and r4["ok"] and r4["pieces"] == [] and _sv._library_read() == []):
+            FAILS.append(f"library add/replace/refuse/delete went wrong: {r1} {r2} {r3} {r4}")
+    finally:
+        if old_env[0] is None:
+            os.environ.pop("CIDER_LIBRARY", None)
+        else:
+            os.environ["CIDER_LIBRARY"] = old_env[0]
+        if old_env[1] is not None:
+            os.environ["PRIMER_TEST_SAFE"] = old_env[1]
+
     if FAILS:
         print("RENDER TESTS FAILED:\n" + "\n\n".join(FAILS))
         sys.exit(1)
