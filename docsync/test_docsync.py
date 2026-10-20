@@ -4837,6 +4837,37 @@ from docsync.publish_page import semantic_tags  # noqa: E402
 check_eq("semantic_tags writes <b>/<i> as <strong>/<em> and leaves <br>, <body>, <i class=..> alone",
          semantic_tags('<p><b>x</b> <i>y</i><br><i class="ic"></i></p><body>'),
          '<p><strong>x</strong> <em>y</em><br><i class="ic"></i></p><body>')
+# ------------------------------------------------- publish: the report to the hub's Worker
+import urllib.request as _ur  # noqa: E402
+from docsync import publish as _pub  # noqa: E402
+
+_seen = {}
+
+
+class _Resp:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _fake_open(req, timeout=None):
+    _seen.update({k.lower(): v for k, v in req.header_items()}, url=req.full_url)
+    return _Resp()
+
+
+_real_open, _ur.urlopen = _ur.urlopen, _fake_open
+try:
+    _note = _pub._report("https://w.example/", "k", "O~R~p", {"ok": True})
+finally:
+    _ur.urlopen = _real_open
+check_eq("publish report names itself, not Python-urllib (Cloudflare 403s that, error 1010)",
+         (_note, _seen.get("url"), _seen.get("x-export-key"), "urllib" in _seen.get("user-agent", "urllib").lower()),
+         ("reported to the hub (200)", "https://w.example/site/O~R~p", "k", False))
+
 # ------------------------------------------------- fidelity: the markup check (no browser)
 import tempfile as _tf  # noqa: E402
 from docsync.fidelity import static_check  # noqa: E402

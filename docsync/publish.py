@@ -209,7 +209,11 @@ def _report(base: str, key: str, room: str, payload: dict) -> str:
     try:
         req = urllib.request.Request(f"{base.rstrip('/')}/site/{room}", method="POST",
                                      data=json.dumps(payload).encode(),
-                                     headers={"content-type": "application/json", "x-export-key": key})
+                                     headers={"content-type": "application/json", "x-export-key": key,
+                                              # Cloudflare's bot check refuses urllib's default
+                                              # Python-urllib/x.y with a 403 (error 1010) before
+                                              # the Worker ever sees the request.
+                                              "user-agent": "cider-publish (docsync.publish)"})
         with urllib.request.urlopen(req, timeout=20) as r:
             return f"reported to the hub ({r.status})"
     except Exception as e:  # noqa: BLE001 — a report that fails must not fail the publish
