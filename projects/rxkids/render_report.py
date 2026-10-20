@@ -476,6 +476,9 @@ MODERN_CSS = """
   @media (max-width: 768px) { .rxk-bill-grid { grid-template-columns: 1fr; } }
 
 
+  /* Buttons do not inherit the page font by themselves */
+  .tfc-benefit-tab, .tfc-expand-btn, .tfc-btn, .rxk-cost-btn { font-family: inherit; }
+
   /* Contrast pass (WCAG AA): every text/background pair below measured < 4.5:1 (3:1 large) */
   a.fn { color: #0272B9; }
   @media screen { a.fn { color: #0272B9; } }
@@ -499,6 +502,80 @@ MODERN_CSS = """
   @media (max-width: 768px) { .rxk-facts--4 { grid-template-columns: 1fr 1fr; } .rxk-facts--4 .rxk-fact:nth-child(3) { border-left: none; } }
   @keyframes rxkIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .rxk-panel:not([hidden]) { animation: rxkIn .35s ease-out; }
+
+
+  /* Sources: one bar, closed by default */
+  .tfc-full-width.rxk-sources { padding: 20px 0 40px !important; }
+  .rxk-sources-h2 { margin: 0; font-size: inherit; }
+  .rxk-sources-bar { appearance: none; display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: var(--rx-tint); border: 1px solid var(--rx-line); border-radius: 14px; padding: 18px 24px;
+    font: inherit; font-weight: 700; font-size: 1.15rem; color: var(--rx-navy); cursor: pointer; text-align: left;
+    transition: border-color .2s; }
+  .rxk-sources-bar:hover { border-color: var(--rx-navy); }
+  .rxk-sources-bar:focus-visible { outline: 2px solid var(--rx-blue); outline-offset: 2px; }
+  .rxk-sources-bar .tfc-expand-icon { font-size: .8rem; transition: transform .3s ease; }
+  .rxk-sources-bar.active .tfc-expand-icon { transform: rotate(180deg); }
+  .rxk-sources .tfc-expand-inner { background: none; border: none; box-shadow: none; padding: 28px 4px 0; }
+
+
+  /* Responsive: the sheet is fluid below its design width, the hero stacks, and the
+     two wide graphics (funding timeline, cost table) scroll sideways inside their card */
+  @media (max-width: 1230px) { .page { width: auto !important; max-width: 12.5in; } }
+  /* 1200px = the sheet width: below it the engine releases every pinned element itself */
+  @media (max-width: 1200px) {
+    .tfc-hero { flex-direction: column; align-items: stretch; gap: 22px; padding: 28px 24px 64px !important; }
+    /* [style] + .page lift this above the engine's own phone rule, which also sets width:auto !important */
+    .page .tfc-hero .rxkeiki-logo[style] { position: static !important; left: auto !important; top: auto !important;
+      width: min(100%, 460px) !important; max-width: 460px !important; margin: 0 auto !important; display: block;
+      transform: none !important; }
+    .tfc-hero-content { margin: 0; max-width: none; text-align: center; }
+    .page .tfc-hero-content .tfc-hero-badge[style] { position: static !important; left: auto !important; top: auto !important;
+      width: auto !important; max-width: 100%; white-space: normal; text-align: center; margin: 0 auto !important;
+      display: inline-block; line-height: 1.35; }
+    .tfc-hero-image-container { max-width: 640px; width: 100%; margin: 0 auto; }
+    .tfc-hero-image { max-height: none; }
+  }
+  @media (max-width: 820px) {
+    .rxk-tabs { justify-content: flex-start; padding: 0 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .rxk-tabs::-webkit-scrollbar { display: none; }
+    .rxk-tab { padding: 15px 14px; font-size: .95rem; }
+    .tfc-section-title { font-size: 1.75rem; }
+    .tfc-section-subtitle { font-size: 1.05rem; }
+    .tfc-section-subtitle.tfc-subtitle-box { padding: 24px 20px; font-size: 1.05rem; }
+    .rxk-facts { margin-top: -28px; }
+    .rxk-fact { padding: 18px 22px; }
+    .rxk-fact-value { font-size: 1.8rem; }
+    .rxk-feature-grid, .rxk-bill-grid { gap: 16px; margin-top: 32px; }
+    .rxk-bill-card, .rxk-feature-grid .tfc-scene-tag { padding: 24px 22px; }
+    .rxk-works { padding: 22px 20px 8px; }
+    .tfc-benefits-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .tfc-benefits-tabs .tfc-benefit-tab { padding: 9px 14px; font-size: .9rem; }
+    .tfc-benefit-text-box { padding: 22px 20px; }
+    .tfc-carousel-slide { padding: 24px 14px; }
+    .tfc-pullout-quote .tfc-quote-text { padding: 0 18px; font-size: 1.2rem; }
+    .tfc-total-banner { padding: 22px 18px; }
+    .tfc-total-amount { font-size: 2.6rem; }
+    .tfc-tanf-card { padding: 24px 22px; }
+    .rxk-fold-btn { width: 100%; justify-content: center; text-align: center; padding: 14px 18px; }
+    .rxk-tl-scroll { overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+    .rxk-tl-scroll .rxk-timeline, .rxk-tl-scroll .rxk-bracket-row { min-width: 700px; }
+    .rxk-cost-wrap { overflow-x: auto; }
+    .rxk-cost { min-width: 640px; }
+    .rxk-cost-title { padding: 16px 18px 6px; font-size: 1.05rem; }
+    .rxk-cost-stat .rxk-cost-btn-amt { font-size: 2.6rem; }
+    .rxk-endnotes { columns: 1; }
+    .rxk-sources-bar { padding: 15px 18px; font-size: 1.05rem; }
+    .tfc-cta-section { padding: 36px 20px; }
+    .rxk-cta-logo { width: min(300px, 80%); }
+    .rxk-next { padding: 8px 20px 56px; }
+    .rxk-next-btn { padding: 13px 22px; font-size: 1rem; }
+    /* the 3D poverty bars narrow to fit a phone card (top/side faces are relative, so the 3D look holds) */
+    .tfc-chart-container { padding: 10px 6px; }
+    .tfc-3d-chart { gap: 32px; }
+    .tfc-3d-bar, .tfc-3d-bar-front { width: 56px; }
+    .tfc-3d-bar-value { font-size: 1.05rem; }
+    .tfc-3d-bar-label { width: 68px; white-space: normal; line-height: 1.2; font-size: .85rem; bottom: -54px; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
@@ -582,6 +659,16 @@ TAB_JS = """
     var m = /^#rxk-([a-z]+)$/.exec(location.hash || '');
     return m ? m[1] : null;
   }
+  window.rxkSources = function (btn) {
+    rxkToggle(btn, 'sources-content');
+    btn.setAttribute('aria-expanded', btn.classList.contains('active') ? 'true' : 'false');
+  };
+  function openSourcesFor(hash) {
+    if (!/^#en\\d+$/.test(hash || '')) return;
+    var b = document.querySelector('.rxk-sources-bar');
+    if (b && !b.classList.contains('active')) window.rxkSources(b);
+    setTimeout(function () { var t = document.querySelector(hash); if (t) t.scrollIntoView({ block: 'center' }); }, 520);
+  }
   document.addEventListener('click', function (e) {
     var el = e.target.closest ? e.target.closest('[data-rxk-tab]') : null;
     if (el) show(el.getAttribute('data-rxk-tab'));
@@ -595,9 +682,9 @@ TAB_JS = """
     var nt = document.getElementById('rxk-tab-' + IDS[i]); if (nt) nt.focus();
     e.preventDefault();
   });
-  window.addEventListener('hashchange', function () { var id = fromLocation(); if (id) show(id, true); });
+  window.addEventListener('hashchange', function () { var id = fromLocation(); if (id) show(id, true); else openSourcesFor(location.hash); });
   var first = fromLocation();
-  if (first) show(first, true, true);
+  if (first) show(first, true, true); else openSourcesFor(location.hash);
 })();
 """
 
@@ -1073,7 +1160,7 @@ def tanf_timeline() -> str:
     green_w = f"{n_tanf / n * 100:.4f}%"            # green block: full height, left of the curve's end
     banner_w = f"{n_other / n * 100:.4f}%"          # OTHER FUNDING spans the purple columns
     return f"""{L.spacer("tanf.timeline")}
-    <div{L.attr("tanf.timeline")}>
+    <div class="rxk-tl-scroll"{L.attr("tanf.timeline")}>
       <div class="rxk-timeline">
         <div class="rxk-frame" style="clip-path:{poly}; -webkit-clip-path:{poly};"></div>
         <div class="rxk-inner" style="clip-path:{poly}; -webkit-clip-path:{poly};">
@@ -1199,13 +1286,18 @@ def cta() -> str:
 # BENEFIT_KEYS etc. above) needs somewhere those numbers resolve TO, or a
 # reader has no way to find what "¹" refers to.
 def sources_section() -> str:
+    """The numbered notes live behind one bar, closed by default, so no tab ends
+    in a wall of links. A footnote's popover carries its own text + link; this
+    list is the full record (and opens itself for an #enN link)."""
     items = C.fn.endnote_items(L, new_tab=True)
     return f"""
-<div class="tfc-full-width tfc-bg-white tfc-reveal"{L.sec("band.sources")}>
+<div class="tfc-full-width tfc-bg-white tfc-reveal rxk-sources"{L.sec("band.sources")}>
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
-            {L.spacer("endnotes.h2")}<h2 class="tfc-section-title"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</h2>
-            <ol class="rxk-endnotes">{items}</ol>
+            {L.spacer("endnotes.h2")}<h2 class="rxk-sources-h2"{L.attr("endnotes.h2")}><button type="button" class="rxk-sources-bar" aria-expanded="false" aria-controls="sources-content" onclick="rxkSources(this)"><span{C.slot_attr("endnotes.h2")}>{C.text("endnotes.h2")}</span><span class="tfc-expand-icon" aria-hidden="true">&#9660;</span></button></h2>
+            <div id="sources-content" class="tfc-expand-content">
+                <div class="tfc-expand-inner"><ol class="rxk-endnotes">{items}</ol></div>
+            </div>
         </div>
     </div>
 </div>"""
