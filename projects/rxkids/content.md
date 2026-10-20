@@ -12,7 +12,7 @@
 RxKeiki Hawaiʻi
 
 [[header.logo.alt]]
-RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies
+RxKeiki Hawaiʻi—A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies
 
 [[hero.badge]]
 Universal cash support for Hawaiʻi moms and babies
@@ -72,8 +72,8 @@ Benefits of Rx Kids
 Better Health Outcomes
 
 [[benefits.health.bullets]]
-- **Preterm births reduced by up to 18%** and low birthweight by 27%[^flint-preterm]
-- **Infant maltreatment allegations reduced by 32%**[^rxkids-maltreatment]
+- **Preterm births reduced by up to 18 percent** and low birthweight by 27 percent[^flint-preterm]
+- **Infant maltreatment allegations reduced by 32 percent**[^rxkids-maltreatment]
 - Postpartum depression screenings dropped by 14 percentage points[^rxkids-savings]
 - **$6.2 million in annual healthcare savings** from improved birth outcomes[^rxkids-savings]
 
@@ -81,26 +81,26 @@ Better Health Outcomes
 Child Development
 
 [[benefits.development.bullets]]
-- **80% of participants** report Rx Kids helped them become more confident parents[^rxkids-research-brief]
+- **80 percent of participants** report Rx Kids helped them become more confident parents[^rxkids-research-brief]
 - Reduced NICU admissions establish stronger developmental foundations[^rxkids-nicu]
 - Funds enable direct investments in home learning environments and enrichment materials[^rxkids-intl-analysis]
-- 59% found it easier to obtain needed healthcare[^rxkids-research-brief]
+- 59 percent found it easier to obtain needed healthcare[^rxkids-research-brief]
 
 [[benefits.housing.title]]
 Housing Stability
 
 [[benefits.housing.bullets]]
-- **91% decrease in evictions** among Rx Kids participants[^rxkids-impact]
+- **91 percent decrease in evictions** among Rx Kids participants[^rxkids-impact]
 - Average reduction in housing debt of **over $1,000 per family**[^rxkids-savings]
-- 57% of participants used funds explicitly for rent payments[^rxkids-research-brief]
-- Represents a **75% income expansion** for lowest-income families[^rxkids-nicu]
+- 57 percent of participants used funds explicitly for rent payments[^rxkids-research-brief]
+- Represents a **75 percent income expansion** for lowest-income families[^rxkids-nicu]
 
 [[benefits.food.title]]
 Food Security
 
 [[benefits.food.bullets]]
-- **78% of participants** use Rx Kids funds for food purchases[^rxkids-research-brief]
-- 8.2% increase in families reporting they have "enough of the kinds of foods we want"[^rxkids-research-brief]
+- **78 percent of participants** use Rx Kids funds for food purchases[^rxkids-research-brief]
+- 8.2 percent increase in families reporting they have "enough of the kinds of foods we want"[^rxkids-research-brief]
 - Cash enables purchase of preferred nutritious foods rather than reliance on emergency assistance
 - Better nutrition supports improved maternal health and birth outcomes[^rxkids-intl-analysis]
 
@@ -110,15 +110,15 @@ Economic Mobility
 [[benefits.economic.bullets]]
 - Economic benefits exceed program costs by **2.4 times**[^upjohn-study]
 - Every dollar invested generates **~$1.60 in local economic activity**[^givedirectly-rxkids]
-- 88% of participants report the program helped them make ends meet and feel financially secure[^rxkids-survey-nov2024]
-- **40% of economic gains** flow to families in the lowest income quintile[^upjohn-study]
+- 88 percent of participants report the program helped them make ends meet and feel financially secure[^rxkids-survey-nov2024]
+- **40 percent of economic gains** flow to families in the lowest income quintile[^upjohn-study]
 
 [[benefits.bonding.title]]
 Family Bonding
 
 [[benefits.bonding.bullets]]
 - Moms report feeling **more loved, valued, empowered, and respected**[^rxkids-impact]
-- "My mental space is different, so I'm happy to be happy for my baby" — Participant[^rxkids-survey-nov2024]
+- "My mental space is different, so I'm happy to be happy for my baby"—Participant[^rxkids-survey-nov2024]
 - Reduced financial stress enables greater emotional availability for children[^rxkids-maltreatment]
 - Trust in healthcare institutions rose by 10 percentage points[^rxkids-savings]
 
@@ -147,7 +147,7 @@ Example: Flint Michigan
 Case Study · Flint, Michigan
 
 [[flint.lead]]
-Comparing Flint moms eligible for Rx Kids in 2024 with 2023 — every hardship and mental-health measure improved.[^ajph-flint]
+Comparing Flint moms eligible for Rx Kids in 2024 with 2023—every hardship and mental-health measure improved.[^ajph-flint]
 
 [[flint.stat.rent.value]]
 13.0%
@@ -187,6 +187,9 @@ Reduction in uncontrollable worrying
 
 [[carousel.h2]]
 Why Hawaiʻi's families need RxKeiki
+
+[[carousel.lead]]
+Children in single-mother households are more than four times as likely to live in poverty as children with married parents,[^census-poverty] and a year of center-based childcare costs $24,115.[^childcare-aware-2024]
 
 [[carousel.poverty.quote]]
 In Hawaiʻi, more than 1 out of 4 children with single mothers are in poverty.
@@ -279,7 +282,7 @@ $1,500
 one-time
 
 [[steps.2.text]]
-A lump sum during pregnancy to prepare for baby's arrival — the same for every eligible mom.
+A lump sum during pregnancy to prepare for baby's arrival—the same for every eligible mom.
 
 [[steps.3.phase]]
 Months 1–6
@@ -330,7 +333,7 @@ Ongoing aid
 Comes with strings
 
 [[tanf.ongoing.body]]
-Monthly cash meant to cover a family's needs over the long term. To get it, families must follow rules — time limits, work requirements, and paperwork — and it can shrink other help like food assistance.
+Monthly cash meant to cover a family's needs over the long term. To get it, families must follow rules—time limits, work requirements, and paperwork—and it can shrink other help like food assistance.
 
 [[tanf.shortterm.title]]
 Short-term help
@@ -339,13 +342,13 @@ Short-term help
 No strings
 
 [[tanf.shortterm.body]]
-A brief payment for one specific moment — like welcoming a new baby. As long as it lasts no more than a few months, it counts as short-term help: no time limits, no work requirements, no strings attached.
+A brief payment for one specific moment—like welcoming a new baby. As long as it lasts no more than a few months, it counts as short-term help: no time limits, no work requirements, no strings attached.
 
 [[tanf.split.title]]
 How RxKeiki uses TANF
 
 [[tanf.split.body]]
-RxKeiki uses the no-strings, short-term TANF to cover the most important early stretch — the payment during pregnancy and the first three months after birth — for families who qualify. Everyone else gets the same payments from state, county, and private funds, so every family is treated alike.
+RxKeiki uses the no-strings, short-term TANF to cover the most important early stretch—the payment during pregnancy and the first three months after birth—for families who qualify. Everyone else gets the same payments from state, county, and private funds, so every family is treated alike.
 
 [[tanf.choice.title]]
 The choice that keeps it "no strings"
@@ -357,7 +360,7 @@ The proposed bill uses TANF for only the first four payments and pays everything
 How the bill keeps it no-strings
 
 [[tanf.choice.body]]
-There's a catch: TANF's no-strings help only lasts about four months. If TANF pays for more than that, the law treats it as ongoing aid — and the strings come back. (Just limiting it to lower-income families doesn't change that — what matters is keeping TANF to those first few months.) That leaves Hawaiʻi two ways to build the program. The proposed bill takes the second:
+There's a catch: TANF's no-strings help only lasts about four months. If TANF pays for more than that, the law treats it as ongoing aid—and the strings come back. (Limiting the program to families under an income cap does not change that—what matters is keeping TANF to those first few months.) That leaves Hawaiʻi two ways to build the program. The proposed bill takes the second:
 
 [[tanf.option1.title]]
 Use TANF for everything
@@ -366,7 +369,7 @@ Use TANF for everything
 Strings come back
 
 [[tanf.option1.body]]
-For families who qualify, TANF could pay for all 12 months. It's simpler to fund — but because the help now lasts longer than a few months, the law counts it as ongoing aid. That brings back time limits, work requirements, child-support rules, and smaller food and housing benefits.
+For families who qualify, TANF could pay for all 12 months. It's simpler to fund—but because the help now lasts longer than a few months, the law counts it as ongoing aid. That brings back time limits, work requirements, child-support rules, and smaller food and housing benefits.
 
 [[tanf.option2.title]]
 "Braided" funding
@@ -375,16 +378,16 @@ For families who qualify, TANF could pay for all 12 months. It's simpler to fund
 Stays no strings
 
 [[tanf.option2.body]]
-TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest — plus the families who don't qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how Rx Kids already runs in Michigan, and how the proposed bill is written.
+TANF pays only for the first few months, where it's truly no-strings. State and other funds cover the rest—plus the families who do not qualify for TANF. Everyone is covered, and the whole program stays no-strings. This is how Rx Kids already runs in Michigan, and how the proposed bill is written.
 
 [[tanf.note]]
-Last session's bill (HB2006) limited the program to families on Medicaid or under 300% of the poverty line, and it did not cap TANF to those first few months. The proposed 2027 bill fixes both: every family is eligible, and TANF can pay only for the prenatal payment and up to the first three monthly payments, for families who qualify (Medicaid can serve as the income test).[^rxkeiki-bill] It also pairs each government-funded payment with at least $1 of private money, paid out by a nonprofit administrator, to help protect SNAP and other benefits. State officials have warned about work rules, child support, and reduced benefits — those concerns are real under Option 1, but largely disappear under Option 2.
+Last session's bill (HB2006) limited the program to families on Medicaid or under 300 percent of the poverty line, and it did not cap TANF to those first few months. The proposed 2027 bill fixes both: every family is eligible, and TANF can pay only for the prenatal payment and up to the first three monthly payments, for families who qualify (Medicaid can serve as the income test).[^rxkeiki-bill] It also pairs each government-funded payment with at least $1 of private money, paid out by a nonprofit administrator, to help protect SNAP and other benefits. State officials have warned about work rules, child support, and reduced benefits—those concerns are real under Option 1, but largely disappear under Option 2.
 
 [[tanf.bottomline.title]]
 The bottom line
 
 [[tanf.bottomline.body]]
-TANF pays for the start for families who qualify. Hawaiʻi pays for the rest. Every family gets the same help right when they need it most — with no strings attached.
+TANF pays for the start for families who qualify. Hawaiʻi pays for the rest. Every family gets the same help right when they need it most—with no strings attached.
 
 [[cta.title]]
 Learn More About Rx Kids
@@ -627,7 +630,7 @@ $1,500 once during pregnancy, starting at 16 weeks. Then $500 a month from birth
 No strings attached
 
 [[bill.3.body]]
-Payments can't depend on work, school, child-support cooperation, health care use, or how the money is spent.
+Payments cannot depend on work, school, child-support cooperation, health care use, or how the money is spent.
 
 [[bill.4.title]]
 How TANF fits

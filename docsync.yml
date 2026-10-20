@@ -97,7 +97,7 @@ bindings:
     # person editing this report cannot change what the picture is. Swapping
     # the image itself is the editor's "Replace image…".
     editability_ok:
-      - "RxKeiki Hawaiʻi — A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies"
+      - "RxKeiki Hawaiʻi—A Prescription for Health, Hope, and Opportunity: Cash for Moms and Babies"
       - "Moms, babies and children in Hawaiʻi"
     # Also re-stages the editor, unlike budget-primer's `make ... pub` (whose
     # Makefile target already depends on `editor` -> docsync.stage) — without

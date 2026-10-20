@@ -577,6 +577,18 @@ MODERN_CSS = """
     .tfc-3d-bar-label { width: 68px; white-space: normal; line-height: 1.2; font-size: .85rem; bottom: -54px; }
   }
 
+
+  /* Print: every tab in order, the sources open, the navigation gone */
+  @media print {
+    .rxk-panel[hidden] { display: block !important; }
+    .rxk-tabs, .rxk-next, .rxk-sources-bar .tfc-expand-icon { display: none !important; }
+    .tfc-expand-content { max-height: none !important; overflow: visible !important; }
+    .tfc-reveal { opacity: 1 !important; transform: none !important; }
+    .rxk-panel { animation: none !important; break-before: page; }
+    .rxk-panel:first-of-type { break-before: auto; }
+    .tfc-full-width { break-inside: avoid; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .page *, .page *::before, .page *::after { transition: none !important; animation: none !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
@@ -914,6 +926,7 @@ def stats_carousel() -> str:
     <div class="tfc-content-container">
         <div class="tfc-section" style="margin-bottom: 0;">
             {L.spacer("carousel.h2")}<h2 class="tfc-section-title"{L.attr("carousel.h2")}>{C.t("carousel.h2")}</h2>
+            {C.html("carousel.lead", "tfc-section-subtitle")}
 
             <div class="tfc-carousel-container"{L.frame("panel.carousel")}>
                 <div class="tfc-carousel-track" id="statsTrack">
@@ -1311,7 +1324,7 @@ NEXT_TAB = {"why": "evidence", "evidence": "funding", "funding": "bill", "bill":
 def tab_bar() -> str:
     btns = "".join(
         f'<button type="button" role="tab" class="rxk-tab" id="rxk-tab-{k}" aria-controls="rxk-panel-{k}" '
-        f'aria-selected="{"true" if k == "home" else "false"}" data-rxk-tab="{k}">{C.t(f"tabs.{k}")}</button>'
+        f'aria-selected="{"true" if k == "home" else "false"}" tabindex="{"0" if k == "home" else "-1"}" data-rxk-tab="{k}">{C.t(f"tabs.{k}")}</button>'
         for k in TABS)
     return f"""{L.spacer("tabs")}<nav class="rxk-tabs" role="tablist"{describe(C, "tabs.desc", "RxKeiki sections", role="")}{L.attr("tabs")}>{btns}</nav>"""
 
@@ -1577,6 +1590,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
+<meta name="description" content="{esc(C.text("hero.badge"))}. A proposed statewide, no-strings program modeled on Rx Kids.">
 {FONT_LINK}
 <style>
 {OKINA_FACES}
