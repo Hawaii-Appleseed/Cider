@@ -81,10 +81,10 @@ Better Health Outcomes
 Child Development
 
 [[benefits.development.bullets]]
-- **80 percent of participants** report Rx Kids helped them become more confident parents[^rxkids-research-brief]
+- **75 percent of mothers** report Rx Kids helped them feel more confident as parents[^rxkids-impact]
 - Reduced NICU admissions establish stronger developmental foundations[^rxkids-nicu]
 - Funds enable direct investments in home learning environments and enrichment materials[^rxkids-intl-analysis]
-- 59 percent found it easier to obtain needed healthcare[^rxkids-research-brief]
+- 59 percent of participants say Rx Kids made it easier to get the healthcare their household needs[^poverty-solutions]
 
 [[benefits.housing.title]]
 Housing Stability
@@ -92,15 +92,15 @@ Housing Stability
 [[benefits.housing.bullets]]
 - **91 percent decrease in evictions** among Rx Kids participants[^rxkids-impact]
 - Average reduction in housing debt of **over $1,000 per family**[^rxkids-savings]
-- 57 percent of participants used funds explicitly for rent payments[^rxkids-research-brief]
+- 57 percent of survey respondents spent part of their cash prescription on rent[^poverty-solutions]
 - Represents a **75 percent income expansion** for lowest-income families[^rxkids-nicu]
 
 [[benefits.food.title]]
 Food Security
 
 [[benefits.food.bullets]]
-- **78 percent of participants** use Rx Kids funds for food purchases[^rxkids-research-brief]
-- 8.2 percent increase in families reporting they have "enough of the kinds of foods we want"[^rxkids-research-brief]
+- **78 percent of survey respondents** spent part of their cash prescription on food[^poverty-solutions]
+- Mothers were 14 percentage points less likely to report not having enough of the kinds of food they want[^ajph-flint]
 - Cash enables purchase of preferred nutritious foods rather than reliance on emergency assistance
 - Better nutrition supports improved maternal health and birth outcomes[^rxkids-intl-analysis]
 
@@ -660,7 +660,7 @@ Sources
 [flint-preterm]: GiveDirectly, "Flint pregnancy and infancy study," 2025. — https://www.givedirectly.org/flintstudy2025/
 [rxkids-maltreatment]: Rx Kids, "New rigorous research shows Rx Kids reduced infant maltreatment allegations in Flint, Michigan." — https://rxkids.org/new-rigorous-research-shows-rx-kids-reduced-infant-maltreatment-allegations-in-flint-michigan/
 [rxkids-savings]: Rx Kids, "New research shows cash for moms and babies improves health, stabilizes families, and saves millions." — https://rxkids.org/new-research-shows-cash-for-moms-and-babies-improves-health-stabilizes-families-and-saves-millions/
-[rxkids-research-brief]: Rx Kids Research Brief, September 2024. — https://rxkids.org/wp-content/uploads/2024/09/RxKids_Research_Brief.pdf
+[poverty-solutions]: University of Michigan Poverty Solutions, "Key Insights from the First Citywide Maternal and Infant Cash Prescription Program," August 14, 2024. — https://poverty.umich.edu/news/2024/key-insights-first-citywide-maternal-and-infant-cash-prescription-program
 [rxkids-nicu]: Your Children's Foundation, "Rx Kids: helping families thrive from the start," September 30, 2025. — https://yourchildrensfoundation.org/2025/09/30/rx-kids-helping-families-thrive-from-the-start/
 [rxkids-intl-analysis]: Rx Kids, "New analysis finds child cash benefits improve child health and development internationally." — https://rxkids.org/new-analysis-finds-child-cash-benefits-improve-child-health-and-development-internationally/
 [rxkids-impact]: Rx Kids, program impact summary. — https://rxkids.org/impact/
