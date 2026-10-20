@@ -1573,6 +1573,20 @@
         font:11.5px system-ui; color:var(--dim); }
   .ar-pos input { width:58px !important; }
   .ar-pos select { font:11.5px system-ui; }
+  /* Quick Apply (INDESIGN_PARITY 51): one box, ⌘↩, everything by name. */
+  #qa { position:fixed; inset:0; z-index:100000; background:rgba(20,30,35,.18); }
+  #qa .qa-card { position:absolute; left:50%; top:14%; transform:translateX(-50%);
+        width:min(480px, calc(100vw - 32px)); background:#fff; border-radius:var(--r-card, 12px);
+        box-shadow:0 24px 60px rgba(20,30,35,.35); overflow:hidden; font:13px system-ui; color:#2F3E46; }
+  #qa input { width:100%; box-sizing:border-box; border:0; border-bottom:1px solid #E8EEEA;
+        padding:13px 16px; font:15px system-ui; outline:none; }
+  #qa ul { list-style:none; margin:0; padding:4px 0; max-height:min(360px, 55vh); overflow:auto; }
+  #qa li { display:flex; gap:10px; align-items:baseline; padding:7px 16px; cursor:pointer; }
+  #qa li.on { background:#EEF4F0; }
+  #qa li .qa-k { flex:none; width:92px; font-size:11px; color:#7A8B84; text-transform:uppercase; letter-spacing:.03em; }
+  #qa li .qa-n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #qa li .qa-chip { flex:none; width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,.15); }
+  #qa .qa-none { padding:12px 16px; color:#7A8B84; }
   /* modal dialogs (native <dialog>): replace prompt()/confirm()/alert() with a
      focus-trapped modal that can gather several fields at once. */
   .dsdlg { border:0; border-radius:12px; padding:0; width:min(440px, 92vw);
@@ -15698,6 +15712,179 @@ function _dropLayer(name) {
   layout.layers = docLayers().filter(x => x.name !== name);
   if (!layout.layers.length) delete layout.layers;
 }
+// ---------------------------------------------------------- Quick Apply
+// InDesign's fastest path (INDESIGN_PARITY.md 51): ⌘↩ opens one box that
+// finds, by a few letters, any text style, character style (while typing in
+// words), object style or swatch — applied to what is selected — or any
+// command the editor's own buttons carry, pressed as a click would. Every
+// apply is one undo step, through the same writes the panels use.
+
+/** What Quick Apply would act on: the slots / text boxes (as style keys),
+ *  the objects that can wear an object style, every selected thing with a
+ *  fill, and the words being typed in, if any. */
+function qaTargets() {
+  const d = $('out').contentDocument;
+  const ae = d && d.activeElement;
+  const host = editing && ae && ae.isContentEditable ? ae.closest('[contenteditable="true"]') || ae : null;
+  const textKeys = [];
+  if (selected) textKeys.push(selected);
+  else if (d) selEls(d).forEach(el => {
+    const id = idOf(el);
+    if (boxOf(id)) { textKeys.push(id); return; }
+    const keys = new Set([...el.querySelectorAll('[data-slot]')].map(x => x.dataset.slot));
+    if (el.dataset.slot) keys.add(el.dataset.slot);
+    if (keys.size === 1) textKeys.push([...keys][0]);
+  });
+  const ids = [...selIds].filter(id => !isLocked(id));
+  return { d, host, textKeys: [...new Set(textKeys)],
+           objIds: ids.filter(id => objKindOf(id)), fillIds: ids };
+}
+/** Every editor command a button carries: its words, its id, a click. */
+function qaCommands() {
+  const seen = new Set(), out = [];
+  document.querySelectorAll('button[id]').forEach(b => {
+    if (b.closest('#qa, dialog') || b.disabled) return;
+    const label = (b.getAttribute('aria-label') || b.title || b.textContent || '')
+      .replace(/\s+/g, ' ').trim();
+    if (label.length < 2 || label.length > 80 || seen.has(label.toLowerCase())) return;
+    seen.add(label.toLowerCase());
+    out.push({ kind: 'command', label, id: b.id, run: () => b.click() });
+  });
+  return out;
+}
+function qaItems() {
+  const t = qaTargets(), out = [];
+  const textNames = Object.keys(layout.textStyles || {}).sort();
+  if (t.host && t.d.getSelection() && !t.d.getSelection().isCollapsed)
+    textNames.forEach(n => out.push({ kind: 'character style', label: n,
+      run: () => { applyCharStyle(t.d, t.host, n); t.host.dispatchEvent(new Event('input', { bubbles: true })); } }));
+  if (t.textKeys.length && !t.host)
+    textNames.forEach(n => out.push({ kind: 'text style', label: n, run: async () => {
+      pushHistory();
+      t.textKeys.forEach(k => {
+        const st = styleOf(k) || {};
+        setStyle(k, Object.fromEntries(Object.keys(bareStyle(st)).map(x => [x, null])));
+        setStyle(k, { use: n });
+      });
+      markDirty(); await render(); if (selected) showType(selected);
+    } }));
+  const kinds = [...new Set(t.objIds.map(objKindOf))];
+  if (kinds.length === 1)
+    objStyleNames(kinds[0]).forEach(n => out.push({ kind: 'object style', label: n, run: async () => {
+      pushHistory();
+      t.objIds.forEach(id => { const o = objOf(id); stripLook(o, kinds[0]); o.use = n; });
+      markDirty(); await render(); paintSel($('out').contentDocument);
+    } }));
+  Object.keys(swatches()).sort().forEach(n => {
+    const grad = isGradSwatch(n);
+    if (t.fillIds.length && !t.host) out.push({ kind: 'swatch', label: `${n} — fill`, chip: cssFill(`@${n}`),
+      run: async () => {
+        pushHistory();
+        t.fillIds.forEach(id => { const f = fillTargets(id); f.set(`@${n}`); });
+        markDirty(); await render(); paintSel($('out').contentDocument);
+      } });
+    if (!grad && t.textKeys.length && !t.fillIds.length && !t.host) out.push({ kind: 'swatch', label: `${n} — text colour`,
+      chip: swatchHex(`@${n}`), run: async () => {
+        pushHistory(); t.textKeys.forEach(k => setStyle(k, { color: `@${n}` }));
+        markDirty(); await render(); if (selected) showType(selected);
+      } });
+  });
+  return out.concat(qaCommands());
+}
+/** Letters in order, scored: a run of them, and at a word's start, counts
+ *  for more. null when the letters are not all there. */
+function qaScore(q, label) {
+  const s = label.toLowerCase();
+  if (!q) return 0;
+  let i = 0, score = 0, run = 0, last = -2;
+  for (const ch of q) {
+    const j = s.indexOf(ch, i);
+    if (j < 0) return null;
+    run = j === last + 1 ? run + 1 : 0;
+    score += 1 + run * 2 + (j === 0 || /[\s—·(/-]/.test(s[j - 1]) ? 3 : 0);
+    last = j; i = j + 1;
+  }
+  return score - s.length * 0.01;
+}
+function qaFilter(items, q) {
+  q = q.trim().toLowerCase().replace(/\s+/g, ' ');
+  return items.map(it => ({ it, sc: qaScore(q, `${it.label} ${it.kind}`) }))
+    .filter(x => x.sc !== null)
+    .sort((a, b) => b.sc - a.sc || (a.it.kind === 'command') - (b.it.kind === 'command'))
+    .map(x => x.it);
+}
+let qaState = null;
+function quickApply() {
+  if ($('qa')) { closeQuickApply(); return; }
+  const items = qaItems();
+  const wrap = document.createElement('div'); wrap.id = 'qa';
+  wrap.innerHTML = '<div class="qa-card" role="dialog" aria-label="Quick Apply">'
+    + '<input id="qa-in" type="text" placeholder="Apply a style, swatch or command…" autocomplete="off" spellcheck="false">'
+    + '<ul id="qa-list" role="listbox"></ul></div>';
+  document.body.appendChild(wrap);
+  // Opened from inside words: the words stay open (modalOpen keeps their
+  // blur from committing them), as a dialog keeps them.
+  qaState = { items, shown: [], on: 0, range: null, modal: !!editing && !modalOpen };
+  if (qaState.modal) modalOpen = true;
+  // Typing in words: keep the selection, so a character style lands on it.
+  const d = $('out').contentDocument, sel = d && d.getSelection();
+  if (sel && sel.rangeCount) qaState.range = sel.getRangeAt(0).cloneRange();
+  const input = $('qa-in');
+  const draw = () => {
+    const ul = $('qa-list');
+    qaState.shown = qaFilter(qaState.items, input.value).slice(0, 60);
+    qaState.on = Math.min(qaState.on, Math.max(0, qaState.shown.length - 1));
+    ul.textContent = '';
+    if (!qaState.shown.length) { const li = document.createElement('li'); li.className = 'qa-none'; li.textContent = 'nothing by that name'; ul.appendChild(li); return; }
+    qaState.shown.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'option');
+      li.className = i === qaState.on ? 'on' : '';
+      const k = document.createElement('span'); k.className = 'qa-k'; k.textContent = it.kind;
+      const n = document.createElement('span'); n.className = 'qa-n'; n.textContent = it.label;
+      li.append(k, n);
+      if (it.chip) { const c = document.createElement('span'); c.className = 'qa-chip'; c.style.background = it.chip; li.appendChild(c); }
+      li.addEventListener('mousedown', e => { e.preventDefault(); qaRun(it); });
+      ul.appendChild(li);
+    });
+    const on = ul.children[qaState.on]; if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+  };
+  input.addEventListener('input', () => { qaState.on = 0; draw(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); qaState.on = Math.min(qaState.on + 1, qaState.shown.length - 1); draw(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); qaState.on = Math.max(qaState.on - 1, 0); draw(); }
+    else if (e.key === 'Enter') { e.preventDefault(); const it = qaState.shown[qaState.on]; if (it) qaRun(it); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeQuickApply(); }
+  });
+  wrap.addEventListener('mousedown', e => { if (e.target === wrap) closeQuickApply(); });
+  draw();
+  input.focus();
+}
+function closeQuickApply(refocus = true) {
+  const w = $('qa'); if (!w) return;
+  const r = qaState && qaState.range, modal = qaState && qaState.modal;
+  w.remove();
+  if (refocus && r) {
+    const d = $('out').contentDocument, n = r.startContainer.nodeType === 3 ? r.startContainer.parentElement : r.startContainer;
+    const host = n && n.closest && n.closest('[contenteditable]:not([contenteditable="false"])');
+    if (host) { host.focus(); const s2 = d.getSelection(); s2.removeAllRanges(); s2.addRange(r); }
+  }
+  if (modal) modalOpen = false;
+  qaState = null;
+}
+async function qaRun(it) {
+  closeQuickApply(true);
+  try { await it.run(); $('stat').textContent = `applied ${it.kind}: ${it.label}`; }
+  catch (e) { $('stat').textContent = `${it.label}: ${e.message}`; }
+}
+const qaKey = e => (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'Enter';
+window.addEventListener('keydown', e => {
+  if (!qaKey(e) || $('qa') || document.querySelector('dialog[open]')) return;
+  // A comment box and a dialog keep their own ⌘↩ (send, OK).
+  if (e.target && e.target.closest && e.target.closest('textarea, #cpanel, dialog')) return;
+  e.preventDefault(); quickApply();
+});
+
 // Layer housekeeping (INDESIGN_PARITY.md 85). Merge: everything on `names`
 // goes onto `into`, which keeps its own place, visibility and lock, and the
 // others go. Unused: a layer nothing is on. What is on a layer: the ids the
@@ -25837,6 +26024,11 @@ function hubCommentsBind(d) {
   }, true);
   d.addEventListener('selectionchange', () => hubCommentPlus(d));
   d.addEventListener('keydown', e => { if (hubCommentKey(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
+  // Quick Apply from inside the page, words being typed included (51).
+  d.addEventListener('keydown', e => {
+    if (!qaKey(e) || $('qa')) return;
+    e.preventDefault(); e.stopPropagation(); quickApply();
+  }, true);
   // The cards in the margin ride with the page: repositioned, not rebuilt.
   if (d.defaultView) d.defaultView.addEventListener('scroll', () => hubMarginQueue(false), { passive: true });
   // The stage scrolls too - the clearance band under the last page (up to
@@ -30835,6 +31027,17 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async defineLayer(name, opts) { return docsync.api.batch([{ verb: 'defineLayer', args: [name, opts || {}] }]); },
   async toLayer(ids, name) { return docsync.api.batch([{ verb: 'toLayer', args: [ids, name] }]); },
   async dropLayer(name) { return docsync.api.batch([{ verb: 'dropLayer', args: [name] }]); },
+  /** Quick Apply (51): quickApplyItems(query?) lists what the box would offer
+   *  for the current selection, best match first ({kind, label}); quickApply
+   *  (query) applies the best match, as Enter in the box would. */
+  quickApplyItems(q = '') { return { ok: true, items: qaFilter(qaItems(), q).map(({ kind, label }) => ({ kind, label })) }; },
+  async quickApply(q) {
+    if (!q) return { ok: false, error: 'quickApply(query) — a few letters of a style, swatch or command' };
+    const it = qaFilter(qaItems(), q)[0];
+    if (!it) return { ok: false, error: `nothing matches '${q}'` };
+    await it.run();
+    return { ...docsync.api.status(), applied: { kind: it.kind, label: it.label } };
+  },
   /** Layer housekeeping (85): mergeLayers([names], into) moves what is on
    *  them onto `into` and drops them; dropUnusedLayers() drops the layers
    *  nothing is on; selectLayer(name) selects what is on one (not locked or

@@ -997,10 +997,19 @@ Google Doc import exist, and were never listed here.
     library panel, with its text styles and swatches brought along. Lives
     beside the templates (a library project the editor reads), so the hub
     and local mode share it. **M.**
-51. **Quick Apply.** One box (⌘↩) that finds any text style, character
-    style, swatch, command or pilot verb by typing a few letters and applies
-    it to the selection — InDesign's fastest path, and the editor's menus
-    are deep. **M.**
+51. **Quick Apply. — CLOSED 2026-10-19.** ⌘↩ (Ctrl+Enter) anywhere —
+    on the page, in the chrome, or while typing in words — opens one box:
+    a few letters, ↑/↓, Enter. It offers what fits the selection: text
+    styles for the selected slots and text boxes, character styles for the
+    selected words while typing (the words stay open, as a dialog keeps
+    them), object styles when the selection is all one kind, swatches as a
+    fill (a gradient swatch included) or as a text colour, and every
+    command an editor button carries, by its own words, pressed as a click
+    would. Letters match in order, a run and a word start counting most.
+    Each apply is one undo step, through the writes the panels use. A
+    dialog and a comment box keep their own ⌘↩. Pilot verbs are not listed
+    (they take arguments); `quickApplyItems(q)` and `quickApply(q)` are
+    the pilot's own way in.
 52. **Hyperlinks panel. — CLOSED 2026-10-19.** Every link in the report —
     in slots, boxes and table cells, and the sources list — by address, with
     where each is used and its words. **Check links** sends the addresses to
