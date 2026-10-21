@@ -47,13 +47,19 @@ await docsync.api.place('cover.logo', { x: 1, y: 4 })   // inches; clamps like a
 await docsync.api.recolor('page.3', '#FFF6D8')          // null = reset
 await docsync.api.setChart('bar.idea-4', { points: { Agree: 10 } })  // as the Chart panel
 await docsync.api.addTextBox({ page: 3, x: 1, y: 1, w: 2.5, md: 'Note' })
+await docsync.api.addChart({ page: 3, x: 1, y: 4, w: 6, h: 3,
+  chart: { type: 'bar', labels: ['FY25', 'FY26'], series: [{ name: 'GF', data: [9.8, 10.5] }] } })
+await docsync.api.addTable({ page: 3, x: 1, y: 7.5, w: 6, headerRows: 1,
+  rows: [['Program', 'FY26'], ['SNAP', '14.75']] })    // any setTable key too
 await docsync.api.select('cover.logo')                  // as a click would; null clears
 docsync.api.save()      // presses the real Save; Push stays with the human
 
 // Several edits as ONE undo step and ONE render — batch() over separate
 // calls whenever the edits are related. All-or-nothing: a bad op refuses
-// the whole batch before anything mutates. Verbs: setSlot, place, recolor,
-// addTextBox, addSource — not addPage/addEndnotesSection, which push their
+// the whole batch before anything mutates, and a result the ENGINE will not
+// build is rolled back and refused with its error (never ok over a broken
+// draft). Verbs: setSlot, place, recolor, addTextBox, addChart, addTable,
+// group, addSource… — not addPage/addEndnotesSection, which push their
 // own history internally and so cannot join one.
 await docsync.api.batch([
   { verb: 'setSlot', args: ['whopays.p1', '…new markdown…'] },

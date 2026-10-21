@@ -373,6 +373,8 @@ ids it returns:
 | `group(ids)` / `ungroup(id)` | tie 2+ elements so they move as one (membership is exclusive) / dissolve |
 | `remove(ids)` / `duplicate(ids)` | the UI's own Delete and Duplicate, selection handled for you |
 | `addTextBox({page,x,y,w,h,md,style,fill})` | returns `'text.<n>'` for further verbs |
+| `addChart({page,x,y,w,h,chart})` | a chart the Chart panel opens, as the Chart tool places it; `chart` is the panel's spec (`{type, labels, series: [{name, data, type?, axis?}], title, legend, values, format, rules, labelAngle, …}` — `null` in `data` is a gap); omitted, the tool's starter chart. Returns its id for `setChart`/`place`/`group` |
+| `addTable({page,x,y,w,rows, …setTable keys})` | a table as the Table tool places it, cells and look up front: `rows` (numbers become text, ragged rows are padded), plus `headerRows`, `footerRows`, `merges`, `colw`, `colAlign`, `band`, `headerFill`, `cells`… Returns `'table.<id>'` |
 | `addShape({page,kind,x,y,w,h,fill,stroke,sw,z,rx})` | a Shapes-panel shape (`rect\|ellipse\|line\|triangle\|arrow`) on ANY page — the way a hairline rule or panel lands on a page `duplicate()` can't reach |
 | `applyScheme(idOrHex)` | retint the report to another house scheme ('slate' or a hex) — every use of the current topic colour swaps, one undo step; the Colors rail panel's Apply |
 | `addPage(at?)` | blank page; returns its id |
@@ -390,8 +392,9 @@ batch; call them singly.
 
 **`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`, `describeImage`,
 `setStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
-`addTextBox`, `addShape`, `addSource`. Name an op with `as` and later ops can say `'@name'`
-wherever an id goes, so create-then-place is ONE call:
+`addTextBox`, `addShape`, `addChart`, `addTable`, `addSource`. Name an op with `as` and later ops can say `'@name'`
+wherever an id goes — a bare string, an object value, or an item of a list
+(`group(['@chart', '@caption'])`) — so create-then-place is ONE call:
 
 ```js
 await docsync.api.batch([
@@ -404,7 +407,18 @@ await docsync.api.batch([
 ALL-OR-NOTHING throughout: ops without refs validate before anything mutates,
 and a `@ref` op (which cannot be validated until its referent exists) is
 validated at apply time — if it fails, the whole batch is rolled back from the
-snapshot and the history entry withdrawn. Refs point BACKWARDS only.
+snapshot and the history entry withdrawn. Refs point BACKWARDS only. The
+ENGINE is the last check: a batch whose result it will not build (a chart
+spec it refuses, column widths that do not match the columns) is rolled back
+and answered `{ok: false, error: "the engine would not build the result… —
+<its LayoutError>"}`, never `ok` over "This draft does not build".
+
+**A chart or a table is something you MAKE with a verb, not write behind the
+editor.** `addChart` / `addTable` land the same objects the toolbar's tools
+do, so the person gets the Chart panel, the Table panel, right-click rows and
+columns, double-click to retype a title, label, legend entry or reference-line
+label — everything they get for one they drew. A figure and its caption are
+one batch: `addChart` + `addTextBox` + `group`.
 
 **`audit()` — stop screenshotting for geometry.** Returns
 `{issues:[{kind, page, ids, box, note}], counts}` for: `print-overflow` (the
