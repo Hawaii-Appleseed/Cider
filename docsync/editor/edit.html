@@ -6236,20 +6236,38 @@ function selectForMenu(d, id) {
   if (!members.every(m => selIds.has(m))) setSel(d, members);
 }
 
-/** Open the right-click menu again, at the same point, once a render in
- *  flight has landed — in whatever document is current then (see contextify). */
-async function menuAfterRender(e) {
-  const at = { clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY };
+/** Open the right-click menu again once a render in flight has landed, in
+ *  whatever document is current then (see contextify) — at the same spot in
+ *  the object that was hit, not the same spot on the screen: the page can
+ *  settle a few pixels differently after a render (CI's Linux runner showed
+ *  it), and the menu must still be the one for what was right-clicked. */
+async function menuAfterRender(e, target) {
+  const r0 = target.getBoundingClientRect();
+  const dx = e.clientX - r0.left, dy = e.clientY - r0.top;
+  const hook = target.dataset.shape ? `[data-shape="${CSS.escape(target.dataset.shape)}"]`
+    : target.dataset.el ? `[data-el="${CSS.escape(target.dataset.el)}"]`
+    : target.dataset.page != null ? `section.page[data-page="${CSS.escape(target.dataset.page)}"]`
+    : null;
   await new Promise(r => setTimeout(r, 0));
   if (renderRunning) await new Promise(r => renderWaiters.push(r));
   if (editing) return;
   const d2 = $('out').contentDocument;
-  const hit = d2 && d2.elementFromPoint(at.clientX, at.clientY);
-  if (!hit) return;
+  if (!d2) return;
+  const el2 = hook && d2.querySelector(hook);
+  let x = e.clientX, y = e.clientY;
+  if (el2) {
+    const r = el2.getBoundingClientRect();
+    x = r.left + Math.max(0, Math.min(dx, r.width - 1));
+    y = r.top + Math.max(0, Math.min(dy, r.height - 1));
+  }
+  const hit = d2.elementFromPoint(x, y);
+  const to = hit && (!el2 || el2.contains(hit)) ? hit : el2;
+  if (!to) return;
   const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, composed: true,
-    view: d2.defaultView, button: 2, ...at });
+    view: d2.defaultView, button: 2, clientX: x, clientY: y,
+    screenX: e.screenX + (x - e.clientX), screenY: e.screenY + (y - e.clientY) });
   ev.dsReplayed = true;
-  hit.dispatchEvent(ev);
+  to.dispatchEvent(ev);
 }
 
 function layerMenu(d, el, e) {
@@ -6963,7 +6981,7 @@ function contextify(d, roots) {
       // — a table cell's own menu waits the same way.
       const a = d.activeElement;
       if (editing && a && a !== d.body && !target.contains(a)) a.blur();
-      if (renderRunning && !e.dsReplayed) { menuAfterRender(e); return; }
+      if (renderRunning && !e.dsReplayed) { menuAfterRender(e, target); return; }
       // Nothing placed under the pointer: the click means the PAGE, and a
       // page has its own menu rather than the generic surface one.
       if (target.tagName === 'SECTION') { pageMenu(d, target, e); return; }
