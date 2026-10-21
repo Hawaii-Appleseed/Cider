@@ -8,17 +8,17 @@ test.describe('uhero-trc-summary: the table and charts edit', () => {
     const r = await page.evaluate(async () => {
       const ids = inlineChartIds();
       const found = ids.map(i => !!chartOf(i));
-      setSel($('out').contentDocument, ['chart.mix']);
+      setSel($('out').contentDocument, ['chart.decile']);
       const button = !$('ar-chart').hidden;
-      openChartPanel('chart.mix');
-      await chartWrite(c => { c.title = 'Where the money comes from'; });
-      return { ids, found, button, over: layout.charts['chart.mix'],
-               drawn: $('out').contentDocument.querySelector('[data-chart="chart.mix"]').textContent.includes('Where the money comes from') };
+      openChartPanel('chart.decile');
+      await chartWrite(c => { c.title = 'What a household saves'; });
+      return { ids, found, button, over: layout.charts['chart.decile'],
+               drawn: $('out').contentDocument.querySelector('[data-chart="chart.decile"]').textContent.includes('What a household saves') };
     });
-    expect(r.ids).toEqual(['chart.where', 'chart.decile', 'chart.mix']);
-    expect(r.found).toEqual([true, true, true]);
+    expect(r.ids).toEqual(['chart.decile']);
+    expect(r.found).toEqual([true]);
     expect(r.button).toBe(true);
-    expect(r.over).toEqual({ title: 'Where the money comes from' });
+    expect(r.over).toEqual({ title: 'What a household saves' });
     expect(r.drawn).toBe(true);
   });
 

@@ -58,16 +58,6 @@ CHART_W_IN = 7.2
 DECILE_GAIN = [156, 190, 263, 348, 414, 461, 501, 560, 590, 729]
 DECILE_LABELS = ["Lowest", "2", "3", "4", "5", "6", "7", "8", "9", "Highest"]
 
-# FY2025 tax collections, UHERO Table 1.1 (p. 3): share of DOTAX's $11.46B total.
-TAX_MIX = [("General excise & use tax", 40.4), ("Individual income tax", 28.7),
-           ("Hotel & rental tax (state TAT)", 7.1),
-           ("County GET surcharges", 4.9), ("Estate & transfer tax", 3.5),
-           ("Corporate income tax", 3.5), ("Conveyance tax", 0.8)]
-
-# Grocery exemption, 2027 (pp. 65, 158): $M. Both bars total $267.4M.
-WHERE = [("Savings go to", [("Residents", 214.1), ("Visitors", 53.3)]),
-         ("Revenue lost by", [("State", 237.7), ("Counties", 29.7)])]
-
 # Table 1 is a real table (layout.json `tables`, id "swaps", flow). This is what
 # draws when a stored copy has no such entry — the hub's copy was saved before
 # the table moved into layout.json — so it is the whole table, and the editor
@@ -83,8 +73,23 @@ SWAPS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFF
              ["Exempt long-term capital gains from tax", "Raise the top three income-tax rates"],
              ["Raise the GET rate by half a point", "Lower all income-tax rates by the same percentage"]]}
 
-CONTENTS = [("1", "contents.1"), ("2", "contents.2"),
-            ("3", "contents.3"), ("4", "contents.4")]
+# The chapter-by-chapter table is a real table too (layout.json `tables`, id
+# "chapters", flow), drawn from this default while a stored copy has none. The
+# "In the draft" column links to the first page of the chapter in UHERO's PDF:
+# a PDF page is the draft's printed page + 2 (a cover and a roman-numeral
+# contents page come first), so printed p. 26 is #page=28.
+_PDF = "https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf"
+CHAPTERS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFFF",
+                    "band": "#F4F6F4", "colw": [24, 58, 18],
+                    "rows": [
+             ["Chapter", "What the draft finds", "In the draft"],
+             ["**2 · Individual income tax**", "The tax takes a bigger share from higher earners, and Acts 46 and 24 are reshaping it. It raised $3.29 billion in FY2025 (pp. 3, 28, 35).", f"[pp. 26–55]({_PDF}#page=28)"],
+             ["**3 · General excise tax**", "Hawaiʻi's biggest tax hits business sales at every step. It raised $4.63 billion in FY2025, 40.4 percent of state taxes (pp. 3, 56).", f"[pp. 56–72]({_PDF}#page=58)"],
+             ["**4 · Visitors and tourism**", "Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax raised $816.2 million in FY2025 (pp. 73–74, 77).", f"[pp. 73–85]({_PDF}#page=75)"],
+             ["**5 · Property and real estate**", "Homeowners pay the lowest property tax rate in the country, 0.29 percent of home value against 0.90 percent nationally, and only counties can set it (pp. 87–88).", f"[pp. 86–99]({_PDF}#page=88)"],
+             ["**6 · Business taxes**", "The corporate tax raised $400.4 million net in FY2025. UHERO says a large rate cut could raise total revenue, based on 2010 data it will revisit (pp. 101, 107).", f"[pp. 100–117]({_PDF}#page=102)"],
+             ["**7 · Wealth and estates**", "An annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax revenue is lumpy: $405.8 million in FY2025, including a one-time $315 million payment (pp. 118, 120).", f"[pp. 118–132]({_PDF}#page=120)"],
+             ["**8 · Tax credits**", "Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). 72 percent of the solar credit claimed on individual returns went to filers earning $100,000 or more (p. 147).", f"[pp. 133–156]({_PDF}#page=135)"]]}
 
 
 def decile_spec() -> dict:
@@ -100,27 +105,6 @@ def decile_spec() -> dict:
     }
 
 
-def mix_spec() -> dict:
-    return {"type": "row", "labels": [a for a, _ in TAX_MIX],
-            "series": [{"name": "Share of state tax collections",
-                        "data": [b for _, b in TAX_MIX], "color": PRIMARY}],
-            "legend": False, "values": True, "grid": False,
-            "format": {"suffix": "%", "decimals": 1}, "labelColor": INK}
-
-
-def where_spec() -> dict:
-    names = [n for _, g in WHERE for n, _ in g]
-    cols = [PRIMARY, TEAL, PRIMARY_DARK, ASH]
-    series = []
-    for i, n in enumerate(names):
-        data = [0.0, 0.0]
-        data[i // 2] = dict(WHERE[i // 2][1])[n]
-        series.append({"name": n, "data": data, "color": cols[i]})
-    return {"type": "stacked-row", "labels": [a for a, _ in WHERE],
-            "series": series, "legend": True, "legendPos": "top",
-            "values": False, "grid": False, "labelColor": INK}
-
-
 def fig(key: str, cls: str = "") -> str:
     return (f'<div class="fig fig-{key}{cls}"{L.attr(f"cover.fig.{key}")}>'
             f'<div class="fig-n">{C.t(f"cover.fig.{key}.n")}</div>'
@@ -131,31 +115,6 @@ def stat(key: str) -> str:
     return (f'<div class="stat"{L.attr(f"groc.stat.{key}")}>'
             f'<div class="stat-n">{C.t(f"groc.stat.{key}.n")}</div>'
             f'<div class="stat-l">{C.t(f"groc.stat.{key}.l")}</div></div>')
-
-
-def contents_rows() -> str:
-    return "".join(
-        f'<div class="crow{"" if n == "1" else " crow-n"}"{L.attr(f"cover.crow.{n}")}><span class="cnum">{n}</span>'
-        f'<span class="ctxt">{C.t(key, esc=True)}</span></div>'
-        for n, key in CONTENTS)
-
-
-def pairs() -> str:
-    return "".join(
-        f'<li{L.attr(f"about.pairli.{n}")}><span class="pn">{n}</span>'
-        f'<span class="pt">{C.t(f"about.pair.{n}")}</span></li>'
-        for n in range(1, 7))
-
-
-def chap(n: int) -> str:
-    # No handle of its own: the chapter paints nothing, and the columns split
-    # it, so a positioned chapter (a frame, which a container with a handle has
-    # to be) would hand anything moved inside it a containing block in two
-    # pieces. Its heading, summary and paragraph each move on their own.
-    return (f'<div class="chap">'
-            f'<div class="chh"><div class="slabel"{L.attr(f"ch{n}.h")}>{C.t(f"ch{n}.h")}</div>'
-            f'<div class="bl"{L.attr(f"ch{n}.bl")}>{C.t(f"ch{n}.bl")}</div></div>'
-            f'{C.html(f"ch{n}.p", "body")}</div>')
 
 
 def bullet(n: int) -> str:
@@ -203,10 +162,9 @@ page = f"""
     {C.html("cover.dates.p", "box-p")}
   </div>
 
-  <div class="cgrid">
-    <div class="klabel klabel-t"{L.attr("cover.contents.h")}>{C.t("cover.contents.h")}</div>
-    <div class="contents"{L.frame("cover.contents")}>{contents_rows()}</div>
-  </div>
+  <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
+  {C.html("fair.note", "note")}
+  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 5))}</ul>
 
   <div class="cfwrap"><div class="cover-foot"{L.frame("cover.foot")}>
     <div class="cfoot-l"{L.attr("cover.source")}>{C.t("cover.source")}</div>
@@ -218,29 +176,13 @@ page = f"""
 <section class="page">
   {head("about.eyebrow", "about.h1", "about.sub", "about")}
   {C.html("about.works.p1", "lead")}
-  {C.html("about.model.p", "body")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
   {L.flow_table("swaps", SWAPS_DEFAULT)}
-  <div class="slabel"{L.attr("about.also.h")}>{C.t("about.also.h")}</div>
-  {C.html("about.also.p", "body")}
-  <div class="box"{L.frame("about.glossbox")}>
-    <div class="box-h"{L.attr("about.gloss.h")}>{C.t("about.gloss.h")}</div>
-    {C.html("about.gloss.p", "box-p")}
-  </div>
-  {foot("about.foot", 2)}
-{C.extras("page2")} {L.layer(2)}{L.text_boxes(2)}{L.tables_html(2)}
-</section>
-
-<section class="page">
-  {head("groc.eyebrow", "groc.h1", "groc.sub", "groc")}
-  {C.html("groc.lead", "lead")}
-  <h2 class="figt"{L.attr("groc.where.h")}>{C.t("groc.where.h")}</h2>
-  {chart(L, "chart.where", where_spec(), w=CHART_W_IN, h=0.72,
-         desc=describe(C, "groc.where.desc", "Two stacked bars of 267.4 million dollars each"))}
-  {C.html("groc.where.note", "cap")}
+  <h2 class="figt"{L.attr("groc.h1")}>{C.t("groc.h1")}</h2>
+  {C.html("groc.lead", "body")}
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
   <div class="split"{L.frame("groc.split")}><div class="splitl">
-  {chart(L, "chart.decile", decile_spec(), w=4.7, h=1.45,
+  {chart(L, "chart.decile", decile_spec(), w=3.9, h=1.3,
          desc=describe(C, "groc.chart.desc", "Yearly gain per household from "
                        "exempting groceries, by income tenth, from 156 dollars "
                        "in the lowest to 729 dollars in the highest"))}
@@ -250,43 +192,23 @@ page = f"""
     <div class="pct"{L.attr("groc.pct.b")}><div class="pct-n">{C.t("groc.pct.b.n")}</div><div class="pct-l">{C.t("groc.pct.b.l")}</div></div>
   </div></div>
   {C.html("groc.chart.note", "cap")}
-  <div class="slabel"{L.attr("groc.read.h")}>{C.t("groc.read.h")}</div>
-  {C.html("groc.read.p", "body")}
   <div class="slabel"{L.attr("groc.pay.h")}>{C.t("groc.pay.h")}</div>
   {C.html("groc.pay.p", "body")}
-  {foot("groc.foot", 3)}
-{C.extras("page3")} {L.layer(3)}{L.text_boxes(3)}{L.tables_html(3)}
+  {foot("about.foot", 2)}
+{C.extras("page2")} {L.layer(2)}{L.text_boxes(2)}{L.tables_html(2)}
 </section>
 
 <section class="page">
   {head("ch.eyebrow.a", "ch.h1.a", "ch.sub.a", "cha")}
-  <div class="cols">{chap(2)}{chap(3)}{chap(4)}</div>
-  <h2 class="figt"{L.attr("mix.h")}>{C.t("mix.h")}</h2>
-  {chart(L, "chart.mix", mix_spec(), w=CHART_W_IN, h=1.3,
-         desc=describe(C, "mix.desc", "Shares of state tax collections, FY2025"))}
-  {foot("ch.foot.a", 4)}
-{C.extras("page4")} {L.layer(4)}{L.text_boxes(4)}{L.tables_html(4)}
-</section>
-
-<section class="page">
-  {head("ch.eyebrow.b", "ch.h1.b", "ch.sub.b", "chb")}
-  <div class="cols">{chap(5)}{chap(6)}{chap(7)}{chap(8)}</div>
-  {foot("ch.foot.b", 5)}
-{C.extras("page5")} {L.layer(5)}{L.text_boxes(5)}{L.tables_html(5)}
-</section>
-
-<section class="page">
-  {head("end.eyebrow", "end.h1", "end.sub", "end")}
+  {L.flow_table("chapters", CHAPTERS_DEFAULT)}
+  {C.html("ch.foot.b", "cap")}
   <div class="box box-green"{L.frame("rec.box")}>
     <div class="box-h"{L.attr("rec.h")}>{C.t("rec.h")}</div>
     {C.html("rec.p", "box-p")}
   </div>
-  <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
-  {C.html("fair.note", "note")}
-  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 6))}</ul>
   <div class="endnotes"{L.frame("endnotes.box")}><span class="srch"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</span>{ENDNOTES_SLOT}</div>
-  {foot("end.foot", 6)}
-{C.extras("page6")} {L.layer(6)}{L.text_boxes(6)}{L.tables_html(6)}
+  {foot("end.foot", 3)}
+{C.extras("page3")} {L.layer(3)}{L.text_boxes(3)}{L.tables_html(3)}
 </section>
 """
 
@@ -320,8 +242,8 @@ html = f"""<!DOCTYPE html>
   .disp {{ font-family:Barlow, 'Source Sans 3', sans-serif; }}
 
   /* --- Cover --------------------------------------------------------- */
-  .cfield {{ margin:-0.5in -0.6in 0; padding:0.5in 0.6in 0.5in;
-             background:{PRIMARY_DARK}; color:#fff; min-height:5.3in;
+  .cfield {{ margin:-0.5in -0.6in 0; padding:0.42in 0.6in 0.34in;
+             background:{PRIMARY_DARK}; color:#fff;
              box-sizing:border-box; display:flex; flex-direction:column; }}
   .mast {{ display:flex; justify-content:space-between; align-items:flex-start;
            padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.35); }}
@@ -329,45 +251,37 @@ html = f"""<!DOCTYPE html>
             letter-spacing:.14em; color:#fff; }}
   .pill {{ font-family:Barlow, sans-serif; font-weight:600; font-size:13.5px;
            letter-spacing:.06em; text-transform:uppercase; color:{ASH}; }}
-  .cover-h1 {{ font-family:Barlow, sans-serif; font-weight:800; font-size:52px;
+  .cover-h1 {{ font-family:Barlow, sans-serif; font-weight:800; font-size:40px;
                line-height:1.02; text-transform:uppercase; letter-spacing:-.005em;
-               color:#fff; margin:auto 0 0; padding-top:0.7in; max-width:6.6in; }}
+               color:#fff; margin:auto 0 0; padding-top:0.3in; max-width:6.6in; }}
   .rule {{ width:1.1in; height:4px; background:{TEAL}; margin:22px 0 0; }}
-  .deck {{ font-size:17px; line-height:1.5; color:#E6ECE7; margin:16px 0 0;
+  .deck {{ font-size:16px; line-height:1.48; color:#E6ECE7; margin:12px 0 0;
            max-width:6.2in; }}
   .deck b {{ color:#fff; font-weight:700; }}
   .deck sup a.fn {{ color:{ASH}; }}
   .klabel {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
              letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY_DARK};
-             margin:0.32in 0 0; }}
+             margin:0.2in 0 0; }}
   .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:8px 0 0;
            border-top:2px solid {PRIMARY_DARK}; }}
   .fig {{ padding:12px 18px 0 0; }}
   /* by class, not .fig + .fig: the editor's strut beside a moved fact would
      break the sibling chain and take the rule off its neighbour */
   .fig-b, .fig-c {{ border-left:1px solid {LINE}; padding-left:18px; }}
-  .fig-n {{ font-family:Barlow, sans-serif; font-size:44px; font-weight:800;
+  .fig-n {{ font-family:Barlow, sans-serif; font-size:32px; font-weight:800;
             line-height:1; color:{PRIMARY_DARK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
   .fig-l {{ font-size:13.5px; color:{BODY}; margin-top:8px; line-height:1.4; }}
-  .datebox, .cgrid {{ display:grid; grid-template-columns:1.6in 1fr; }}
-  .datebox {{ margin:0.28in 0 0; padding:9px 0 0; border-top:1px solid {LINE}; }}
+  .datebox {{ display:grid; grid-template-columns:1.6in 1fr; }}
+  .datebox {{ margin:0.2in 0 0; padding:9px 0 0; border-top:1px solid {LINE}; }}
   .datebox .box-h {{ margin:2px 16px 0 0; }}
   .datebox .box-p {{ font-size:14.5px; }}
-  .cgrid {{ margin:14px 0 0; }}
-  .cgrid .klabel {{ margin:0; padding:11px 16px 0 0; border-top:1px solid {LINE}; }}
-  .contents {{ margin:0; border-top:1px solid {LINE}; }}
-  .crow {{ display:grid; grid-template-columns:1.7em 1fr; padding:7px 0 6px;
-           font-size:15px; line-height:1.35; }}
-  .crow-n {{ border-top:1px solid {LINE}; }}
-  .cnum {{ font-family:Barlow, sans-serif; font-weight:700; color:{PRIMARY}; }}
-  .ctxt {{ color:{TEXT}; }}
   .cfwrap {{ position:absolute !important; left:0.6in; right:0.6in; bottom:0.42in; }}
   .cover-foot {{ border-top:1px solid {LINE}; padding-top:8px; }}
   .cfoot-l {{ font-size:13.5px; color:{MUTED}; line-height:1.5; }}
 
   /* --- Interior pages ------------------------------------------------- */
-  .phead {{ border-bottom:2px solid {PRIMARY}; padding-bottom:10px; margin-bottom:14px; }}
+  .phead {{ border-bottom:2px solid {PRIMARY}; padding-bottom:10px; margin-bottom:12px; }}
   .eyebrow {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
               letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY};
               margin-bottom:4px; }}
@@ -379,8 +293,8 @@ html = f"""<!DOCTYPE html>
   .slabel.tbl, h2.figt {{ font-family:Barlow, sans-serif; font-size:15px;
              font-weight:700; color:{INK}; }}
   h2 {{ font-family:Barlow, sans-serif; font-weight:700; font-size:17px;
-        line-height:1.25; margin:16px 0 0; color:{PRIMARY_DARK}; }}
-  h2.figt {{ margin-top:13px; padding-top:8px; border-top:1px solid {LINE}; }}
+        line-height:1.25; margin:12px 0 0; color:{PRIMARY_DARK}; }}
+  h2.figt {{ margin-top:10px; padding-top:6px; border-top:1px solid {LINE}; }}
   .lead {{ font-size:15px; line-height:1.52; color:{TEXT}; margin:0; }}
   .body {{ font-size:14.5px; line-height:1.5; color:{TEXT}; margin:5px 0 0; }}
   .body b, .lead b {{ font-weight:700; color:{INK}; }}
@@ -408,28 +322,22 @@ html = f"""<!DOCTYPE html>
                       letter-spacing:.06em; text-transform:uppercase; }}
   table.ds-flow td {{ font-size:13.5px; line-height:1.3; color:{TEXT}; border-top:1px solid {LINE}; }}
   table.ds-flow td:first-child {{ color:{INK}; font-weight:600; }}
+  .page table.ds-flow td {{ padding-top:5px; padding-bottom:5px; }}
 
   .split {{ display:flex; gap:26px; align-items:flex-start; margin-top:6px; }}
-  .splitl {{ flex:0 0 4.6in; }}
+  .splitl {{ flex:0 0 3.9in; }}
   .pcts {{ flex:1; padding-top:2px; }}
   .pcts .klabel {{ margin:0; font-size:13.5px; color:{MUTED}; line-height:1.35; }}
-  .pct {{ border-top:1px solid {LINE}; padding:8px 0 0; margin-top:8px; }}
-  .pct-n {{ font-family:Barlow, sans-serif; font-weight:800; font-size:32px;
-            line-height:1; color:{PRIMARY_DARK}; }}
-  .pct-l {{ font-size:13.5px; line-height:1.35; color:{BODY}; margin-top:3px; }}
+  .pct {{ border-top:1px solid {LINE}; padding:6px 0 0; margin-top:6px;
+          display:flex; align-items:center; gap:12px; }}
+  .pct-n {{ font-family:Barlow, sans-serif; font-weight:800; font-size:28px;
+            line-height:1; color:{PRIMARY_DARK}; flex:0 0 0.8in; }}
+  .pct-l {{ font-size:13.5px; line-height:1.35; color:{BODY}; flex:1; }}
 
-  /* chapter pages: two columns */
-  .cols {{ column-count:2; column-gap:0.32in; column-fill:balance; }}
-  .chap {{ margin:0 0 12px; }}
-  .chh {{ break-inside:avoid; break-after:avoid; }}
-  .chap .slabel {{ margin-top:0; font-size:16px; color:{PRIMARY}; }}
-  .bl {{ font-weight:700; font-size:14px; line-height:1.35; color:{INK}; margin:3px 0 0; }}
-  .chap .body {{ font-size:14px; line-height:1.5; margin-top:3px; hyphens:auto;
-                 -webkit-hyphens:auto; }}
 
   .fl {{ list-style:none; margin:6px 0 0; padding:0; }}
-  .fb {{ padding:6px 0; border-top:1px solid {LINE}; }}
-  .fbp {{ font-size:14.5px; line-height:1.5; color:{TEXT}; margin:0; }}
+  .fb {{ padding:5px 0; border-top:1px solid {LINE}; }}
+  .fbp {{ font-size:14px; line-height:1.45; color:{TEXT}; margin:0; }}
   .fbp b {{ color:{PRIMARY_DARK}; }}
 
   /* --- Footers, endnotes ---------------------------------------------- */
@@ -466,11 +374,8 @@ html = f"""<!DOCTYPE html>
     .figs {{ grid-template-columns:1fr; }}
     .fig {{ padding:12px 0; }}
     .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
-    .datebox, .cgrid {{ grid-template-columns:1fr; }}
+    .datebox {{ grid-template-columns:1fr; }}
     .datebox .box-h {{ margin:0 0 4px; }}
-    .cgrid .klabel {{ padding-bottom:4px; }}
-    .contents {{ border-top:0; }}
-    .cols {{ column-count:1; }}
     .split {{ flex-direction:column; gap:10px; }}
     .splitl {{ flex:none; }}
     table.ds-flow {{ border-top:2px solid {PRIMARY_DARK}; }}
@@ -483,11 +388,8 @@ html = f"""<!DOCTYPE html>
     .figs {{ grid-template-columns:1fr; }}
     .fig {{ padding:12px 0; }}
     .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
-    .datebox, .cgrid {{ grid-template-columns:1fr; }}
+    .datebox {{ grid-template-columns:1fr; }}
     .datebox .box-h {{ margin:0 0 4px; }}
-    .cgrid .klabel {{ padding-bottom:4px; }}
-    .contents {{ border-top:0; }}
-    .cols {{ column-count:1; }}
     .split {{ flex-direction:column; gap:10px; }}
     .splitl {{ flex:none; }}
     .swhead {{ display:none; }}

@@ -55,12 +55,12 @@ test.describe('arranging', () => {
     // inside it once placed: the words dropped by that margin on pick-up.
     await gotoEditor(page, '?project=uhero-trc-summary');
     const r = await inEditor(page, async (d, h) => {
-      const w0 = h.words('para.about.model.p');
-      setSel(d, ['para.about.model.p']);
+      const w0 = h.words('para.groc.pay.p');
+      setSel(d, ['para.groc.pay.p']);
       nudgeSel(d, [0, 0.1]);
-      const live = h.words('para.about.model.p');
+      const live = h.words('para.groc.pay.p');
       await render(); await h.settle();
-      return { w0, live, w1: h.words('para.about.model.p') };
+      return { w0, live, w1: h.words('para.groc.pay.p') };
     });
     expect(near(r.live.y - r.w0.y, 0.1), `in hand: words moved ${r.live.y - r.w0.y}`).toBe(true);
     expect(near(r.w1.y - r.w0.y, 0.1), `rendered: words moved ${r.w1.y - r.w0.y}`).toBe(true);
@@ -193,7 +193,10 @@ test.describe('arranging', () => {
       expect(near(r.c1.x, r.c0.x)).toBe(true);
     });
 
-  test('a paragraph split across two columns moves as one block a column wide', async ({ page }) => {
+  // The UHERO summary's chapter pages were the suite's only fixture with a
+  // paragraph split across CSS columns (para.ch3.p). The three-page summary
+  // replaced them with a table, so no report draws one now. Needs a fixture.
+  test.fixme('a paragraph split across two columns moves as one block a column wide', async ({ page }) => {
     await gotoEditor(page, '?project=uhero-trc-summary');
     const r = await inEditor(page, async (d, h) => {
       const el = h.el('para.ch3.p');

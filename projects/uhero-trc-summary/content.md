@@ -18,40 +18,40 @@
 UHERO's draft report "On Hawaiʻi's Tax System": a plain-language summary
 
 [[cover.pill]]
-Draft report · not final
+DRAFT REPORT · NOT FINAL
 
 [[cover.h1]]
 What UHERO's draft says about Hawaiʻi's tax system
 
 [[cover.deck]]
-UHERO, the University of Hawaiʻi Economic Research Organization, sent a **draft** report to the Hawaiʻi Tax Review Commission on October 6, 2026. It walks through how the state's main taxes work and sets up six tax **swaps** for the final report to model. Apart from one proposal about data, it makes no recommendations.[^uhero]
+UHERO, a University of Hawaiʻi research group, wrote a **draft** report for the Hawaiʻi Tax Review Commission, dated October 6, 2026. It explains how the state's main taxes work and tests six tax **swaps**, each pairing one tax change with a second that makes up the money. It recommends no tax changes. Its one recommendation is about data.[^uhero]
 
 [[cover.figures.h]]
-Key facts
+KEY FACTS
 
 [[cover.fig.a.n]]
 0
 
 [[cover.fig.a.l]]
-Tax policy recommendations: "None of these reforms is a recommendation" (p. 158)
+TAX POLICY RECOMMENDATIONS: "NONE OF THESE REFORMS IS A RECOMMENDATION" (P. 158)
 
 [[cover.fig.b.n]]
 6
 
 [[cover.fig.b.l]]
-Tax swaps the final report will estimate (p. 161)
+TAX SWAPS THE FINAL REPORT WILL ESTIMATE (P. 161)
 
 [[cover.fig.c.n]]
 $267.4M
 
 [[cover.fig.c.l]]
-Yearly cost of exempting groceries from the GET, state and counties, 2027 (the draft's only estimate so far)
+YEARLY COST OF EXEMPTING GROCERIES FROM THE GET (STATE + COUNTIES, 2027): THE ONE ESTIMATE SO FAR (P. 158)
 
 [[cover.dates.h]]
-What happens next
+WHAT HAPPENS NEXT
 
 [[cover.dates.p]]
-The full Commission discusses the draft on **October 28**. The final report is due **December 21, 2026**, and UHERO says results for the swaps "will appear in the final report" (p. 158).
+**October 28:** the full Commission discusses the draft. **December 21, 2026:** final report due. Comments can go to **tax.research@hawaii.gov**.
 
 [[cover.contents.h]]
 Inside
@@ -69,28 +69,28 @@ Chapters 2 to 8, from income tax to credits (pp. 4–5)
 The data recommendation, and what it means for tax fairness (p. 6)
 
 [[cover.source]]
-Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is the draft's printed page number.
+Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is the draft's printed page number. The meeting dates and comment address come from the Coalition, not from the draft.
 
 [[cover.stamp]]
 Not reviewed or endorsed by UHERO or the Tax Review Commission. Figures are preliminary and may change in the final report.
 
 [[about.eyebrow]]
-The big picture
+THE SWAPS AND THE ONE ESTIMATE
 
 [[about.h1]]
-What the draft sets out to do
+Six swaps, one estimate
 
 [[about.sub]]
-It models paired tax changes and leaves the choice to the Commission.
+Bottom line: UHERO tests swaps and does not say which to pick. Only groceries has a price so far.
 
 [[about.works.p1]]
-UHERO is explicit that "none of these reforms is a recommendation" (p. 158). Each reform is set up as a **swap**: a tax change paired with a second change that replaces the money, so the **General Fund**, the state's main account for general spending, ends 2027 at the same level. Economists call this **revenue-neutral**. County budgets can still come out ahead or behind (p. 2).
+Each swap is one tax change plus a second that makes up the money, so the **General Fund**, the state's main pool of money for general spending, stays level in 2027. That is called **revenue-neutral**. Counties can still gain or lose (p. 2). Results for the swaps are due in the final report (p. 158).[^uhero-swaps]
 
 [[about.model.p]]
 The estimates come from a model of Hawaiʻi households built on Census survey data, with gaps filled from IRS records. People in the model can change how much they earn or report; for now, nobody moves away and visitors keep spending as before. **Results for the six swaps are due in the final report** (p. 158).
 
 [[about.pairs.h]]
-Table 1. The six tax swaps (p. 161)
+THE SIX TAX SWAPS (P. 161)
 
 [[about.also.h]]
 Also to be estimated in the final report (p. 161)
@@ -105,7 +105,7 @@ Terms used here
 **GET:** Hawaiʻi's broad tax on business sales. The state rate is 4 percent on most activity, plus 0.5 percent for counties. Businesses cannot deduct their costs (p. 56). **AGI:** adjusted gross income, roughly income before deductions. **Refundable credit:** pays you even if you owe no tax. **DOTAX:** the state Department of Taxation.
 
 [[about.foot]]
-**Source:** UHERO draft report, ch. 1 (pp. 1–2) and ch. 10 (pp. 158, 161).
+**Source:** UHERO draft report, chapters 1, 3 and 10 (pp. 1–2, 56, 65–66, 158–161).
 
 [[groc.eyebrow]]
 The one estimate so far
@@ -117,10 +117,10 @@ Exempting groceries from the GET
 The average household would save about $419 a year, and the state would lose $233 million.
 
 [[groc.lead]]
-So far the draft estimates only one change: taking **groceries** (food and drinks bought at stores) out of the GET. UHERO assumes stores cut prices by the full amount of the tax, households spend what they save, and visitors keep spending as before (p. 160). Once residents spend part of their savings, the state's net loss is **$233.0M** (p. 158).
+UHERO's one estimate takes **groceries** (food and drinks bought at stores) out of the **GET**, Hawaiʻi's broad tax on business sales: 4 percent at the state level on most activity, plus 0.5 percent for counties (p. 56). It assumes stores cut prices by the full amount of the tax and visitors spend the same (p. 160). The state and counties lose **$267.4 million** a year before residents spend what they save (p. 158). The average household saves about **$419 a year** (p. 159).[^uhero-groceries]
 
 [[groc.chart.h]]
-Figure 2. What a household saves each year, by income group
+What a household saves each year, by income group
 
 [[groc.chart.desc]]
 Bar chart of the yearly savings per household from exempting groceries, for ten income groups from lowest to highest, rising from 156 dollars to 729 dollars.
@@ -135,22 +135,22 @@ Savings by income
 The average household would save about **$419 a year**. Higher-income households save more in dollars because they spend more, but the savings weigh more for lower-income ones: about **1.3 percent of income** for the lowest-income group, compared with **0.1 percent** for the highest (p. 159).
 
 [[groc.pay.h]]
-Who pays depends on the make-up tax
+WHO PAYS DEPENDS ON THE MAKE-UP TAX
 
 [[groc.pay.p]]
-If income taxes rose to cover residents' savings, residents as a group would break even. The state would still be $53.3M short, because visitors keep their savings too, so residents would end up covering that share as well (p. 1). Individual households could still lose. In UHERO's example, a household saves $400 on groceries, pays $500 more in income tax and ends up $100 behind (p. 161). Whether stores would pass the full cut on is uncertain; studies from Germany and Spain found most did, though not all (p. 66).
+If income taxes rise to cover residents' savings, residents break even as a group but also cover the $53.3 million visitors save (p. 1). Individual households can still lose: in UHERO's example, $400 saved on groceries and $500 more in income tax leaves a household $100 worse off (p. 161). No one yet knows whether stores would pass the full cut on; studies from Germany and Spain found most did, not all (p. 66).
 
 [[groc.foot]]
 **Source:** UHERO draft report, section 3.4 (pp. 65–66) and Figure 10.1 (p. 160); UHERO labels them preliminary.
 
 [[ch.eyebrow.a]]
-Chapter by chapter, 1 of 2
+CHAPTER BY CHAPTER
 
 [[ch.h1.a]]
-Income tax, the GET and visitor taxes
+What the draft finds
 
 [[ch.sub.a]]
-Chapters 2 to 4 of the draft
+Chapters 2 to 8. Each row links to those pages of the draft.
 
 [[ch2.h]]
 Ch. 2 · Individual income tax (pp. 26–55)
@@ -228,7 +228,7 @@ Tax credits work like spending: $621 million was claimed in 2023.
 People claimed **$621.3 million** in credits in 2023: about $243 million to avoid double taxation, $218 million for targeted relief (such as the earned income and food/excise credits) and $152 million aimed at changing behavior (p. 133). The **solar credit** ($100.1 million claimed) returns about 71 cents of benefit to Hawaiʻi residents per net state dollar, or $1.95 counting global climate benefits (p. 142), and 72 percent of individual claims went to people earning $100,000 or more (p. 147). Act 24 now caps it at $40 million a year, bars high earners from 2027 and ends it after 2029 (p. 143). The **film credit** ($43.5 million claimed) brings back an estimated 30 to 50 cents in tax per dollar, a net loss of $19 to $27 million (pp. 148–149).
 
 [[ch.foot.b]]
-**Source:** UHERO draft report, chapters 5–9. Chapter 9 ("Other matters") is a placeholder to be completed in the final report (p. 157).
+Chapter 9, "Other matters," is a placeholder to be completed in the final report (p. 157).
 
 [[end.eyebrow]]
 The one recommendation, and what it means
@@ -240,34 +240,34 @@ Better data, and what to watch
 The draft's only recommendation is about data, and its swaps leave out options that would raise new money.
 
 [[rec.h]]
-Ch. 11 · The sole recommendation (p. 162)
+CH. 11 · THE SOLE RECOMMENDATION (P. 162)
 
 [[rec.p]]
-The draft recommends "linking tax returns with records of earnings and benefits for the same households over time," with data shared under clear rules and easier access for researchers (p. 162). Today the Tax Department holds returns while other agencies hold wage and benefit records, such as SNAP, and researchers struggle to combine them. Under UHERO's proposal, names would be removed, only trained researchers would get access, data would stay on secure servers and results would be checked before release (p. 163). One use would be learning how many eligible families miss credits because they do not file a return (p. 163).
+UHERO recommends linking tax returns with earnings and benefit records for the same households over time, under clear data-sharing rules and with easier access for researchers (p. 162). Names would be removed, only trained researchers would get access, and results would be checked before release (p. 163). One payoff: finding out how many eligible families miss credits because they do not file a return (p. 163).[^uhero-rec]
 
 [[fair.h]]
-What this means for tax fairness
+WHAT THIS MEANS FOR TAX FAIRNESS
 
 [[fair.note]]
-These observations are the Coalition's, not UHERO's. UHERO has not yet scored any of the swaps they discuss.
+These are the Coalition's observations on the draft, not UHERO's. Nothing below is scored by UHERO yet.
 
 [[fair.b1]]
-**The swaps add no new money.** Each one changes a tax and offsets it with another, so the General Fund stays flat (pp. 1, 158). That shows who gains and who loses from a swap, but not what it would take to raise money for services or credits.
+**The swaps add no new money.** Each one offsets a tax change with another, so the General Fund stays level (pp. 1, 158). That shows who gains and loses, not how to raise money for services or credits.
 
 [[fair.b2]]
-**Swaps 3 and 4 lean progressive, swap 6 leans regressive and swap 5 is mixed.** (Progressive means higher earners pay more; regressive means lower earners do.) Swap 4 raises the top rate to pay for cuts at the bottom or a bigger credit. Swap 3 taxes capital gains, which go mostly to top earners (p. 46), though cutting the top three rates gives some of that back. Swap 5 exempts capital gains but raises the top three rates to pay for it, so its net effect is unclear. Swap 6 leans on the GET, which can take a bigger share of a low-income household's yearly income, though not of its spending (p. 63). UHERO's household results will settle these readings.
+**Who gains depends on the swap.** Swaps 3 and 4 lean toward lower earners: they tax capital gains or raise the top rate (pp. 46, 161). Swap 6 leans against them, because it raises the GET (p. 63). Swaps 1, 2 and 5 are mixed.
 
 [[fair.b3]]
-**Who wins depends on how a swap is paid for.** Swaps 1 and 2 give the same grocery savings, about $419 a year on average, but swap 1 pays for them with higher income-tax rates and swap 2 by shrinking the food/excise credit, which goes to low-income households. Residents also cover the $53.3 million that visitors save (p. 1).
+**How it is paid for decides who wins.** The two grocery swaps give households the same $419 a year on average. One is paid for by higher income-tax rates, the other by shrinking the food/excise credit, which pays low-income households.
 
 [[fair.b4]]
-**Gaps remain.** The REIT section is one sentence, chapter 9 is a placeholder, pension and Social Security costs have no estimate yet, and none of the swaps has numbers until the final report (pp. 50, 113, 157).
+**Gaps to watch.** The REIT section is one sentence, chapter 9 is a placeholder, pension and Social Security costs have no estimate yet, and no swap has numbers until the final report (pp. 50, 113, 157).
 
 [[fair.b5]]
 **October 28 is a chance to weigh in.** The Commission discusses the draft that day, and the final report is due December 21. Comments can be sent to **tax.research@hawaii.gov**.
 
 [[end.foot]]
-**Source:** UHERO draft report, chapters 10–11 (pp. 158–163). The meeting dates and comment address come from the Coalition, not from the draft.
+**Source:** UHERO draft report, chapters 2–11. Each chapter row and each numbered source links to that page of the draft's PDF.
 
 [[endnotes.h2]]
 Sources
@@ -282,7 +282,7 @@ Two stacked bars, each totaling 267.4 million dollars. Savings go 214.1 million 
 Figures are before residents spend part of their savings, which wins back about $4.7M for the state (pp. 65, 158).
 
 [[groc.pct.h]]
-Savings as a share of income (p. 159)
+SAVINGS AS A SHARE OF INCOME (P. 159)
 
 [[groc.pct.a.n]]
 1.3%
@@ -304,9 +304,13 @@ Horizontal bar chart of shares of the 11.46 billion dollars in state tax collect
 
 [[sources]]
 [uhero]: Dylan T. Moore (lead investigator), Nicholas Lacoste, Sumit Ilamkar and Timothy Malone, University of Hawaiʻi Economic Research Organization, On Hawaiʻi's Tax System, draft report prepared for the Hawaiʻi Tax Review Commission, October 6, 2026. — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf
+[uhero-swaps]: UHERO draft report, chapter 10, "Joint tax reforms: revenue and household effects," the six swaps (p. 161). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=163
+[uhero-groceries]: UHERO draft report, chapter 10, the grocery exemption's revenue and household effects (pp. 158–161, Figure 10.1 on p. 160). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=160
+[uhero-rec]: UHERO draft report, chapter 11, "What we cannot know yet, and how Hawaiʻi could know more," the one recommendation (pp. 162–163). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=164
 
 [[cover.brand]]
 TAX FAIRNESS COALITION
 
 [[foot.running]]
-UHERO draft summary · Tax Fairness Coalition
+UHERO DRAFT SUMMARY · TAX FAIRNESS COALITION
+
