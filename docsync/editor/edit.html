@@ -19423,10 +19423,17 @@ function shownUnder(d, e) {
  *  click on the same spot in whatever document is current — the ordinary
  *  path from there, so it selects, opens a panel, or types where it landed.
  *  A press held into a drag across the switch is taken as a click; the next
- *  press drags. */
+ *  press drags.
+ *
+ *  The replay goes to the same spot IN the object, not the same spot on the
+ *  screen: the page can settle a few pixels differently after a render (on
+ *  CI's Linux runner the click landed beside the words, so the second box
+ *  was selected and never opened). If even that point misses the object,
+ *  its first field takes the click. */
 async function pressPastEditor(d, el, e, active) {
   const id = idOf(el);
-  const at = { clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY };
+  const r0 = el.getBoundingClientRect();
+  const dx = e.clientX - r0.left, dy = e.clientY - r0.top;
   active.blur();                          // commits: finish() ends `editing` at once
   await new Promise(r => setTimeout(r, 0));
   if (renderRunning) await new Promise(r => renderWaiters.push(r));
@@ -19434,9 +19441,15 @@ async function pressPastEditor(d, el, e, active) {
   const d2 = $('out').contentDocument;
   if (!d2) return;
   const hook = `[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`;
-  const hit = d2.elementFromPoint(at.clientX, at.clientY);
-  const target = hit && hit.closest(hook) ? hit : d2.querySelector(hook);
-  if (!target) return;
+  const el2 = d2.querySelector(hook);
+  if (!el2) return;
+  const r = el2.getBoundingClientRect();
+  const x = r.left + Math.max(0, Math.min(dx, r.width - 1));
+  const y = r.top + Math.max(0, Math.min(dy, r.height - 1));
+  const at = { clientX: x, clientY: y,
+               screenX: e.screenX + (x - e.clientX), screenY: e.screenY + (y - e.clientY) };
+  const hit = d2.elementFromPoint(x, y);
+  const target = hit && el2.contains(hit) ? hit : (el2.querySelector('[data-slot]') || el2);
   const ev = type => new MouseEvent(type, { bubbles: true, cancelable: true, composed: true,
     view: d2.defaultView, button: 0, buttons: type === 'mousedown' ? 1 : 0, detail: 1, ...at });
   target.dispatchEvent(ev('mousedown'));
