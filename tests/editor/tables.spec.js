@@ -233,8 +233,11 @@ test.describe('table cells edit directly', () => {
     // swallowed opening it.
     await expect(frame.locator('.ds-cell-edit')).toHaveText('Revenue');
 
-    await page.keyboard.press('Escape');       // discard; the cell stays put
+    // Escape keeps what was typed, as InDesign's does, and leaves the cell selected.
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(900);
+    expect(await page.evaluate(() => layout.tables[0].rows[1][0])).toBe('Revenue');
+    expect(await page.evaluate(() => editing)).toBe(false);
   });
 
   test('Enter commits and drops a row; Tab commits and moves right', async ({ page }) => {

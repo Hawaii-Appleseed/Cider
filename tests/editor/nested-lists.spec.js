@@ -96,7 +96,7 @@ test.describe('nested bullets', () => {
       await page.waitForTimeout(300);
       await expect(frame.locator('.ds-edit li ul li')).toHaveCount(1);
 
-      // Blur commits. Escape would DISCARD, which is a different test.
+      // Blur commits (so does Escape, since 2026-10-21).
       await page.evaluate(() => document.getElementById('out').contentDocument
         .querySelector('.ds-edit')?.blur());
       await page.waitForTimeout(2500);

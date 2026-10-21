@@ -88,7 +88,7 @@ test.describe('a slot rendered as several paragraphs', () => {
       // the slot from content.md, so it opens empty.
       expect(await page.evaluate(s => readSlot(s), SLOT)).toBe('');
 
-      // and typing puts real words back in — blur commits (Escape discards)
+      // and typing puts real words back in — blur commits (Escape does too)
       await page.keyboard.type('BACKAGAIN');
       await page.evaluate(() =>
         document.getElementById('out').contentDocument

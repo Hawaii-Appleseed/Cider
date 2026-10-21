@@ -190,7 +190,7 @@ test.describe('editing a label drawn inside a chart', () => {
       expect(await page.evaluate(() => docsync.api.getSlot('chart.how.s1.label').md)).toBe('Sign up');
     });
 
-  test('Escape cancels, and a label the document only DEFAULTS opens on the words the page shows',
+  test('Escape with nothing typed writes nothing, and a label the document only DEFAULTS opens on the words the page shows',
     async ({ page }) => {
       // Take the slot out of the document: the renderer's default now draws
       // it (C.text_or), and the editor has no block to read.
@@ -213,7 +213,7 @@ test.describe('editing a label drawn inside a chart', () => {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(500);
       expect(await page.evaluate(() => ({ editing, has: slotRe('chart.how.s2.desc').test(source) })))
-        .toEqual({ editing: false, has: false });              // cancelled: nothing written
+        .toEqual({ editing: false, has: false });              // nothing typed: nothing written
 
       // Commit once, and the first edit CREATES the block.
       const pt2 = await labelPoint(page, 'chart.how.s2.desc');

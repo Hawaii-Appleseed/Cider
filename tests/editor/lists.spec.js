@@ -37,7 +37,7 @@ test.describe('lists', () => {
     await page.locator('#ty-mol').click();   // chrome bar — the inline toolbar is gone
     // Converted to a real <ol> right in the editor…
     await expect(ta.locator('ol > li')).toHaveCount(3);
-    // …and after COMMITTING the edit (blur, not Escape which discards), the
+    // …and after COMMITTING the edit (blur; Escape keeps it too), the
     // renderer's own <ol> reflects it.
     await ta.evaluate(el => el.blur());
     const section = frame.locator('[data-slot="extra.basics.num-list"]');

@@ -6225,12 +6225,40 @@ function _pilotApplyFitFrame(id) {
   return { ok: true, id, h };
 }
 
+/** A right-click selects what it lands on, as a left click would — a group
+ *  whole, and inside the current selection the selection stays — so the
+ *  menu and the strip are about the same thing (pageMenu does it for a page).
+ *  It used to leave the selection where it was: right-click a paragraph with
+ *  a table selected and the menu was the paragraph's, the strip the table's. */
+function selectForMenu(d, id) {
+  if (!id) return;
+  const members = withGroups([id]);
+  if (!members.every(m => selIds.has(m))) setSel(d, members);
+}
+
+/** Open the right-click menu again, at the same point, once a render in
+ *  flight has landed — in whatever document is current then (see contextify). */
+async function menuAfterRender(e) {
+  const at = { clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY };
+  await new Promise(r => setTimeout(r, 0));
+  if (renderRunning) await new Promise(r => renderWaiters.push(r));
+  if (editing) return;
+  const d2 = $('out').contentDocument;
+  const hit = d2 && d2.elementFromPoint(at.clientX, at.clientY);
+  if (!hit) return;
+  const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, composed: true,
+    view: d2.defaultView, button: 2, ...at });
+  ev.dsReplayed = true;
+  hit.dispatchEvent(ev);
+}
+
 function layerMenu(d, el, e) {
   closeMenu(d);
   const id = el.dataset.shape || el.dataset.el || el.dataset.fill;
   // A page or a table row is a SURFACE: it can change colour but it is not a
   // thing that moves, so it gets the fill section and nothing else.
   const surface = !el.dataset.shape && !el.dataset.el;
+  if (!surface) selectForMenu(d, id);
   const m = d.createElement('div');
   m.className = 'ds-menu';
   m.style.left = (e.clientX + d.defaultView.scrollX) + 'px';
@@ -6869,6 +6897,7 @@ function layerMenu(d, el, e) {
   if (!!shapeOf(id)) {
     const sep = d.createElement('div'); sep.className = 'ds-menu-sep'; m.appendChild(sep);
     item('Delete shape', async () => {
+      pushHistory();
       layout.shapes = layout.shapes.filter(s => s.id !== id);
       markDirty(); await render();
     });
@@ -6906,6 +6935,7 @@ function layerMenu(d, el, e) {
   if (layout.positions[id]) {
     const sep = d.createElement('div'); sep.className = 'ds-menu-sep'; m.appendChild(sep);
     item('Reset to its designed place', async () => {
+      pushHistory();
       delete layout.positions[id];
       markDirty(); await render();
     });
@@ -6925,13 +6955,18 @@ function contextify(d, roots) {
       // element the DOM hid from it (see hitPlaced) — that element's menu, not
       // the page's. Table rows keep their own: a box UNDER a table is unseen.
       let target = el;
-      if (el.tagName === 'SECTION') {
-        const hit = hitPlaced(d, el, e);
-        // Nothing placed under the pointer: the click means the PAGE, and a
-        // page has its own menu rather than the generic surface one.
-        if (!hit) { pageMenu(d, el, e); return; }
-        target = hit;
-      }
+      if (el.tagName === 'SECTION') target = hitPlaced(d, el, e) || el;
+      // Words open in something else: close them, as a click there would
+      // (the right button's press usually has already), and ask again once
+      // their commit has re-rendered. The menu, and the selection it makes,
+      // belong in the document that results, not in one about to be replaced
+      // — a table cell's own menu waits the same way.
+      const a = d.activeElement;
+      if (editing && a && a !== d.body && !target.contains(a)) a.blur();
+      if (renderRunning && !e.dsReplayed) { menuAfterRender(e); return; }
+      // Nothing placed under the pointer: the click means the PAGE, and a
+      // page has its own menu rather than the generic surface one.
+      if (target.tagName === 'SECTION') { pageMenu(d, target, e); return; }
       // A TABLE's right-click is always its own menu, wherever on it the
       // click landed. Cells carry that menu themselves, but the table's
       // padding, its border, the gap under the last row — and any point the
@@ -8364,6 +8399,9 @@ function wireCells(d, roots) {
         // time this fires, so it cannot be the thing we test on.
         const id = idOf(tableEl), at = td.dataset.cell;
         const pt = { clientX: e.clientX, clientY: e.clientY };
+        // Words open somewhere else close first, as contextify does.
+        const a = d.activeElement;
+        if (editing && a && a !== d.body && !td.contains(a)) a.blur();
         if (renderRunning) await render();
         const d2 = $('out').contentDocument;
         const cell = d2.querySelector(
@@ -8447,6 +8485,9 @@ function editCell(d, td, seed) {
   } else host.textContent = seed;
   td.textContent = '';
   td.appendChild(host);
+  // The cell as it opened (see edit()'s `opened`). Opened BY typing, the seed
+  // is already a keystroke, so there is nothing to compare against.
+  const opened = seed === undefined ? htmlToMd(host, { inline: true, br: '\n' }) : null;
   host.focus();
   const r = d.createRange();
   r.selectNodeContents(host);
@@ -8462,7 +8503,7 @@ function editCell(d, td, seed) {
     host.contentEditable = 'false';
     host.classList.remove('ds-cell-edit');
     if (keep) {
-      const moved = newVal !== ((t.rows[ri] && t.rows[ri][ci]) || '');
+      const moved = newVal !== opened && newVal !== ((t.rows[ri] && t.rows[ri][ci]) || '');
       const settled = moved ? await collabFieldSettle(newVal, 'table cell') : 'mine';
       if (moved && settled === 'mine') {
         await collabFieldFirstTheirs();
@@ -8489,7 +8530,9 @@ function editCell(d, td, seed) {
     // just told to close. Enter then left the editor stuck open on the next
     // cell and swallowed everything typed after it.
     if (['Escape', 'Enter', 'Tab'].includes(e.key)) e.stopPropagation();
-    if (e.key === 'Escape') { e.preventDefault(); finish(false); return; }
+    // Escape keeps what was typed and leaves the cell selected: see edit()'s
+    // keydown. ⌘Z is the way back.
+    if (e.key === 'Escape') { e.preventDefault(); finish(true); return; }
     // Tab walks the grid and Enter drops a row — a table is filled in by
     // typing straight through it, not by reaching for the mouse per cell.
     if (e.key === 'Tab') {
@@ -8539,8 +8582,11 @@ function tableMenu(d, td, e) {
   if (!t) return;
   const [ri, ci] = td.dataset.cell.split(',').map(Number);
   const cols = t.rows[0].length, rows = t.rows.length;
-  // Right-clicking a cell also puts the cursor on it, so the menu and the
-  // panel are always talking about the same cell.
+  // Right-clicking a cell selects its table (selectForMenu) and puts the
+  // cursor on the cell, so the menu, the strip and the panel are always
+  // talking about the same thing. In that order: a selection change drops a
+  // cell range on another table.
+  selectForMenu(d, idOf(tableEl));
   selectCell(idOf(tableEl), ri, ci);
   const m = d.createElement('div'); m.className = 'ds-menu ds-tmenu';
   m.addEventListener('mousedown', menuKeepFocus);
@@ -10517,8 +10563,8 @@ function editChartText(d, node) {
   inp.addEventListener('blur', () => finish(true));
   inp.addEventListener('keydown', e => {
     e.stopPropagation();            // see editCell: the document handler would
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
-    if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    // Enter and Escape both keep the new words (see edit()'s keydown).
+    if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); finish(true); }
   });
 }
 
@@ -10685,6 +10731,7 @@ function editBox(d, el, at) {
   // A click puts the caret where it landed; see caretAt.
   host.focus(at ? { preventScroll: true } : undefined);
   caretOrAll(d, host, at);
+  const opened = htmlToMd(host, { allowLists: true });   // see edit()'s `opened`
   const finish = async keep => {
     if (host.dataset.done) return;
     host.dataset.done = '1';
@@ -10699,9 +10746,10 @@ function editBox(d, el, at) {
     host.classList.remove('ds-edit');
     if (keep) {
       const want = newVal.trim();
+      const typed = newVal !== opened && want && want !== b.md;
       // Whose words, when two people wrote in this box at once.
-      const settled = want && want !== b.md ? await collabFieldSettle(want, 'text box') : 'mine';
-      if (settled === 'mine' && want && want !== b.md) {
+      const settled = typed ? await collabFieldSettle(want, 'text box') : 'mine';
+      if (settled === 'mine' && typed) {
         await collabFieldFirstTheirs();
         // `b` pointed into the layout this editor opened on; a collaborator's
         // change that just landed replaced it.
@@ -10723,8 +10771,8 @@ function editBox(d, el, at) {
   });
   host.addEventListener('paste', e => pasteClean(d, host, e, { allowLists: true }));
   host.addEventListener('keydown', e => {
-    // Escape keeps the box selected; see edit()'s keydown.
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+    // Escape keeps the words and the box selected; see edit()'s keydown.
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(true); }
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); link(d, host); }
     // Same bullet indent/outdent the slot editor has — a text box takes lists
     // too, and Tab meaning two different things in the two editors would be
@@ -10801,8 +10849,8 @@ function editEndnote(d, li, sid) {
   txt.addEventListener('blur', blurCheck);
   url.addEventListener('blur', blurCheck);
   [txt, url].forEach(inp => inp.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); finish(false); }
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    // Enter and Escape both keep what was typed (see edit()'s keydown).
+    if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); finish(true); }
   }));
 }
 
@@ -14400,6 +14448,7 @@ function marquee(d, pg, e0, onClick = null) {
  *  (undo was dead whenever focus sat in the report — a real bug until now). */
 function keysFor(d) {
   wireFindKey(d);
+  d.addEventListener('keydown', saveKey, true);    // capture: see saveKey
   d.addEventListener('keydown', e => {
     // Before the `editing` guard too — see the top-level listener.
     if (zoomKey(e)) return;
@@ -15773,6 +15822,34 @@ function stepZoom(dir) {
 }
 $('zb-out').addEventListener('click', () => stepZoom(-1));
 $('zb-in').addEventListener('click', () => stepZoom(1));
+
+/** ⌘S (Ctrl+S) is Save, as in InDesign and every other document app. Nothing
+ *  bound it, so the browser's own "Save page as" opened over the editor. It
+ *  presses the same Save, shown or not (hub autosave hides the button; the
+ *  store still saves the same way), after closing any open words so what was
+ *  being typed is part of it. Bound in the CAPTURE phase of both documents:
+ *  a field's own keydown stops propagation (editChartText, editSvgSlot), and
+ *  the key must reach here first. Returns true when it handled the key. */
+function saveKey(e) {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.code !== 'KeyS') return false;
+  e.preventDefault();
+  e.stopPropagation();
+  if (presenting || modalOpen || document.querySelector('dialog[open]')) return true;
+  saveFromKey();
+  return true;
+}
+async function saveFromKey() {
+  const d = $('out').contentDocument;
+  const a = d && d.activeElement;
+  if (editing && a && a !== d.body) a.blur();      // closing the words commits them
+  await new Promise(r => setTimeout(r, 0));
+  if (renderRunning) await new Promise(r => renderWaiters.push(r));
+  if (editing) return;                             // a dialog kept them open
+  if (hubViewOnly()) { $('stat').textContent = 'view only — there is nothing of yours to save'; return; }
+  if (!dirty) { $('stat').textContent = 'nothing to save — every change is saved'; return; }
+  if ($('save').disabled) { $('stat').textContent = 'saving…'; return; }   // one is already running
+  $('save').click();
+}
 
 /** ⌘+ / ⌘- / ⌘0, from either document.
  *
@@ -21046,6 +21123,7 @@ document.querySelectorAll('#shapepop .shp[data-k]').forEach(b => b.addEventListe
   $('stat').textContent = `${id} on page ${page} — drag to place, recolour with the Fill button`;
 }));
 
+addEventListener('keydown', saveKey, true);       // capture: see saveKey
 addEventListener('keydown', e => {
   // Zoom first, and before the text-field guards below: ⌘+/⌘- mean the same
   // thing wherever focus happens to be, and a caret sitting in a field is no
@@ -25650,8 +25728,8 @@ function editSvgSlot(d, key, node) {
   inp.addEventListener('blur', () => { if (!modalOpen) finish(true); });
   inp.addEventListener('keydown', e => {
     e.stopPropagation();            // see editCell: the document handler would act on it too
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
-    if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    // Enter and Escape both keep the new words (see edit()'s keydown).
+    if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); finish(true); }
   });
 }
 
@@ -25898,6 +25976,13 @@ function edit(d, key, clicked, at) {
   // swallowed by a commit path for an editor that did not exist.
   try { caretOrAll(d, host, at); }
   catch (e) { editing = false; richHost = null; richOpts = null; syncMarksBar(); collabParaClosed(); throw e; }
+  // The words as they opened, read the way finish() reads them: the same at
+  // the close means nothing was typed, so nothing is written — not a block
+  // for a slot the page only defaults, and not a markdown round trip that
+  // does not come back byte for byte. Escape keeps what was typed; leaving a
+  // field you only opened must change nothing.
+  const opened = rehead(!allowMd ? (richInline ? host.textContent : host.innerText)
+                                 : htmlToMd(host, { allowLists, inline: richInline }));
 
   const finish = async (keep) => {
     if (host.dataset.done) return;
@@ -25917,9 +26002,10 @@ function edit(d, key, clicked, at) {
     host.classList.remove('ds-edit', 'ds-inline', 'ds-edit-in');
     if (keep) {
       // Unchanged is unchanged whatever the wrapping: opening and leaving a
-      // soft-wrapped slot must not rewrite it as one long line.
+      // soft-wrapped slot must not rewrite it as one long line. And words
+      // left as they opened (`opened`) are not an edit at all.
       const was = readSlot(key);
-      if (newVal.trim() !== was && !(joinWraps && newVal.trim() === soft(was))) {
+      if (newVal !== opened && newVal.trim() !== was && !(joinWraps && newVal.trim() === soft(was))) {
         // Record the pre-edit state FIRST, or this text change (a typed edit,
         // a deletion) is not undoable — every other edit path pushes history,
         // but the slot editor didn't, so ⌘Z after editing prose found nothing
@@ -25955,9 +26041,13 @@ function edit(d, key, clicked, at) {
   host.addEventListener('keydown', e => {
     // Escape leaves the words and KEEPS the object selected — the way out of
     // typing into moving, aligning or deleting the box a click typed into
-    // (typeOnClick). Stopped here, or the document's own Escape (clear the
-    // selection) saw it too: finish() has already set editing false.
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+    // (typeOnClick). It keeps what was typed, too, as InDesign's Escape does
+    // and as a click elsewhere always has: it used to throw the edit away, so
+    // the one key an InDesign hand presses to leave a frame lost the words
+    // (Devin, 2026-10-21). ⌘Z is the way back. Stopped here, or the
+    // document's own Escape (clear the selection) saw it too: finish() has
+    // already set editing false.
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(true); }
     if (e.key === 'Enter' && richInline) { e.preventDefault(); finish(true); }
     // Shift-Enter has nowhere to go in prose. content.md soft-wraps at about
     // eighty columns, so a newline inside a slot is a WRAPPED line and

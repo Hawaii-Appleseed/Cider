@@ -9,7 +9,8 @@
 //
 //   open    — a click (a double-click inside a movable object) opens an
 //             editor for exactly that slot, focused, that takes typing;
-//   cancel  — Escape closes it and nothing was written;
+//   escape  — Escape closes it and KEEPS the words (InDesign's Escape, and a
+//             click away's), and ⌘Z takes them out again;
 //   commit  — a committed probe lands in the slot's markdown, and ⌘Z takes
 //             it out again;
 //   steady  — the field keeps its size while open (an inPlace editor that
@@ -20,7 +21,7 @@
 //   move    — every unlocked object answers docsync.api.place() by moving.
 //
 // Findings are printed per report and the strict bindings are held to zero
-// on open/cancel/commit/move; `shifted` and `covered` are reported and held
+// on open/escape/commit/move; `shifted` and `covered` are reported and held
 // to the KNOWN list (shrink-only, like text-legibility.spec.js).
 //
 // affected-by: docsync/editor/edit.html docsync/layout.py docsync/blocks.py docsync/content.py docsync.yml projects/**
@@ -55,7 +56,7 @@ const KNOWN = new Map([
 
 const PROBE = 'ZQXJ';
 
-/** Open, type, cancel, commit and undo every visible slot. Runs inside the
+/** Open, type, Escape, commit and undo every visible slot. Runs inside the
  *  editor window (page.evaluate) so it sees the same globals the UI does. */
 const sweepSlots = page => page.evaluate(async (PROBE) => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -64,7 +65,7 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
     while (performance.now() - t0 < ms) { if (f()) return true; await sleep(25); }
     return f();
   };
-  // A commit, cancel or undo ends in render(); the twin document swaps in
+  // A commit, an Escape or an undo ends in render(); the twin document swaps in
   // only once it has loaded, so wait for the render to be over and settle.
   const settled = async () => {
     await until(() => !renderRunning && !editing, 10000);
@@ -183,20 +184,29 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
     typeInto(host);
     const typedIn = isInput ? host.value.includes(PROBE) : host.textContent.includes(PROBE);
     if (!typedIn) fails.push(`${key}: typing did not land in the editor`);
-    // cancel
+    // escape: keeps the probe, and ⌘Z takes it out again
     host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     const closed = await until(() => !editing && !hostOf(key), 6000);
     if (!closed) { fails.push(`${key}: Escape did not close the editor`); continue; }
+    const kept = await until(() => slotRe(key).test(source) && readSlot(key).includes(PROBE), 8000);
     await settled();
+    if (!kept) fails.push(`${key}: Escape did not keep the words`);
+    else {
+      // the renderer refused the words (see the commit below): its own guard
+      const refusedNow = renderFailed;
+      if (refusedNow) refused.push(`${key}: ${(renderError || 'the renderer refused the draft').split('\n')[0].slice(0, 100)}`);
+      await undo();
+      const back = await until(() => (slotRe(key).test(source) ? readSlot(key) : null) === was, 8000);
+      if (!back) fails.push(`${key}: undo after Escape left different markdown`);
+      await settled();
+      if (refusedNow) continue;
+    }
     await until(() => visibleOf(key), 6000);
-    const after = slotRe(key).test(source) ? readSlot(key) : null;
-    if (after !== was) fails.push(`${key}: Escape changed the markdown`);
-    if (after && after.includes(PROBE)) fails.push(`${key}: Escape committed the probe`);
     // commit + undo (only a slot the document already holds; a defaulted
     // label's first commit writes a new block, which is its own test)
     if (was === null) continue;
     const el2 = visibleOf(key);
-    if (!el2) { fails.push(`${key}: gone after cancel`); continue; }
+    if (!el2) { fails.push(`${key}: gone after Escape`); continue; }
     el2.scrollIntoView({ block: 'center' });
     const p2 = glyphPt(el2);
     el2.dispatchEvent(new MouseEvent(inObj ? 'dblclick' : 'click',
@@ -204,7 +214,7 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
         clientX: p2.x, clientY: p2.y }));
     await until(() => hostOf(key), 1500);
     host = hostOf(key);
-    if (!host) { fails.push(`${key}: did not reopen after cancel`); continue; }
+    if (!host) { fails.push(`${key}: did not reopen after Escape`); continue; }
     typeInto(host);
     host.blur();
     const committed = await until(() => !editing && !hostOf(key) && readSlot(key).includes(PROBE), 8000);
@@ -346,6 +356,7 @@ async function mouseSweep(page) {
     if (!pt) continue;
     n++;
     if (!pt.onIt) covered.push(`${key} ← ${pt.hit}`);
+    const src0 = await page.evaluate(() => source);
     await page.mouse.click(pt.x, pt.y);
     await page.waitForTimeout(120);
     let who = await openHost(page);
@@ -370,6 +381,10 @@ async function mouseSweep(page) {
     else if (how !== 'click' && !pt.svg && !pt.inGroup) needsDouble.push(`${key}: needs a ${how}`);
     if (who) { await page.keyboard.press('Escape'); }
     await settle(page);
+    // Escape keeps what was TYPED: a field only opened and left must change
+    // nothing, not even by a markdown round trip (edit()'s `opened`).
+    if (who && await page.evaluate(() => source) !== src0)
+      fails.push(`${key}: opened and left with Escape, nothing typed, and the markdown changed`);
     await page.keyboard.press('Escape');     // clear the selection too
     await page.waitForTimeout(40);
   }
@@ -547,7 +562,7 @@ for (const rep of REPORTS) {
     const hard = errors.filter(e => !/^http 404:|Failed to load resource/.test(e)
       && !(s.refused.length && /^pageerror: Traceback/.test(e)));
     expect(hard, 'no page errors or console errors during the sweep').toEqual([]);
-    expect(s.fails, 'every slot opens, cancels, commits and undoes').toEqual([]);
+    expect(s.fails, 'every slot opens, keeps its words on Escape, commits and undoes').toEqual([]);
     expect(m.fails, 'every object moves and undoes').toEqual([]);
     expect(dirtyAfter, 'the sweep left the document as it found it').toBe(false);
     if (rep.strict) {
