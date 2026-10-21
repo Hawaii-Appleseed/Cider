@@ -7,8 +7,21 @@ const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test')
 const ID = 'para.groc.lead';
 const ALL = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
+/** Wait until nothing is re-rendering and the page's web fonts are in. Every
+ *  measurement here is a before/after of one paragraph's box, and the lines
+ *  above it wrap one way in the fallback font and another in the real one:
+ *  on a cold CI runner the fonts landed between the two readings and moved
+ *  the paragraph 39px with no drag involved. */
+const settledPage = page => page.evaluate(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 400 && renderRunning; i++) await sleep(25);
+  await $('out').contentDocument.fonts.ready;
+  await sleep(50);
+});
+
 async function selectPara(page) {
   await gotoEditor(page, '?project=uhero-trc-summary');
+  await settledPage(page);
   await page.evaluate(id => {
     const d = $('out').contentDocument;
     d.querySelector(`[data-el="${id}"]`).scrollIntoView({ block: 'center' });
@@ -35,6 +48,7 @@ async function dragHandle(page, dir, dx, dy) {
   await page.mouse.move(x + dx, y + dy, { steps: 8 });
   await page.mouse.up();
   await page.waitForTimeout(600);
+  await settledPage(page);
 }
 
 const geometry = page => page.evaluate(id => {
@@ -82,12 +96,19 @@ test.describe('a paragraph resizes like a text frame', () => {
     }, ID);
     const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
-    // The commit re-renders, and a cold runner can still be laying the page
-    // out when the first measurement lands: CI read the bottom 39px off on
-    // two runs and exactly in place on the next. What the drag promises is
-    // where the paragraph settles, so wait for that.
-    await expect.poll(async () => Math.round(Math.abs((await onPage()).bottom - top0.bottom)),
-      { timeout: 5000 }).toBeLessThan(4);
+    // Both readings are taken on a settled page (settledPage, before the drag
+    // and inside dragHandle after it); the poll covers any last reflow. What
+    // the drag promises is where the paragraph settles.
+    try {
+      await expect.poll(async () => Math.round(Math.abs((await onPage()).bottom - top0.bottom)),
+        { timeout: 5000 }).toBeLessThan(4);
+    } catch (err) {
+      // On a failure, say what the drag stored beside what the page drew:
+      // the difference between a slow page and a box drawn in the wrong place.
+      console.log('top-edge', JSON.stringify({ top0, now: await onPage(),
+        stored: await page.evaluate(id => layout.positions[id], ID) }));
+      throw err;
+    }
     expect((await onPage()).top).toBeLessThan(top0.top - 30);
   });
 
