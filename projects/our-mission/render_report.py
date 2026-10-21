@@ -111,6 +111,14 @@ BODY = (HERE / "body.slotted.html").read_text()
 # makes every field movable and resizable, which five re.subs here never did.
 BODY = fill_markers(C, L, BODY)
 BODY = okinafy(BODY)                             # inline style= stacks too
+# The hero mark's three.js script draws a WebGL canvas over the words and hides
+# them. The editor patches a page without running its scripts, so after any
+# edit the canvas was gone and the words shown, and the mark changed under the
+# person's hand (patched-scripted-pages.spec). In the editor the mark is held
+# still at its CSS version, the one phones and reduced-motion readers get.
+if EDIT:
+    BODY = re.sub(r'<script type="module">(?:(?!</script>).)*?from \'three\'.*?</script>', "", BODY,
+                  count=1, flags=re.S)
 
 # Every sheet, in order: this page, then any blank page added in the editor.
 # Going through L.page_order() plus L.pagemeta() is what lets the page strip

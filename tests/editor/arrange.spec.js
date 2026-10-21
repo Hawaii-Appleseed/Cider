@@ -175,19 +175,43 @@ test.describe('arranging', () => {
     expect(near(r.b1.h, r.b0.h), `height ${r.b0.h} -> ${r.b1.h}`).toBe(true);
   });
 
+  test('a piece anchored inside a bordered container lands where it is put', async ({ page }) => {
+    // The cover's figure grid has a 2px top border; the page's anchor script
+    // measured from outside it and `top` counts from inside, so a figure
+    // nudged 0.1in down landed 0.121in down.
+    await gotoEditor(page, '?project=uhero-trc-summary');
+    const r = await inEditor(page, async (d, h) => {
+      const b0 = h.box('cover.fig.b');
+      setSel(d, ['cover.fig.b']);
+      nudgeSel(d, [0, 0.1]);
+      await render(); await h.settle();
+      return { b0, b1: h.box('cover.fig.b') };
+    });
+    expect(near(r.b1.y, r.b0.y + 0.1, 0.005), `y ${r.b0.y} -> ${r.b1.y}`).toBe(true);
+  });
+
   test('a grid cell moved stays where it was across, and its neighbours keep their columns',
     async ({ page }) => {
-      // The swap table's header puts its cells in columns by class. Out of
-      // the flow, a cell with a column of its own was placed against that
-      // column, not the grid, and jumped sideways.
+      // A grid whose css puts its cells in columns of their own. Out of the
+      // flow, such a cell was placed against its column, not the grid, and
+      // jumped sideways. (UHERO's swap-table header was the case; it is a real
+      // table now, 28bcb70, so the cover's figure grid is given columns here —
+      // b in the third, c in the second — on every render.)
       await gotoEditor(page, '?project=uhero-trc-summary');
+      await page.evaluate(() => {
+        const prep = prepPreviewHtml;
+        prepPreviewHtml = html => prep(html).replace('</head>', '<style>'
+          + '.figs>[data-el="cover.fig.b"]{grid-column:3}.figs>[data-el="cover.fig.c"]{grid-column:2}</style></head>');
+        return render();
+      });
       const r = await inEditor(page, async (d, h) => {
-        const b0 = h.box('swap.head.b'), c0 = h.box('swap.head.c');
-        setSel(d, ['swap.head.b']);
+        const b0 = h.box('cover.fig.b'), c0 = h.box('cover.fig.c');
+        setSel(d, ['cover.fig.b']);
         nudgeSel(d, [0, 0.1]);
         await render(); await h.settle();
-        return { b0, b1: h.box('swap.head.b'), c0, c1: h.box('swap.head.c') };
+        return { b0, b1: h.box('cover.fig.b'), c0, c1: h.box('cover.fig.c') };
       });
+      expect(r.b0.x, 'b sits right of c, by its css column').toBeGreaterThan(r.c0.x);
       expect(near(r.b1.x, r.b0.x), `x ${r.b0.x} -> ${r.b1.x}`).toBe(true);
       expect(near(r.b1.y, r.b0.y + 0.1), `y ${r.b0.y} -> ${r.b1.y}`).toBe(true);
       expect(near(r.c1.x, r.c0.x)).toBe(true);
@@ -341,6 +365,21 @@ test.describe('arranging', () => {
       return { b0, b1: h.box('what.scene.right') };
     });
     expect(near(r.b1.y, r.b0.y + 0.1), `y ${r.b0.y} -> ${r.b1.y}`).toBe(true);
+  });
+
+  test('a report\'s entrance animation does not play again on every render', async ({ page }) => {
+    // rxkids' panels rise and fade in (rxkIn, .35s). A render replaces the
+    // page's nodes, so it replayed after every edit: the page flickered at
+    // each keystroke and a piece just moved was measured mid-rise.
+    await gotoEditor(page, '?project=rxkids');
+    const running = await page.evaluate(async () => {
+      const d = $('out').contentDocument;
+      setSel(d, ['what.scene.right']); nudgeSel(d, [0, 0.1]);
+      await render();
+      return $('out').contentDocument.getAnimations()
+        .filter(a => a.animationName === 'rxkIn' && a.playState === 'running').length;
+    });
+    expect(running).toBe(0);
   });
 
   test('icons line up by the box they are drawn in, not the stroke inside it', async ({ page }) => {

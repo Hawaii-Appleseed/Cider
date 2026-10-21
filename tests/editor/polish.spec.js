@@ -90,7 +90,7 @@ test.describe('69 undo history', () => {
     expect(rows[1].label).toContain(`added text box ${b.slice(5)}`);
     expect(rows[2].label).toContain(`shape ${a}`);
     expect(rows[3].label).toContain(`added shape ${a}`);
-    await page.click('#history');
+    await page.click('#steps');
     await expect(page.locator('#histpop .hrow')).toHaveCount(rows.length);
     // Back three steps — before the shape — then forward one.
     await page.locator('#histpop .hrow').nth(3).click();
@@ -98,6 +98,14 @@ test.describe('69 undo history', () => {
     await expect(page.locator('#histpop .hrow.ahead')).toHaveCount(3);
     await page.locator('#histpop .hrow.ahead').last().click();
     await expect.poll(() => page.evaluate(a => !!shapeOf(a), a)).toBe(true);
+  });
+  test('a change to words is named by its slot', async ({ page }) => {
+    await gotoEditor(page);
+    const key = await page.evaluate(() => docsync.api.inventory().pages.flatMap(p => p.slots)[0].key);
+    const r = await api(page, `setSlot(${JSON.stringify(key)}, 'Different words entirely.')`);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    const rows = await page.evaluate(() => historyList());
+    expect(rows[1].label).toContain(`words of ${key}`);
   });
 });
 

@@ -16,6 +16,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+
+def _tmp_json():
+    """A fresh temp .json path. mkstemp() also OPENS the file; its descriptor
+    is closed here, or a few hundred layouts exhaust macOS's default limit of
+    256 open files (OSError: Too many open files)."""
+    import atexit
+    import tempfile
+    fd, name = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    atexit.register(lambda: os.path.exists(name) and os.unlink(name))
+    return Path(name)
+
 from docsync.content import ContentError                  # noqa: E402
 from docsync.fetch import (FetchError, access_token,      # noqa: E402
                            service_account_email)
@@ -1153,7 +1165,7 @@ from docsync.layout import Layout, LayoutError, PAGELESS_H  # noqa: E402
 
 
 def _layout(d):
-    f = Path(_tempfile.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(_json.dumps(d))
     return Layout(f)
 
@@ -2252,7 +2264,7 @@ def _act_layout(extra=None):
            "md": "**Download** PDF", "fill": "#2F3E46",
            "style": {"size": 14, "color": "#FFFFFF"}, "act": "pdf"}
     box.update(extra or {})
-    f = Path(_tf.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(json.dumps({"boxes": [box]}))
     return _L(f)
 
@@ -2306,7 +2318,7 @@ def _pair_layout(btn_extra=None, tgt_extra=None):
            "fill": "#52796F", "act": "toggle", "target": "t2"}
     tgt = {"id": "t2", "page": 1, "x": 1, "y": 1.6, "w": 5, "md": "Hidden words."}
     btn.update(btn_extra or {}); tgt.update(tgt_extra or {})
-    f = Path(_tf.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(json.dumps({"boxes": [btn, tgt]}))
     return _L(f)
 
@@ -2379,7 +2391,7 @@ finally:
 # A toggle can reveal shapes, tables and several things at once — each kind
 # stamps its hook on the node it already owns.
 def _trio_layout():
-    f = Path(_tf.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(json.dumps({
         "boxes": [
             {"id": "t1", "page": 1, "x": 1, "y": 1, "w": 2.6, "md": "Show all",
@@ -2412,7 +2424,7 @@ finally:
     del os.environ["DOCSYNC_EDIT"]
 
 try:
-    f = Path(_tf.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(json.dumps({"boxes": [
         {"id": "t1", "page": 1, "x": 1, "y": 1, "w": 2, "md": "x",
          "act": "toggle", "target": ["nope"]}]}))
@@ -2442,7 +2454,7 @@ for name, kw, want in [
 # shows everything), print and reduced-motion always show content, and the
 # keyframes animate translate/scale so an element's own rotation survives.
 def _anim_layout():
-    f = Path(_tf.mkstemp(suffix=".json")[1])
+    f = _tmp_json()
     f.write_text(json.dumps({
         "boxes": [{"id": "t1", "page": 1, "x": 1, "y": 1, "w": 3,
                    "md": "Animated", "anim": {"kind": "rise",
@@ -2501,7 +2513,7 @@ for raw, want in [
                           "anim": {"kind": "fade", "delay": -1}}}}, "delay"),
 ]:
     try:
-        f = Path(_tf.mkstemp(suffix=".json")[1])
+        f = _tmp_json()
         f.write_text(json.dumps(raw))
         _L(f)
         FAILS.append(f"anim refusal missed: {want}")
@@ -2633,7 +2645,7 @@ check("the breakpoint is the sheet, not a device width",
 # The width a report was BUILT at counts as much as one File > Resize wrote.
 # Reading only the override gave a 12.5in web page (rxkids) the 8.5in default,
 # so its sheet stopped fitting at 1200px while the release waited for 816.
-_wide = Layout(Path(_tempfile.mkstemp(suffix=".json")[1]), page=(12.5, 84))
+_wide = Layout(_tmp_json(), page=(12.5, 84))
 _wide.positions = {"el.a": {"x": 1, "y": 1}}
 check("a report BUILT wide gets its own breakpoint, with no override written",
       _wide.mobile_css(), "max-width:12.5in")
@@ -3848,6 +3860,16 @@ _decls = re.findall(r"^(?:async )?function\*? ?([A-Za-z_$][\w$]*)",
                     (Path(__file__).parent / "editor" / "edit.html").read_text(), re.M)
 check_eq("no function is declared twice in the editor's script",
          sorted({n for n in _decls if _decls.count(n) > 1}), [])
+
+# The same for an element id in the editor's markup: $('x') finds the FIRST,
+# so a second #x is dead and the first one runs the second's handlers too.
+# The undo History button (⏱) and the hub's saved-versions History were both
+# #history: the hub's never showed, and ⏱ also opened the versions panel.
+_markup = re.sub(r"<(script|style)\b.*?</\1>", "",
+                 (Path(__file__).parent / "editor" / "edit.html").read_text(), flags=re.S)
+_ids = re.findall(r'<[a-zA-Z][^>]*?\sid="([^"]+)"', _markup)
+check_eq("no id is given twice in the editor's markup",
+         sorted({n for n in _ids if _ids.count(n) > 1}), [])
 
 # ---- every attribute said once -------------------------------------------------
 # A start tag naming an attribute twice keeps the first and drops the rest,

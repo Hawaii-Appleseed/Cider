@@ -85,6 +85,13 @@ test.describe('64 gradient swatches and fade', () => {
 });
 
 test.describe('82 internal links and cross-reference text', () => {
+  test('a heading whose slot sits inside it is a place to link to', async ({ page }) => {
+    // <h1 data-el><span data-slot> is how most renderers draw a heading; Link
+    // to a place listed none of them, so retitc had nowhere to link.
+    await gotoEditor(page, '?project=retitc');
+    const keys = await page.evaluate(() => reportPlaces($('out').contentDocument).map(p => p.key));
+    expect(keys).toEqual(expect.arrayContaining(['cover.h1', 'about.h1', 'pays.h1']));
+  });
   test('{titleof:} shows the heading words and follows a retitle; a #link jumps to it', async ({ page }) => {
     await gotoEditor(page);
     const h = await addBox(page, '## Who pays');

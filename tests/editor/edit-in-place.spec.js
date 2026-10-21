@@ -170,9 +170,16 @@ test.describe('editing a field in place', () => {
 
   test('a word wider than its box does not break mid-word when opened', async ({ page }) => {
     // Chrome gives [contenteditable] overflow-wrap:break-word; rxkids' 112px
-    // "RxKeiki" overflows its heading slightly and broke onto two lines.
+    // "RxKeiki" overflowed its heading slightly and broke onto two lines.
+    // That title is a logo now (182718c), so a heading is given one word
+    // wider than itself.
     await gotoEditor(page, '?project=rxkids');
-    const { before, open } = await openAndMeasure(page, 'hero.title');
+    const key = await page.evaluate(() => document.getElementById('out').contentDocument
+      .querySelector('h2 > [data-slot]').dataset.slot);
+    expect((await page.evaluate(k => docsync.api.setSlot(k, 'Prescriptionforhealthhopeandopportunity'.repeat(2)), key)).ok).toBe(true);
+    expect(await page.evaluate(k => { const e = document.getElementById('out').contentDocument
+      .querySelector(`[data-slot="${k}"]`).parentElement; return e.scrollWidth > e.clientWidth; }, key), 'the word overflows').toBe(true);
+    const { before, open } = await openAndMeasure(page, key);
     expect(Math.abs(open.h - before.h), `${before.h} -> ${open.h}`).toBeLessThanOrEqual(1);
   });
 

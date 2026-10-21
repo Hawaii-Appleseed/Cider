@@ -9,6 +9,21 @@
 const { test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
 
 test.describe('File menu', () => {
+  test('Escape closes it, and the bar\'s other menus and panels, and keeps the selection', async ({ page }) => {
+    await gotoEditor(page);
+    const sel = await page.evaluate(() => { const id = docsync.api.inventory().pages.flatMap(p => p.elements || [])[0];
+      return id ? (docsync.api.select(id.id || id), [...selIds]) : []; });
+    for (const [btn, pop] of [['file', 'filepop'], ['colours', 'colourspop'], ['layers', 'layerspop']]) {
+      await page.click('#' + btn);
+      await expect(page.locator('#' + pop)).toBeVisible();
+      await page.locator(`#${pop} button`).first().focus().catch(() => {});   // a row has focus, as after a click
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#' + pop)).toBeHidden();
+    }
+    expect(sel.length, 'something was selected to keep').toBe(1);
+    expect(await page.evaluate(() => [...selIds])).toEqual(sel);
+  });
+
   test('collects Open, New window, Connect GitHub, Repo, Resize, Sources, Share, Google Doc, Download, Restore and Token', async ({ page }) => {
     await gotoEditor(page);
     // Closed until asked for — it is a menu, not a panel.

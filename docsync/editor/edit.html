@@ -442,8 +442,8 @@
   #bar > button:disabled { opacity:.45; cursor:default; border-color:var(--ctl-line);
                          background:var(--ctl); }
   #bar > button.on { background:var(--sage); border-color:var(--sage); color:#fff; }
-  #undo, #redo, #history { font-size:15px; line-height:1; padding:4px 6px; }
-  #history { font-size:13px; }
+  #undo, #redo, #steps { font-size:15px; line-height:1; padding:4px 6px; }
+  #steps { font-size:13px; }
   #histpop { width:340px; max-height:60vh; overflow:auto; }
   #histpop .hrow { display:flex; gap:8px; align-items:baseline; width:100%; text-align:left; border:0; background:none;
         padding:6px 8px; border-radius:6px; font:12.5px system-ui; color:inherit; cursor:pointer; }
@@ -1611,6 +1611,9 @@
         box-shadow:0 24px 60px rgba(20,30,35,.35); display:flex; flex-direction:column; font:13px system-ui; color:#2F3E46; }
   #library .st-head { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid #E8EEEA; }
   #library .st-head b { font-size:14px; }
+  /* .sw-default stretches to its row; here it would take the head and fold
+     the title and note into a column of single words. */
+  #story .st-head button, #library .st-head button { flex:none; width:auto; margin:0; padding:5px 12px; }
   #library .st-note { flex:1; font-size:11.5px; color:#7A8B84; }
   #library .st-list { overflow:auto; padding:8px 16px 16px; }
   #library .lib-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #F0F4F1; }
@@ -2176,7 +2179,7 @@
   <span class="bar-sep"></span>
   <button id="undo" disabled aria-label="Undo (⌘Z)">↶</button>
   <button id="redo" disabled aria-label="Redo (⌘⇧Z)">↷</button>
-  <button id="history" aria-label="History — every step you can undo, to jump back to one">⏱</button>
+  <button id="steps" aria-label="History — every step you can undo, to jump back to one">⏱</button>
   <button id="save" disabled>Save draft</button>
   <button id="push" hidden disabled aria-label="Send commits saved locally to GitHub">Push</button>
   <!-- Publish sits with Save and Push because it is the same kind of act —
@@ -3524,9 +3527,12 @@ function titlePreview(ref) {
  *  and page — for Page reference, Heading words and Link to a place. */
 function reportPlaces(d) {
   const pages = [...d.querySelectorAll('section.page')];
-  return [...d.querySelectorAll('section.page h1[data-slot], section.page h2[data-slot],'
-    + ' section.page h3[data-slot], section.page [data-slot] > h1, section.page [data-slot] > h2')]
-    .map(h => h.dataset.slot ? h : h.parentElement)
+  // The slot is the heading, wraps it, or — most renderers' pattern,
+  // <h1 data-el><span data-slot> — sits inside it; that last was missed, and
+  // the staff toolkit, retitc and the primer offered no place at all.
+  return [...d.querySelectorAll('section.page :is(h1, h2, h3)')]
+    .map(h => h.dataset.slot ? h : h.querySelector(':scope > [data-slot]')
+      || (h.parentElement && h.parentElement.matches('[data-slot]') ? h.parentElement : null))
     .filter((h, i, a) => h && h.dataset.slot && a.indexOf(h) === i
       && !h.closest('.ds-textbox') && (h.textContent || '').trim())
     .map(h => ({ key: h.dataset.slot, words: (h.textContent || '').replace(/\s+/g, ' ').trim(),
@@ -4953,7 +4959,7 @@ function openGlyphs(d, host, range) {
   glyphRender();
   const pop = $('glyphpop');
   pop.hidden = false;
-  const anchor = $('history');
+  const anchor = $('steps');
   const r = anchor.getBoundingClientRect();
   pop.style.position = 'fixed'; pop.style.top = (r.bottom + 6) + 'px';
   pop.style.left = Math.max(8, Math.min(innerWidth - 380, r.left - 160)) + 'px';
@@ -7844,6 +7850,19 @@ function closeOnOutsideClick(target, insideChrome) {
 }
 
 addEventListener('mousedown', e => closeOnOutsideClick(e.target, true));
+// Escape closes an open menu or panel the way a click away does — File,
+// Download, Colours, Layers and the rest only closed on a click. Not while a
+// modal is up, and not from a field inside a pop (Find's box, Glyphs' search
+// have their own Escape); first, so the same key does not also drop the
+// selection.
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  const open = [...document.querySelectorAll('.pop:not(.docked):not([hidden])')];
+  const t = e.target;
+  if (!open.length || (t.closest && t.closest('.pop') && t.matches('input, textarea, select, [contenteditable]'))) return;
+  e.preventDefault(); e.stopPropagation();
+  open.forEach(p => { if (p.id === 'glyphpop') closeGlyphs(); else p.hidden = true; });
+}, true);
 
 /** The same rule, for clicks on the REPORT. The canvas is an iframe, and a
  *  mousedown inside one does not bubble to this document at all — so clicking
@@ -12599,6 +12618,23 @@ function wireType() {
     fillParaPop(selected);
     togglePop($('ty-parapop'), $('ty-parabtn'));
   });
+  // A press on the card while typing ends the typing (on pointerdown), and
+  // the card trades its B/I/U group for a narrower one at once: everything to
+  // its right (Case, colour, spacing, ¶, effects, Reset) slid out from under
+  // the pointer, and the click landed on the strip. The press is still aimed
+  // at the button it hit, so a button that no longer holds the pointer has
+  // moved: it gets the click when the press comes up.
+  let typePress = null;
+  $('type').addEventListener('mousedown', e => {
+    const b = e.target.closest && e.target.closest('button');
+    const r = b && b.getBoundingClientRect();
+    typePress = b && !b.disabled && e.button === 0 && !(e.clientX >= r.left && e.clientX <= r.right
+      && e.clientY >= r.top && e.clientY <= r.bottom) ? b : null;
+  }, true);
+  addEventListener('mouseup', () => {
+    const b = typePress; typePress = null;
+    if (b && b.isConnected && !b.disabled && b.offsetParent) setTimeout(() => b.click(), 0);
+  }, true);
   // One write path for the whole panel: a patch through setStyle, a render,
   // and the type bar re-read — exactly what the case picker does.
   const paraSet = async patch => {
@@ -16222,6 +16258,9 @@ async function libraryDialog() {
   $('lib-save').addEventListener('click', async () => { close(); await saveToLibraryDialog(); });
   wrap.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); });
+  // Focus inside, or Escape goes to the page behind and the overlay, which
+  // covers the whole editor, stays until Done is clicked.
+  $('lib-close').focus();
 }
 $('file-library').addEventListener('click', () => { $('filepop').hidden = true; libraryDialog(); });
 
@@ -16799,7 +16838,17 @@ async function addNoteDialog(k, i = null) {
   await render();
   if (!$('notespop').hidden) notesRender();
 }
+/** Marks are placed by measuring their words, so they are measured again
+ *  once what moves words after a render has landed — the fonts, a picture
+ *  above them: rxkids' mark sat 30px over its paragraph until the next edit
+ *  happened to redraw it. */
 function drawNoteMarks(d) {
+  drawNoteMarksNow(d);
+  const again = () => { if ($('out').contentDocument === d) drawNoteMarksNow(d); };
+  if (d.fonts && d.fonts.ready) d.fonts.ready.then(() => d.defaultView.requestAnimationFrame(again));
+  [...d.images].filter(i => !i.complete).forEach(i => i.addEventListener('load', again, { once: true }));
+}
+function drawNoteMarksNow(d) {
   d.querySelectorAll('.ds-notemark').forEach(n => n.remove());
   const by = new Map();
   notesList().forEach(n => { if (n.key) by.set(n.key, (by.get(n.key) || []).concat(n.text)); });
@@ -16808,7 +16857,9 @@ function drawNoteMarks(d) {
   by.forEach((texts, k) => {
     const el = d.querySelector(`[data-slot="${CSS.escape(k)}"]`);
     const pg = el && el.closest('section.page');
-    if (!pg) return;
+    // Words not drawn (a carousel's hidden panel on our-mission) have no
+    // place to mark: measured, they put the mark in the page's corner.
+    if (!pg || !el.getClientRects().length) return;
     const b = inchBox(el, pg);
     const mk = d.createElement('div');
     mk.className = 'ds-notemark';
@@ -19195,7 +19246,7 @@ function historyRender() {
     host.appendChild(b);
   });
 }
-$('history').addEventListener('click', () => { if ($('histpop').hidden) historyRender(); togglePop($('histpop'), $('history')); });
+$('steps').addEventListener('click', () => { if ($('histpop').hidden) historyRender(); togglePop($('histpop'), $('steps')); });
 
 function dragify(d, roots) {
   within(d, roots, '[data-el], [data-shape]').forEach(el => {
@@ -19238,7 +19289,15 @@ function dragify(d, roots) {
     // Keyboard moves work on the SELECTION at the document level (keysFor), so
     // arrows still nudge a selected element without any element owning focus.
     el.addEventListener('mousedown', e => {
-      if (editing || e.button !== 0) return;
+      if (e.button !== 0) return;
+      // Shift adds to the selection, from words being typed too: leave them
+      // (kept — blur commits) and go on. A click types in a box, so without
+      // this "click one, shift-click another" never selected two.
+      if (editing && e.shiftKey) {
+        const a = d.activeElement;
+        if (a && a.isContentEditable && !el.contains(a)) a.blur();
+      }
+      if (editing) return;
       // A movable object grabs from ANYWHERE on itself — including over its own
       // words. A callout is nearly all text; the old rule "a click on text
       // never moves" left it with no grab handle at all. Editing the words is
@@ -23976,10 +24035,26 @@ function stageChainWire(d) {
   }, { passive: true });
 }
 
+/** A render replaces the page's nodes, so a report's entrance animation
+ *  (rxkids' panels rise and fade in over .35s) played again after every
+ *  edit: the page flickered at each keystroke, and what was just moved was
+ *  measured mid-rise. The editor shows where things are, so a one-shot
+ *  animation on new nodes is finished at once. Loops (a pulsing dot) run
+ *  on, and so do the editor's own entrance previews (replayAnims). */
+function stillEntrances(d, roots) {
+  const CA = d.defaultView.CSSAnimation;
+  d.getAnimations().forEach(a => {
+    const el = a.effect && a.effect.target;
+    if (!(a instanceof CA) || !el || (roots && roots.length && !roots.some(r => r.contains(el)))) return;
+    if (el.closest('[data-ds-anim]') || a.effect.getComputedTiming().iterations === Infinity) return;
+    try { a.finish(); } catch (e) { /* an animation that cannot end: leave it */ }
+  });
+}
 function wire(roots) {
   const d = $('out').contentDocument;
   const fresh = !(roots && roots.length);
   healStrandedEditor();   // see its own comment; wire() is one of two callers
+  stillEntrances(d, roots);
   showLocalImages(d, roots);
   // Native image-drag steals the gesture before the editor's mousemove ever
   // fires — grab a placed photo and a ghost image flies while the box stays
@@ -29904,8 +29979,15 @@ const asDataUrl = async url => {
  *  does. Session uploads already live in memory as data URLs. */
 async function inlineEverything(doc) {
   for (const link of [...doc.querySelectorAll('link[rel~="stylesheet"]')]) {
+    const href = link.getAttribute('href') || '';
+    // A web font's stylesheet stays a link — it is fetched from the web
+    // wherever the file is opened. Joined onto the project's folder it 404'd,
+    // and a 404 does not throw: the error page replaced the link, as CSS.
+    if (/^(https?:)?\/\//i.test(href)) continue;
     try {
-      const css = await (await fetch(withBase(link.getAttribute('href')))).text();
+      const r = await fetch(withBase(href));
+      if (!r.ok) continue;
+      const css = await r.text();
       const st = doc.createElement('style');
       st.textContent = css;
       link.replaceWith(st);
@@ -30171,6 +30253,11 @@ async function exportHtml(forSquarespace) {
       const view = VIEW_W;
       let css = [...doc.querySelectorAll('style')].map(n => n.textContent).join('\n');
       css = freezeViewportUnits(flattenMedia(css, view), view);
+      // The report's web fonts come along as links: a font stylesheet only
+      // defines families (@font-face), so it cannot restyle the host page,
+      // and without it the block set itself in whatever the host loads.
+      const fonts = [...doc.querySelectorAll('link[rel~="stylesheet"]')].map(l => l.getAttribute('href') || '')
+        .filter(h => /^https:\/\/fonts\.(googleapis|bunny)\.(com|net)\//i.test(h));
       doc.querySelectorAll('style, script, link').forEach(n => n.remove());
       // Inline styles carry the same vw leak as the stylesheet does.
       doc.querySelectorAll('[style]').forEach(el => {
@@ -30188,6 +30275,7 @@ async function exportHtml(forSquarespace) {
      Its media queries and vw lengths were resolved at export too — a pasted
      block must not re-answer them against the host page's viewport. -->
 <div id="${uid}" class="dsx-wrap">
+${fonts.map(h => `<link rel="stylesheet" href="${h.replace(/"/g, '&quot;')}">`).join('\n')}
 <style>
 #${uid}.dsx-wrap { all:initial; display:block; width:100%; overflow:hidden; }
 #${uid} .dsx-scale { transform-origin:top left; width:${design}px; display:flow-root; }

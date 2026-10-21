@@ -15,6 +15,26 @@ const ol = (page, id) => page.evaluate(i => {
 }, id);
 
 test.describe('55 numbered lists', () => {
+  test('while typing in a box, ¶ opens Paragraph (the card shifts as the words close)', async ({ page }) => {
+    // The press on ¶ ends the typing; the card swaps its B/I/U group for a
+    // narrower one and everything right of it slides 116px left before the
+    // button is released, so the click landed on the strip itself. Case,
+    // colour, spacing, ¶, effects and reset were all dead while typing.
+    await gotoEditor(page, '?project=my-report');
+    const id = await page.evaluate(async () => (await docsync.api.addTextBox({ page: 1, x: 0.6, y: 3, w: 4, md: 'Alpha.\n\n1. one\n2. two' })).id);
+    await page.evaluate(id => $('out').contentDocument.querySelector(`[data-el="${id}"]`).scrollIntoView({ block: 'center' }), id);
+    await page.waitForTimeout(600);
+    const fr = await page.locator('#out').boundingBox();
+    const b = await page.evaluate(id => { const r = $('out').contentDocument.querySelector(`[data-el="${id}"]`).getBoundingClientRect(); return [r.left, r.top]; }, id);
+    await page.mouse.click(fr.x + b[0] + 6, fr.y + b[1] + 6);
+    await expect.poll(() => page.evaluate(() => editing)).toBe(true);
+    await page.locator('#ty-parabtn').scrollIntoViewIfNeeded();
+    const pb = await page.locator('#ty-parabtn').boundingBox();
+    await page.mouse.click(pb.x + pb.width / 2, pb.y + pb.height / 2);
+    await expect(page.locator('#ty-parapop')).toBeVisible();
+    await expect(page.locator('#ty-llev')).toBeVisible();
+  });
+
   test('a list typed from 4. starts at 4, and editing it keeps the start', async ({ page }) => {
     await gotoEditor(page);
     const id = await addBox(page, '4. four\n5. five');

@@ -50,7 +50,7 @@ import webbrowser
 import zipfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 SELF_ROOT = Path(__file__).resolve().parents[2]   # this repo — wherever serve.py lives
 
@@ -519,6 +519,67 @@ class _WarmChrome:
             except Exception:                                # noqa: BLE001
                 pass
 
+    def png(self, url: str, scale: float = 2.0, budget_ms: int = 8000,
+            timeout: float = 45) -> bytes:
+        """The first visible section.page as a PNG, exactly its own size.
+
+        Shot in a desktop window — 1600px, or wider than the page — and
+        clipped to the page. A window the page's own width put it in its
+        phone layout: the engine's release rule is max-width: the page's
+        width (every moved element dropped into the flow), and a report's
+        own breakpoints sit wider still (the primer's 850px). A desktop
+        rule that zooms the sheet (the primer's 1.25 above 1120px) is
+        undone by the clip's scale, so the PNG is the page's width times
+        `scale` whatever the window did to it."""
+        deadline = time.time() + timeout
+        self._inbox.clear()
+        tid = self.call("Target.createTarget", {"url": "about:blank"},
+                        deadline=deadline)["targetId"]
+        try:
+            s = self.call("Target.attachToTarget", {"targetId": tid, "flatten": True},
+                          deadline=deadline)["sessionId"]
+            on = lambda ev: (lambda d: d.get("method") == ev and d.get("sessionId") == s)
+
+            def size(w):
+                self.call("Emulation.setDeviceMetricsOverride",
+                          {"width": w, "height": 1056, "deviceScaleFactor": scale,
+                           "mobile": False}, s, deadline)
+
+            def js(expr):
+                r = self.call("Runtime.evaluate", {"expression": expr, "returnByValue": True,
+                                                   "awaitPromise": True}, s, deadline)
+                return r.get("result", {}).get("value")
+            self.call("Page.enable", None, s, deadline)
+            size(1600)
+            self.call("Page.navigate", {"url": url}, s, deadline)
+            self._wait(on("Page.loadEventFired"), deadline)
+            self.call("Emulation.setVirtualTimePolicy",
+                      {"policy": "pauseIfNetworkFetchesPending", "budget": budget_ms},
+                      s, deadline)
+            self._wait(on("Emulation.virtualTimeBudgetExpired"), deadline)
+            self.call("Emulation.setVirtualTimePolicy", {"policy": "advance"}, s, deadline)
+            page = "[...document.querySelectorAll('section.page')].find(p => p.offsetWidth)"
+            w = js(f"({page} || {{}}).offsetWidth || 816")
+            if w >= 1600:
+                size(int(w) + 1)
+            box = js("new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => {"
+                     f" const p = {page}; const r = p ? p.getBoundingClientRect() : null;"
+                     " res(r ? [r.left + scrollX, r.top + scrollY, r.width, r.height] : null); })))")
+            x, y, bw, bh = box or (0, 0, w, 1056)
+            k = w / bw if bw else 1                  # 1, or 0.8 under a 1.25 zoom
+            r = self.call("Page.captureScreenshot",
+                          {"format": "png", "captureBeyondViewport": True,
+                           "clip": {"x": x, "y": y, "width": bw,
+                                    "height": min(bh, 16000 / scale / k), "scale": k}},
+                          s, deadline)
+            return base64.b64decode(r["data"])
+        finally:
+            try:
+                self.call("Target.closeTarget", {"targetId": tid},
+                          deadline=time.time() + 5)
+            except Exception:                                # noqa: BLE001
+                pass
+
 
 WARM_CHROME: list = [None]
 WARM_LOCK = threading.Lock()     # one print at a time through the one Chrome
@@ -549,6 +610,30 @@ def _warm_pdf(html: Path) -> bytes | None:
                 WARM_CHROME[0].close()
                 WARM_CHROME[0] = None
             return None
+
+
+def _warm_png(url: str, scale: float) -> bytes | None:
+    """A page PNG from the warm Chrome, or None (the caller then takes the
+    one-shot launch), as _warm_pdf."""
+    with WARM_LOCK:
+        try:
+            return _warm_chrome().png(url, scale)
+        except Exception as e:                               # noqa: BLE001
+            print(f"  warm Chrome PNG failed ({e}); using a one-shot Chrome")
+            if WARM_CHROME[0] is not None:
+                WARM_CHROME[0].close()
+                WARM_CHROME[0] = None
+            return None
+
+
+PAGE_W_RE = re.compile(r"\.page\s*\{[^}]*?(?<![-\w])width:\s*([\d.]+)in")
+
+
+def _page_width_px(html: str) -> int:
+    """The sheet's width in CSS px, read from its `.page{width:…in}` rule —
+    the one-shot Chrome cannot measure it. Letter when there is none."""
+    m = PAGE_W_RE.search(html)
+    return round(float(m.group(1)) * 96) if m else 816
 
 
 def _leave_background():
@@ -2816,7 +2901,17 @@ class Handler(SimpleHTTPRequestHandler):
         pixel ratio — 2 for a crisp raster, 0.25 for a ~50KB thumbnail a pilot
         can glance at instead of paying for a full screenshot round trip. A
         fresh profile per page: Chrome is killed, not exited, so a reused
-        profile can still hold a lock."""
+        profile can still hold a lock. The warm Chrome first: it measures
+        the page and shoots exactly it (_WarmChrome.png); the one-shot
+        window is the page's width from its CSS plus the pixel that keeps
+        the phone rule from firing."""
+        data = _warm_png(base, scale)
+        if data:
+            return data
+        try:
+            width = _page_width_px(Path(unquote(urlparse(base).path)).read_text())
+        except OSError:
+            width = 816
         prof = Path(tempfile.mkdtemp(prefix="primer-chrome-"))
         png = prof / f"page-{i}.png"
         try:
@@ -2824,7 +2919,7 @@ class Handler(SimpleHTTPRequestHandler):
                 [CHROME, "--headless=new", "--disable-gpu", "--no-sandbox",
                  "--no-first-run", f"--user-data-dir={prof}",
                  "--virtual-time-budget=8000", "--hide-scrollbars",
-                 f"--force-device-scale-factor={scale:g}", "--window-size=816,1056",
+                 f"--force-device-scale-factor={scale:g}", f"--window-size={width + 1},1056",
                  f"--screenshot={png}", f"{base}?only={i}"],
                 png, deadline=30, settle=1.0):
                 return png.read_bytes()

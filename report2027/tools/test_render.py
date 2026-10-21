@@ -62,6 +62,50 @@ def check_editor_js():
                      "${...} inside the stylesheet template literal?):\n" + r.stderr.strip()[:500])
 
 
+def _png_page_tests(_sv):
+    """A page's PNG (INDESIGN_PARITY.md 71) through real Chrome: as wide as
+    the page — a 12.5in page used to be shot in an 816px window, cropped and
+    in its tablet layout — and never in the phone layout, whose rule
+    (max-width: the page's own width) fired at exactly 816px and released
+    every moved element into the flow. Skipped without Chrome or PIL."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+    if not Path(_sv.CHROME).exists():
+        return
+    import io
+    d = Path(tempfile.mkdtemp(prefix="png-page-"))
+    shooter = _sv.Handler.__new__(_sv.Handler)
+    try:
+        for w_in, x_in in ((8.5, 6), (12.5, 11)):
+            html = ("<html><head><style>body{margin:0}"
+                    f".page{{width:{w_in}in;height:11in;position:relative;background:#fff}}"
+                    f"@media screen and (max-width:{w_in}in){{[data-placed]{{position:static!important}}}}"
+                    "</style></head><body>"
+                    '<section class="page"><div data-placed style="position:absolute;'
+                    f'left:{x_in}in;top:5in;width:1in;height:1in;background:#f00"></div></section>'
+                    "</body></html>")
+            f = d / f"w{w_in}.html"
+            f.write_text(_sv._page_alone(html, 1))
+            png = shooter._chrome_png_one(f.resolve().as_uri(), 1, 1.0)
+            if not png:
+                FAILS.append(f"page PNG ({w_in}in): Chrome produced nothing")
+                continue
+            im = Image.open(io.BytesIO(png)).convert("RGB")
+            want = (round(w_in * 96), 1056)
+            px = im.getpixel((round((x_in + 0.5) * 96), round(5.5 * 96))) if im.size == want else None
+            if im.size != want or px != (255, 0, 0):
+                FAILS.append(f"page PNG ({w_in}in): {im.size} with {px} at the moved "
+                             f"square, wanted {want} and red")
+    finally:
+        import shutil
+        shutil.rmtree(d, ignore_errors=True)
+        if _sv.WARM_CHROME[0] is not None:
+            _sv.WARM_CHROME[0].close()
+            _sv.WARM_CHROME[0] = None
+
+
 def main():
     check_editor_js()
     src = CONTENT.read_text()
@@ -155,6 +199,7 @@ def main():
     if (alone.count("data-ds-skip class=\"page") != 3 or "body>:not(section.page):not(:has(section.page))" not in alone
             or alone.index("section.page{margin:0") > alone.index("</head>")):
         FAILS.append("_page_alone should keep page 3 alone at the top-left:\n" + alone[:400])
+    _png_page_tests(_sv)
     for req, msg in (({"pages": "2-x"}, "a range like"), ({"fmt": "png", "pages": "2"}, "for a PDF"),
                      ({"pages": "2-3"}, None), ({"pages": ""}, None)):
         got = _sv._export_bad_args(req)
