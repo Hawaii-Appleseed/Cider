@@ -1,0 +1,3 @@
+#!/bin/sh
+# Nothing of Cider's own: hand on to your machine-wide hook, if any (see _chain).
+exec "$(dirname "$0")/_chain" commit-msg "$@"
