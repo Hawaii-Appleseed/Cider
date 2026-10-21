@@ -68,7 +68,7 @@ SWAPS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFF
              ["The change", "The make-up change"],
              ["No GET on groceries", "Raise all income-tax rates by the same percentage"],
              ["No GET on groceries", "Cut the food/excise tax credit"],
-             ["Tax long-term capital gains like ordinary income", "Lower the top three income-tax rates"],
+             ["Tax long-term capital gains like regular income", "Lower the top three income-tax rates"],
              ["Raise the top income-tax rate by 1 point", "Lower the bottom three rates, or enlarge the food/excise credit"],
              ["Exempt long-term capital gains from tax", "Raise the top three income-tax rates"],
              ["Raise the GET rate by half a point", "Lower all income-tax rates by the same percentage"]]}
@@ -80,16 +80,16 @@ SWAPS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFF
 # contents page come first), so printed p. 26 is #page=28.
 _PDF = "https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf"
 CHAPTERS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FFFFFF",
-                    "band": "#F4F6F4", "colw": [24, 58, 18],
+                    "band": "#F4F6F4", "colw": [22, 62, 16],
                     "rows": [
              ["Chapter", "What the draft finds", "In the draft"],
-             ["**2 · Individual income tax**", "The tax takes a bigger share from higher earners, and Acts 46 and 24 are reshaping it. It raised $3.29 billion in FY2025 (pp. 3, 28, 35).", f"[pp. 26–55]({_PDF}#page=28)"],
-             ["**3 · General excise tax**", "Hawaiʻi's biggest tax hits business sales at every step. It raised $4.63 billion in FY2025, 40.4 percent of state taxes (pp. 3, 56).", f"[pp. 56–72]({_PDF}#page=58)"],
-             ["**4 · Visitors and tourism**", "Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax raised $816.2 million in FY2025 (pp. 73–74, 77).", f"[pp. 73–85]({_PDF}#page=75)"],
-             ["**5 · Property and real estate**", "Homeowners pay the lowest property tax rate in the country, 0.29 percent of home value against 0.90 percent nationally, and only counties can set it (pp. 87–88).", f"[pp. 86–99]({_PDF}#page=88)"],
-             ["**6 · Business taxes**", "The corporate tax raised $400.4 million net in FY2025. UHERO says a large rate cut could raise total revenue, based on 2010 data it will revisit (pp. 101, 107).", f"[pp. 100–117]({_PDF}#page=102)"],
-             ["**7 · Wealth and estates**", "An annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax revenue is lumpy: $405.8 million in FY2025, including a one-time $315 million payment (pp. 118, 120).", f"[pp. 118–132]({_PDF}#page=120)"],
-             ["**8 · Tax credits**", "Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). 72 percent of the solar credit claimed on individual returns went to filers earning $100,000 or more (p. 147).", f"[pp. 133–156]({_PDF}#page=135)"]]}
+             ["**2 · Individual income tax**", "Higher earners pay a bigger share of their income, and Acts 46 and 24 are changing the tax. It brought in $3.29 billion in fiscal 2025 (pp. 3, 28, 35).", f"[pp. 26–55]({_PDF}#page=28)"],
+             ["**3 · General excise tax**", "The GET is Hawaiʻi's biggest tax and hits business sales at every step: $4.63 billion in fiscal 2025, 40.4 percent of state taxes (pp. 3, 56).", f"[pp. 56–72]({_PDF}#page=58)"],
+             ["**4 · Visitors and tourism**", "Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax brought in $816.2 million in fiscal 2025 (pp. 73–74, 77).", f"[pp. 73–85]({_PDF}#page=75)"],
+             ["**5 · Property and real estate**", "Homeowners pay the lowest property tax rate in the country: 0.29 percent of home value, against 0.90 percent nationwide. Only the counties can set it (pp. 87–88).", f"[pp. 86–99]({_PDF}#page=88)"],
+             ["**6 · Business taxes**", "The corporate income tax raised $400.4 million net in fiscal 2025. UHERO says a large rate cut could raise total revenue, but on 2010 data it will revisit (pp. 101, 107).", f"[pp. 100–117]({_PDF}#page=102)"],
+             ["**7 · Wealth and estates**", "UHERO thinks an annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax collections swing: $405.8 million in fiscal 2025, including one $315 million payment (pp. 118, 120).", f"[pp. 118–132]({_PDF}#page=120)"],
+             ["**8 · Tax credits**", "Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). For the solar credit, 72 percent of what individuals claimed went to filers earning $100,000 or more (p. 147).", f"[pp. 133–156]({_PDF}#page=135)"]]}
 
 
 def decile_spec() -> dict:
@@ -178,6 +178,7 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
   {L.flow_table("swaps", SWAPS_DEFAULT)}
+  {C.html("swap.note", "cap")}
   <h2 class="figt"{L.attr("groc.h1")}>{C.t("groc.h1")}</h2>
   {C.html("groc.lead", "body")}
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
