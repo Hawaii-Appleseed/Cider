@@ -579,6 +579,25 @@ Rules that bite:
   rewrites it there, the pilot verb is `describeImage(host, words, src?)`,
   and `audit()` / `docsync.check` flag an alt that is a file name
   (`alt_is_filename`, twinned in edit.html). INDESIGN_PARITY.md (16).
+- **Every field opens, takes words, and every object moves — tested one by
+  one (2026-10-21).** `tests/editor/every-field-opens.spec.js` opens EVERY
+  slot of every bound report in the real editor (click, type, Escape,
+  commit, undo), then again with the real pointer, double-clicks every table
+  cell, opens every chart's and table's panel, moves every object through
+  `place()` and drags a resize handle on each. Two tests per report, about
+  20 minutes for all of them, so it is OPT-IN and CI never runs it — run it
+  for the reports a change touches:
+  `DS_ONLY=rxkids npx playwright test every-field-opens.spec.js`
+  (`DS_SWEEP=1` for every report). What it
+  found and the fixes, each pinned by `tests/editor/field-reach.spec.js`:
+  a page's own click handler stealing a just-opened field (the primer's
+  department popover), a field in a closed `<details>`, stand-ins wider than
+  their paragraph, empty block slots at zero height, an invisible phrase
+  stacked over a visible one taking the click (our-mission), icons measured
+  by their glyph, a patched page's pictures collapsing to zero height
+  until they reloaded, the mini toolbar lying across a small object at the
+  top of a page, resize handles on endnote entries, and rxkids' childcare
+  bars sized by a script the editor never runs (now `blocks.meter`).
 - **Every text box moves and resizes, and a click in text types there
   (2026-09-22).** Reported on tfc-2027-priorities: a single click selected
   every word in the field (edit() selected the host's contents), and not one

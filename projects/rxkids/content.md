@@ -239,17 +239,11 @@ $2,010 per month
 [[carousel.childcare.bar.single.label]]
 Percentage of single-parent median income
 
-[[carousel.childcare.bar.single.value]]
-49.0%
-
 [[carousel.childcare.bar.single.note]]
 Nearly half of income goes to childcare
 
 [[carousel.childcare.bar.married.label]]
 Percentage of married-couple median income
-
-[[carousel.childcare.bar.married.value]]
-17.9%
 
 [[carousel.childcare.source]]
 Source: Child Care Aware of America 2024 Analysis[^childcare-aware-2024]

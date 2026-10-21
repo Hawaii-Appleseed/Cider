@@ -35,7 +35,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from docsync.content import Content, ContentError, merge_attrs  # noqa: E402
-from docsync.blocks import describe                 # noqa: E402
+from docsync.blocks import describe, meter, meter_spec, chart_scroll_css   # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.okina import OKINA_FACES, okinafy  # noqa: E402
 
@@ -748,11 +748,27 @@ if EDIT:
     _head, _rest = SCRIPT.split("// Hero image cycling", 1)
     SCRIPT = _head + "});" + _rest.split("});", 1)[1]
 
-# moveCarousel()'s bar-fill animation hardcodes these two percentages; keep it
-# in sync with content.md instead of maintaining the same number in two places.
-SCRIPT = (SCRIPT
-          .replace("'49.0%'", f'\'{C.text("carousel.childcare.bar.single.value")}\'')
-          .replace("'17.9%'", f'\'{C.text("carousel.childcare.bar.married.value")}\''))
+# The childcare income bars are blocks.meter charts now (Devin's rule: every
+# bar is a chart — the sized divs could not be opened, and in the editor the
+# page's reveal script never ran, so the bars stood at width 0 with their
+# labels clipped to nothing). moveCarousel()'s width animation of the old
+# #bar-single / #bar-married divs would throw on elements that no longer
+# exist, so those lines go.
+SCRIPT = re.sub(r"^[ \t]*document\.getElementById\('bar-(?:single|married)'\)\.style\.width = .*\n",
+                "", SCRIPT, flags=re.M)
+
+
+def income_meter(el_id: str, pct: float, fill: str) -> str:
+    """One childcare-cost bar: the share of a household's median income, as a
+    meter the Chart panel opens (select it, Chart, retype the number). Drawn
+    at the old bar's size — the 36px track with 18px ends — and the value
+    written inside it, so the page reads as it did."""
+    s = meter_spec([("Share of median income", pct, fill)], of=100, values=True,
+                   label="Childcare cost")
+    s["radius"] = 0.1875
+    s["trackColor"] = "#e7e7ee"
+    s["format"] = {"suffix": "%", "decimals": 1}
+    return meter(C, L, el_id, s, w=5.4, h=0.375)
 
 TAB_JS = """
 (function () {
@@ -1095,20 +1111,16 @@ def stats_carousel() -> str:
                                 <div class="tfc-cost-monthly">({C.t("carousel.childcare.cost.monthly")})</div>
                             </div>
 
-                            <div class="tfc-income-comparison">
-                                {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.single")}>
+                            <div class="tfc-income-comparison">{chart_scroll_css(12.5)}
+                                {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.frame("carousel.childcare.bar.single")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.single.label")}</span>
-                                    <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill single" id="bar-single">{C.t("carousel.childcare.bar.single.value")}</div>
-                                    </div>
+                                    {income_meter("carousel.childcare.bar.single.meter", 49.0, "#cd2c40")}
                                     <p style="font-size: 0.9rem; color: #718096; margin-top: 8px;">{C.t("carousel.childcare.bar.single.note")}</p>
                                 </div>
 
-                                {L.spacer("carousel.childcare.bar.married")}<div class="tfc-income-bar-group"{L.attr("carousel.childcare.bar.married")}>
+                                {L.spacer("carousel.childcare.bar.married")}<div class="tfc-income-bar-group"{L.frame("carousel.childcare.bar.married")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.married.label")}</span>
-                                    <div class="tfc-bar-container">
-                                        <div class="tfc-bar-fill married" id="bar-married">{C.t("carousel.childcare.bar.married.value")}</div>
-                                    </div>
+                                    {income_meter("carousel.childcare.bar.married.meter", 17.9, "#00a84f")}
                                 </div>
                             </div>
                         </div>
