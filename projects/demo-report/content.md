@@ -11,12 +11,10 @@ Demo Report
 # A SECOND REPORT
 
 [[page1.intro]]
-This report is not the Budget Primer. It was scaffolded beside it and renders
-through the same engine — the movable diagram and the card below come from
-docsync.blocks, shared by every project.[^demo-src]
+
 
 [[page1.card.title]]
-### Key Points
+### Key Points, edited live by Claude
 
 [[page1.card.bullets]]
 - The tile, its title, and these bullets are three separate movable pieces.

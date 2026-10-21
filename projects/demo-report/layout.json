@@ -4,6 +4,11 @@
   "boxes": [],
   "tables": [],
   "groups": [
-    ["card.page1.card.bullets", "page1.card.title", "page1.card.bullets"]
-  ]
+    [
+      "card.page1.card.bullets",
+      "page1.card.title",
+      "page1.card.bullets"
+    ]
+  ],
+  "sections": {}
 }
