@@ -263,3 +263,28 @@ test.describe('Claude creates, a person edits', () => {
     expect(typeof pos.x).toBe('number');
   });
 });
+
+// A page a renderer builds by hand (demo-report's endnotes sheet) draws no
+// placed objects: a chart, table, box or shape put there was saved and never
+// seen. Found through the staff hub's connector, which took the chart, the
+// caption and the table, reported them made, and showed a page without them.
+test('a pilot will not make a chart on a page that cannot show it, and says which page can', async ({ page }) => {
+  await gotoEditor(page, '?project=demo-report');
+  const order = await api(page, () => pageOrder());
+  expect(order.length).toBeGreaterThan(1);
+  const last = order[order.length - 1];
+  const n = await api(page, () => layout.shapes.length);
+  const r = await api(page, P => docsync.api.addChart({ page: P, x: 1, y: 1, w: 4, h: 3 }), last);
+  expect(r.ok).toBe(false);
+  expect(r.error).toMatch(/does not draw placed objects/);
+  expect(r.error).toMatch(/use page 1/);
+  expect(await api(page, () => layout.shapes.length)).toBe(n);
+  const t = await api(page, P => docsync.api.addTable({ page: P, rows: [['a', 'b']] }), last);
+  expect(t.ok).toBe(false);
+  const b = await api(page, P => docsync.api.addTextBox({ page: P, x: 1, y: 1, w: 2, md: 'Note' }), last);
+  expect(b.ok).toBe(false);
+  // The page that draws them takes it, and it is on the page.
+  const ok = await api(page, () => docsync.api.addChart({ page: 1, x: 1, y: 7.5, w: 4, h: 2.5 }));
+  expect(ok.ok, ok.error).toBe(true);
+  await expect(page.frameLocator('#out').locator(`g[data-shape="${ok.id}"]`)).toHaveCount(1);
+});

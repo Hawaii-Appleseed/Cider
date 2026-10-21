@@ -313,10 +313,17 @@ export class PrimerRoom extends YServer {
       }
 
       case 'pilot-result': {
-        // The editor's answer to an onRequest /pilot; nobody waiting means
-        // the caller's timeout already spoke, and the answer is dropped.
+        // The editor's answer to an onRequest /pilot or /ask; nobody waiting
+        // means the caller's timeout already spoke, and the answer is dropped.
+        // The WHOLE answer is handed on: this kept only ok/error/results, so
+        // an /ask's inventory, page and fit — and a /pilot's fit — never left
+        // the room, and the hub's read_report said it had measured the page
+        // while listing no pages at all.
         const res = this.#pilots.get(msg.id);
-        if (res) res({ ok: msg.ok === true, error: msg.error ?? null, results: msg.results ?? null });
+        if (res) {
+          const { t, id, ...rest } = msg;
+          res({ ...rest, ok: msg.ok === true, error: msg.error ?? null, results: msg.results ?? null });
+        }
         return;
       }
 
