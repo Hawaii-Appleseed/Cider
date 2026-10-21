@@ -82,15 +82,13 @@ test.describe('a paragraph resizes like a text frame', () => {
     }, ID);
     const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
-    const r = await onPage();
-    // What the drag stored and what the page drew, for a failure on another
-    // platform (CI's Linux moved the bottom 39px; macOS does not).
-    console.log('top-edge', JSON.stringify({ top0, r, p: await page.evaluate(id => ({
-      pos: layout.positions[id], zoom: zoomOf($('out').contentDocument.querySelector('section.page')),
-      minH: getComputedStyle($('out').contentDocument.querySelector(`[data-el="${id}"]`)).minHeight,
-      viewport: [innerWidth, innerHeight] }), ID) }));
-    expect(r.top).toBeLessThan(top0.top - 30);
-    expect(Math.abs(r.bottom - top0.bottom)).toBeLessThan(4);
+    // The commit re-renders, and a cold runner can still be laying the page
+    // out when the first measurement lands: CI read the bottom 39px off on
+    // two runs and exactly in place on the next. What the drag promises is
+    // where the paragraph settles, so wait for that.
+    await expect.poll(async () => Math.round(Math.abs((await onPage()).bottom - top0.bottom)),
+      { timeout: 5000 }).toBeLessThan(4);
+    expect((await onPage()).top).toBeLessThan(top0.top - 30);
   });
 
   test('a table and a chart keep their own handles', async ({ page }) => {
