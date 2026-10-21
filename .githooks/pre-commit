@@ -3,4 +3,9 @@
 # On Devin's Mac that is ~/.config/git-hooks/pre-commit: the ?v= cache bump (a
 # no-op here) and the ʻokina lint, which refuses a staged fake ʻokina — fix with
 # python3 ~/.config/git-hooks/okina-lint.py --fix.
+# Cider's own: a commit that leaves any report it touches with something
+# uneditable (docsync.check: an error on a strict binding, or a non-strict
+# one worse than docsync/editability-baseline.json) is refused. Only the
+# reports the staged files feed are checked; ~1s each.
+python3 "$(dirname "$0")/../tools/editability-guard.py" --staged || exit 1
 exec "$(dirname "$0")/_chain" pre-commit "$@"

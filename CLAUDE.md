@@ -208,6 +208,21 @@ Rules that bite:
   reads the drawn page (painted cards/bands/rules, CSS-drawn words, script-
   added content) for every strict report. New bindings are `strict`. Fixes
   per kind: the report-editor skill, "Every surface has a handle".
+- **Nothing Claude (or anyone) changes may leave a report less editable —
+  enforced as it happens (2026-10-21).** `tools/editability-guard.py` runs
+  `docsync.check` for exactly the reports a file feeds: after every
+  Edit/Write Claude makes (a PostToolUse hook in `.claude/settings.json`;
+  a finding comes back as a blocking message, so it is fixed before moving
+  on), at every commit (`.githooks/pre-commit` refuses it), and in CI (the
+  `reports` job, which the required gate waits on). Strict bindings fail on
+  any finding. A non-strict one (`budget-primer`, `wfc-credits`, a new
+  `wip` scaffold) fails on any finding past `docsync/editability-baseline.json`
+  — the ratchet: findings may shrink, never grow, and a non-strict binding
+  with no baseline fails until `python3 -m docsync.check --id <id>
+  --write-baseline` records it. Recording progress lowers counts freely;
+  raising one needs `--allow-raise` and shows in the diff. Never raise the
+  baseline or add to `editability_ok` to get past a finding: give the thing
+  a handle.
 - **Every bar is a chart.** A bar showing numbers is `blocks.meter` (one bar
   of parts) or `blocks.chart`, so it opens in the Chart panel — never sized
   divs with typed-in widths, which `docsync.check` refuses under strict. Text
@@ -584,11 +599,14 @@ Rules that bite:
   slot of every bound report in the real editor (click, type, Escape,
   commit, undo), then again with the real pointer, double-clicks every table
   cell, opens every chart's and table's panel, moves every object through
-  `place()` and drags a resize handle on each. Two tests per report, about
-  20 minutes for all of them, so it is OPT-IN and CI never runs it — run it
-  for the reports a change touches:
+  `place()` and drags a resize handle on each. CI runs it one job per
+  report (editor-tests.yml's `sweep`, which the required gate waits on): every
+  report when docsync/, the editor or the sweep changes, only the touched
+  report when one project changes, and all of them nightly. Locally it is
+  opt-in, about 20 minutes for everything:
   `DS_ONLY=rxkids npx playwright test every-field-opens.spec.js`
-  (`DS_SWEEP=1` for every report). What it
+  (`DS_SWEEP=1` for every report). A new report is covered the day it is
+  bound. What it
   found and the fixes, each pinned by `tests/editor/field-reach.spec.js`:
   a page's own click handler stealing a just-opened field (the primer's
   department popover), a field in a closed `<details>`, stand-ins wider than

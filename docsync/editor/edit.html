@@ -25842,7 +25842,9 @@ function edit(d, key, clicked, at) {
     const page = host.closest('section.page');
     const z = page ? zoomOf(page) : 1;
     const hr = host.getBoundingClientRect();
-    if (hr.width > standRect.width + 1) host.style.maxWidth = (standRect.width / z).toFixed(2) + 'px';
+    // rounded UP: a hundredth of a pixel short wraps the last word onto a
+    // line of its own (seen with the CI runner's fonts)
+    if (hr.width > standRect.width + 1) host.style.maxWidth = (Math.ceil(standRect.width / z) + 1) + 'px';
     if (standRect.left > hr.left + 1) host.style.marginLeft = ((standRect.left - hr.left) / z).toFixed(2) + 'px';
   }
   richHost = host;
