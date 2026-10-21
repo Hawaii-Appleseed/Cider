@@ -41,8 +41,12 @@ const discover = () => {
              built: !!built && fs.existsSync(path.join(REPO, built[1])) };
   }).filter(r => r.built);
 };
-const REPORTS = (process.env.DS_ONLY ? discover().filter(r => process.env.DS_ONLY.split(',').includes(r.id))
-  : discover());
+// Opt-in: two tests per report and about twenty minutes for every report,
+// which is more than a CI shard's budget. DS_ONLY=<id,id> runs those
+// reports; DS_SWEEP=1 runs them all. Unasked, every test here skips.
+const WANTED = process.env.DS_ONLY || process.env.DS_SWEEP;
+const REPORTS = !WANTED ? []
+  : (process.env.DS_ONLY ? discover().filter(r => process.env.DS_ONLY.split(',').includes(r.id)) : discover());
 
 // Known and not yet fixed, by report: exact finding strings as printed.
 // Shrink-only. NEVER add one to silence a new finding.
@@ -498,6 +502,7 @@ async function handleSweep(page) {
 }
 
 test('every bound report was discovered', () => {
+  test.skip(!WANTED, 'opt-in: DS_ONLY=<id,…> or DS_SWEEP=1');
   expect(REPORTS.length, REPORTS.map(r => r.id).join(', ')).toBeGreaterThan(0);
 });
 

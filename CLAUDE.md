@@ -585,8 +585,10 @@ Rules that bite:
   commit, undo), then again with the real pointer, double-clicks every table
   cell, opens every chart's and table's panel, moves every object through
   `place()` and drags a resize handle on each. Two tests per report, about
-  20 minutes for all of them — run one report at a time:
-  `DS_ONLY=rxkids npx playwright test every-field-opens.spec.js`. What it
+  20 minutes for all of them, so it is OPT-IN and CI never runs it — run it
+  for the reports a change touches:
+  `DS_ONLY=rxkids npx playwright test every-field-opens.spec.js`
+  (`DS_SWEEP=1` for every report). What it
   found and the fixes, each pinned by `tests/editor/field-reach.spec.js`:
   a page's own click handler stealing a just-opened field (the primer's
   department popover), a field in a closed `<details>`, stand-ins wider than

@@ -35,7 +35,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from docsync.content import Content, ContentError, merge_attrs  # noqa: E402
-from docsync.blocks import describe, meter, meter_spec   # noqa: E402
+from docsync.blocks import describe, meter, meter_spec, chart_scroll_css   # noqa: E402
 from docsync.layout import Layout                # noqa: E402
 from docsync.okina import OKINA_FACES, okinafy  # noqa: E402
 
@@ -1111,7 +1111,7 @@ def stats_carousel() -> str:
                                 <div class="tfc-cost-monthly">({C.t("carousel.childcare.cost.monthly")})</div>
                             </div>
 
-                            <div class="tfc-income-comparison">
+                            <div class="tfc-income-comparison">{chart_scroll_css(12.5)}
                                 {L.spacer("carousel.childcare.bar.single")}<div class="tfc-income-bar-group"{L.frame("carousel.childcare.bar.single")}>
                                     <span class="tfc-income-label">{C.t("carousel.childcare.bar.single.label")}</span>
                                     {income_meter("carousel.childcare.bar.single.meter", 49.0, "#cd2c40")}
