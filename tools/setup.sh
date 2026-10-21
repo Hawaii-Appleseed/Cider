@@ -7,7 +7,8 @@
 #
 # 1. git hooks: core.hooksPath -> .githooks (post-commit vendors the engine to
 #    the consumers a machine names in its own vendor.local.yml; none in a fresh
-#    clone, so it does nothing there).
+#    clone, so it does nothing there). Every hook then hands on to your own
+#    machine-wide hooks (.githooks/_chain), so nothing you already run stops.
 # 2. Node 22+ and python3 with PyYAML (docsync's tooling); notes what the tests
 #    need on top: node_modules (npm ci) for Playwright, gh for `npm run test:ci`.
 #

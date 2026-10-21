@@ -19,3 +19,5 @@ if git diff-tree --no-commit-id --name-only -r HEAD \
   "$PY" -m docsync.hub \
     || echo "HUB VENDOR FAILED - run python3 -m docsync.hub manually"
 fi
+# Then whatever the committer's own machine-wide post-commit does (see _chain).
+exec "$(dirname "$0")/_chain" post-commit "$@"

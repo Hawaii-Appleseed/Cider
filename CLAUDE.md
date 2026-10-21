@@ -17,7 +17,11 @@ only what is checked in here. Setup is automatic: Claude Code runs
 `tools/setup.sh` when a session opens (SessionStart in `.claude/settings.json`;
 after a plain `git clone`, run it once by hand). It points git at `.githooks/`
 and checks for Node 22+, python3 with PyYAML, `node_modules` and `gh`, printing
-one line only when it changed something or something is missing.
+one line only when it changed something or something is missing. Every repo
+hook hands on to the person's own machine-wide hook (`.githooks/_chain`), so on
+Devin's Mac the global pre-commit runs here too, ʻokina lint included: a staged
+fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an editor Save included, until
+`python3 ~/.config/git-hooks/okina-lint.py --fix`.
 
 **Anyone with push access to Hawaii-Appleseed/Cider:**
 

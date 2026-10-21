@@ -1,0 +1,6 @@
+#!/bin/sh
+# Nothing of Cider's own: hand on to your machine-wide hook, if any (see _chain).
+# On Devin's Mac that is ~/.config/git-hooks/pre-commit: the ?v= cache bump (a
+# no-op here) and the ʻokina lint, which refuses a staged fake ʻokina — fix with
+# python3 ~/.config/git-hooks/okina-lint.py --fix.
+exec "$(dirname "$0")/_chain" pre-commit "$@"

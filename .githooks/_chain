@@ -1,0 +1,31 @@
+#!/bin/sh
+# Hand a git hook on to the one git would have run without this repo's
+# core.hooksPath: the person's own machine-wide hooks directory (a global or
+# system core.hooksPath; Devin's Mac has ~/.config/git-hooks), or else this
+# clone's .git/hooks. tools/setup.sh points core.hooksPath at .githooks, and a
+# repo setting REPLACES a machine-wide one, so without this hand-off every hook
+# someone installed for all their repos would quietly stop running in this one.
+#
+#   .githooks/<name>      exec "$(dirname "$0")/_chain" <name> "$@"
+#   .githooks/pre-commit  does its own work first, then the same
+#
+# The exit status (and stdin, which pre-push and reference-transaction read)
+# are the chained hook's.
+name=$1; shift
+here=$(dirname "$0")
+
+dir=$(git config --show-scope --includes --type=path --get-all core.hooksPath 2>/dev/null \
+      | awk -F'\t' '$1 == "system" || $1 == "global" { v = $2 } END { print v }')
+if [ -n "$dir" ]; then
+  hook="$dir/$name"
+  [ "$dir" -ef "$here" ] && hook=""          # someone's global IS a .githooks
+else
+  hook="$(git rev-parse --git-common-dir)/hooks/$name"
+fi
+if [ -n "$hook" ] && [ -x "$hook" ] && ! [ "$hook" -ef "$here/$name" ]; then
+  exec "$hook" "$@"
+fi
+# Nothing to hand on to. Drain the hooks that are fed refs on stdin, so git
+# never writes into a closed pipe.
+case "$name" in pre-push|reference-transaction|post-rewrite) cat >/dev/null ;; esac
+exit 0

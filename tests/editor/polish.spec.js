@@ -55,7 +55,7 @@ test.describe('65 the format painter carries the whole look', () => {
 test.describe('67 Glyphs', () => {
   test('search finds the okina by name and a character by code; a pick goes in at the caret', async ({ page }) => {
     await gotoEditor(page);
-    const okina = await page.evaluate(() => glyphMatches('okina').flatMap(([, l]) => l.map(([c]) => c)));
+    const okina = await page.evaluate(() => glyphMatches('okina').flatMap(([, l]) => l.map(([c]) => c)));  // okina-lint:ignore (a search term)
     expect(okina).toContain('ʻ');
     const byCode = await page.evaluate(() => glyphMatches('U+2192').flatMap(([, l]) => l.map(([c]) => c)));
     expect(byCode).toContain('→');
@@ -69,7 +69,7 @@ test.describe('67 Glyphs', () => {
       openGlyphs(d, host, r);
     }, id);
     await expect(page.locator('#glyphpop')).toBeVisible();
-    await page.fill('#gl-q', 'okina');
+    await page.fill('#gl-q', 'okina');  // okina-lint:ignore (a search term)
     await page.locator('#gl-list button[data-ch="ʻ"]').click();
     await page.keyboard.press('Escape');
     await expect(page.locator('#glyphpop')).toBeHidden();
