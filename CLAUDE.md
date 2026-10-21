@@ -30,13 +30,18 @@ one line only when it changed something or something is missing.
 - **Test**: `python3 docsync/test_docsync.py` and `npm run test:affected`;
   `npm run test:ci` for anything broad (the whole suite on GitHub; needs `gh`
   signed in). Details under "Rules that bite" below.
-- **Land**: rebase the branch onto `main`; from the main clone,
-  `git merge --ff-only <name>` and `git push origin main`. Devin's own sessions
-  push without asking once the tests pass (2026-10-21); another person's
-  session pushes when its own person says so. A push to main runs
-  editor-tests.yml and report-checks.yml on GitHub, and it reaches every
-  installed editor (`tools/selfupdate.py` pulls `origin/main` within about 20
-  minutes), so push only what passed.
+- **Land through a pull request**: `main` takes changes only by PR, and only
+  once its "Editor tests gate" check passes (a ruleset since 2026-10-21; a
+  direct `git push origin main` is refused). `tools/wt land <name>` does it:
+  pushes the branch, opens the PR (or reuses an open one) and sets it to merge
+  itself when the gate passes (`gh pr create --fill`, `gh pr merge --auto
+  --merge`). Rebase onto `origin/main` first if it moved. Once it has merged:
+  `git pull --ff-only` in the main clone, then `python3 -m docsync.vendor`
+  there on a machine whose vendor.local.yml names consumers. Devin's own
+  sessions land without asking once the tests pass (2026-10-21); another
+  person's session lands when its own person says so. A merge to main reaches
+  every installed editor (`tools/selfupdate.py` pulls `origin/main` within
+  about 20 minutes).
 - An engine commit runs `.githooks/post-commit`, which vendors the engine into
   the consumers THIS machine names in `vendor.local.yml` (gitignored; Devin's
   names `~/BudgetPrimerFinal`). A fresh clone has none, so nothing happens.
