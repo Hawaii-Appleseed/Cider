@@ -23284,22 +23284,31 @@ const STAMP_FILES = ['edit.html'];
 let buildStamp = null;
 async function buildChangedOnDisk() {
   try {
-    // Locally each project's edit.html is staged beside it (withBase). On the
-    // hub there is ONE, at the URL this page came from, and a project's
-    // directory holds none: asking there is a 404 whose stamp never changes,
-    // so the notice could never fire. Ask for this document itself.
-    const rs = await Promise.all(STAMP_FILES.map(f =>
-      fetch(docStore() ? location.pathname : withBase(f), { method: 'HEAD', cache: 'no-store' })));
-    if (rs.some(r => !r.ok)) return false;          // an error page's stamp says nothing
-    // ETag first: the hub's edge serves one for every static file, and it is
-    // the content's own fingerprint, where a Last-Modified it may not send.
-    const stamp = rs.map(r => (r.headers.get('etag') || '')
-                            + '|' + (r.headers.get('last-modified') || '')
-                            + '|' + (r.headers.get('content-length') || '')).join('~');
-    if (!/\d/.test(stamp)) return false;          // server tells us nothing useful
+    const stamp = docStore() ? await hubEditorVersion() : await localBuildStamp();
+    if (!stamp) return false;                       // nothing useful to compare
     if (buildStamp === null) { buildStamp = stamp; return false; }
     return stamp !== buildStamp;
   } catch (e) { return false; }
+}
+// Locally: the staged edit.html beside the project, by its headers.
+async function localBuildStamp() {
+  const rs = await Promise.all(STAMP_FILES.map(f =>
+    fetch(withBase(f), { method: 'HEAD', cache: 'no-store' })));
+  if (rs.some(r => !r.ok)) return '';               // an error page's stamp says nothing
+  const stamp = rs.map(r => (r.headers.get('last-modified') || '')
+                          + '|' + (r.headers.get('content-length') || '')).join('~');
+  return /\d/.test(stamp) ? stamp : '';
+}
+// On the hub: the fingerprint docsync.hub writes beside the ONE editor there
+// (editor-version.txt). The page's own headers cannot be used: Pages serves
+// HTML with no ETag, Last-Modified or Content-Length (measured 2026-10-20), so
+// a HEAD of edit.html looks the same before and after every deploy. no-store
+// also takes it past the service worker, which steps aside for that.
+async function hubEditorVersion() {
+  const r = await fetch(new URL('editor-version.txt', location.href), { cache: 'no-store' });
+  if (!r.ok) return '';                             // a hub vendored before the file existed
+  const v = (await r.text()).trim();
+  return /^[0-9a-f]{8,64}$/.test(v) ? v : '';
 }
 const STALE_MSG = 'the editor was updated on disk — click to reload';
 // On the hub there is no disk and no Save to make first: what has been typed
