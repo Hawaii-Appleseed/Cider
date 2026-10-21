@@ -6,6 +6,7 @@
 #   tools/wt ls                        every worktree of both repos, with status
 #   tools/wt port [<name>]             the test port assigned to a Cider worktree
 #   tools/wt rm <name> [--hub] [--force]   remove a finished worktree and its branch
+#   tools/wt land <name>               Cider: push it, open its pull request, merge when the gate passes
 #   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
 #   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
 #
@@ -18,8 +19,9 @@
 # ~/staff-updates-internal; CIDER_DIR / CIDER_HUB_DIR override either.
 # On Devin's Mac, ~/scripts/cider-wt runs ~/primer-editor/tools/wt.
 # Worktrees never get vendor.local.yml, so a commit made in one cannot vendor into
-# the hub or BudgetPrimerFinal by accident. Cider work lands from the main folder:
-# rebase the branch onto main, `git merge --ff-only`, then vendor. Hub work ships by
+# the hub or BudgetPrimerFinal by accident. Cider work lands through a pull request
+# (`land`; main refuses a direct push), then `git pull --ff-only` and vendor in the
+# main folder. Hub work ships by
 # rebasing onto origin/main and pushing (a push deploys, so only on request).
 #
 # macOS ships bash 3.2, so no associative arrays or ${var,,} here.
@@ -49,7 +51,7 @@ PORT_HI=8299
 die() { echo "wt: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -160,10 +162,10 @@ cmd_new() {
     echo "  - Commit only the files this change owns. Ship = rebase onto origin/main, then"
     echo "    'git push origin $name:main' once dev/run_tests.sh passes. A push deploys the hub; the session does it."
   else
-    echo "  - Land it from the main folder: rebase onto main, then 'git merge --ff-only $name'."
-    echo "    (If main moved, rebase here first; never merge from inside this folder.)"
+    echo "  - Land it through a pull request: tools/wt land $name (Cider's main refuses a"
+    echo "    direct push; the PR merges itself once its 'Editor tests gate' check passes)."
     echo "  - It has no vendor.local.yml on purpose: nothing here vendors into the hub."
-    echo "    After landing, run 'python3 -m docsync.vendor' / 'python3 -m docsync.hub' from the main folder."
+    echo "    After it merges: 'git pull --ff-only' in the main folder, then 'python3 -m docsync.vendor' there."
   fi
   echo "  - Done? tools/wt rm $name$([ "$kind" = hub ] && echo ' --hub')"
 }
@@ -247,8 +249,14 @@ cmd_rm() {
   local branch dirty unmerged others
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
   dirty=$(git -C "$dir" status --porcelain --untracked-files=no | wc -l | tr -d ' ')
-  [ "$kind" = hub ] && git -C "$root" fetch --quiet origin main 2>/dev/null || true
+  git -C "$root" fetch --quiet origin main 2>/dev/null || true
   unmerged=$(git -C "$root" rev-list --count "$base..$branch" 2>/dev/null || echo "?")
+  # A Cider branch lands by pull request, so it can be in origin/main before the
+  # main folder has pulled.
+  if [ "$unmerged" != 0 ] && [ "$kind" = cider ] \
+     && [ "$(git -C "$root" rev-list --count "origin/main..$branch" 2>/dev/null || echo "?")" = 0 ]; then
+    unmerged=0
+  fi
   # Untracked files that are not just generated output.
   others=$(git -C "$dir" ls-files --others --exclude-standard \
            | grep -Ev '^(docs/|node_modules$|collab/node_modules$|test-results/|playwright-report/|\.DS_Store)' || true)
@@ -274,6 +282,59 @@ $(echo "$others" | head -8 | sed 's/^/    /')"
   if [ "$force" = 1 ]; then git -C "$root" branch -D "$branch" >/dev/null; else git -C "$root" branch -d "$branch" >/dev/null 2>&1 || git -C "$root" branch -D "$branch" >/dev/null; fi
   drop_port "cider:$name"
   echo "Removed $(short "$dir") and branch '$branch'."
+}
+
+# ---- land ------------------------------------------------------------------
+# Cider's main takes changes only through a pull request whose "Editor tests
+# gate" check passes (a ruleset since 2026-10-21): `git push origin main` is
+# refused. This pushes the worktree's branch, opens its PR (title and body from
+# its commits) or reuses an open one, and sets it to merge itself, with a merge
+# commit, once the gate passes. Then, in the main folder: git pull --ff-only,
+# and python3 -m docsync.vendor where a vendor.local.yml names consumers.
+# The hub is not landed here: it ships by `git push origin <name>:main`, and its
+# tests decide whether production moves (its CLAUDE.md).
+
+cmd_land() {
+  local name=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --hub) die "the hub ships by 'git push origin <name>:main' from its worktree, not by pull request (see its CLAUDE.md)" ;;
+      -*) die "unknown option: $1" ;;
+      *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
+    esac
+    shift
+  done
+  [ -n "$name" ] || die "usage: wt land <name>"
+  local dir="$CIDER-$name" behind ahead url
+  is_git "$dir" || die "no Cider worktree $(short "$dir")"
+  [ "$(git -C "$dir" rev-parse --abbrev-ref HEAD)" = "$name" ] || die "$(short "$dir") is not on branch '$name'"
+  [ -z "$(git -C "$dir" status --porcelain --untracked-files=no)" ] \
+    || die "$(short "$dir") has uncommitted changes — a pull request takes what is committed; commit first"
+  command -v gh >/dev/null 2>&1 || die "this needs the GitHub CLI (gh), signed in"
+  git -C "$dir" fetch -q origin main || die "could not fetch origin/main"
+  behind=$(git -C "$dir" rev-list --count HEAD..origin/main)
+  [ "$behind" = 0 ] || die "'$name' is $behind commit(s) behind origin/main — rebase first: git -C $(short "$dir") rebase origin/main"
+  ahead=$(git -C "$dir" rev-list --count origin/main..HEAD)
+  [ "$ahead" -gt 0 ] || die "'$name' has nothing origin/main does not already have"
+
+  git -C "$dir" push -q origin "HEAD:refs/heads/$name" \
+    || die "the push of '$name' was refused. If origin's '$name' is this branch from before a rebase:
+  git -C $(short "$dir") push -f origin $name     (else pick another name: it is someone else's branch)"
+  url=$(cd "$dir" && gh pr view "$name" --json url,state --jq 'select(.state == "OPEN") | .url' 2>/dev/null || true)
+  if [ -z "$url" ]; then
+    url=$(cd "$dir" && gh pr create --base main --head "$name" --fill) || die "could not open the pull request"
+  fi
+  echo "Pull request: $url"
+  # Right after it opens, GitHub may still be working out whether it can merge;
+  # asking again a moment later is enough.
+  if (cd "$dir" && gh pr merge "$name" --auto --merge >/dev/null 2>&1) \
+     || { sleep 5; (cd "$dir" && gh pr merge "$name" --auto --merge); }; then
+    echo "It merges itself once its 'Editor tests gate' check passes (watch: gh pr checks $name --watch)."
+  else
+    die "the pull request is open, but auto-merge could not be set: gh pr merge $name --auto --merge"
+  fi
+  echo "Then, in $(short "$CIDER"): git pull --ff-only, python3 -m docsync.vendor (where vendor.local.yml"
+  echo "names consumers), and tools/wt rm $name."
 }
 
 # ---- allow-main ------------------------------------------------------------
@@ -410,6 +471,7 @@ case "$cmd" in
   rm|remove) cmd_rm "$@" ;;
   allow-main) cmd_allow_main "$@" ;;
   stage) cmd_stage "$@" ;;
+  land) cmd_land "$@" ;;
   -h|--help|help) usage 0 ;;
   *) echo "wt: unknown command '$cmd'" >&2; usage 1 ;;
 esac
