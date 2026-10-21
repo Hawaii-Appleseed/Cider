@@ -65,11 +65,16 @@ test.describe('a paragraph resizes like a text frame', () => {
 
   test('the top edge moves the top and keeps the bottom where it was', async ({ page }) => {
     await selectPara(page);
-    const top0 = await page.evaluate(id => $('out').contentDocument
-      .querySelector(`[data-el="${id}"]`).getBoundingClientRect(), ID);
+    // Against the PAGE, not the window: the commit's re-render may restore
+    // the scroll a few pixels off, which moves both edges on screen alike.
+    const onPage = () => page.evaluate(id => {
+      const el = $('out').contentDocument.querySelector(`[data-el="${id}"]`);
+      const r = el.getBoundingClientRect(), p = el.closest('section.page').getBoundingClientRect();
+      return { top: r.top - p.top, bottom: r.bottom - p.top };
+    }, ID);
+    const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
-    const r = await page.evaluate(id => $('out').contentDocument
-      .querySelector(`[data-el="${id}"]`).getBoundingClientRect(), ID);
+    const r = await onPage();
     expect(r.top).toBeLessThan(top0.top - 30);
     expect(Math.abs(r.bottom - top0.bottom)).toBeLessThan(4);
   });
