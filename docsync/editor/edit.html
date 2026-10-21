@@ -19416,6 +19416,33 @@ function shownUnder(d, e) {
   return nodes.find(n => { const s = n.closest('[data-slot]'); return s && shownNode(s); }) || nodes[0] || null;
 }
 
+/** A click on another object while one's words are open took TWO clicks:
+ *  the press only blurred the open words (dragify's `if (editing) return`),
+ *  and the commit's re-render can replace the page under the pointer anyway.
+ *  So: commit the words, wait out that render, then replay the press as a
+ *  click on the same spot in whatever document is current — the ordinary
+ *  path from there, so it selects, opens a panel, or types where it landed.
+ *  A press held into a drag across the switch is taken as a click; the next
+ *  press drags. */
+async function pressPastEditor(d, el, e, active) {
+  const id = idOf(el);
+  const at = { clientX: e.clientX, clientY: e.clientY, screenX: e.screenX, screenY: e.screenY };
+  active.blur();                          // commits: finish() ends `editing` at once
+  await new Promise(r => setTimeout(r, 0));
+  if (renderRunning) await new Promise(r => renderWaiters.push(r));
+  if (editing) return;                    // a dialog kept the words open
+  const d2 = $('out').contentDocument;
+  if (!d2) return;
+  const hook = `[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`;
+  const hit = d2.elementFromPoint(at.clientX, at.clientY);
+  const target = hit && hit.closest(hook) ? hit : d2.querySelector(hook);
+  if (!target) return;
+  const ev = type => new MouseEvent(type, { bubbles: true, cancelable: true, composed: true,
+    view: d2.defaultView, button: 0, buttons: type === 'mousedown' ? 1 : 0, detail: 1, ...at });
+  target.dispatchEvent(ev('mousedown'));
+  target.dispatchEvent(ev('mouseup'));
+}
+
 function dragify(d, roots) {
   within(d, roots, '[data-el], [data-shape]').forEach(el => {
     // A movable nested inside another movable — a callout's own paragraphs — is
@@ -19464,6 +19491,16 @@ function dragify(d, roots) {
       if (editing && e.shiftKey) {
         const a = d.activeElement;
         if (a && a.isContentEditable && !el.contains(a)) a.blur();
+      }
+      // A plain click on ANOTHER object while words are open: close them and
+      // land on what was clicked, in one click (see pressPastEditor).
+      if (editing && !e.shiftKey) {
+        const a = d.activeElement;
+        if (a && a.isContentEditable && !el.contains(a)) {
+          e.preventDefault(); e.stopPropagation();
+          pressPastEditor(d, el, e, a);
+        }
+        return;
       }
       if (editing) return;
       // The press landed on something invisible drawn over another object's
