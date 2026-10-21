@@ -2,6 +2,31 @@
   "positions": {},
   "shapes": [],
   "boxes": [],
-  "tables": [],
-  "sections": {}
+  "tables": [
+    {
+      "id": "t1",
+      "page": 1,
+      "x": 2.5,
+      "y": 2,
+      "w": 3.5,
+      "z": 2,
+      "header": true,
+      "rows": [
+        [
+          "Column 1",
+          "Column 2"
+        ],
+        [
+          "",
+          ""
+        ],
+        [
+          "",
+          ""
+        ]
+      ]
+    }
+  ],
+  "sections": {},
+  "masters": {}
 }
