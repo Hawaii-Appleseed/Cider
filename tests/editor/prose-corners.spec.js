@@ -87,29 +87,24 @@ test.describe('a paragraph resizes like a text frame', () => {
 
   test('the top edge moves the top and keeps the bottom where it was', async ({ page }) => {
     await selectPara(page);
-    // Against the PAGE, not the window: the commit's re-render may restore
-    // the scroll a few pixels off, which moves both edges on screen alike.
-    const onPage = () => page.evaluate(id => {
+    const top0 = await page.evaluate(id => {
       const el = $('out').contentDocument.querySelector(`[data-el="${id}"]`);
       const r = el.getBoundingClientRect(), p = el.closest('section.page').getBoundingClientRect();
-      return { top: r.top - p.top, bottom: r.bottom - p.top };
+      return { top: r.top - p.top, bottom: r.bottom - p.top,
+               px: 96 * zoomOf(el.closest('section.page')) };
     }, ID);
-    const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
-    // Both readings are taken on a settled page (settledPage, before the drag
-    // and inside dragHandle after it); the poll covers any last reflow. What
-    // the drag promises is where the paragraph settles.
-    try {
-      await expect.poll(async () => Math.round(Math.abs((await onPage()).bottom - top0.bottom)),
-        { timeout: 5000 }).toBeLessThan(4);
-    } catch (err) {
-      // On a failure, say what the drag stored beside what the page drew:
-      // the difference between a slow page and a box drawn in the wrong place.
-      console.log('top-edge', JSON.stringify({ top0, now: await onPage(),
-        stored: await page.evaluate(id => layout.positions[id], ID) }));
-      throw err;
-    }
-    expect((await onPage()).top).toBeLessThan(top0.top - 30);
+    // What the drag WROTE, in page inches: the top raised, and top + height
+    // landing on the old bottom. Not where the page then draws it — a moved
+    // paragraph follows the slot it left (its anchor), so its drawn place
+    // also answers to how the lines ABOVE that slot wrap, and on CI's Linux
+    // runner those wrapped differently once re-rendered: the box came back
+    // 39px high with exactly this geometry stored (y 4.79in + h 1.48in =
+    // 601.9px against a bottom of 602.1px).
+    const p = await page.evaluate(id => layout.positions[id], ID);
+    expect(p.hmin).toBe(true);
+    expect(p.y * top0.px).toBeLessThan(top0.top - 30);
+    expect(Math.abs((p.y + p.h) * top0.px - top0.bottom)).toBeLessThan(4);
   });
 
   test('a table and a chart keep their own handles', async ({ page }) => {
