@@ -195,6 +195,37 @@ test.describe('Claude creates, a person edits', () => {
     await expect(status(page)).not.toHaveText(/does not build/);
   });
 
+  test('inventory reads back what a chart draws and what a table holds', async ({ page }) => {
+    // The hub's connector cannot see the page: read_report relays this, and
+    // without the numbers and cells a person's Claude could add a chart and
+    // never read one back, or know what setChart / a cell edit would change.
+    const P = await freshPage(page);
+    const c = await api(page, ([P, c]) => docsync.api.addChart({ page: P, x: 0.75, y: 0.75, w: 7, h: 3, chart: c }), [P, COMBO]);
+    const t = await api(page, P => docsync.api.addTable({ page: P, x: 0.75, y: 4.2, w: 6, headerRows: 1,
+      merges: [[1, 0, 2, 1]], rows: [['Group', 'Rate'], ['Keiki', '11.2%'], ['', '10.8%']] }), P);
+    const inv = await api(page, () => docsync.api.inventory());
+    const els = inv.pages.flatMap(p => p.elements);
+    const ch = els.find(e => e.id === c.id);
+    expect(ch.kind).toBe('chart');
+    expect(ch.chart.series.map(s => s.name)).toEqual(['Nominal', 'Real']);
+    expect(ch.chart.series[0].data).toEqual([10, 12, 15]);
+    expect(ch.chart.rules[0].label).toBe('Spending cap');
+    const tb = els.find(e => e.id === t.id);
+    expect(tb.kind).toBe('table');
+    expect(tb.table.rows).toEqual([['Group', 'Rate'], ['Keiki', '11.2%'], ['', '10.8%']]);
+    expect(tb.table.merges).toEqual([[1, 0, 2, 1]]);
+    // A renderer's chart is a chart too, with the spec it actually draws.
+    const fig = els.find(e => e.id === 'whopays.fig6');
+    expect(fig.kind).toBe('chart');
+    expect(fig.inline).toBe(true);
+    expect(fig.chart.series[0].data.length).toBe(7);
+    // Reading must not change anything.
+    expect(await api(page, () => docsync.api.status().dirty)).toBe(true);   // the adds above
+    const before = await api(page, () => JSON.stringify(layout));
+    await api(page, () => docsync.api.inventory());
+    expect(await api(page, () => JSON.stringify(layout))).toBe(before);
+  });
+
   test('a renderer chart\'s labels rename on the page, and place() can size it', async ({ page }) => {
     const frame = page.frameLocator('#out');
     const lab = frame.locator('[data-chart="whopays.fig6"] [data-ch="label:0"]');
