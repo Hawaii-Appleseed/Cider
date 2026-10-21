@@ -9375,6 +9375,15 @@ function selectedChartId() {
   return chartOf(ids[0]) ? ids[0] : null;
 }
 
+/** A click on a chart or a table opens the panel that edits it, the way Canva
+ *  puts a clicked chart's data in front of you. Only a CLICK: a drag moves
+ *  the object and leaves the side panel as it was. */
+function openPanelOnClick(id) {
+  if (!id || selIds.size !== 1 || !selIds.has(id)) return;
+  if (chartOf(id)) openChartPanel(id);
+  else if (id.startsWith('table.') && tableOf(id)) openTablePanel(id);
+}
+
 function openChartPanel(id) {
   chartPanelId = id || selectedChartId();
   if (!chartPanelId) return;
@@ -20264,6 +20273,7 @@ function startDrag(d, el, e0, drillIn = false) {
         clearGuides(d); paintSel(d); return;
       }
       clearGuides(d); paintSel(d);
+      openPanelOnClick(idOf(el));
       typeOnClick(d, el, e0);
       return;
     }

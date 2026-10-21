@@ -43,4 +43,39 @@ test.describe('uhero-trc-summary: the table and charts edit', () => {
     expect(r.after).toBe(6);
     expect(r.unseeded).toBe(false);
   });
+
+  // Reported 2026-10-21: the Table tool's new table drew its empty rows a few
+  // pixels tall here, because this report's stylesheet never styles
+  // .ds-table — the cells had no padding and an empty cell no line.
+  test('a table from the Table tool has rows a line tall, in a report that never styles tables', async ({ page }) => {
+    await gotoEditor(page, '?project=uhero-trc-summary');
+    await page.click('#table');
+    const frame = page.frameLocator('#out');
+    const tbl = frame.locator('table.ds-table[data-placed]').first();
+    await tbl.waitFor({ state: 'attached', timeout: 20000 });
+    const r = await tbl.evaluate(el => ({
+      rows: [...el.rows].map(tr => tr.getBoundingClientRect().height),
+      pad: getComputedStyle(el.querySelector('td')).paddingTop,
+    }));
+    expect(r.rows).toHaveLength(3);
+    for (const h of r.rows) expect(h).toBeGreaterThanOrEqual(20);
+    expect(r.pad).not.toBe('0px');
+  });
+
+  // A click on a chart or a table opens the panel that edits it; it used to
+  // take the strip's Chart/Table button, or the right-click menu.
+  test('clicking a chart or a table opens its panel', async ({ page }) => {
+    await gotoEditor(page, '?project=uhero-trc-summary');
+    const frame = page.frameLocator('#out');
+    await page.evaluate(() => closeSide());
+    await expect(page.locator('#side')).toBeHidden();
+    await frame.locator('[data-el="chart.decile"]').click();
+    await expect(page.locator('#side')).toBeVisible();
+    await expect(page.locator('#side-title')).toHaveText('Chart');
+    expect(await page.evaluate(() => chartPanelId)).toBe('chart.decile');
+
+    await frame.locator('[data-el="table.swaps"] td').first().click();
+    await expect(page.locator('#side-title')).toHaveText('Table');
+    expect(await page.evaluate(() => tablePanelId)).toBe('table.swaps');
+  });
 });
