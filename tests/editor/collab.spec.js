@@ -525,7 +525,7 @@ test('a text box two people edited at once is settled by a person, not by whoeve
     .toHaveCount(0, { timeout: 10_000 });
 });
 
-test('typing in a paragraph reaches A while B\'s editor is still open, with B\'s caret; Escape takes it back', async () => {
+test('typing in a paragraph reaches A while B\'s editor is still open, with B\'s caret; Escape keeps it, and undo takes it back', async () => {
   const before = await slot(b);
   const el = b.frameLocator('#out').locator(`[data-slot="${SLOT}"]`).first();
   await el.scrollIntoViewIfNeeded();
@@ -547,11 +547,17 @@ test('typing in a paragraph reaches A while B\'s editor is still open, with B\'s
     return g && g.cursor && `${g.cursor.slot}@${g.cursor.index}`;
   }, { timeout: 10_000 }).toBe(`${SLOT}@${(before + ' LIVE').length}`);
 
-  await b.keyboard.press('Escape');                  // keep nothing — including what the room already saw
+  // Escape keeps the words, as InDesign's does (2026-10-21) — in B and in the
+  // room — and closes B's editor, so its caret leaves A.
+  await b.keyboard.press('Escape');
   await expect.poll(() => b.evaluate('editing'), { timeout: 10_000 }).toBe(false);
+  await expect.poll(() => slot(b), { timeout: 10_000 }).toBe(before + ' LIVE');
+  await expect.poll(() => slot(a), { timeout: 10_000 }).toBe(before + ' LIVE');
+  await expect(a.frameLocator('#out').locator('.ds-peer-caret')).toHaveCount(0, { timeout: 10_000 });
+  // Undo is the way back, and it takes the words out of the room too.
+  await b.evaluate('undo()');
   await expect.poll(() => slot(b), { timeout: 10_000 }).toBe(before);
   await expect.poll(() => slot(a), { timeout: 10_000 }).toBe(before);
-  await expect(a.frameLocator('#out').locator('.ds-peer-caret')).toHaveCount(0, { timeout: 10_000 });
 });
 
 test('both editors type in the SAME paragraph at once, each sees the other\'s words land around its caret, and both keep theirs', async () => {

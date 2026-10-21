@@ -1181,6 +1181,7 @@
      underneath clickable everywhere the card itself is not. */
   #context { position:absolute; z-index:6; top:4px; left:var(--rail-w); right:0;
           display:flex; justify-content:center; pointer-events:none; }
+  body.ds-menu-up #context { visibility:hidden; }   /* see menuUp() */
   /* dropped to the foot while the selection sits under its home at the top
      (contextDodge); clear of the page strip along the bottom edge */
   #context.low { top:auto; bottom:104px; }
@@ -4636,7 +4637,7 @@ function endnoteMenu(d, host, e) {
     m.appendChild(b);
   };
   buildEndnoteRows(d, m, host, range);
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
   // Nudge back on-screen if it would spill off the right/bottom edge.
   const r = m.getBoundingClientRect(), vw = d.defaultView.innerWidth, vh = d.defaultView.innerHeight;
   if (r.right > vw) m.style.left = (e.clientX + d.defaultView.scrollX - r.width) + 'px';
@@ -4733,7 +4734,7 @@ function textMenu(d, host, e) {
     add('Print (the PDF)', 'print'); add('Web (on screen)', 'web');
     add('Another condition…', '?'); add('Always (no condition)', null);
   });
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
   const r = m.getBoundingClientRect(), vw = d.defaultView.innerWidth, vh = d.defaultView.innerHeight;
   if (r.right > vw) m.style.left = (e.clientX + d.defaultView.scrollX - r.width) + 'px';
   if (r.bottom > vh) m.style.top = (e.clientY + d.defaultView.scrollY - r.height) + 'px';
@@ -5892,7 +5893,16 @@ function nextZ(floor = 1, page = null) {
 }
 function closeMenu(d) {
   d.querySelectorAll('.ds-menu').forEach(m => m.remove());
+  menuUp(false);
 }
+/** A right-click menu lives in the report's document, the floating context
+ *  card (#context) in the editor's, above it — and the card drops to the foot
+ *  of the stage when the selection is under its home at the top. Now that a
+ *  right-click selects what it hits, the card came up for that very selection
+ *  and could land over the menu opened beside it (the Animate submenu's speed
+ *  slider sat under the type bar). While a menu is open the card stands
+ *  aside; closeMenu, and a fresh document, bring it back. */
+const menuUp = on => document.body.classList.toggle('ds-menu-up', on);
 
 /** Every menu cancels mousedown to keep the editor focused: without it the
  *  click blurs the text being edited, commits it, and the caret the menu was
@@ -6017,7 +6027,7 @@ function pageMenu(d, pg, e) {
   }
   sep();
   submenuRow(d, m, 'Page colour ▸', sub => fillRow(d, sub, pageFillId(pid)));
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
   const r = m.getBoundingClientRect(), vw = d.defaultView.innerWidth, vh = d.defaultView.innerHeight;
   if (r.right > vw) m.style.left = (e.clientX + d.defaultView.scrollX - r.width) + 'px';
   if (r.bottom > vh) m.style.top = (e.clientY + d.defaultView.scrollY - r.height) + 'px';
@@ -6231,9 +6241,12 @@ function _pilotApplyFitFrame(id) {
  *  It used to leave the selection where it was: right-click a paragraph with
  *  a table selected and the menu was the paragraph's, the strip the table's. */
 function selectForMenu(d, id) {
-  if (!id) return;
-  const members = withGroups([id]);
-  if (!members.every(m => selIds.has(m))) setSel(d, members);
+  // Already selected — on its own or as one of several — the selection stays,
+  // group or no group: a button's menu wires it to everything selected with
+  // it ("Reveal the 2 selected"), and expanding to the button's own group
+  // would throw that selection away.
+  if (!id || selIds.has(id)) return;
+  setSel(d, withGroups([id]));
 }
 
 /** Open the right-click menu again once a render in flight has landed, in
@@ -6322,7 +6335,7 @@ function layerMenu(d, el, e) {
       if (!layout.locked.length) delete layout.locked;
       markDirty(); paintSel(d);
     });
-    d.body.appendChild(m);
+    d.body.appendChild(m); menuUp(true);
     return;
   }
 
@@ -6958,7 +6971,7 @@ function layerMenu(d, el, e) {
       markDirty(); await render();
     });
   }
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
 }
 
 function contextify(d, roots) {
@@ -7008,6 +7021,7 @@ function contextify(d, roots) {
   // mechanism this file's own popovers (layerMenu, pageMenu, and now the
   // toggle speed popover) rely on to dismiss themselves — bind once.
   if (fresh) {
+    menuUp(false);           // a new document: whatever menu was open went with the old one
     d.addEventListener('mousedown', e => {
       // Button 2 is the right-click that is ABOUT to open a menu. The event
       // order for a context click is not the same everywhere — a Mac trackpad
@@ -8177,7 +8191,7 @@ function openTglSpeedPopover(d, anchorBtn, tb) {
   });
   w.appendChild(r);
   m.appendChild(w);
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
   const rect = anchorBtn.getBoundingClientRect();
   const sx = d.defaultView.scrollX, sy = d.defaultView.scrollY;
   m.style.left = (rect.left + sx) + 'px';
@@ -8716,7 +8730,7 @@ function tableMenu(d, td, e) {
   }, !t.flow);
   item('sliders', 'Table styles…', '', () => openTablePanel(idOf(tableEl)), true, true);
 
-  d.body.appendChild(m);
+  d.body.appendChild(m); menuUp(true);
   const r = m.getBoundingClientRect(), vw = d.defaultView.innerWidth, vh = d.defaultView.innerHeight;
   if (r.right > vw) m.style.left = (e.clientX + d.defaultView.scrollX - r.width) + 'px';
   if (r.bottom > vh) m.style.top = Math.max(4,
@@ -10546,13 +10560,14 @@ function editChartText(d, node) {
   d.body.appendChild(inp);
   inp.focus(); inp.select();
   let done = false;
+  const opened = chLabelOut(inp.value);     // see edit()'s `opened`
   const finish = async keep => {
     if (done) return; done = true;
     editing = false;
     hubAutosaveFlushNext();
     const val = chLabelOut(inp.value);
     inp.remove();
-    if (keep && val !== chartText(s.chart, hook)) {
+    if (keep && val !== opened && val !== chartText(s.chart, hook)) {
       const settled = await collabFieldSettle(val, 'chart label');
       if (settled === 'mine') {
         await collabFieldFirstTheirs();
@@ -10836,6 +10851,7 @@ function editEndnote(d, li, sid) {
   li.replaceWith(wrap);
   txt.focus();
   txt.select();
+  const opened = [txt.value.trim(), url.value.trim()];   // see edit()'s `opened`
 
   const finish = async keep => {
     if (wrap.dataset.done) return;
@@ -10850,7 +10866,7 @@ function editEndnote(d, li, sid) {
       // The URL may be cleared: a citation can be a book or an interview, and
       // requiring one here meant a source that had a link could never lose it.
       // The citation text itself still has to say something.
-      if (t && (t !== s.text || u !== s.url)) {
+      if (t && (t !== opened[0] || u !== opened[1]) && (t !== s.text || u !== s.url)) {
         pushHistory();
         updateSource(sid, t, u);
         markDirty();
@@ -25729,13 +25745,18 @@ function editSvgSlot(d, key, node) {
   inp.focus(); inp.select();
   showType(key);
   let done = false;
+  // The field flattens runs of spaces, so a label stored with two (rxkids'
+  // "7,969 on Medicaid  ·  60%") never compares equal to it and was rewritten
+  // by a field only opened and left. Untouched means unchanged: see edit()'s
+  // `opened`.
+  const opened = inp.value.replace(/\s+/g, ' ').trim();
   const finish = async keep => {
     if (done) return; done = true;
     editing = false;
     hubAutosaveFlushNext();
     const val = inp.value.replace(/\s+/g, ' ').trim();
     inp.remove();
-    if (keep && val !== cur) {
+    if (keep && val !== opened && val !== cur) {
       pushHistory();
       writeSlot(key, val);
       markDirty();
