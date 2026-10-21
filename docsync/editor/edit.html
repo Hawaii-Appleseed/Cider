@@ -10490,18 +10490,41 @@ function editChartText(d, node) {
   });
 }
 
+/** A new chart in the REPORT's colours. The engine's own set is sage, so a
+ *  chart drawn into a tax-blue report came out green until somebody found the
+ *  palette swatches in the panel. Only what the chart does not say already is
+ *  filled — a caller's colours stand — and near-white swatches are skipped (a
+ *  white bar on a white page). A palette shorter than the chart repeats as
+ *  tints, so neighbours never share a colour. No palette: the engine's. */
+function dressNewChart(ch) {
+  const pal = (M.palette || []).filter(c => {
+    if (!/^#[0-9a-f]{6}$/i.test(c)) return false;
+    const n = parseInt(c.slice(1), 16);
+    return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.9;
+  });
+  if (!pal.length) return ch;
+  const pick = i => i < pal.length ? pal[i] : tint(pal[i % pal.length], 0.45);
+  if (CHART_BY_ITEM.includes(ch.type)) {
+    const n = Math.max((ch.labels || []).length, ((ch.series || [])[0] || {}).data?.length || 0);
+    if (!ch.colors && n) ch.colors = Array.from({ length: n }, (_, i) => pick(i));
+  } else {
+    (ch.series || []).forEach((se, i) => { if (!se.color) se.color = pick(i); });
+  }
+  return ch;
+}
+
 $('chart').onclick = async () => {
   const page = visiblePageId();
   pushHistory();
   const id = freeShapeId('chart');
   layout.shapes.push({
     id, page, kind: 'chart', x: placeX(4), y: 1.6, w: 4, h: 2.8, z: nextZ(2, page), fill: 'none',
-    chart: {
+    chart: dressNewChart({
       type: 'bar',
       labels: ['First', 'Second', 'Third'],
       series: [{ name: 'Series 1', data: [12, 19, 8] }],
       legend: false, values: true, grid: true,
-    },
+    }),
   });
   setSel($('out').contentDocument, [id]);
   markDirty();
@@ -30861,9 +30884,17 @@ function _pilotApplyAddChart({ page, x, y, w = 4, h = 2.8, chart, fill } = {}) {
     : { labels: ['First', 'Second', 'Third'], series: [{ name: 'Series 1', data: [12, 19, 8] }],
         legend: false, values: true, grid: true };
   spec.type = spec.type || 'bar';
+  dressNewChart(spec);
   layout.shapes.push({ id, page: pid, kind: 'chart', x: x != null ? +x : placeX(+w), y: y != null ? +y : 1.6,
                        w: +w, h: +h, z: nextZ(2, pid), fill: fill || 'none', chart: spec });
-  return { id, page: pid };
+  // A histogram BINS raw observations. Handed one count per named range —
+  // what a "distribution" usually arrives as — it bins the counts themselves
+  // and draws nonsense, so say what draws it instead.
+  const n0 = ((spec.series || [])[0] || {}).data?.length || 0;
+  const note = spec.type === 'histogram' && (spec.labels || []).length && (spec.labels || []).length === n0
+    ? 'a histogram bins raw observations; for counts already binned (one per labelled range) use type "bar" with barGap: 0'
+    : null;
+  return { id, page: pid, ...(note ? { note } : {}) };
 }
 // Everything setTable takes may come with the table, plus where it goes. A
 // function, not a const: TABLE_PATCH_KEYS is declared further down the file.

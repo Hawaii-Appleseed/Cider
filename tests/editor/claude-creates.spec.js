@@ -195,6 +195,22 @@ test.describe('Claude creates, a person edits', () => {
     await expect(status(page)).not.toHaveText(/does not build/);
   });
 
+  test('a new chart starts in the report\'s colours, and a histogram of counts is pointed at a bar chart', async ({ page }) => {
+    const P = await freshPage(page);
+    const pal = await api(page, () => (M.palette || []).filter(c => !/^#f{3,6}$/i.test(c)));
+    test.skip(!pal.length, 'this report has no palette');
+    const r = await api(page, P => docsync.api.addChart({ page: P, x: 1, y: 1, w: 4, h: 3,
+      chart: { type: 'bar', labels: ['a', 'b'], series: [{ name: 'S', data: [1, 2] }, { name: 'T', data: [2, 1], color: '#123456' }] } }), P);
+    const c = await api(page, id => layout.shapes.find(s => s.id === id).chart, r.id);
+    // The engine's sage was what a chart drawn into a tax-blue report got.
+    expect(c.series[0].color.toUpperCase()).toBe(pal[0].toUpperCase());
+    expect(c.series[1].color).toBe('#123456');          // a colour given stands
+    const h = await api(page, P => docsync.api.addChart({ page: P, x: 1, y: 5, w: 4, h: 3,
+      chart: { type: 'histogram', labels: ['<25K', '25-50K', '50K+'], series: [{ name: 'H', data: [61000, 72000, 70500] }] } }), P);
+    expect(h.ok, h.error).toBe(true);
+    expect(h.note).toContain('barGap: 0');
+  });
+
   test('inventory reads back what a chart draws and what a table holds', async ({ page }) => {
     // The hub's connector cannot see the page: read_report relays this, and
     // without the numbers and cells a person's Claude could add a chart and
