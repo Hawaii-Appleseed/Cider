@@ -23284,8 +23284,13 @@ const STAMP_FILES = ['edit.html'];
 let buildStamp = null;
 async function buildChangedOnDisk() {
   try {
+    // Locally each project's edit.html is staged beside it (withBase). On the
+    // hub there is ONE, at the URL this page came from, and a project's
+    // directory holds none: asking there is a 404 whose stamp never changes,
+    // so the notice could never fire. Ask for this document itself.
     const rs = await Promise.all(STAMP_FILES.map(f =>
-      fetch(withBase(f), { method: 'HEAD', cache: 'no-store' })));
+      fetch(docStore() ? location.pathname : withBase(f), { method: 'HEAD', cache: 'no-store' })));
+    if (rs.some(r => !r.ok)) return false;          // an error page's stamp says nothing
     // ETag first: the hub's edge serves one for every static file, and it is
     // the content's own fingerprint, where a Last-Modified it may not send.
     const stamp = rs.map(r => (r.headers.get('etag') || '')
