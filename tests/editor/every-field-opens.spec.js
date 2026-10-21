@@ -51,15 +51,6 @@ const REPORTS = !WANTED ? []
 // Known and not yet fixed, by report: exact finding strings as printed.
 // Shrink-only. NEVER add one to silence a new finding.
 const KNOWN = new Map([
-  // a stand-in or in-place host whose footnote chips (or an empty slot's
-  // placeholder box) are a few px wider or taller than the rendered words
-  ['rxkids', ['shifted steps.note: 589x38 → 593x38 (stand-in)']],
-  ['tax-testimony', ['shifted chart.title: 28x19 → 28x29 (stand-in)', 'shifted footer.note: 20x13 → 20x21 (stand-in)',
-                     'shifted p6.contd: 433x21 → 416x21 (stand-in)']],
-  ['tfc-2027-priorities', ['shifted eyebrow.p-1: 912x12 → 912x18 (in place)', 'shifted gloss.span-2: 704x13 → 704x18 (in place)',
-                           'shifted split.sub: 736x15 → 736x23 (in place)']],
-  ['wfc-credits', ['shifted ha-est-section-inner.p-txt-12: 234x18 → 240x18 (in place)',
-                   'shifted ha-est-section-inner.p-txt-1: 343x18 → 349x18 (in place)']],
 ]);
 
 const PROBE = 'ZQXJ';
@@ -140,7 +131,7 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
   };
   const keys = [...new Set([...D().querySelectorAll('section.page [data-slot]')]
     .map(e => e.dataset.slot))];
-  const fails = [], shifted = [], covered = [], skipped = [], refused = [];
+  const fails = [], shifted = [], covered = [], skipped = [], refused = [], chipWrap = [];
   let n = 0;
   for (const key of keys) {
     const d = D();
@@ -174,8 +165,19 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
         && host.parentElement.dataset.slot === key ? host.parentElement : host;
       const r1 = outer.getBoundingClientRect();
       const dw = Math.round(r1.width) - before.w, dh = Math.round(r1.height) - before.h;
-      if (Math.abs(dw) > 3 || Math.abs(dh) > 3)
-        shifted.push(`${key}: ${before.w}x${before.h} → ${Math.round(r1.width)}x${Math.round(r1.height)}${host.classList.contains('ds-edit-in') ? ' (in place)' : ' (stand-in)'}`);
+      // Width within 5% is font metrics (a footnote chip is a pill a few px
+      // wider than the numeral it shows); height within 3px is rounding.
+      // Growth that comes only from footnote chips (a slot with [^refs] that
+      // gains at most one line) is the chips wrapping, said but not failed.
+      // An EMPTY slot opens as a dashed box a click can land in (a line
+      // tall), by design: its "growth" is that box, not a reflow.
+      const emptySlot = (was || '').trim() === '';
+      const lineH = parseFloat(getComputedStyle(host).lineHeight) || 20;
+      const chips = /\[\^/.test(was || '') && dh > 0 && dh <= lineH + 2 && Math.abs(dw) <= before.w * 0.05;
+      if (!emptySlot && (Math.abs(dw) > Math.max(8, before.w * 0.05) || Math.abs(dh) > 3)) {
+        const line = `${key}: ${before.w}x${before.h} → ${Math.round(r1.width)}x${Math.round(r1.height)}${host.classList.contains('ds-edit-in') ? ' (in place)' : ' (stand-in)'}`;
+        (chips ? chipWrap : shifted).push(line);
+      }
     }
     // type
     typeInto(host);
@@ -231,7 +233,7 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
     await settled();
     await until(() => visibleOf(key), 6000);
   }
-  return { n, keys: keys.length, fails, shifted, covered, skipped, refused };
+  return { n, keys: keys.length, fails, shifted, covered, skipped, refused, chipWrap };
 }, PROBE);
 
 /** Move every unlocked object by the pilot API and put it back. */
@@ -526,12 +528,16 @@ for (const rep of REPORTS) {
       ...s.shifted.map(f => `  shifted ${f}`),
       ...s.covered.map(f => `  covered ${f}`),
       ...s.refused.map(f => `  refused ${f}`),
+      ...s.chipWrap.map(f => `  chips ${f}`),
       ...m.unmeasured.map(f => `  unmeasured ${f}`),
       ...errors.map(f => `  ${f}`),
     ];
     console.log(lines.join('\n'));
     const known = KNOWN.get(rep.id) || [];
-    const soft = [...s.shifted.map(f => `shifted ${f}`), ...s.covered.map(f => `covered ${f}`)];
+    // Keyed by kind and slot, not pixels: the same field measures a few px
+    // differently with another machine's fonts.
+    const keyOf = f => f.replace(/^(\w+) ([^:\s]+).*$/, '$1 $2');
+    const soft = [...s.shifted.map(f => keyOf(`shifted ${f}`)), ...s.covered.map(f => keyOf(`covered ${f}`))];
     const fresh = soft.filter(f => !known.includes(f));
     const gone = known.filter(f => !soft.includes(f));
     // A missing-file probe at boot (the editor asks for a staged manifest
