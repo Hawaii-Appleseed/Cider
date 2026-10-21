@@ -4920,6 +4920,79 @@ with _tf.TemporaryDirectory() as _d:
     check_eq("fidelity: a class only named inside a CSS comment does not count",
              static_check(_cur, _h.replace("<p>Act", '<p class="ghost">Act')), [])
 
+# ------------------------------------------------- website: a page made public from the editor
+from docsync import website as _web  # noqa: E402
+
+_sites = {"reports": _web.Site("reports", "Reports", "Org/reports", "main", "", "https://org.github.io/reports/"),
+          "nested": _web.Site("nested", "Nested", "Org/site", "gh-pages", "pages", "https://org.github.io/site/pages/")}
+check_eq("website: no record is not a website", _web.designation({"page": {}}, _sites), None)
+_d = _web.designation({"website": {"site": "nested", "slug": "act-163", "home": "hub"}}, _sites)
+check_eq("website: a good record names its site, address and home, and where it lands",
+         (_d["site"].name, _d["slug"], _d["home"], _web.target_path(_d)), ("nested", "act-163", "hub", "pages/act-163"))
+for _bad, _why in (({"site": "elsewhere", "slug": "ok-page"}, "not one of this repository's sites"),
+                   ({"site": "reports", "slug": "Bad Slug"}, "lowercase words"),
+                   ({"site": "reports", "slug": "../escape"}, "lowercase words"),
+                   ({"site": "reports", "slug": "-edge"}, "lowercase words"),
+                   ({"site": "reports", "slug": "ok-page", "home": "cloud"}, "must be local or hub"),
+                   ("reports/ok-page", "must be {site, slug, home}")):
+    try:
+        _web.designation({"website": _bad}, _sites)
+        FAILS.append(f"website: {_bad!r} must be refused")
+    except _web.WebsiteError as e:
+        check(f"website: {_bad!r} is refused", str(e), _why)
+
+
+class _B:                       # just what publish_for reads off a binding
+    id, publish, editor = "my-page", None, None
+
+
+_p = _web.publish_for(_B(), {"website": {"site": "reports", "slug": "my-page", "home": "hub"}}, _sites)
+check_eq("website: the publish settings come from the record, with the engine's own command",
+         (_p.repo, _p.branch, _p.paths, _p.home, _p.when, _p.url, _p.command),
+         ("Org/reports", "main", ["my-page"], "hub", "save", "https://org.github.io/reports/my-page/",
+          "python3 -m docsync.website --id my-page --write"))
+check_eq("website: a page with neither a publish: block nor a record publishes nowhere",
+         _web.publish_for(_B(), {}, _sites), None)
+_B2 = type("_B2", (), {"id": "x", "editor": None, "publish": "EXPLICIT"})
+check_eq("website: an explicit publish: block wins over a record",
+         _web.publish_for(_B2(), {"website": {"site": "reports", "slug": "x-page"}}, _sites), "EXPLICIT")
+check_eq("website: script dependencies an import map or an import names are found",
+         _web.script_refs('<script type="importmap">{"imports": {"three": "./assets/vendor/three.module.js",'
+                          ' "cdn": "https://x/y.js"}}</script><script type=module>import a from "./lib/a.mjs";'
+                          ' await import("./lib/b.js"); import c from "https://x/c.js"</script>'),
+         {"assets/vendor/three.module.js", "lib/a.mjs", "lib/b.js"})
+
+# The recipe, end to end, on a real project: the address is claimed, and a second
+# project cannot take it.
+from docsync.registry import get as _get  # noqa: E402
+
+with _tf.TemporaryDirectory() as _site:
+    _site = Path(_site)
+    _real = _web.read_layout
+    _web.read_layout = lambda b: {**(_real(b) or {}), "website": {"site": "reports", "slug": "shared-address"}}
+    try:
+        check("website: a Cider report publishes as a page at its address",
+              _web.publish(_get("retitc"), _site, write=True, sites=_sites), "wrote https://org.github.io/reports/shared-address/")
+        check_eq("website: the page and its claim are written",
+                 ((_site / "shared-address" / "index.html").is_file(), (_site / "shared-address" / _web.MARKER).read_text()),
+                 (True, "retitc\n"))
+        check("website: publishing again is no change", _web.publish(_get("retitc"), _site, write=True, sites=_sites), "no change")
+        try:
+            _web.publish(_get("dotax-itep"), _site, write=True, sites=_sites)
+            FAILS.append("website: a second project must not take an address another holds")
+        except _web.WebsiteError as e:
+            check("website: a second project is refused the address", str(e), "already retitc's")
+        (_site / "foreign").mkdir()
+        (_site / "foreign" / "index.html").write_text("someone else's")
+        _web.read_layout = lambda b: {**(_real(b) or {}), "website": {"site": "reports", "slug": "foreign"}}
+        try:
+            _web.publish(_get("retitc"), _site, write=True, sites=_sites)
+            FAILS.append("website: a folder Cider did not make must not be overwritten")
+        except _web.WebsiteError as e:
+            check("website: a folder Cider did not make is refused", str(e), "Cider did not put there")
+    finally:
+        _web.read_layout = _real
+
 try:
     sheet_inner("<html><body><p>no sheet</p></body></html>")
     FAILS.append("a render with no sheet must be refused")

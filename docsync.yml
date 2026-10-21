@@ -20,6 +20,22 @@
 #   build    the one command that rebuilds and publishes (make pub)
 #   editor   what the draft editor needs to run this report in the browser
 
+# Websites a page can be made into from the editor (File ▸ Publish as a website…,
+# docsync/website.py). Declared once per site; a page then needs no config of its
+# own — its choice is a {site, slug} record in its layout.json, and it publishes
+# to <url><slug>/ from the editor app's Save or the staff hub's Publish.
+#   repo    owner/name (the org's GitHub App must be able to push to it)
+#   branch  the branch GitHub Pages serves
+#   folder  where pages go inside the repo ("" = the root)
+#   url     the address that folder is served at
+sites:
+  reports:
+    title: "Hawaiʻi Appleseed reports"
+    repo: Hawaii-Appleseed/reports
+    branch: main
+    folder: ""
+    url: https://hawaii-appleseed.github.io/reports/
+
 bindings:
   - id: budget-primer
     name: "Budget Primer FY2026–27"

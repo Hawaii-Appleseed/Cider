@@ -98,7 +98,21 @@ def manifest(b: Binding) -> dict:
         # says how it went. None for everything else — no job will ever report.
         "site": ({"repo": b.publish.repo, "url": b.publish.url or ""}
                  if getattr(b, "publish", None) and b.publish.home == "hub" else None),
+        # The websites File ▸ Publish as a website… offers (docsync.yml `sites:`,
+        # docsync/website.py). Empty for a page with its own publish: block — it
+        # already has a home — and for a repository that lists none.
+        "sites": _sites_for(b),
     }
+
+
+def _sites_for(b) -> dict:
+    if getattr(b, "publish", None):
+        return {}
+    try:
+        from docsync.website import load_sites    # noqa: PLC0415
+        return {k: {"title": v.title, "url": v.url} for k, v in load_sites().items()}
+    except Exception:  # noqa: BLE001 — a bad sites: list must not stop the editor staging
+        return {}
 
 
 IMAGE_EXTS = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp")

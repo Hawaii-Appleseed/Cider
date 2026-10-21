@@ -1893,7 +1893,7 @@ class Handler(SimpleHTTPRequestHandler):
                 pub = _publish_site(pid, None)
                 if pub is None:
                     return self._json(200, {"ok": False, "project": pid, "error":
-                        "this project has no publish: block in docsync.yml"})
+                        "this project is not a website (File ▸ Publish as a website…) and has no publish: block"})
                 return self._json(200, {"ok": pub.ok, "project": pid, "message": pub.message,
                                          "publish": _publish_json(pub)})
             trigger = "push" if path == "/__push" else "save"
@@ -3019,14 +3019,19 @@ def _publish_site(pid: str, trigger):
     "now, whatever the block says" — the /__publish endpoint. Returns a Result,
     or None when there is nothing to do."""
     p = PROJECTS[pid]
-    cfg = getattr(p["binding"], "publish", None)
-    if not cfg or (trigger is not None and cfg.when != trigger):
-        return None
     sys.path.insert(0, str(SELF_ROOT))
     try:
         from docsync import publish as _pub
+        from docsync import website as _web
     finally:
         sys.path.remove(str(SELF_ROOT))
+    # A `publish:` block, or the website chosen in the editor (layout.json).
+    try:
+        cfg = _web.publish_for(p["binding"])
+    except _web.WebsiteError as e:
+        return _pub.Result(False, False, f"not published: {e}")
+    if not cfg or (trigger is not None and cfg.when != trigger):
+        return None
     if cfg.home != "local":
         # One editing home per page: two routes publishing different copies of
         # the same page would just overwrite each other.

@@ -2073,6 +2073,17 @@
       ><path d="M9.6 2.6h3.8v3.8M13.4 2.6 9.6 6.4"/><path
         d="M6.4 13.4H2.6V9.6M2.6 13.4l3.8-3.8"/></svg
       ><span class="shp-t">Resize…</span></button>
+    <!-- Make this page a public website (docsync/website.py): the choice is a
+         {site, slug} record in layout.json, so it Saves, Publishes, travels to
+         the hub and undoes like any other edit. Hidden where nothing is offered:
+         no sites listed, or a page with its own publish: block already. -->
+    <button class="shp" id="file-website" hidden><svg class="shp-i" viewBox="0 0 16 16"
+      ><circle cx="8" cy="8" r="5.6"/><path d="M2.4 8h11.2M8 2.4c1.7 1.6 2.5 3.5 2.5 5.6S9.7 12 8 13.6
+        M8 2.4C6.3 4 5.5 5.9 5.5 8s.8 4 2.5 5.6"/></svg
+      ><span class="shp-t">Publish as a website…</span></button>
+    <button class="shp" id="file-website-off" hidden><svg class="shp-i" viewBox="0 0 16 16"
+      ><circle cx="8" cy="8" r="5.6"/><path d="M3.9 12.1 12.1 3.9"/></svg
+      ><span class="shp-t">Stop publishing as a website…</span></button>
     <!-- Sources and Share MOVED here from the bar (same ids, same handlers).
          Neither is a per-selection act: Sources is the report's citation list
          and Share is who may open the document — both belong with Resize and
@@ -28275,7 +28286,7 @@ async function docStorePublish() {
   if (!docVersion) { $('stat').textContent = 'nothing to publish yet — make an edit and Save first'; return; }
   if (!await dsConfirm('Publish this document to GitHub?\n\nOne commit of it as saved, on the hub/'
       + M.id + ' branch of ' + (REPO || 'its repository') + '. '
-      + (M.site ? 'The public page' + (M.site.url ? ' (' + M.site.url + ')' : '') + ' is then rebuilt from it.'
+      + (siteOf() ? 'The public page' + (siteOf().url ? ' (' + siteOf().url + ')' : '') + ' is then rebuilt from it.'
                 : 'The live report is not changed by this.'),
       { okLabel: 'Publish' })) return;
   $('publish').disabled = true;
@@ -28289,7 +28300,7 @@ async function docStorePublish() {
       ? `already published — ${j.branch} is at ${sha}`
       : `published ✓ — ${j.repo}@${j.branch} ${sha}`;
     $('stat').textContent = head;
-    if (M.site && j.version) docStoreAwaitSite(j.version, head, j.status === 'unchanged');
+    if (siteOf() && j.version) docStoreAwaitSite(j.version, head, j.status === 'unchanged');
   } catch (e) {
     $('stat').textContent = 'publish failed: ' + e.message;
   } finally {
@@ -29177,7 +29188,68 @@ $('file').onclick = () => {
   $('file-restore').hidden = !h;
   // No "(0)" — the count only means something when there IS something.
   rowLabel('file-restore', h ? `Restore deleted (${h})…` : 'Restore deleted…');
+  const offered = !M.site && Object.keys(M.sites || {}).length > 0;
+  $('file-website').hidden = !offered;
+  $('file-website-off').hidden = !(offered && layout.website);
+  rowLabel('file-website', layout.website ? 'Website: ' + websiteUrl(layout.website) : 'Publish as a website…');
   togglePop($('filepop'), $('file'));
+};
+
+// ---- File ▸ Publish as a website (docsync/website.py) ----
+const WEBSITE_SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])$/;   // website.SLUG_RE
+function websiteUrl(w) {
+  const s = w && (M.sites || {})[w.site];
+  return s ? s.url + w.slug + '/' : '';
+}
+/** The public page this report goes to, if any: a publish: block's (M.site), or
+ *  the website chosen here. What Publish waits on, and what its status names. */
+function siteOf() {
+  if (M.site) return M.site;
+  const url = layout && layout.website ? websiteUrl(layout.website) : '';
+  return url ? { url, website: true } : null;
+}
+function websiteSlugFor(id) {
+  const s = String(id || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+  return WEBSITE_SLUG_RE.test(s) ? s : 'my-page';
+}
+$('file-website').onclick = async () => {
+  $('filepop').hidden = true;
+  const sites = M.sites || {}, names = Object.keys(sites), cur = layout.website || null;
+  const v = await dsForm(cur ? 'Website' : 'Publish as a website', [
+    { name: 'site', label: 'Website', type: 'select', value: cur ? cur.site : names[0],
+      options: names.map(n => ({ value: n, label: sites[n].title || n })) },
+    { name: 'slug', label: 'Address — lowercase words joined by hyphens', required: true,
+      value: cur ? cur.slug : websiteSlugFor(M.id), placeholder: 'act-163-credits' },
+  ], { okLabel: 'Next',
+       validate: x => WEBSITE_SLUG_RE.test(x.slug.trim()) ? ''
+         : 'The address is lowercase letters, numbers and hyphens, 2 to 64 characters, no hyphen at either end.' });
+  if (!v) return;
+  const next = { site: v.site, slug: v.slug.trim(), home: docStore() ? 'hub' : 'local' };
+  const url = websiteUrl(next);
+  if (cur && cur.site === next.site && cur.slug === next.slug && cur.home === next.home) return;
+  const how = docStore() ? 'Publish' : 'Save';
+  if (!await dsConfirm('Make this page public at\n\n' + url + '\n\nAnyone with the address can read it. It goes '
+      + 'live the next time you ' + how + ', and updates on every ' + how + ' after that.'
+      + (cur ? '\n\nThe page at its old address (' + websiteUrl(cur) + ') stays up until it is removed from the site.' : ''),
+      { okLabel: 'Make it public' })) return;
+  pushHistory();
+  layout.website = next;
+  markDirty();
+  await render();
+  $('stat').textContent = 'website: ' + url + ' — ' + how + ' to put it live';
+};
+$('file-website-off').onclick = async () => {
+  $('filepop').hidden = true;
+  const cur = layout.website;
+  if (!cur) return;
+  if (!await dsConfirm('Stop publishing this page as a website?\n\nPublishing will no longer update '
+      + websiteUrl(cur) + '. The page already there stays up until it is removed from the site.',
+      { okLabel: 'Stop publishing', danger: true })) return;
+  pushHistory();
+  delete layout.website;
+  markDirty();
+  await render();
+  $('stat').textContent = 'no longer a website — Save to keep that';
 };
 
 // Bring back an element that Delete hid. Undo covers the moment right after,
