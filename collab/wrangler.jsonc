@@ -34,6 +34,34 @@
     // a room is named from the manifest. The pre-org `dtomkatsu/…` and the
     // pre-rename `primer-editor` slugs were dropped once nothing used them.
     "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/BudgetPrimerFinal"
+  },
+
+  // STAGING: a second relay that shares nothing with the one above, so a
+  // change to the room, the editor or the hub can be opened, typed into and
+  // broken before anyone's real document meets it. `npm run deploy:staging`.
+  // The hub's Preview environment binds THIS Worker's rooms and bucket (see
+  // the hub's `node dev/cf.mjs staging`), so every branch preview of the hub
+  // — `staging.staff-updates-internal.pages.dev` above all — is a sandbox.
+  //
+  // What it leaves out is the point: no cron and no GitHub App secrets, so
+  // nothing typed into staging can ever be committed to a real repository
+  // (the export answers 501 without EXPORT_KEY's partner and skips without a
+  // credential). Its own COLLAB_SECRET and EXPORT_KEY, never production's.
+  // Bindings and vars are not inherited by an environment, hence the repeats.
+  "env": {
+    "staging": {
+      "name": "primer-collab-staging",
+      "durable_objects": {
+        "bindings": [{ "name": "PrimerRoom", "class_name": "PrimerRoom" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PrimerRoom"] }],
+      "r2_buckets": [{ "binding": "PRIMER_DOCS", "bucket_name": "primer-docs-staging" }],
+      "triggers": { "crons": [] },
+      "vars": {
+        "ALLOWED_ORIGINS": "http://localhost:8777,http://localhost:8010,http://127.0.0.1:8777,http://127.0.0.1:8010",
+        "ALLOWED_REPOS": "Hawaii-Appleseed/Cider,Hawaii-Appleseed/BudgetPrimerFinal"
+      }
+    }
   }
 
   // Secrets, not vars (npx wrangler secret put <NAME>):

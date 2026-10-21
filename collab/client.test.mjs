@@ -499,6 +499,34 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
     a.close(); b.close();
   });
 
+  // Whether a client can take pilot ops is kept on its CONNECTION, and a
+  // reconnect is a new connection. Every Worker deploy drops every socket, so
+  // a client that said so only on its first sync left each open editor
+  // answering 'no-pilot' after a deploy — a person's own Claude was told to
+  // ask them to reload, though nothing about their editor had changed.
+  test('a session that reconnects can still take pilot ops', async () => {
+    const room = uniqueRoom('pilot-reconnect');
+    const a = open(room, 'ada', p, { onPilot: msg => ({ ok: true, results: msg.ops.map(o => ({ verb: o.verb })) }) });
+    await a.ready;
+    const pilot = async () => {
+      const t = await ticketFor(room, 'claude')();
+      const r = await fetch(`http://${HOST}/parties/primer-room/${room}/pilot?ticket=${encodeURIComponent(t)}`,
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ops: [{ verb: 'audit' }], timeout: 5000 }) });
+      return r.json();
+    };
+    assert.equal((await pilot()).ok, true, 'a fresh session takes pilot ops');
+
+    const dropped = a.provider.ws;               // as in the reconnect test above
+    dropped.dispatchEvent(new Event('close'));
+    dropped.close();
+    await waitFor(() => a.state.status === 'offline', 5000, 'never went offline');
+    await waitFor(() => a.state.status === 'live', 15_000, 'never came back');
+    let r;
+    await waitFor(async () => (r = await pilot()).ok === true, 5000, 'pilot after the reconnect');
+    assert.equal(r.ok, true, `after a reconnect: ${JSON.stringify(r)}`);
+    a.close();
+  });
+
   // An open socket bills the room's Durable Object for wall-clock time whether
   // anyone is typing or not, so a session that nobody is using lets go of it
   // (client/session.mjs, "sleeping an idle tab"). The deadlines are in
@@ -709,7 +737,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function waitFor(pred, ms, what) {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
-    if (pred()) return;
+    if (await pred()) return;
     await sleep(50);
   }
   throw new Error(what);

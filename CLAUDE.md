@@ -244,6 +244,20 @@ Rules that bite:
   passing the smallest font-size it uses in its own user units.
 - **Never launch or kill a dev server the user owns**; Playwright starts its
   own throwaway servers and that's fine.
+- **A change to the relay, the editor or the engine meets its first real
+  room on STAGING, not on a report somebody has open.** `npm run
+  deploy:staging` (in `collab/`) deploys `primer-collab-staging` — the
+  `env.staging` in `collab/wrangler.jsonc`: its own rooms and bucket, no
+  cron, no GitHub credential. `~/scripts/cider-wt stage <name>` does the whole
+  thing from a worktree: that relay, plus this worktree's editor and engine
+  vendored over the hub's `origin/main` and pushed to the hub's `staging`
+  branch → `https://staging.staff-updates-internal.pages.dev` (the hub side
+  is the hub's `node dev/cf.mjs staging`). `npm run deploy` (production)
+  drops every open socket: editors reconnect and merge on their own, and a
+  reconnect re-says `hello`, so pilot ops and the connector keep working —
+  but an editor build the room or the hub no longer understands is still a
+  break, so a change has to work with the previous editor until the hub's
+  open tabs have reloaded (they are told: `offerEditorReload`).
 - **Real-time collaboration lives in `collab/`** (`collab/README.md` is the
   design record: Phases 0–4 done, the relay deployed, and the editor served
   from the staff hub by `python3 -m docsync.hub` — its docstring is the

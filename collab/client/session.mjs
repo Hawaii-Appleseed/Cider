@@ -631,14 +631,20 @@ export class CollabSession {
   #send(obj) { this.provider.sendMessage(JSON.stringify(obj)); }
 
   #onSynced() {
-    // A reconnect syncs again; the room cannot need seeding twice.
-    if (this.state.phase === 'ready') { this.#drain(); this.#set({ status: 'live' }); this.#emit('remote'); return; }
     // `pilot` tells the room this client can take pilot ops. A client that
     // cannot (an older bundle, or one built without a handler) must never be
     // handed them: the room would sit waiting for an answer that no code
     // exists to send, and the caller would see a timeout instead of "nobody
     // here can do that".
+    //
+    // Said on EVERY sync, a reconnect's included. The room keeps it on the
+    // connection, and a reconnect is a new connection that knows nothing: said
+    // once, every Worker deploy (which drops every socket) left each open
+    // editor answering 'no-pilot' until someone reloaded it. The room's reply
+    // is ignored once ready (#onMessage), so saying it again costs nothing.
     this.#send({ t: 'hello', pilot: !!this.onPilot });
+    // A reconnect syncs again; the room cannot need seeding twice.
+    if (this.state.phase === 'ready') { this.#drain(); this.#set({ status: 'live' }); this.#emit('remote'); }
   }
 
   #onMessage(s) {
