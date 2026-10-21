@@ -10,6 +10,52 @@
 > — load it when building or changing anything a report's user should be able
 > to edit. This file is the always-on summary.
 
+## Working here: what anyone can do, and what waits for Devin
+
+This file is read by Devin's sessions and by a colleague's Claude that knows
+only what is checked in here. Setup is automatic: Claude Code runs
+`tools/setup.sh` when a session opens (SessionStart in `.claude/settings.json`;
+after a plain `git clone`, run it once by hand). It points git at `.githooks/`
+and checks for Node 22+, python3 with PyYAML, `node_modules` and `gh`, printing
+one line only when it changed something or something is missing.
+
+**Anyone with push access to Hawaii-Appleseed/Cider:**
+
+- **Branch**: one git worktree per task, `tools/wt new <name>`: a folder
+  `<clone>-<name>` beside the main clone, its own Playwright port
+  (`tools/wt port <name>`), `node_modules` linked, setup already run. (Devin's
+  `~/scripts/cider-wt` runs this same script.) Claude Code's own worktrees are
+  fine too; give Playwright a free `PRIMER_TEST_PORT`. Never `git checkout -b`
+  in a folder another session may be using.
+- **Test**: `python3 docsync/test_docsync.py` and `npm run test:affected`;
+  `npm run test:ci` for anything broad (the whole suite on GitHub; needs `gh`
+  signed in). Details under "Rules that bite" below.
+- **Land**: rebase the branch onto `main`; from the main clone,
+  `git merge --ff-only <name>` and `git push origin main`. Devin's own sessions
+  push without asking once the tests pass (2026-10-21); another person's
+  session pushes when its own person says so. A push to main runs
+  editor-tests.yml and report-checks.yml on GitHub, and it reaches every
+  installed editor (`tools/selfupdate.py` pulls `origin/main` within about 20
+  minutes), so push only what passed.
+- An engine commit runs `.githooks/post-commit`, which vendors the engine into
+  the consumers THIS machine names in `vendor.local.yml` (gitignored; Devin's
+  names `~/BudgetPrimerFinal`). A fresh clone has none, so nothing happens.
+
+**Needs Cloudflare access, which only Devin Thomas has.** Unless you are Devin,
+do not try these, make a token, or ask anyone for a key: stop and ask your
+person to ask Devin. Each one says so itself when the access is missing.
+
+- Shipping the editor or a report to the staff hub: `python3 -m docsync.hub
+  --into <hub worktree>` (its live-words check reads R2). Land the change in
+  Cider; Devin ships it to the hub.
+- Deploying the relay Worker (`cd collab && npm run deploy` or `npm run
+  deploy:staging`), and so `tools/wt stage <name>` for a Cider worktree.
+  `tools/wt stage <name> --hub` only pushes a hub branch, which anyone can.
+- The hub's `node dev/cf.mjs …` (rollback, restore, backup, staging setup).
+
+Pushing BudgetPrimerFinal publishes the public Budget Primer with no staging in
+between: Devin's call, every time.
+
 ## Tables in reports are real tables (Devin's rule, 2026-10-19)
 
 Never build tabular data out of `<div>`s and CSS grid in a renderer (UHERO TRC
@@ -114,8 +160,8 @@ This repo is the **canonical home of the editor engine**: `docsync/` (content,
 layout, blocks, stage, fragment), `docsync/editor/edit.html`, and
 `report2027/tools/serve.py`. The `report2027/` report here is a **test
 fixture** — a full copy of the Budget Primer used by the Playwright suite —
-not the live report. The live report lives in `~/BudgetPrimerFinal`, which
-**vendors** engine files from here.
+not the live report. The live report lives in its own repo, BudgetPrimerFinal
+(Devin's `~/BudgetPrimerFinal`), which **vendors** engine files from here.
 
 Rules that bite:
 
@@ -123,10 +169,14 @@ Rules that bite:
   touches `docsync/` or `report2027/tools/serve.py` triggers
   `.githooks/post-commit`, which runs `python3 -m docsync.vendor`: it copies
   every git-tracked engine file (the package IS the manifest — no list to
-  maintain) into each consumer in `vendor.yml`, restages that repo's editors,
-  and commits the engine paths there (local only; deploying stays each repo's
-  own Push). New consumer repo = one line in vendor.yml. Fresh clone of THIS
-  repo = run `git config core.hooksPath .githooks` once. The vendor refuses a
+  maintain) into each consumer in `vendor.yml` (tracked, deliberately empty)
+  and this machine's gitignored `vendor.local.yml`, restages that repo's
+  editors, and commits the engine paths there (local only; deploying stays
+  each repo's own Push). New consumer = one line in vendor.local.yml. The
+  hook is installed by `tools/setup.sh` (`core.hooksPath .githooks`); a commit
+  in a worktree vendors nothing, because the worktree has no
+  vendor.local.yml: after landing, run `python3 -m docsync.vendor` from the
+  main clone. The vendor refuses a
   consumer whose engine paths are dirty — engine edits must never originate
   in a consumer, and content/design changes in a report repo never flow back.
 - **`docs/` is generated, not source.** Each report's `edit.html` and
@@ -248,11 +298,12 @@ Rules that bite:
   room on STAGING, not on a report somebody has open.** `npm run
   deploy:staging` (in `collab/`) deploys `primer-collab-staging` — the
   `env.staging` in `collab/wrangler.jsonc`: its own rooms and bucket, no
-  cron, no GitHub credential. `~/scripts/cider-wt stage <name>` does the whole
+  cron, no GitHub credential. `tools/wt stage <name>` does the whole
   thing from a worktree: that relay, plus this worktree's editor and engine
   vendored over the hub's `origin/main` and pushed to the hub's `staging`
   branch → `https://staging.staff-updates-internal.pages.dev` (the hub side
-  is the hub's `node dev/cf.mjs staging`). `npm run deploy` (production)
+  is the hub's `node dev/cf.mjs staging`). Every deploy here needs Cloudflare,
+  so it is Devin's (see "Working here"). `npm run deploy` (production)
   drops every open socket: editors reconnect and merge on their own, and a
   reconnect re-says `hello`, so pilot ops and the connector keep working —
   but an editor build the room or the hub no longer understands is still a

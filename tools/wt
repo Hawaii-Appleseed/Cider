@@ -1,0 +1,415 @@
+#!/usr/bin/env bash
+# tools/wt — one git worktree per task, for Cider and the staff hub, so no two
+# sessions ever share a working folder.
+#
+#   tools/wt new <name> [--hub]        make a worktree + branch (Cider by default)
+#   tools/wt ls                        every worktree of both repos, with status
+#   tools/wt port [<name>]             the test port assigned to a Cider worktree
+#   tools/wt rm <name> [--hub] [--force]   remove a finished worktree and its branch
+#   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
+#   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
+#
+# Conventions it enforces (<cider> = the main Cider clone, <hub> = the hub's):
+#   Cider  <cider>-<name>   branch <name>, cut from local `main`
+#   hub    <hub>-<name>     branch <name>, cut from fresh `origin/main`
+#          (never from the hub's local main, which can carry unpushed commits)
+# It finds Cider from its own location (a worktree's copy finds the main clone)
+# and the hub as a staff-updates-internal clone beside it, else
+# ~/staff-updates-internal; CIDER_DIR / CIDER_HUB_DIR override either.
+# On Devin's Mac, ~/scripts/cider-wt runs ~/primer-editor/tools/wt.
+# Worktrees never get vendor.local.yml, so a commit made in one cannot vendor into
+# the hub or BudgetPrimerFinal by accident. Cider work lands from the main folder:
+# rebase the branch onto main, `git merge --ff-only`, then vendor. Hub work ships by
+# rebasing onto origin/main and pushing (a push deploys, so only on request).
+#
+# macOS ships bash 3.2, so no associative arrays or ${var,,} here.
+
+set -euo pipefail
+
+is_git() { [ -d "$1/.git" ] || [ -f "$1/.git" ]; }
+
+# Cider's MAIN folder: the clone this script lives in, wherever that is. Run
+# from a worktree's copy it still finds the main one, through the common git dir.
+self_dir=$(cd "$(dirname "$0")" && pwd -P)
+common=$(git -C "$self_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+CIDER="${CIDER_DIR:-${common%/.git}}"
+[ -n "$CIDER" ] || CIDER="$HOME/primer-editor"
+HUB="${CIDER_HUB_DIR:-}"
+if [ -z "$HUB" ]; then
+  for h in "$(dirname "$CIDER")/staff-updates-internal" "$HOME/staff-updates-internal"; do
+    if is_git "$h"; then HUB="$h"; break; fi
+  done
+  HUB="${HUB:-$(dirname "$CIDER")/staff-updates-internal}"
+fi
+STATE="$HOME/.cache/cider-wt"
+PORTS="$STATE/ports"
+PORT_LO=8200
+PORT_HI=8299
+
+die() { echo "wt: $*" >&2; exit 1; }
+
+usage() {
+  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+repo_for() { if [ "$1" = hub ]; then echo "$HUB"; else echo "$CIDER"; fi; }
+base_for() { if [ "$1" = hub ]; then echo "origin/main"; else echo "main"; fi; }
+# The base as a ref this clone has: one cloned with -b has no local main.
+base_ref() { # <root> <base>
+  if git -C "$1" rev-parse --verify --quiet "$2^{commit}" >/dev/null; then echo "$2"; else echo "origin/$2"; fi
+}
+short() { echo "${1/#$HOME/~}"; }
+
+# ---- ports -----------------------------------------------------------------
+
+port_of() {
+  [ -f "$PORTS" ] || return 0
+  awk -v k="$1" '$1 == k { print $2; exit }' "$PORTS"
+}
+
+listening() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
+
+alloc_port() {
+  local key="$1" p
+  mkdir -p "$STATE"; touch "$PORTS"
+  p=$(port_of "$key"); if [ -n "$p" ]; then echo "$p"; return; fi
+  p=$PORT_LO
+  while [ "$p" -le "$PORT_HI" ]; do
+    if ! awk -v p="$p" '$2 == p { f = 1 } END { exit !f }' "$PORTS" && ! listening "$p"; then
+      echo "$key $p" >> "$PORTS"; echo "$p"; return
+    fi
+    p=$((p + 1))
+  done
+  die "no free port in $PORT_LO-$PORT_HI"
+}
+
+drop_port() {
+  [ -f "$PORTS" ] || return 0
+  awk -v k="$1" '$1 != k' "$PORTS" > "$PORTS.tmp" && mv "$PORTS.tmp" "$PORTS"
+}
+
+# ---- new -------------------------------------------------------------------
+
+cmd_new() {
+  local name="" kind=cider
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --hub) kind=hub ;;
+      -*) die "unknown option: $1" ;;
+      *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
+    esac
+    shift
+  done
+  [ -n "$name" ] || die "usage: wt new <name> [--hub]"
+  echo "$name" | grep -Eq '^[a-z0-9][a-z0-9._-]*$' || die "name: lowercase letters, digits, '.', '_' and '-' only"
+
+  local root dir base
+  root=$(repo_for "$kind"); dir="$root-$name"; base=$(base_for "$kind")
+  is_git "$root" || die "$(short "$root") is not a git checkout"
+  [ ! -e "$dir" ] || die "$(short "$dir") already exists"
+  if git -C "$root" show-ref --verify --quiet "refs/heads/$name"; then
+    die "a branch named '$name' already exists in $(short "$root") — pick another name"
+  fi
+
+  if [ "$kind" = hub ]; then
+    git -C "$root" fetch --quiet origin main || die "could not fetch origin/main (is the network up?)"
+  fi
+
+  # Cut from a commit, not a name: given a branch name a clone lacks locally,
+  # `worktree add -b <name>` makes a branch called after the BASE instead.
+  local start
+  start=$(git -C "$root" rev-parse --verify --quiet "$(base_ref "$root" "$base")^{commit}") \
+    || die "$(short "$root") has no '$base' to cut from"
+  git -C "$root" worktree add -q -b "$name" "$dir" "$start"
+  # A branch cut from origin/main would track it, and a bare `git push` / `git pull`
+  # would then act on main. Make the branch standalone.
+  git -C "$dir" branch --unset-upstream "$name" >/dev/null 2>&1 || true
+
+  local port="" d
+  if [ "$kind" = cider ]; then
+    for d in node_modules collab/node_modules; do
+      if [ -d "$root/$d" ] && [ ! -e "$dir/$d" ]; then ln -s "$root/$d" "$dir/$d"; fi
+    done
+    # A symlink is not matched by the repo's `node_modules/` ignore rule. The
+    # exclude file is shared by every worktree of the repo, so add it once.
+    local ex; ex="$(git -C "$root" rev-parse --git-common-dir)/info/exclude"
+    case "$ex" in /*) ;; *) ex="$root/$ex" ;; esac
+    mkdir -p "$(dirname "$ex")"; touch "$ex"
+    for d in /node_modules /collab/node_modules; do
+      grep -qxF "$d" "$ex" || echo "$d" >> "$ex"
+    done
+    port=$(alloc_port "cider:$name")
+  fi
+  # Hooks and tool checks, now rather than when a session first opens here.
+  local setup
+  for setup in "$dir/tools/setup.sh" "$dir/dev/setup.sh"; do
+    if [ -f "$setup" ]; then bash "$setup" | sed 's/^/  /'; break; fi
+  done
+
+  echo "Created $(short "$dir")   (branch '$name', cut from $base @ $(git -C "$dir" rev-parse --short HEAD))"
+  echo
+  echo "  cd $(short "$dir")"
+  if [ -n "$port" ]; then
+    echo "  PRIMER_TEST_PORT=$port npx playwright test <spec>      # this worktree's own test port"
+  fi
+  echo
+  echo "Rules for this folder:"
+  echo "  - One Claude session per worktree. Open the session IN this folder."
+  if [ "$kind" = hub ]; then
+    echo "  - Commit only the files this change owns. Ship = rebase onto origin/main, then"
+    echo "    'git push origin $name:main' once dev/run_tests.sh passes. A push deploys the hub; the session does it."
+  else
+    echo "  - Land it from the main folder: rebase onto main, then 'git merge --ff-only $name'."
+    echo "    (If main moved, rebase here first; never merge from inside this folder.)"
+    echo "  - It has no vendor.local.yml on purpose: nothing here vendors into the hub."
+    echo "    After landing, run 'python3 -m docsync.vendor' / 'python3 -m docsync.hub' from the main folder."
+  fi
+  echo "  - Done? tools/wt rm $name$([ "$kind" = hub ] && echo ' --hub')"
+}
+
+# ---- ls --------------------------------------------------------------------
+
+emit_row() { # path branch (empty = detached) mainpath base
+  local path="$1" branch="$2" mainp="$3" base="$4" dirty ahead behind tag label
+  # A folder deleted behind git's back: say so (a failing git inside the pipes
+  # below would otherwise abort the whole listing under pipefail).
+  if [ ! -d "$path" ]; then
+    printf '  %-30s %-4s %-9s %s   <- folder is gone; run: git -C %s worktree prune\n' "${branch:-"(detached)"}" "!!" "-" "$(short "$path")" "$(short "$mainp")"
+    return 0
+  fi
+  if [ "$path" = "$mainp" ]; then
+    tag="MAIN FOLDER - do not edit here"
+  else
+    tag=""
+  fi
+  dirty=$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d ' ') || dirty="?"
+  if [ -n "$branch" ] && git -C "$path" rev-parse --verify --quiet "$base" >/dev/null 2>&1; then
+    ahead=$(git -C "$path" rev-list --count "$base..HEAD" 2>/dev/null || echo "?")
+    behind=$(git -C "$path" rev-list --count "HEAD..$base" 2>/dev/null || echo "?")
+  else
+    ahead="-"; behind="-"
+  fi
+  label=${branch:-"(detached)"}
+  local ab; if [ "$ahead" = "-" ]; then ab="n/a"; else ab="+$ahead -$behind"; fi
+  printf '  %-30s %-4s %-9s %s%s\n' "$label" "$([ "$dirty" != 0 ] && echo "*$dirty" || echo "ok")" "$ab" "$(short "$path")" "${tag:+   <- $tag}"
+}
+
+cmd_ls() {
+  local kind root base path="" branch="" line
+  for kind in cider hub; do
+    root=$(repo_for "$kind")
+    is_git "$root" || { echo "== $kind: $(short "$root") not found"; continue; }
+    base=$(base_ref "$root" "$(base_for "$kind")")
+    echo "== $kind  $(short "$root")   (+ahead -behind vs $base$([ "$kind" = hub ] && echo ', as of the last fetch'))"
+    git -C "$root" worktree list --porcelain | { while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        "worktree "*) path="${line#worktree }"; branch="" ;;
+        "branch "*)   branch="${line#branch refs/heads/}" ;;
+        "") [ -n "$path" ] && emit_row "$path" "$branch" "$root" "$base"; path=""; branch="" ;;
+      esac
+    done; [ -n "$path" ] && emit_row "$path" "$branch" "$root" "$base"; true; }
+  done
+}
+
+# ---- port ------------------------------------------------------------------
+
+cmd_port() {
+  local name="${1:-}"
+  [ -n "$name" ] || { [ -f "$PORTS" ] && sed 's/^cider://' "$PORTS" || echo "(none assigned yet)"; return; }
+  [ -d "$CIDER-$name" ] || die "no Cider worktree named '$name'"
+  alloc_port "cider:$name"
+}
+
+# ---- rm --------------------------------------------------------------------
+
+cmd_rm() {
+  local name="" kind=cider force=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --hub) kind=hub ;;
+      --force) force=1 ;;
+      -*) die "unknown option: $1" ;;
+      *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
+    esac
+    shift
+  done
+  [ -n "$name" ] || die "usage: wt rm <name> [--hub] [--force]"
+
+  local root dir base
+  root=$(repo_for "$kind"); dir="$root-$name"; base=$(base_ref "$root" "$(base_for "$kind")")
+  [ -d "$dir" ] || die "$(short "$dir") does not exist"
+  [ "$dir" != "$root" ] || die "refusing to remove the main folder"
+  git -C "$dir" rev-parse --git-dir >/dev/null 2>&1 || die "$(short "$dir") is not a git worktree"
+  [ "$(cd "$(git -C "$dir" rev-parse --git-dir)" && pwd -P)" != "$(cd "$(git -C "$dir" rev-parse --git-common-dir)" && pwd -P)" ] \
+    || die "$(short "$dir") is a main working tree, not a linked worktree"
+
+  local branch dirty unmerged others
+  branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
+  dirty=$(git -C "$dir" status --porcelain --untracked-files=no | wc -l | tr -d ' ')
+  [ "$kind" = hub ] && git -C "$root" fetch --quiet origin main 2>/dev/null || true
+  unmerged=$(git -C "$root" rev-list --count "$base..$branch" 2>/dev/null || echo "?")
+  # Untracked files that are not just generated output.
+  others=$(git -C "$dir" ls-files --others --exclude-standard \
+           | grep -Ev '^(docs/|node_modules$|collab/node_modules$|test-results/|playwright-report/|\.DS_Store)' || true)
+
+  if [ "$force" = 0 ]; then
+    # Another session (or your own shell) may be sitting in this folder.
+    local users
+    users=$(lsof -nP -d cwd -Fpcn 2>/dev/null | awk -v d="$dir" '
+      /^p/ { pid = substr($0, 2) }  /^c/ { cmd = substr($0, 2) }
+      /^n/ { n = substr($0, 2); if (n == d || index(n, d "/") == 1) print "    pid " pid " (" cmd ")" }' | sort -u)
+    [ -z "$users" ] || die "something is running inside $(short "$dir") — close it or leave the folder first (or --force):
+$users"
+    [ "$dirty" = 0 ] || die "$dirty uncommitted change(s) in $(short "$dir") — commit or discard them (or --force)"
+    [ "$unmerged" = 0 ] || die "branch '$branch' has $unmerged commit(s) not in $base — land it first (or --force to discard)"
+    [ -z "$others" ] || die "untracked files that are not generated output — look first (or --force):
+$(echo "$others" | head -8 | sed 's/^/    /')"
+  fi
+
+  for d in node_modules collab/node_modules; do
+    if [ -L "$dir/$d" ]; then rm "$dir/$d"; fi
+  done
+  git -C "$root" worktree remove --force "$dir"
+  if [ "$force" = 1 ]; then git -C "$root" branch -D "$branch" >/dev/null; else git -C "$root" branch -d "$branch" >/dev/null 2>&1 || git -C "$root" branch -D "$branch" >/dev/null; fi
+  drop_port "cider:$name"
+  echo "Removed $(short "$dir") and branch '$branch'."
+}
+
+# ---- allow-main ------------------------------------------------------------
+# Devin's Mac only: the guard in ~/.claude/scripts/guard-main-checkouts.sh denies
+# Claude's edits in the two MAIN folders. This opens a short, deliberate window
+# for a hotfix or a release step. It is meant for the user to run, not for a
+# session to run on itself. Elsewhere there is no guard and this does nothing.
+
+cmd_allow_main() {
+  local arg="${1:-15}" f="$STATE/allow-main" now until
+  now=$(date +%s); mkdir -p "$STATE"
+  case "$arg" in
+    off)    rm -f "$f"; echo "Window closed: Claude's edits in the main folders are blocked again."; return ;;
+    status) until=$(cat "$f" 2>/dev/null || echo 0)
+            if [ "$until" -gt "$now" ] 2>/dev/null; then echo "open until $(date -r "$until" +%H:%M) ($(( (until - now + 59) / 60 )) min left)"; else echo "closed"; fi
+            return ;;
+  esac
+  echo "$arg" | grep -Eq '^[0-9]+$' && [ "$arg" -ge 1 ] && [ "$arg" -le 120 ] || die "minutes: 1-120, or 'off' / 'status'"
+  until=$((now + arg * 60)); echo "$until" > "$f"
+  echo "Claude may edit the MAIN folders until $(date -r "$until" +%H:%M) ($arg min). Close it early: wt allow-main off"
+}
+
+# ---- stage -----------------------------------------------------------------
+#
+# Put a worktree on STAGING, https://staging.staff-updates-internal.pages.dev:
+# the hub's Preview environment, whose rooms are the primer-collab-staging
+# Worker's and whose data is its own (the hub's `node dev/cf.mjs staging`).
+# Nothing a colleague is typing in is reachable from there, which is the point:
+# a change meets its first real editor, room and connector here, not on a
+# report somebody has open.
+#
+#   wt stage <name> --hub          that hub worktree's HEAD → `staging`
+#                                  (anyone with push access to the hub)
+#   wt stage <name> [--with-hub <h>]
+#       that Cider worktree: its relay → primer-collab-staging, then its editor
+#       and engine vendored over the hub's origin/main (or over hub worktree <h>,
+#       to try a Cider change and a hub change together) → `staging`.
+#       Deploying the relay takes Cloudflare access, which only Devin has.
+#
+# One `staging` branch, so the last stage wins. The hub's main is never touched;
+# shipping to production stays the ordinary land-and-push, done once the tests pass.
+STAGE_COPY="$HUB-stagecopy"     # this command's own scratch checkout: detached, reset each time
+STAGE_URL="https://staging.staff-updates-internal.pages.dev"
+# Paths the Pages project does not build for (Settings → Builds → watch paths).
+EXCLUDED='^(README\.md|docs/|dev/|apps-script[^/]*/|\.claude/)|(^|/)CLAUDE\.md$'
+
+push_staging() { # <hub checkout>
+  local dir="$1" before changed=unknown
+  before=$(git -C "$dir" ls-remote origin refs/heads/staging | cut -f1)
+  git -C "$dir" push -q -f origin HEAD:staging || die "the push to staging failed"
+  # A push whose every changed path is excluded is SKIPPED by Pages, and the URL
+  # keeps its old build — ask for one then.
+  if [ -n "$before" ] && git -C "$dir" cat-file -e "$before" 2>/dev/null; then
+    changed=$(git -C "$dir" diff --name-only "$before" HEAD | grep -Ev "$EXCLUDED" || true)
+  fi
+  if [ -z "$changed" ]; then
+    if grep -q "staging deploy" "$dir/dev/cf.mjs" 2>/dev/null; then
+      (cd "$dir" && node dev/cf.mjs staging deploy) || die "could not start a staging build"
+    else
+      echo "  (only unwatched paths changed and this checkout's dev/cf.mjs has no 'staging deploy': the URL keeps its previous build)"
+    fi
+  fi
+  echo "Staging: $STAGE_URL   (a build takes a minute or two)"
+}
+
+cmd_stage() {
+  local name="" kind=cider withhub=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --hub) kind=hub ;;
+      --with-hub) shift; withhub="${1:-}"; [ -n "$withhub" ] || die "--with-hub needs a hub worktree name" ;;
+      -*) die "unknown option: $1" ;;
+      *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
+    esac
+    shift
+  done
+  [ -n "$name" ] || die "usage: wt stage <name> [--hub | --with-hub <hub-name>]"
+
+  if [ "$kind" = hub ]; then
+    local dir="$HUB-$name"
+    is_git "$dir" || die "no hub worktree $(short "$dir")"
+    [ -z "$(git -C "$dir" status --porcelain --untracked-files=no)" ] \
+      || die "$(short "$dir") has uncommitted changes — staging takes what is committed; commit first"
+    echo "hub $(short "$dir") @ $(git -C "$dir" rev-parse --short HEAD) → staging"
+    push_staging "$dir"
+    return
+  fi
+
+  local dir="$CIDER-$name" base sha
+  is_git "$dir" || die "no Cider worktree $(short "$dir")"
+  sha=$(git -C "$dir" rev-parse --short HEAD)
+  # (An `[ … ] && echo` inside $( ) fails the assignment under set -e when the
+  # test is false — a clean tree — and the script died without a word.)
+  if [ -n "$(git -C "$dir" status --porcelain --untracked-files=no)" ]; then sha="$sha+uncommitted"; fi
+
+  echo "1. relay: primer-collab-staging ← $(short "$dir")/collab"
+  (cd "$dir/collab" && npx wrangler deploy --env staging >/dev/null 2>&1) \
+    || die "the staging relay did not deploy (cd $(short "$dir")/collab && npm run deploy:staging to see why).
+  It needs Cloudflare access, which only Devin has: unless you are Devin, ask Devin to stage this,
+  or stage just the hub side (wt stage <hub-name> --hub)."
+
+  echo "2. hub copy: $(short "$STAGE_COPY")"
+  git -C "$HUB" fetch -q origin main || die "could not fetch the hub's origin/main"
+  base=origin/main
+  if [ -n "$withhub" ]; then
+    is_git "$HUB-$withhub" || die "no hub worktree $(short "$HUB-$withhub")"
+    base=$(git -C "$HUB-$withhub" rev-parse HEAD)
+  fi
+  if [ ! -e "$STAGE_COPY" ]; then
+    git -C "$HUB" worktree add -q --detach "$STAGE_COPY" "$base"
+  else
+    # Ours alone, so it is reset outright — but only if it still IS ours: a
+    # checkout with a branch on it is somebody's work, never this scratch.
+    git -C "$STAGE_COPY" symbolic-ref -q HEAD >/dev/null \
+      && die "$(short "$STAGE_COPY") has a branch checked out — it is not this command's scratch any more; move it aside"
+    git -C "$STAGE_COPY" checkout -q -f --detach "$base" && git -C "$STAGE_COPY" clean -fdq -- primer
+  fi
+  (cd "$dir" && python3 -m docsync.hub --into "$STAGE_COPY" >/dev/null) || die "docsync.hub failed (run it in $(short "$dir") to see why)"
+  git -C "$STAGE_COPY" add -A primer
+  git -C "$STAGE_COPY" commit -q -m "Staging: Cider $name @ $sha over $(git -C "$STAGE_COPY" rev-parse --short "$base")" \
+    || echo "  (the vendored editor is identical to the base: nothing new to commit)"
+  push_staging "$STAGE_COPY"
+  echo "  (no Budget Primer there: a worktree vendors no consumer repos)"
+}
+
+# ---- main ------------------------------------------------------------------
+
+[ $# -ge 1 ] || usage 1
+cmd="$1"; shift
+case "$cmd" in
+  new)  cmd_new "$@" ;;
+  ls|list) cmd_ls ;;
+  port) cmd_port "$@" ;;
+  rm|remove) cmd_rm "$@" ;;
+  allow-main) cmd_allow_main "$@" ;;
+  stage) cmd_stage "$@" ;;
+  -h|--help|help) usage 0 ;;
+  *) echo "wt: unknown command '$cmd'" >&2; usage 1 ;;
+esac

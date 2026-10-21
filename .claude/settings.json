@@ -8,5 +8,18 @@
       "Edit(tools/**)",
       "Write(tools/**)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/setup.sh\" || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }
