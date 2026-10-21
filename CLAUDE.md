@@ -261,8 +261,12 @@ Rules that bite:
 - **Real-time collaboration lives in `collab/`** (`collab/README.md` is the
   design record: Phases 0–4 done, the relay deployed, and the editor served
   from the staff hub by `python3 -m docsync.hub` — its docstring is the
-  contract; the hook runs it after every engine or project commit, and
-  FAILS if a project's page links a file its hub copy lacks. On the hub
+  contract; it runs when the editor ships, `--into` a clean checkout of
+  the hub's origin/main (NOT on every commit: vendor.local.yml names no hub,
+  because the hub's own folder is shared and a hook writing there put Cider
+  work into somebody's branch), the hub commit takes only the files that
+  change owns, and it FAILS if a project's page links a file its hub copy
+  lacks. On the hub
   the document lives in R2 via `/api/docs`, decided once in
   `docStoreDecide()`; Publish there = one commit to `hub/<id>` by the
   Worker's `src/export.js`, nightly sweep too — the Worker holds the only

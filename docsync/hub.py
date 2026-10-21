@@ -46,9 +46,13 @@ spellings (`assets/collab.js` allowedRepos), so a manifest still saying
 be a DIFFERENT ROOM from the one a colleague is in.
 
 Nothing here commits. The hub is a website: a push there is a deploy, and that
-stays a person's explicit act. The engine's post-commit hook runs this after
-`docsync.vendor` so the hub's working tree is always current; review it and
-commit there when it is time to ship.
+stays a person's explicit act. It runs when the editor SHIPS, into a clean
+checkout of the hub's origin/main (`--into <worktree>`), and the hub commit
+takes only the files that change owns — a run writes every project, and a
+project waiting on its own go-ahead must not ride along. The post-commit hook
+runs it only where vendor.local.yml names a hub, and Devin's machine names
+none on purpose (2026-10-21): the hub's own folder is shared and usually on
+somebody's branch, and a hook writing primer/** there put Cider work into it.
 """
 from __future__ import annotations
 
@@ -432,8 +436,8 @@ def main() -> int:
 
     hub = hub_dir(a.into)
     if hub is None:
-        print("no hub configured (add `hub: ~/staff-updates-internal` to "
-              "vendor.local.yml, or pass --into) — nothing to do")
+        print("no hub configured — the hub gets the editor when it ships: "
+              "pass --into <a clean checkout of the hub's origin/main>")
         return 0
     if not (hub / "functions" / "api" / "collab").is_dir():
         print(f"{hub} has no functions/api/collab — not the staff hub?", file=sys.stderr)
