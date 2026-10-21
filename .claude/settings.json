@@ -20,6 +20,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/editability-guard.py\" --hook",
+            "timeout": 120
+          }
+        ]
+      }
     ]
   }
 }

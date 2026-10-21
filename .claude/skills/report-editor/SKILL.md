@@ -588,6 +588,17 @@ page are the project's text — a model rerun does not update them.
 
 ## Handing over a conversion: the editability contract
 
+**You are checked as you work.** After every Edit/Write you make to a
+renderer, a project's content or layout, the engine or docsync.yml, the
+PostToolUse hook runs `docsync.check` on the reports that file feeds
+(`tools/editability-guard.py`) and blocks with the finding if the change left
+anything without a handle; the pre-commit hook refuses the commit the same
+way, and CI's required gate runs it again. A non-strict binding may not get
+worse than `docsync/editability-baseline.json`. When the hook fires, give the
+thing a handle — never quiet it with `editability_ok` or `--allow-raise`. A new
+`wip` binding needs its baseline recorded in the change that binds it
+(`python3 -m docsync.check --id <id> --write-baseline`).
+
 A converted document (a PDF rebuilt as a renderer, a scaffolded page after
 `propose`, any "make this editable" request) is **not done when it renders —
 it is done when `python3 -m docsync.check --id <slug>` shows a clean

@@ -20,6 +20,10 @@ on:
   # `npm run test:ci` (tools/ci-test.mjs) pushes a snapshot of a working tree
   # to a throwaway ci/… branch and dispatches this workflow on it.
   workflow_dispatch:
+  # Nightly, the whole per-field sweep over every report, whatever changed:
+  # a report can rot without a commit touching it (a CDN font, a browser).
+  schedule:
+    - cron: "17 13 * * *"     # 03:17 HST
 
 # A newer push to the same branch supersedes a run still going: the org's free
 # plan runs 20 jobs at once across every repo, and this workflow is 20 jobs.
@@ -37,13 +41,37 @@ jobs:
     timeout-minutes: 5
     outputs:
       editor: ${{ steps.paths.outputs.editor }}
+      sweep: ${{ steps.sweep.outputs.reports }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Which reports the per-field sweep (every-field-opens.spec.js) runs on:
+      # every report when the editor, the engine or the sweep itself changed
+      # (and nightly, and on a manual run); only the reports whose own files
+      # changed otherwise; none for a change that touches neither.
+      - id: sweep
+        run: |
+          all=$(grep -E '^  - id: ' docsync.yml | sed 's/^  - id: //' | while read id; do
+            sed -n "/^  - id: $id\$/,/^  - id: /p" docsync.yml | grep -qE '^      out: ' && echo "$id"; done)
+          pick() { printf '%s\n' "$@" | sed '/^$/d' | sort -u | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))'; }
+          if [ "${{ github.event_name }}" = schedule ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          changed=$(git diff --name-only "$base" "${{ github.sha }}")
+          if echo "$changed" | grep -qE '^(docsync/|report2027/tools/serve\.py$|tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/workflows/editor-tests\.yml$)'; then
+            echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          some=""
+          for id in $all; do
+            dir=$(sed -n "/^  - id: $id\$/,/^  - id: /p" docsync.yml | grep -m1 -E '^      out: ' | sed 's/^      out: //' | cut -d/ -f1-2)
+            [ "$id" = budget-primer ] && dir=report2027
+            echo "$changed" | grep -q "^$dir/" && some="$some $id"
+          done
+          echo "reports=$(pick $some)" >> "$GITHUB_OUTPUT"
       - id: paths
         run: |
-          if [ "${{ github.event_name }}" = workflow_dispatch ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || [ "${{ github.event_name }}" = schedule ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
           if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/workflows/editor-tests\.yml$)'; then
@@ -135,17 +163,73 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # Every field of a report opened, typed into, cancelled, committed and
+  # undone; every object moved and resized; every cell, chart and table panel
+  # opened (tests/editor/every-field-opens.spec.js). One job per report: all
+  # of them in one shard ran past its budget. Which reports: `changes`.
+  sweep:
+    needs: changes
+    if: needs.changes.outputs.sweep != '[]' && needs.changes.outputs.sweep != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        report: ${{ fromJSON(needs.changes.outputs.sweep) }}
+    name: sweep (${{ matrix.report }})
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml pymupdf
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Sweep ${{ matrix.report }}
+        env:
+          DS_ONLY: ${{ matrix.report }}
+        run: npx playwright test every-field-opens.spec.js --workers=2
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sweep-${{ matrix.report }}
+          path: playwright-report/
+          retention-days: 14
+
+  # Every report's output and edit-mode draft (docsync.check): citations,
+  # legibility, and editability — strict bindings fail on any finding, the
+  # rest on any finding past docsync/editability-baseline.json. It ran in its
+  # own workflow that nothing required, so a report could merge uneditable.
+  reports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+      - run: python3 -m docsync.check
+
   # The one check the ruleset on main requires. It always reports: green when
   # the shards passed or had nothing to test, red when any shard failed or was
   # cancelled — so a docs-only PR merges, and a broken editor cannot.
   gate:
     name: Editor tests gate
-    needs: [changes, test]
+    needs: [changes, test, sweep, reports]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - run: |
-          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}"
+          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}"
           [ "${{ needs.changes.result }}" = success ] || exit 1
-          case "${{ needs.test.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac
+          case "${{ needs.test.result }}" in success|skipped) ;; *) exit 1 ;; esac
+          [ "${{ needs.reports.result }}" = success ] || { echo "docsync.check failed"; exit 1; }
+          case "${{ needs.sweep.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac
