@@ -141,13 +141,13 @@ cmd_new() {
     done
     port=$(alloc_port "cider:$name")
   fi
+
+  echo "Created $(short "$dir")   (branch '$name', cut from $base @ $(git -C "$dir" rev-parse --short HEAD))"
   # Hooks and tool checks, now rather than when a session first opens here.
   local setup
   for setup in "$dir/tools/setup.sh" "$dir/dev/setup.sh"; do
     if [ -f "$setup" ]; then bash "$setup" | sed 's/^/  /'; break; fi
   done
-
-  echo "Created $(short "$dir")   (branch '$name', cut from $base @ $(git -C "$dir" rev-parse --short HEAD))"
   echo
   echo "  cd $(short "$dir")"
   if [ -n "$port" ]; then
