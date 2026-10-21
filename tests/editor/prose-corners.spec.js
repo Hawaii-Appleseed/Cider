@@ -83,6 +83,12 @@ test.describe('a paragraph resizes like a text frame', () => {
     const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
     const r = await onPage();
+    // What the drag stored and what the page drew, for a failure on another
+    // platform (CI's Linux moved the bottom 39px; macOS does not).
+    console.log('top-edge', JSON.stringify({ top0, r, p: await page.evaluate(id => ({
+      pos: layout.positions[id], zoom: zoomOf($('out').contentDocument.querySelector('section.page')),
+      minH: getComputedStyle($('out').contentDocument.querySelector(`[data-el="${id}"]`)).minHeight,
+      viewport: [innerWidth, innerHeight] }), ID) }));
     expect(r.top).toBeLessThan(top0.top - 30);
     expect(Math.abs(r.bottom - top0.bottom)).toBeLessThan(4);
   });
