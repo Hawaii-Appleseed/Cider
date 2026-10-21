@@ -9,33 +9,14 @@ name: Editor tests
 # real git push, ever.
 
 on:
-  # Every commit that lands, not just ones that arrive by PR. This repo's work
-  # goes straight to main, so a pull_request-only trigger meant the suite had
-  # never run once — 190 specs guarding nothing. Same path filter both ways.
+  # Every push to main and every pull request, with NO path filter here: main
+  # is protected by a ruleset that requires the "Editor tests gate" check, and
+  # a required check that never runs (a PR that changed only docs) would hold
+  # the PR forever. Which changes need the 20 shards is decided by the
+  # `changes` job below instead, and `gate` always reports.
   push:
     branches: [main]
-    paths:
-      - "docsync/**"
-      - "docs/primer/start.html"
-      - "docs/primer/sw.js"
-      - "report2027/tools/serve.py"
-      - "report2027/tools/render_report.py"
-      - "tests/**"
-      - "playwright.config.js"
-      - "package.json"
-      - ".github/workflows/editor-tests.yml"
   pull_request:
-    paths:
-      - "docsync/editor/edit.html"
-      - "docs/primer/start.html"
-      - "docs/primer/sw.js"
-      - "report2027/tools/serve.py"
-      - "report2027/tools/render_report.py"
-      - "docsync/layout.py"
-      - "docsync/content.py"
-      - "tests/editor/**"
-      - "playwright.config.js"
-      - "package.json"
   # `npm run test:ci` (tools/ci-test.mjs) pushes a snapshot of a working tree
   # to a throwaway ci/… branch and dispatches this workflow on it.
   workflow_dispatch:
@@ -47,7 +28,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Does this change touch what the editor suite covers? The paths that used
+  # to be the triggers' filters (both lists, joined). A manual dispatch (the
+  # ci/… branches of `npm run test:ci`) and a push whose base is unknown
+  # always run.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      editor: ${{ steps.paths.outputs.editor }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: paths
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/workflows/editor-tests\.yml$)'; then
+            echo editor=true >> "$GITHUB_OUTPUT"
+          else
+            echo editor=false >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: changes
+    if: needs.changes.outputs.editor == 'true'
     runs-on: ubuntu-latest
     # Twenty machines, a twentieth of the suite each. One runner took ~45
     # minutes for all ~780 tests, and four took ~13; each shard costs ~50s of
@@ -127,3 +134,18 @@ jobs:
           name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14
+
+  # The one check the ruleset on main requires. It always reports: green when
+  # the shards passed or had nothing to test, red when any shard failed or was
+  # cancelled — so a docs-only PR merges, and a broken editor cannot.
+  gate:
+    name: Editor tests gate
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}"
+          [ "${{ needs.changes.result }}" = success ] || exit 1
+          case "${{ needs.test.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac
