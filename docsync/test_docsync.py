@@ -4920,6 +4920,106 @@ with _tf.TemporaryDirectory() as _d:
     check_eq("fidelity: a class only named inside a CSS comment does not count",
              static_check(_cur, _h.replace("<p>Act", '<p class="ghost">Act')), [])
 
+# ------------------------------------------- what Claude builds stays editable
+# Found 2026-10-20 by having Claude build complicated charts and tables through
+# every route (pilot verbs, layout.json, a renderer's blocks.chart) and then
+# editing each one as a person would. The editor halves live in
+# tests/editor/claude-creates.spec.js; these are the engine's.
+from docsync.layout import chart_svg as _cs2                     # noqa: E402
+
+_was_edit = os.environ.get("DOCSYNC_EDIT")
+os.environ["DOCSYNC_EDIT"] = "1"
+try:
+    _rule = {"type": "bar", "labels": ["a", "b"], "series": [{"name": "s", "data": [5, 9]}],
+             "rules": [{"value": 6, "label": "Spending cap"}, {"value": 8, "label": True}]}
+    _rs = _cs2(_rule, 0, 0, 4, 2.5)
+    check("a reference line's worded label edits on the page (and docsync.check sees a hook)",
+          _rs, 'data-ch="rule:0"')
+    check_eq("...but one that is the value itself has nothing to retype",
+             'data-ch="rule:1"' in _rs, False)
+    _cov_rule = _cov(f'<section class="page"><svg viewBox="0 0 4 2.5">{_rs}</svg></section>')
+    check_eq("a hooked reference-line label is not a literal in a drawing",
+             [t for t in _cov_rule.frozen_prose if "Spending" in t], [])
+finally:
+    if _was_edit is None:
+        os.environ.pop("DOCSYNC_EDIT", None)
+    else:
+        os.environ["DOCSYNC_EDIT"] = _was_edit
+
+# The hit area of a chart shape is its box: `all` hit-tested the stroke too,
+# and an unset stroke-width is an INCH in the page's layer — every chart took
+# clicks half an inch outside itself (a table's header row under it).
+_hit = _layout({"shapes": [{"id": "c1", "page": 1, "kind": "chart", "x": 1, "y": 1,
+                            "w": 3, "h": 2, "chart": {"type": "bar", "labels": ["a"],
+                                                      "series": [{"name": "s", "data": [1]}]}}]})
+_hl = _hit.layer(1)
+check("a chart's hit rect takes the pointer over its box only", _hl, 'pointer-events="fill"')
+check_eq("...never over a stroke an inch wide", 'pointer-events="all"' in _hl, False)
+
+# null is a gap: a line breaks there instead of diving to zero.
+_g = _cs2({"type": "line", "labels": list("abcde"),
+           "series": [{"name": "s", "data": [3, 4, None, 5, 6]}]}, 0, 0, 4, 2.5)
+check_eq("a line with a null draws two runs, not one through zero",
+         _g.count("<polyline"), 2)
+check_eq("...and no dot where there is no value", _g.count("<circle"), 4)
+_g0 = _cs2({"type": "line", "labels": list("abc"),
+            "series": [{"name": "s", "data": [60, None, 70]}], "axisMin": 50}, 0, 0, 4, 2.5)
+_ys = [float(y) for y in re.findall(r'cy="([\d.]+)"', _g0)]
+check_eq("a gap under a raised axisMin is not drawn below the plot",
+         all(y <= 2.5 for y in _ys), True)
+_ga = _cs2({"type": "area", "labels": list("abcde"),
+            "series": [{"name": "s", "data": [1, 2, None, 2, 1]}]}, 0, 0, 4, 2.5)
+check_eq("an area breaks at a gap too", _ga.count("<polygon"), 2)
+_gs = _cs2({"type": "stacked-area", "labels": list("abc"),
+            "series": [{"name": "s", "data": [1, None, 2]}, {"name": "t", "data": [1, 1, 1]}]},
+           0, 0, 4, 2.5)
+check_eq("a stack has no hole to show: it still reads the gap as 0",
+         _gs.count("<polygon"), 2)
+_sc = _cs2({"type": "scatter", "series": [{"name": "x", "data": [1, 2, None, 4]},
+                                          {"name": "y", "data": [5, 6, 7, None]}]}, 0, 0, 4, 2.5)
+check_eq("a scatter point with no x or no y is not drawn at zero", _sc.count("<circle"), 2)
+
+# Labels: Tilted on a line chart (the panel offered it; only bars obeyed).
+check("a line chart turns its labels when asked",
+      _cs2({"type": "line", "labels": [f"Month {i}" for i in range(24)],
+            "series": [{"name": "s", "data": list(range(24))}], "labelAngle": -45},
+           0, 0, 7, 3), 'transform="rotate(-45 ')
+check("...and so does an area chart",
+      _cs2({"type": "area", "labels": [f"Month {i}" for i in range(12)],
+            "series": [{"name": "s", "data": list(range(12))}], "labelAngle": -90},
+           0, 0, 7, 3), 'transform="rotate(-90 ')
+
+# Descriptions that ARE editable, which the check used to fail a report for.
+check_eq("an image in a text box's markdown has an editable alt",
+         _cov('<section class="page"><div class="ds-textbox" data-el="text.t1"><p>'
+              '<img src="a.svg" alt="Chart placeholder"></p></div></section>').desc_paged, [])
+check_eq("...and so does one in a slot's markdown",
+         _cov('<section class="page"><p data-slot="k"><img src="a.png" alt="A photo">'
+              '</p></section>').desc_paged, [])
+check_eq("...but a renderer's own <img alt> is still a literal",
+         _cov('<section class="page"><img data-el="cover.logo" alt="Appleseed logo">'
+              '</section>').desc_paged, ["Appleseed logo"])
+check_eq("a renderer chart named after its own title is wired (the title edits in the panel)",
+         _cov('<section class="page"><span data-chart="c"><svg class="chart" role="img" '
+              'aria-label="Revenue by source" data-desc-from="the chart title (Chart panel)">'
+              '</svg></span></section>').desc_paged, [])
+from docsync import blocks as _blocks2                            # noqa: E402
+os.environ["DOCSYNC_EDIT"] = "1"
+try:
+    _bc = _blocks2.chart(_layout({}), "fig.x", {"type": "bar", "title": "Revenue",
+                                                 "labels": ["a"], "series": [{"name": "s", "data": [1]}]})
+    check("blocks.chart says its description is its title", _bc, 'data-desc-from=')
+finally:
+    if _was_edit is None:
+        os.environ.pop("DOCSYNC_EDIT", None)
+    else:
+        os.environ["DOCSYNC_EDIT"] = _was_edit
+
+# A scaffolded report links its citation markers to the endnotes.
+from docsync import new as _new                                   # noqa: E402
+check("the scaffold renderer linkifies its citation markers",
+      Path(_new.__file__).read_text(), "body = C.fn.linkify(body)")
+
 try:
     sheet_inner("<html><body><p>no sheet</p></body></html>")
     FAILS.append("a render with no sheet must be refused")
