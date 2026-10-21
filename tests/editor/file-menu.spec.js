@@ -29,9 +29,12 @@ test.describe('File menu', () => {
     // flow is find-change.spec.js; what it owes this list is being IN it.
     // Load styles (INDESIGN_PARITY.md 75) brings another report's styles in.
     // The Story editor (63) and the Library (50) sit with it.
+    // Publish as a website (docsync/website.py) sits with Resize; its Stop row
+    // shows only once the page IS a website (see website-menu.spec.js).
     await expect(page.locator('#filepop button')).toHaveText(
       ['Find & Change…',
        'Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
+       'Publish as a website…', 'Stop publishing as a website…',
        'Sources…', 'Share…',
        /^Google Doc/, 'Import text from the Doc…', 'Story editor', 'Library…',
        'Load styles from another report…', 'Download…',
