@@ -35,7 +35,11 @@ one line only when it changed something or something is missing.
   direct `git push origin main` is refused). `tools/wt land <name>` does it:
   pushes the branch, opens the PR (or reuses an open one) and sets it to merge
   itself when the gate passes (`gh pr create --fill`, `gh pr merge --auto
-  --merge`). Rebase onto `origin/main` first if it moved. Once it has merged:
+  --merge`). The 20 test shards run only when the PR touches what they cover
+  (docsync/, tests/, the editor shell, serve.py, package.json — the `changes`
+  job in editor-tests.yml); otherwise they are skipped and the gate passes
+  in about a minute, so a docs-only PR is never stuck waiting on a check
+  that will not come. Rebase onto `origin/main` first if it moved. Once it has merged:
   `git pull --ff-only` in the main clone, then `python3 -m docsync.vendor`
   there on a machine whose vendor.local.yml names consumers. Devin's own
   sessions land without asking once the tests pass (2026-10-21); another
