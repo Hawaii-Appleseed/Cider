@@ -5,10 +5,31 @@
   "tables": [],
   "sections": {},
   "groups": [
-    ["card.cover.card.bullets", "cover.card.title", "cover.card.bullets"],
-    ["card.cal.card.bullets", "cal.card.title", "cal.card.bullets"],
-    ["card.search.card.bullets", "search.card.title", "search.card.bullets"],
-    ["card.ed.card.bullets", "ed.card.title", "ed.card.bullets"],
-    ["card.mcp.card.bullets", "mcp.card.title", "mcp.card.bullets"]
-  ]
+    [
+      "card.cover.card.bullets",
+      "cover.card.title",
+      "cover.card.bullets"
+    ],
+    [
+      "card.cal.card.bullets",
+      "cal.card.title",
+      "cal.card.bullets"
+    ],
+    [
+      "card.search.card.bullets",
+      "search.card.title",
+      "search.card.bullets"
+    ],
+    [
+      "card.ed.card.bullets",
+      "ed.card.title",
+      "ed.card.bullets"
+    ],
+    [
+      "card.mcp.card.bullets",
+      "mcp.card.title",
+      "mcp.card.bullets"
+    ]
+  ],
+  "masters": {}
 }
