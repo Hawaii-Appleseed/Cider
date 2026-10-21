@@ -20,6 +20,14 @@ async function selectPara(page) {
 /** Drag one handle of the selection by (dx, dy) screen pixels. */
 async function dragHandle(page, dir, dx, dy) {
   const h = page.frameLocator('#out').locator(`.ds-handles .ds-h-${dir}`);
+  // The press has to land on the handle itself: anything drawn over it (the
+  // floating mini toolbar sits just above the top edge) would take the drag.
+  const over = await h.evaluate(el => {
+    const r = el.getBoundingClientRect();
+    const t = el.ownerDocument.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return t === el ? null : `${t.tagName}.${t.className}${t.closest('.ds-mini') ? ' (mini toolbar)' : ''}`;
+  });
+  expect(over, `the ${dir} handle is covered`).toBeNull();
   const b = await h.boundingBox();
   const x = b.x + b.width / 2, y = b.y + b.height / 2;
   await page.mouse.move(x, y);
