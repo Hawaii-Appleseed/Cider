@@ -225,16 +225,16 @@ test.describe('chart colours and labels', () => {
       .toHaveText('Renamed');
   });
 
-  test('Escape while renaming a label discards, leaving the chart alone', async ({ page }) => {
+  test('Escape while renaming a label keeps the new name, as InDesign does', async ({ page }) => {
     const id = await addChart(page);
     const frame = page.frameLocator('#out');
     await frame.locator(`g[data-shape="${id}"] [data-ch="label:0"]`).dblclick();
     const inp = frame.locator('.ds-ch-edit');
-    await inp.fill('Nope');
+    await inp.fill('Kept');
     await inp.press('Escape');
     await page.waitForTimeout(700);
     expect(await page.evaluate(() =>
-      layout.shapes.find(s => s.kind === 'chart').chart.labels[0])).toBe('First');
+      layout.shapes.find(s => s.kind === 'chart').chart.labels[0])).toBe('Kept');
     expect(await page.evaluate(() => editing)).toBe(false);
   });
 

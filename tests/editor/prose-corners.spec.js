@@ -7,8 +7,21 @@ const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test')
 const ID = 'para.groc.lead';
 const ALL = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
+/** Wait until nothing is re-rendering and the page's web fonts are in. Every
+ *  measurement here is a before/after of one paragraph's box, and the lines
+ *  above it wrap one way in the fallback font and another in the real one:
+ *  on a cold CI runner the fonts landed between the two readings and moved
+ *  the paragraph 39px with no drag involved. */
+const settledPage = page => page.evaluate(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 400 && renderRunning; i++) await sleep(25);
+  await $('out').contentDocument.fonts.ready;
+  await sleep(50);
+});
+
 async function selectPara(page) {
   await gotoEditor(page, '?project=uhero-trc-summary');
+  await settledPage(page);
   await page.evaluate(id => {
     const d = $('out').contentDocument;
     d.querySelector(`[data-el="${id}"]`).scrollIntoView({ block: 'center' });
@@ -35,6 +48,7 @@ async function dragHandle(page, dir, dx, dy) {
   await page.mouse.move(x + dx, y + dy, { steps: 8 });
   await page.mouse.up();
   await page.waitForTimeout(600);
+  await settledPage(page);
 }
 
 const geometry = page => page.evaluate(id => {
@@ -73,24 +87,24 @@ test.describe('a paragraph resizes like a text frame', () => {
 
   test('the top edge moves the top and keeps the bottom where it was', async ({ page }) => {
     await selectPara(page);
-    // Against the PAGE, not the window: the commit's re-render may restore
-    // the scroll a few pixels off, which moves both edges on screen alike.
-    const onPage = () => page.evaluate(id => {
+    const top0 = await page.evaluate(id => {
       const el = $('out').contentDocument.querySelector(`[data-el="${id}"]`);
       const r = el.getBoundingClientRect(), p = el.closest('section.page').getBoundingClientRect();
-      return { top: r.top - p.top, bottom: r.bottom - p.top };
+      return { top: r.top - p.top, bottom: r.bottom - p.top,
+               px: 96 * zoomOf(el.closest('section.page')) };
     }, ID);
-    const top0 = await onPage();
     await dragHandle(page, 'n', 0, -50);
-    const r = await onPage();
-    // What the drag stored and what the page drew, for a failure on another
-    // platform (CI's Linux moved the bottom 39px; macOS does not).
-    console.log('top-edge', JSON.stringify({ top0, r, p: await page.evaluate(id => ({
-      pos: layout.positions[id], zoom: zoomOf($('out').contentDocument.querySelector('section.page')),
-      minH: getComputedStyle($('out').contentDocument.querySelector(`[data-el="${id}"]`)).minHeight,
-      viewport: [innerWidth, innerHeight] }), ID) }));
-    expect(r.top).toBeLessThan(top0.top - 30);
-    expect(Math.abs(r.bottom - top0.bottom)).toBeLessThan(4);
+    // What the drag WROTE, in page inches: the top raised, and top + height
+    // landing on the old bottom. Not where the page then draws it — a moved
+    // paragraph follows the slot it left (its anchor), so its drawn place
+    // also answers to how the lines ABOVE that slot wrap, and on CI's Linux
+    // runner those wrapped differently once re-rendered: the box came back
+    // 39px high with exactly this geometry stored (y 4.79in + h 1.48in =
+    // 601.9px against a bottom of 602.1px).
+    const p = await page.evaluate(id => layout.positions[id], ID);
+    expect(p.hmin).toBe(true);
+    expect(p.y * top0.px).toBeLessThan(top0.top - 30);
+    expect(Math.abs((p.y + p.h) * top0.px - top0.bottom)).toBeLessThan(4);
   });
 
   test('a table and a chart keep their own handles', async ({ page }) => {

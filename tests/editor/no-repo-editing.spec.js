@@ -79,7 +79,7 @@ test.describe('a freshly scaffolded project, before anyone touches GitHub', () =
       await editor.waitFor({ state: 'visible', timeout: 5000 });
       await page.keyboard.press('Control+A');
       await page.keyboard.type('edited with no repo');
-      await page.evaluate(() => richHost.blur());   // finish(true) — Escape would DISCARD
+      await page.evaluate(() => richHost.blur());   // finish(true), as Escape now is too
       await page.waitForTimeout(500);
 
       // Local Save posts straight to /__save — no token, no repo needed

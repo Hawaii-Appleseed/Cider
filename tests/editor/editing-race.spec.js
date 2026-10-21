@@ -53,8 +53,9 @@ test.describe('a render landing mid-edit', () => {
     await expect(host).toContainText('XYZPROBE');   // nothing eaten
     expect(await page.evaluate(() => editing)).toBe(true);
 
-    // Escape discards; finish()'s own render supersedes the deferred twin and
-    // the flag comes back down — the editor is not stranded.
+    // Escape closes it (keeping the words); finish()'s own render supersedes
+    // the deferred twin and the flag comes back down — the editor is not
+    // stranded.
     await page.keyboard.press('Escape');
     await expect(frame.locator('.ds-edit')).toHaveCount(0, { timeout: 15000 });
     await expect.poll(() => page.evaluate(() => editing)).toBe(false);
