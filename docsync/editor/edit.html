@@ -6977,9 +6977,9 @@ function contextify(d, roots) {
 // ---------------------------------------------------------------- resizing
 // Width is always safe: text reflows, images scale. Height is not — pin a text
 // box's height and it either clips the words or leaves a hole the moment the
-// prose changes, and .page is overflow:hidden so the clipping is silent. So
-// prose gets a width handle only; things whose size IS their content (images,
-// shapes) get corners too.
+// prose changes, and .page is overflow:hidden so the clipping is silent. So a
+// height dragged onto words is a FLOOR (min-height): they take every edge and
+// corner, and longer wording still pushes the box open.
 const MIN_IN = 0.4;
 
 /** A designed heading slot: the renderer's own <h1>/<h2>/<h3>, as against a
@@ -7003,8 +7003,8 @@ function handlesFor(el) {
   if ((el.dataset.el || '').startsWith('endnote.')) return [];
   // Shapes and text boxes resize from every edge and corner. Graphics scale
   // uniformly, so their handles are the four corners (each drives the one
-  // scale factor). A designed prose slot reflows on width alone — no height to
-  // drag — so it gets both horizontal edges, east and west.
+  // scale factor). Words — a heading, a paragraph — take every edge and
+  // corner too, their height kept as a floor.
   // An icon is a drawn glyph, not a box: stretching one only distorts it, so
   // it takes the four corners like any other graphic and scales as a whole.
   if (el.dataset.shape) {
@@ -7020,10 +7020,22 @@ function handlesFor(el) {
   // bottom edge sets how much room it takes without ever clipping the words —
   // which is the reason prose is width-only, and the reason a heading, being
   // a line or two rather than a paragraph, does not need to be.
-  if (isHeadingEl(el)) return ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+  // A paragraph is the same (Devin, 2026-10-21: every corner of a text box,
+  // as InDesign and Canva give one): its dragged height is a floor too.
+  if (isHeadingEl(el) || isTextEl(el)) return ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
   // A table is width-driven — its rows set the height — so it takes the two
-  // horizontal edges, like a designed prose slot.
+  // horizontal edges; so does a drawn chart, whose height follows its width.
   return ['e', 'w'];
+}
+
+/** Words and only words — a paragraph or a card of slots, not a table, a
+ *  chart or a picture — so a height dragged onto it can be a floor
+ *  (positions[].hmin) the words push past, never a box that clips them. */
+function isTextEl(el) {
+  if (!el || !el.dataset || !el.dataset.el || el.dataset.shape) return false;
+  if (el.dataset.el.startsWith('table.') || isGraphic(el)) return false;
+  if (el.matches('table, svg') || el.querySelector('table, svg, img, [data-chart]')) return false;
+  return el.matches('[data-slot]') || !!el.querySelector('[data-slot]');
 }
 
 function showHandles(d, page, el) {
@@ -7180,6 +7192,7 @@ function startResize(d, el, e0, dir) {
   const P = placer(d, el, page);          // reuse: a resize is a layout override too
   const b = P.box;                        // b.w/b.h are the CURRENT (scaled) size
   const baseScale = graphic ? ((storeOf(id) || {}).scale || 1) : 1;
+  const wordy = !shapeId && !graphic && (isHeadingEl(el) || isTextEl(el));
   const grab = { x: e0.clientX, y: e0.clientY };
   el.classList.add('ds-lifted');
   d.body.classList.add('ds-resizing');
@@ -7231,7 +7244,9 @@ function startResize(d, el, e0, dir) {
     } else {
       P.put(x, y, false);                 // pin it in place, holding its flow slot
       el.style.width = w.toFixed(2) + 'in';
-      if (vertical) el.style.height = h.toFixed(2) + 'in';
+      // Words take the height as the floor they will be saved with, so the
+      // drag shows what the page will: never a box cutting its text off.
+      if (vertical) el.style[wordy ? 'minHeight' : 'height'] = h.toFixed(2) + 'in';
     }
     showHandles(d, page, el);
     $('stat').textContent = `${id} → ${w.toFixed(2)}in wide`
@@ -7272,14 +7287,14 @@ function startResize(d, el, e0, dir) {
         const p = layout.positions[id];
         p.w = +size.w.toFixed(2);
         if (dir.includes('s') || dir.includes('n')) {
-          // Text grows; images do not. For a heading the dragged height is a
-          // minimum (hmin), so longer wording pushes the box open instead of
-          // being cut off by a number someone dragged weeks earlier.
-          const text = isHeadingEl(el);
-          if (text && size.h <= MIN_IN + 0.01) { delete p.h; delete p.hmin; }
+          // Text grows; images do not. For a heading or a paragraph the
+          // dragged height is a minimum (hmin), so longer wording pushes the
+          // box open instead of being cut off by a number someone dragged
+          // weeks earlier.
+          if (wordy && size.h <= MIN_IN + 0.01) { delete p.h; delete p.hmin; }
           else {
             p.h = +size.h.toFixed(2);
-            if (text) p.hmin = true; else delete p.hmin;
+            if (wordy) p.hmin = true; else delete p.hmin;
           }
         }
       }
@@ -24798,9 +24813,14 @@ function wire(roots) {
        and that pixel falls through to whatever element's box happens to
        overlap the edge — a figure caption beside a table, say — which then
        answers with the generic layer menu instead of the table's own. */
+    /* Canva's look: round corners, pill-shaped edges, a soft shadow so a
+       handle reads on any fill. Shape only — the boxes and offsets below are
+       what keeps them flush, so they stay as they are. */
     .ds-h { position:absolute; pointer-events:auto; background:#fff;
-            border:1.5px solid #6B9E78; border-radius:2px; }
+            border:1.5px solid #6B9E78; border-radius:4px;
+            box-shadow:0 1px 3px rgba(20,30,35,.28); }
     .ds-h:hover { background:#6B9E78; }
+    .ds-h-ne, .ds-h-nw, .ds-h-se, .ds-h-sw { border-radius:50%; }
     .ds-h-e { right:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
     .ds-h-w { left:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
     .ds-h-s { bottom:-7px; left:50%; width:18px; height:7px; margin-left:-9px; cursor:ns-resize; }
@@ -24831,7 +24851,7 @@ function wire(roots) {
        (half of the 9px square, which now sits flush outside), so each ring's
        offset is 4.5px further out than half its own 22px width — keep the two
        in step or the ring stops surrounding the square. */
-    .ds-rot-corner { width:22px; height:22px; background:transparent; border:0; }
+    .ds-rot-corner { width:22px; height:22px; background:transparent; border:0; box-shadow:none; }
     .ds-rot-corner:hover { background:transparent; }   /* stays invisible — the cursor is the affordance */
     .ds-rot-se { right:-15.5px; bottom:-15.5px; cursor:url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
