@@ -247,13 +247,9 @@ pixel-identical.
   doesn't flag the overlap. This is page content (too much for the sheet),
   so I left it to you. Screenshot:
   `/private/tmp/claude-502/-Users-devinthomas-repos-Cider-test/c636ee97-ea4f-4b78-8531-b67d43dde637/scratchpad/shots/retitc-p3-pdf.png`
-- **our-mission's three.js hero never runs.** The source page had an import
-  map to `./assets/vendor/three.module.js`. The renderer keeps only `<style>`
-  from the head, and the vendored file was never brought into the project.
-  The published page throws `Failed to resolve module specifier "three"` on
-  every load (and the editor on every render) and falls back to the CSS
-  mark. The fix is to vendor three.js (~1MB) into the project or drop the
-  effect; that's your call.
+- **our-mission's three.js hero never ran.** Main has since fixed this
+  (aaecd37 vendors three.js and carries the import map). See "Merged onto
+  main" below for the editor-side follow-up.
 - **No page menu on five reports.** demo-report, tax-testimony, dotax-itep,
   uhero-trc-summary and retitc write `<section class="page">` by hand,
   without `data-page`/`data-fill`. Right-clicking a bare page there gives
@@ -281,6 +277,39 @@ pixel-identical.
 - **The `#rail-head` id is given twice**, once in the markup and once for
   the rail's "Hidden" separator. It's used only for styling, so it's
   harmless.
+
+## Merged onto main (2026-10-20)
+
+Branch `cider-test-2026-10-19-main` puts this work on top of current main
+(4b8ac64, 43 commits past add50da; the laptop's 18 commits were rebased
+into it). The 15 commits were replayed one by one:
+
+- **0ba14d6 (History labels):** main fixed the same bug its own way
+  (0beefd0), so main's code is kept and only the regression test is carried
+  over.
+- **Anchors (3b384d3):** main's rebuilt rxkids no longer ships the anchor
+  script, so only the Budget Primer's page changes now.
+- **New, 336dc25:** with the import map carried over (aaecd37), our-mission's
+  WebGL hero now runs, and the editor's patched re-render dropped its canvas.
+  patched-scripted-pages.spec failed on main itself. The editor build now
+  leaves the three.js module out and shows the CSS mark; the published page
+  is unchanged.
+
+Checks on the merged branch: test_docsync (at `ulimit -n 256`),
+test_render and docsync.check (31 files, 0 failing) all pass. All bound
+reports build byte-identical to main except `report2027/web/index.html`
+(the anchor fix).
+
+Full Playwright suite on the merged branch (163 specs, `--workers=2`):
+
+| Chunk | Result |
+|---|---|
+| A | 336 passed, 2 failed (collab ports), 70 did not run (their serial files) |
+| B | 248 passed, 1 failed (ingest: no PyMuPDF), 6 did not run |
+| C | 360 passed |
+
+With the collab ports shifted and PyMuPDF on the path, `collab`,
+`collab-hub`, `collab-drafts` and `ingest-notices` pass: 82/82.
 
 ## Not tested
 
