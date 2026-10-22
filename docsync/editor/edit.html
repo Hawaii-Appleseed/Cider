@@ -21664,6 +21664,15 @@ wireTooltips(document);
  *  cancels it outright.
  */
 const IDLE_STAT = 'live — edits here and from Claude land in the same files';
+/** The idle sentence, said only when nothing is wrong: a standing warning
+ *  (the file watcher dead, the server running old code — both wear .err)
+ *  stays. Two writers used to put the sentence straight over it, so whether
+ *  the warning showed depended on which of them ran last. */
+function sayIdle() {
+  const st = $('stat');
+  if (st.classList.contains('err')) return;
+  st.textContent = IDLE_STAT;
+}
 (function watchStat() {
   const el = $('stat');
   let timer = null;
@@ -21896,7 +21905,7 @@ async function boot() {
   // …unless the first render FAILED, in which case its message is the only
   // thing on screen explaining the traceback in the canvas. Reassurance that
   // contradicts what the user is looking at is worse than silence.
-  if (local && !renderFailed) $('stat').textContent = 'live — edits here and from Claude land in the same files';
+  if (local && !renderFailed) sayIdle();
   else if (cachedRestored) $('stat').textContent =
     'restored unsaved edits from this browser — Save to keep them, or Discard to drop them';
   // What moved while this person was away. After the first render, because
@@ -23450,7 +23459,7 @@ async function detectLocal() {
   // saying) and comes back the moment it has that to say.
   $('title').textContent = M.id + ' · live';
   $('title').hidden = true;
-  $('stat').textContent = 'live — edits here and from Claude land in the same files';
+  sayIdle();
   // Adopt a rebuild the moment the version moves. Two ways see it, because one
   // failing silently is exactly the bug this had: the event stream is instant
   // when the browser keeps it open, and a 1.5s poll catches it when the stream
