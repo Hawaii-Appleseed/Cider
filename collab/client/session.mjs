@@ -227,7 +227,12 @@ export class CollabSession {
     // so the editor's own "unsaved changes" should reset to it. Our own
     // setBaseSha() is META origin and the editor already knows about it.
     this.shadow.getMap('meta').observe((ev, tr) => {
-      if (tr.origin === ORIGIN.REMOTE && ev.keysChanged.has('baseSha')) this.onBaseSha(this.baseSha());
+      if (tr.origin === ORIGIN.REMOTE && ev.keysChanged.has('baseSha')) {
+        const m = this.shadow.getMap('meta');
+        const restored = m.get('restored') != null && m.get('restored') === m.get('baseSha');
+        if (restored) this.undoManager.clear();
+        this.onBaseSha(this.baseSha(), { restored });
+      }
     });
 
     // shadow -> net: every local (non-remote) shadow update is replayed onto
@@ -269,7 +274,11 @@ export class CollabSession {
       // hand. y-websocket's own escape hatch, passed straight through.
       ...(o.WebSocketPolyfill ? { WebSocketPolyfill: o.WebSocketPolyfill } : {}),
       connect: false,
+      // Ask the room for a sync every 10s: an answer is proof the socket is
+      // alive, and #watchLive reads the silence when none comes.
+      resyncInterval: 10_000,
     });
+    this.#watchLive();
     this.provider.on('status', ({ status }) => {
       // While asleep the socket is closed BECAUSE we closed it: the provider
       // says 'disconnected' and it is not offline, so the deliberate status
@@ -304,6 +313,7 @@ export class CollabSession {
   #pending = [];
   #drainTimer = 0;
   #presenceTimer = 0;
+  #liveTimer = 0;            // #watchLive's check
   #lastPresence = '';
   #lastInput = '';
   #idleMs = IDLE_SLEEP_MS;
@@ -383,6 +393,61 @@ export class CollabSession {
     this.#set({ status: 'asleep' });
     return true;
   }
+
+  /**
+   * A socket that died without a close event — a proxy that swallowed it, a
+   * laptop lid, a TCP peer that simply stopped — left both tabs saying
+   * "live" while nothing crossed, for as long as the room was open: the
+   * provider learns of a drop only from a close event, and y-partyserver's
+   * provider has no last-message timeout. Two signals, checked every few
+   * seconds: a socket the browser already says is CLOSING or CLOSED (the
+   * close that never completes, which wake() already knows about), and a
+   * live socket that has heard nothing for 30s although a resync was asked
+   * for every 10s. Either way the dead socket is taken away the way wake()
+   * does it, and the provider reconnects; `online` from the browser is the
+   * same reconnect, sooner.
+   */
+  #watchLive() {
+    let closingSince = 0;
+    const check = () => {
+      const p = this.provider, ws = p.ws;
+      // Only a connection we WANT: a deliberate disconnect() (sleep, the
+      // offline test's own) sets shouldConnect false and is not a death.
+      if (this.#asleep || this.state.phase !== 'ready' || !p.shouldConnect) { closingSince = 0; return; }
+      const now = Date.now();
+      let dead = false;
+      if (ws && ws.readyState >= 2) {                   // CLOSING / CLOSED, still held
+        closingSince = closingSince || now;
+        dead = now - closingSince > 2000;
+      } else closingSince = 0;
+      if (!dead && ws && p.wsconnected && p.wsLastMessageReceived
+          && now / 1000 - p.wsLastMessageReceived > 30) dead = true;
+      if (!dead) return;
+      this.#reconnectNow(ws);
+    };
+    this.#liveTimer = setInterval(check, 3000);
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('online', () => {
+        if (!this.#asleep && this.state.phase === 'ready' && this.provider.shouldConnect) this.#reconnectNow(this.provider.ws);
+      });
+    }
+  }
+
+  #reconnectNow(ws) {
+    const p = this.provider;
+    if (ws && p.ws === ws) {
+      p.ws = null;
+      p.wsconnected = false;
+      p.wsconnecting = false;
+      try { ws.close(); } catch (e) { /* already gone */ }
+    }
+    this.#set({ status: 'offline' });
+    this.connect();
+  }
+
+  /** Forget every undo step: after a restore, undoing one would re-insert
+   *  pre-restore words beside the restored copy, for everyone. */
+  forgetHistory() { this.undoManager.clear(); this.onHistory(); }
 
   /** Back to the room, and sync whatever was missed. */
   wake() {
@@ -523,8 +588,14 @@ export class CollabSession {
   redo() { this.undoManager.redo(); return this.files(); }
 
   baseSha() { return this.shadow.getMap('meta').get('baseSha') ?? null; }
-  setBaseSha(sha) {
-    this.shadow.transact(() => this.shadow.getMap('meta').set('baseSha', sha || null), ORIGIN.META);
+  setBaseSha(sha, info) {
+    this.shadow.transact(() => {
+      const m = this.shadow.getMap('meta');
+      m.set('baseSha', sha || null);
+      // A restore is said as such: the other editors clear their history
+      // and tell their person what replaced their unsaved words.
+      m.set('restored', info && info.restored ? (sha || null) : null);
+    }, ORIGIN.META);
   }
 
   /* ------------------------------------------------------------ cursors */
