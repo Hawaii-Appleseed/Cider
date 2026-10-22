@@ -21302,7 +21302,7 @@ function markDirty() {
   // again on every call - once per moved element per drop.
   if (layoutOrigSaidFor !== layoutOrig) { layoutOrigSaidFor = layoutOrig; layoutOrigSaid = layoutSaid(JSON.parse(layoutOrig || '{}')); }
   dirty = source !== original || layoutSaid(layout) !== layoutOrigSaid;
-  $('save').disabled = !dirty || hubViewOnly();
+  $('save').disabled = !dirty || hubViewOnly() || saving;
   // Discard stays live while a saved draft exists: with nothing unsaved it
   // offers to throw the whole draft away (see its handler).
   $('revert').disabled = !dirty && !(draftBranch && !local);
@@ -23298,6 +23298,11 @@ function collabSaved(sha) {
 // Claude to edit them. We adopt that change and keep whatever you were editing,
 // as long as the two are different files. Same file, both edited: you choose.
 let local = false;
+// A Save is on its way to disk: Push waits for it (pushing mid-save sends the
+// commit BEFORE this one, then says "pushed" over words that never left),
+// and the Save button stays down however the dirty flag moves meanwhile.
+let saving = false;
+let lastAhead = 0;              // what setPushState last heard, to re-apply after a Save
 
 let liveVer = -1;
 
@@ -23395,8 +23400,9 @@ async function agentNoteClick() {
 
 function setPushState(ahead) {
   if (typeof ahead !== 'number') return;
+  lastAhead = ahead;
   const b = $('push');
-  b.disabled = ahead === 0;
+  b.disabled = ahead === 0 || saving;
   b.classList.toggle('pending', ahead > 0);
   b.textContent = ahead > 0 ? `Push (${ahead})` : 'Push';
   // A Push that CANNOT succeed says so ON the button, before it is pressed.
@@ -23516,7 +23522,7 @@ async function detectLocal() {
     if (await pullFromDisk()) liveVer = v;
   };
   window.__onBump = onBump;            // test hook, like window.__fileSig
-  startLive(d => { pushHealth = d.push || {}; setPushState(d.ahead); setAgentNote(d.agent); watchHealth(d); serverHealth(d); updateHealth(d);
+  startLive(d => { if (serverReach(d)) return; pushHealth = d.push || {}; setPushState(d.ahead); setAgentNote(d.agent); watchHealth(d); serverHealth(d); updateHealth(d);
                    if (d.doc != null) DOC = d.doc;
                    contentHealth(d); onBump(d.v, d.error); });
   $('upd').onclick = installUpdate;
@@ -23707,7 +23713,7 @@ function startLive(onEvent) {
   // still applies wherever there IS an id to pool by.
   const scope = (M && M.id) || 'tab:' + meId;
   const LK = 'primer-live-leader:' + scope, EV = 'primer-live-event:' + scope;
-  let es = null, leading = false, hb = 0, evN = 0;
+  let es = null, leading = false, hb = 0, evN = 0, misses = 0;
   // The key scoping above is necessary but NOT sufficient: it is built from
   // M.id, so any tab whose manifest has no id lands in a shared '' bucket
   // together with every other such tab — whatever project they are actually
@@ -23758,11 +23764,19 @@ function startLive(onEvent) {
       // ANY tab reaches every tab's button. Followers never poll.
       fetch(withProject('/__ping'), { cache: 'no-store' }).then(r => r.json())
         .then(d => {
+          misses = 0;
           // The poll is also the pilot's safety net: if the SSE stream is
           // mid-reconnect when an op is queued, this picks it up within 2s.
           if (d.pilotWaiting && mine(d)) claimPilotOps();
           apply(d); relay(d);
-        }).catch(() => {});
+        }).catch(() => {
+          // Three in a row (~6s), not one: a restart answers nothing for a
+          // beat and a single miss would cry wolf. Said as an event so the
+          // follower tabs hear it through the same relay.
+          if (++misses < 3) return;
+          const d = { serverDown: true, project: M && M.id };
+          apply(d); relay(d);
+        });
     }, HB_MS);
   };
   const elect = () => {
@@ -24054,6 +24068,30 @@ function watchHealth(d) {
  *  relaunch fixes it, so say that. Ranks below a dead watcher, which stops
  *  reload entirely; this only means the newest server code is not live yet. */
 const SRV_STALE_MSG = 'editor server is running old code — relaunch the editor app';
+/** The live server has stopped answering (or is back). Without this a
+ *  person typed into a dead server for as long as they liked and learned at
+ *  Save, from "Failed to fetch". Re-asserted on every missed poll, because
+ *  boot and the steady state both write the status line after the fact.
+ *  Returns true when the payload was only this news, so nothing else reads
+ *  numbers out of it. */
+function serverReach(d) {
+  const stat = $('stat');
+  if (d && d.serverDown) {
+    if (stat.textContent !== SERVER_GONE_MSG) {
+      stat.dataset.srvgone = '1';
+      stat.textContent = SERVER_GONE_MSG;
+      stat.classList.add('err');
+      stat.title = 'Nothing on disk changed. Edits keep working here; Save needs the server back.';
+    }
+    return true;
+  }
+  if (stat.dataset.srvgone) {                             // it is back
+    stat.dataset.srvgone = ''; stat.classList.remove('err'); stat.title = '';
+    if (stat.textContent === SERVER_GONE_MSG) stat.textContent = 'live again';
+  }
+  return false;
+}
+
 function serverHealth(d) {
   if (!d || typeof d.serverStale !== 'boolean') return;   // older server: no opinion
   const stat = $('stat');
@@ -24221,6 +24259,10 @@ async function _pull() {
   let took = false, clash = false;
   if (freshSrc !== original) {
     if (source === original) { source = original = freshSrc; took = true; }
+    // The disk holds exactly what is unsaved here: nothing to choose between,
+    // and nothing left to save. (A commit a hook refused used to leave the
+    // written file on disk and then read as "Claude changed the same thing".)
+    else if (source === freshSrc) { original = freshSrc; markDirty(); }
     else clash = true;
   }
   if (M.layout && freshLayout !== layoutOrig) {
@@ -29981,10 +30023,29 @@ async function postLocal(path, body, ms = 30000) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
   try {
-    const r = await fetch(path, {
-      method: 'POST', signal: ac.signal,
-      ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
-    });
+    let r;
+    try {
+      r = await fetch(path, {
+        method: 'POST', signal: ac.signal,
+        ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      // "Failed to fetch" is Chrome's for a connection nobody answered. The
+      // live server has gone (quit, crashed, the laptop slept through its
+      // idle exit); the words are still in this tab.
+      throw new Error(SERVER_GONE_MSG);
+    }
+    // The server answers every endpoint it knows with JSON, ok or not. A
+    // page of HTML with a 500 on it is Python dying mid-request; a 404 with
+    // no JSON is some other server on this port. Neither is a parse error
+    // for the person to read.
+    const json = /\bjson\b/i.test(r.headers.get('content-type') || '');
+    if (!json) {
+      throw new Error(r.ok
+        ? `the live server answered with something that is not the editor's (${r.status}) — is another app on this port? Your words are still here.`
+        : `the live server hit an error (${r.status}) — your words are still here; check its terminal, or relaunch the editor app and Save again`);
+    }
     return await r.json();
   } catch (e) {
     if (e.name === 'AbortError') {
@@ -29994,6 +30055,8 @@ async function postLocal(path, body, ms = 30000) {
     throw e;
   } finally { clearTimeout(t); }
 }
+const SERVER_GONE_MSG = 'the live server is not answering — your words are safe in this tab. '
+  + 'Relaunch the editor app, then Save again';
 
 $('save').onclick = async () => {
   // Confirm, not block: prose has always been able to overflow a page and
@@ -30012,20 +30075,30 @@ $('save').onclick = async () => {
   // so a Save can never surprise-trigger a GitHub Actions run or send
   // something to the shared repo before you meant to.
   if (local) {
+    if (saving) return;
+    // What is SENT is what is saved. A save takes a build's worth of time,
+    // and words typed while it is in flight used to be marked saved with it
+    // (`original = source` read the CURRENT source when the answer came):
+    // the button went grey, beforeunload had nothing to guard, and the late
+    // words lived only in the tab. The baseline moves to the sent text, and
+    // markDirty keeps anything typed since.
+    const sent = source;
+    saving = true;
     $('save').disabled = true;
+    $('push').disabled = true;
     $('stat').textContent = 'saving to disk…';
     try {
       const j = await postLocal('/__save', {
         project: M.id,
-        content: source !== original ? source : null,
+        content: sent !== original ? sent : null,
         layout: (M.layout && layoutText !== layoutOrig) ? layoutText : null,
       });
       if (!j.ok) throw new Error(j.error || 'save failed');
-      original = source; layoutOrig = layoutText; dirty = false;
-      $('revert').disabled = true;
-      $('save').classList.remove('dirty');
+      original = sent; layoutOrig = layoutText;
       $('stat').textContent = j.message || 'saved';
       $('stat').title = '';
+      saving = false;
+      markDirty();                   // false now, unless something came after `sent`
       setPushState(j.ahead);
     } catch (e) {
       // The status line is one line. A commit a hook refused (the ʻokina
@@ -30033,7 +30106,9 @@ $('save').onclick = async () => {
       // nothing of the fix — the whole message rides the tooltip.
       $('stat').textContent = 'save failed: ' + e.message.replace(/\s+/g, ' ');
       $('stat').title = e.message;
-      $('save').disabled = false;    // always recoverable — never a dead spinner
+      saving = false;
+      markDirty();                   // always recoverable — never a dead spinner
+      setPushState(lastAhead);
     }
     return;
   }
@@ -30048,6 +30123,7 @@ $('save').onclick = async () => {
 // editor, and this is what sends all of them at once.
 $('agentnote').onclick = agentNoteClick;
 $('push').onclick = async () => {
+  if (saving) { $('stat').textContent = 'saving first — Push once it has landed'; return; }
   $('push').disabled = true;
   $('stat').textContent = 'pushing…';
   try {

@@ -1927,7 +1927,12 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/__quit":
                 return self._json(200, {"ok": False, "error":
                     "blocked in tests — the suite's server stays up"})
-            if path in ("/__save", "/__push"):
+            # /__save lets a spec through on purpose, by the same kind of
+            # header /__pull takes below — for a project the spec adopted
+            # from a throwaway clone it built itself, which is the only way
+            # the real save path (write, build, commit, roll back) is tested.
+            if path == "/__push" or (path == "/__save"
+                                     and self.headers.get("X-Primer-Test-Save") != "1"):
                 return self._json(200, {"ok": True, "ahead": 0, "message":
                     "blocked in tests — no real save/push happens here"})
             if path == "/__publish":
@@ -3073,8 +3078,26 @@ class Handler(SimpleHTTPRequestHandler):
                 ["git", "-C", str(root), "diff", "--quiet", "HEAD", "--",
                  *paths]).returncode == 0:
             return "already up to date"
-        _git(root, "commit", "-m", f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")",
-             "--", *paths)
+        try:
+            _git(root, "commit", "-m", f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")",
+                 "--", *paths)
+        except RuntimeError as e:
+            # A hook said no (the ʻokina lint, most days). The files were
+            # already written and built, so "save failed" was only half true:
+            # the words sat on disk uncommitted, the next rebuild bumped the
+            # version, and the editor read its own words back as "Claude
+            # changed the same thing you have unsaved". Put the disk back to
+            # what is committed — the words are still in the editor, and the
+            # message says so and carries the hook's reason.
+            for path, old in previous:
+                if old is not None:
+                    _write_atomic(path, old)
+                elif path.exists():
+                    path.unlink()
+            rebuild(pid, "save-rollback")
+            raise RuntimeError(
+                "nothing was saved — your words are still here in the editor. "
+                + str(e)) from e
         return "saved locally — Push when you're ready to publish"
 
     def _push(self, pid: str, req_ok: bool = False) -> str:
