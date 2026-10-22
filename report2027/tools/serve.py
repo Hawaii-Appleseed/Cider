@@ -2240,12 +2240,14 @@ class Handler(SimpleHTTPRequestHandler):
         except (TypeError, ValueError):
             return self._json(200, {"ok": False, "error": "page size must be numbers"})
         sys.path.insert(0, str(SELF_ROOT))
+        yml = SELF_ROOT / "docsync.yml"
         try:
             from docsync.new import NewProjectError, create
             # create() read-appends docsync.yml; under the host lock so two
             # concurrent scaffolds (parallel test workers, two tabs) cannot
             # lose each other's binding.
             with _host_lock():
+                yml_before = yml.read_text() if yml.is_file() else ""
                 create(slug, name, w, h, root=SELF_ROOT, template=template,
                        scheme=scheme)
         except NewProjectError as e:
@@ -2254,15 +2256,39 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": f"scaffold failed: {e}"})
         finally:
             sys.path.remove(str(SELF_ROOT))
+
+        def unmake(why):
+            # The files and the binding are already on disk when the first
+            # build says no. Left there, the person's next try with the same
+            # title was "already exists", and Open listed a report that could
+            # not open. Nothing was promised until the build passed: take it
+            # all back — the binding only if docsync.yml is still exactly
+            # what create() made of it (another scaffold may have appended
+            # since; its block is not ours to move).
+            import shutil
+            with _host_lock():
+                now = yml.read_text() if yml.is_file() else ""
+                if now.startswith(yml_before) and f"id: {slug}\n" in now[len(yml_before):]:
+                    tail = now[len(yml_before):]
+                    if tail.count("- id: ") == 1:
+                        _write_atomic(yml, yml_before)
+                shutil.rmtree(SELF_ROOT / "projects" / slug, ignore_errors=True)
+                shutil.rmtree(DOCS / slug, ignore_errors=True)
+            PROJECTS.pop(slug, None)
+            STATE.pop(slug, None)
+            _default_registry.cache_clear()
+            return self._json(200, {"ok": False, "error":
+                f"nothing was created — the new report's first build failed, so it was taken back "
+                f"(pick another template, or tell whoever keeps this one):\n{why}"})
+
         binding = _load_bindings(SELF_ROOT).get(slug)
         if binding is None:
-            return self._json(200, {"ok": False,
-                                    "error": "created, but the binding did not read back"})
+            return unmake("the binding did not read back from docsync.yml")
         _register_project(slug, SELF_ROOT, binding)
         rebuild(slug, "scaffold")
         err = STATE[slug].error
         if err:
-            return self._json(200, {"ok": False, "error": f"created, but the first build failed: {err}"})
+            return unmake(err)
         return self._json(200, {"ok": True, "slug": slug})
 
     def _adopt(self, req):
@@ -3127,7 +3153,8 @@ class Handler(SimpleHTTPRequestHandler):
                  *paths]).returncode == 0:
             return "already up to date"
         try:
-            _git(root, "commit", "-m", f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")",
+            _git(root, *_identity(root), "commit", "-m",
+                 f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")",
                  "--", *paths)
         except RuntimeError as e:
             # A hook said no (the ʻokina lint, most days). The files were
@@ -3410,6 +3437,25 @@ def _agent_flag_unannounced(pid: str, changed: list, prev_head: str) -> None:
     _agent_log_write(root, events)
     with STATE[pid].cond:
         STATE[pid].cond.notify_all()
+
+
+def _identity(root: Path) -> list:
+    """`-c user.name/user.email` for a checkout whose git has no identity —
+    a colleague's fresh machine, a CI runner — so a Save's commit does not
+    fail with "Author identity unknown *** Please tell me who you are"
+    (found by CI on 2026-10-22). The signed-in GitHub login (File ▸ Connect
+    GitHub) is the name when there is one, with GitHub's noreply address;
+    else the account on this computer. A configured identity is untouched."""
+    try:
+        if _git(root, "config", "user.email").strip():
+            return []
+    except RuntimeError:
+        pass                                   # unset: `git config` exits 1
+    login = (_gh_token().get("login") or "").strip()
+    name = login or os.environ.get("USER") or os.environ.get("USERNAME") or "Cider editor"
+    email = (f"{login}@users.noreply.github.com" if login
+             else f"{name}@{socket.gethostname() or 'localhost'}")
+    return ["-c", f"user.name={name}", "-c", f"user.email={email}"]
 
 
 def _git(root: Path, *args, timeout=45):

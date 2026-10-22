@@ -505,7 +505,7 @@ test('history: the other editor may restore too, and the first sees it land as s
   await expect(b.locator('#save')).toBeDisabled();
   await expect.poll(() => slot(a, key), { timeout: 20_000 }).toBe('A second saved version.');
   await expect(a.locator('#save')).toBeDisabled();
-  await expect(a.locator('#stat')).toHaveText(/a collaborator saved/);
+  await expect(a.locator('#stat')).toHaveText(/a collaborator restored an earlier version/);
   const after = await versions();
   expect(after.length).toBe(N + 2);
   expect(after[0].updated_by).toBe(GRACE);
@@ -532,8 +532,37 @@ test("history: a restore supersedes the other editor's unsaved edits, and says s
   expect(await slot(a, key)).toBe('Saved on top of the restore.');
   await expect.poll(() => slot(b, key), { timeout: 20_000 }).toBe('Saved on top of the restore.');
   await expect(b.locator('#save')).toBeDisabled();
-  await expect(b.locator('#stat')).toHaveText(/a collaborator saved/);
+  // Said as what it was: a restore that replaced her unsaved words — not "a
+  // collaborator saved … it holds what is on screen" (2026-10-22 audit).
+  await expect(b.locator('#stat')).toHaveText(/restored an earlier version, which replaced the edits you had not saved/);
+  // And her undo stack is gone with them: ⌘Z after a restore used to
+  // re-insert the old words beside the restored copy, for everyone.
+  expect(await b.evaluate('collab.canUndo()')).toBe(false);
   expect((await versions()).length).toBe(N + 3);
+});
+
+test('comments: a reply typed under a card before the hub has answered lands on it', async () => {
+  // The hub takes its time with the comment; the reply is typed meanwhile.
+  await b.route('**/comments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await new Promise(r => setTimeout(r, 1500));
+    route.continue();
+  });
+  await b.locator('#cpanel-text').fill('Replied to while pending.');
+  const got = await b.evaluate(async () => {
+    $('cpanel-add').click();
+    const tmp = hubComments.find(c => c.pending).id;
+    // Straight under the provisional card, as a person typing fast does.
+    return await hubReplyAdd(tmp, 'Reply while pending.', []);
+  });
+  await b.unroute('**/comments');
+  expect(got, 'the reply was dropped').toBeTruthy();
+  const c = (await allComments()).find(x => x.text === 'Replied to while pending.');
+  expect(c, 'the comment landed').toBeTruthy();
+  expect((c.replies || []).map(r => r.text)).toEqual(['Reply while pending.']);
+  await expect(cmtRow(a, 'Reply while pending')).toHaveCount(1, { timeout: 20_000 });
+  await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${c.id}`);
+  await expect(cmtRow(b, 'Replied to while pending')).toHaveCount(0, { timeout: 20_000 });
 });
 
 test('history: a reload and a fresh editor both open on the restored version, not on what came before', async () => {

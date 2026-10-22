@@ -798,7 +798,10 @@
      brand-new blank one has nothing on it yet. */
   .chip-thumb.empty { background:repeating-linear-gradient(45deg,
           #fff 0 6px, #F1F4F2 6px 12px); }
-  .chip-view { position:absolute; inset:0; overflow:hidden; }
+  /* pointer-events:none: the thumbnail is a live clone of the sheet, links
+     included — a click on one of the 21 links covering page 12's chip
+     navigated the whole editor to capitol.hawaii.gov. The chip takes the click. */
+  .chip-view { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .chip.hidden-pg { opacity:.45; }
   .chip.hidden-pg .chip-thumb { border-style:dashed; }
   .chip.blank .chip-thumb { border-style:dashed; }
@@ -2181,7 +2184,7 @@
     <div class="sizegrid" id="size-list"></div>
   </div>
   <span class="bar-sep"></span>
-  <button id="undo" disabled aria-label="Undo (⌘Z)">↶</button>
+  <button id="undo" disabled aria-label="Undo (⌘Z) — the last 200 steps are kept" title="Undo (⌘Z) — the last 200 steps are kept">↶</button>
   <button id="redo" disabled aria-label="Redo (⌘⇧Z)">↷</button>
   <button id="steps" aria-label="History — every step you can undo, to jump back to one">⏱</button>
   <button id="save" disabled>Save draft</button>
@@ -3345,6 +3348,7 @@ function engineRemember(id, base, urls) {
 let PROJECT = new URLSearchParams(location.search).get('project') || '';
 let PBASE = '';                 // '' = this directory
 let REGISTRY = null;
+let UNKNOWN_PROJECT = '';           // the ?project= nobody here answers to
 
 const withBase = u => PBASE ? PBASE.replace(/\/+$/, '') + '/' + u : u;
 
@@ -3362,7 +3366,12 @@ async function loadRegistry() {
   try { REGISTRY = JSON.parse(await get('projects.json')); } catch (e) { REGISTRY = null; }
   if (!REGISTRY) { PROJECT = ''; return; }
   if (PROJECT && REGISTRY[PROJECT]) PBASE = REGISTRY[PROJECT].base || '';
-  else PROJECT = '';            // unknown id: fall back to the default engine
+  else {
+    // A stale link opened the default report under the link's own id with
+    // nothing said; the idle line now says which report this is instead.
+    if (PROJECT) UNKNOWN_PROJECT = PROJECT;
+    PROJECT = '';                 // unknown id: fall back to the default engine
+  }
   // Switching reports is File > Open now. The <select> that used to sit in the
   // bar was a second way to do the same thing, in a place that had to explain
   // itself; the menu is where a document app keeps it, and the window title
@@ -3446,6 +3455,9 @@ const writeSlot = (k, v) => {
   // the slot in two, and pasting a key the document already has refused the
   // whole file for a duplicate. Refused at the write, the way a malformed
   // sources line is: named, nothing saved, the words still on screen to fix.
+  // Returns false when the write was REFUSED, so a caller that rewrites
+  // many slots (Change all) can count and name the ones that did not land
+  // instead of announcing every hit as changed.
   const marker = v.split('\n').find(l => MARKER_RE.test(l.trim()));
   if (marker) {
     console.warn('refused a slot marker inside slot text:', marker);
@@ -11207,7 +11219,16 @@ function findTargets() {
 
 const findRe = (needle, { cased, whole, grep }) => {
   const esc = grep ? needle : needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(whole ? `\\b(?:${esc})\\b` : esc, cased ? 'g' : 'gi');
+  // \b is ASCII: "Whole words" found no ʻāina, no lā, no $419. A word edge
+  // is where a letter or digit of ANY script stops; the u flag makes \p{}
+  // mean that. A GREP pattern that is not valid under u (an escaped
+  // hyphen, say) falls back to the old edges rather than refusing.
+  const flags = cased ? 'g' : 'gi';
+  if (whole) {
+    try { return new RegExp(`(?<![\\p{L}\\p{N}_])(?:${esc})(?![\\p{L}\\p{N}_])`, flags + 'u'); }
+    catch (e) { return new RegExp(`\\b(?:${esc})\\b`, flags); }
+  }
+  return new RegExp(esc, flags);
 };
 /** What one hit changes to. Literal text in plain mode — a $ is a dollar
  *  sign — and $1…$99, $& and $$ in GREP mode; wrapped in the character style
@@ -11433,12 +11454,13 @@ function paintFindList() {
     if (!seen.has(k)) seen.set(k, []);
     seen.get(k).push(h);
   });
-  [...seen.entries()].slice(0, 40).forEach(([label, hits]) => {
+  const groups = [...seen.entries()];
+  groups.slice(0, 40).forEach(([label, hits]) => {
     const g = document.createElement('div');
     g.className = 'find-group';
     const lab = document.createElement('p');
     lab.className = 'find-where';
-    lab.textContent = `${label} · ${hits.length}`;
+    lab.textContent = `${label} · ${hits.length}${hits.length > 4 ? ` (${hits.length - 4} more not shown)` : ''}`;
     g.appendChild(lab);
     hits.slice(0, 4).forEach(h => {
       const p = document.createElement('p');
@@ -11453,13 +11475,23 @@ function paintFindList() {
         p.addEventListener('click', () => {
           const d = $('out').contentDocument;
           const el = d && d.querySelector(`[data-slot="${CSS.escape(h.target.key)}"]`);
-          if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          if (el) jumpTo(el, 'center');
         });
       }
       g.appendChild(p);
     });
     list.appendChild(g);
   });
+  // The list is capped (40 places, 4 hits each) and used to end without a
+  // word about it: "481 hits" above, 113 shown, and Change all covering
+  // places nobody had seen.
+  if (groups.length > 40) {
+    const more = document.createElement('p');
+    more.className = 'ch-eg find-more';
+    const k = groups.length - 40;
+    more.textContent = `… and ${k} more ${k === 1 ? 'place' : 'places'} not shown here — Change all covers them too`;
+    list.appendChild(more);
+  }
 }
 
 async function findReplaceAll() {
@@ -11470,18 +11502,28 @@ async function findReplaceAll() {
   // that took forty undos to back out would not be one anybody trusted.
   pushHistory();
   const done = new Set();
+  let refused = 0, why = '';
   findState.hits.forEach(h => {
     if (done.has(h.target.key)) return;             // a target is rewritten once
     done.add(h.target.key);
-    h.target.write(h.target.read().replace(findRe(findState.needle, findState),
+    const ok = h.target.write(h.target.read().replace(findRe(findState.needle, findState),
       (...args) => findChangeOf(findState, args)));
+    // writeSlot refuses a result it will not store (a line that would be a
+    // slot marker, a malformed sources line) and says why on the status
+    // line. "changed 1 hit in 1 place" then overwrote that, so the refusal
+    // read as a success.
+    if (ok === false) { refused++; why = $('stat').textContent; }
   });
   markDirty();
   await render();
   findRun();
   renderFindPanel();
-  $('stat').textContent = `changed ${n} ${n === 1 ? 'hit' : 'hits'} in `
-    + `${done.size} ${done.size === 1 ? 'place' : 'places'}`;
+  const changed = done.size - refused;
+  $('stat').textContent = refused
+    ? `${changed ? `changed ${changed} ${changed === 1 ? 'place' : 'places'}; ` : ''}`
+      + `${refused} ${refused === 1 ? 'place' : 'places'} refused the change — ${why}`
+    : `changed ${n} ${n === 1 ? 'hit' : 'hits'} in `
+      + `${done.size} ${done.size === 1 ? 'place' : 'places'}`;
 }
 
 // ------------------------------------------------------- the stylesheet
@@ -15437,7 +15479,7 @@ function chip(pid, pos, label, isHidden) {
   // Click a visible chip to scroll to it; the rail is navigation too.
   if (!isHidden) c.addEventListener('click', () => {
     const sec = (docSheets().find(s => String(s.id) === String(pid)) || {}).pg;
-    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (sec) jumpTo(sec, 'start');
     list.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c));
   });
   // Drag to reorder — only where an order is honoured.
@@ -17308,7 +17350,7 @@ function layersRender() {
         + `[data-shape="${CSS.escape(o.id)}"]`);
       if (!el) return;
       setSel(d, [o.id]);
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      jumpTo(el, 'center');
       layersRender();
     });
     r.addEventListener('dragstart', e =>
@@ -19721,6 +19763,7 @@ function bindMeasure(d) {
 const clearGuides = d => d.querySelectorAll('.ds-guide').forEach(g => g.remove());
 
 // ---- history: every move is undoable, or it is not safe to experiment ----
+const UNDO_DEPTH = 200;
 const past = [], future = [];
 const snapshot = () => JSON.stringify({ source, layout });
 // Reflect what's undoable on the toolbar buttons. The buttons only mirror
@@ -19753,7 +19796,10 @@ function pushHistory() {
   const sn = snapshot();
   past.push(sn);
   stepTimes.set(sn, Date.now());
-  if (past.length > 60) stepTimes.delete(past.shift());
+  // 200 steps, said on the button. The cap was 60 and nowhere: a long
+  // session of nudges lost its way back silently. A snapshot is ~20–35KB,
+  // so this is a few MB, flat.
+  if (past.length > UNDO_DEPTH) stepTimes.delete(past.shift());
   future.length = 0;
   syncHistoryButtons();
 }
@@ -21707,7 +21753,9 @@ const IDLE_STAT = 'live — edits here and from Claude land in the same files';
 function sayIdle() {
   const st = $('stat');
   if (st.classList.contains('err')) return;
-  st.textContent = IDLE_STAT;
+  st.textContent = UNKNOWN_PROJECT
+    ? `no report called "${UNKNOWN_PROJECT}" on this server — this is ${M && M.id}. File ▸ Open lists the rest`
+    : IDLE_STAT;
 }
 (function watchStat() {
   const el = $('stat');
@@ -23275,9 +23323,15 @@ async function collabBranchStillOurs() {
 /** A collaborator saved: their commit holds this document (to within a
  *  keystroke), so from here "unsaved changes" means changed since THEIR
  *  save — and the room's draft branch exists now, whoever created it. */
-function collabSaved(sha) {
+function collabSaved(sha, info) {
   if (!collab || !sha) return;
   const f = collab.files();
+  // A RESTORE by someone else replaced the whole document — unsaved words
+  // of yours in any paragraph included — and the room's undo steps cannot
+  // bring them back (undoing one re-inserts them beside the restored
+  // copy). Say what happened, rather than "it holds what is on screen".
+  const restored = info && info.restored;
+  const hadMine = restored && (source !== original || layoutSaid(layout) !== layoutSaid(JSON.parse(layoutOrig || '{}')));
   original = f.content; layoutOrig = f.layoutText;
   if (docStore()) { docVersion = sha; hubMarkSeen(sha); }
   if (collabShared() && !draftBranch && !docStore()) {
@@ -23287,6 +23341,14 @@ function collabSaved(sha) {
   }
   clearDraftCache();
   markDirty();
+  if (restored) {
+    $('stat').textContent = hadMine
+      ? 'a collaborator restored an earlier version, which replaced the edits you had not saved — '
+        + 'ask them, or bring the newer version back from History'
+      : 'a collaborator restored an earlier version — it is what is on screen now';
+    if (hadMine) { $('stat').classList.add('err'); setTimeout(() => $('stat').classList.remove('err'), 12000); }
+    return;
+  }
   $('stat').textContent = 'a collaborator saved the shared draft — it holds what is on screen';
 }
 
@@ -24965,6 +25027,22 @@ function stageChainWire(d) {
     g.stage.scrollTop = out - back;
     g.se.scrollTop += back / g.s;
   }, { passive: true });
+}
+
+/** Scroll the report so `el` is at the top (or the middle) of the view —
+ *  smoothly, and by scrolling the report WINDOW, never scrollIntoView.
+ *  scrollIntoView scrolls every ancestor too: it pushed the stage band
+ *  out, the band-return listener above handed it back with an instant
+ *  scrollTop write, and that write cancelled the smooth scroll in flight.
+ *  A page chip, a Layers row and Find's "Show me" all arrived nowhere (a
+ *  12-page jump ended on page 1). The report's own window is the one
+ *  scroller the band listener leaves alone. */
+function jumpTo(el, block = 'start') {
+  const w = $('out').contentWindow;
+  if (!w || !el) return;
+  const r = el.getBoundingClientRect();
+  const top = w.scrollY + r.top - (block === 'center' ? Math.max(0, (w.innerHeight - r.height) / 2) : 8);
+  w.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 /** A render replaces the page's nodes, so a report's entrance animation
@@ -27566,7 +27644,10 @@ async function hubRestore(v) {
     docVersion = j.version;
     hubMarkSeen(j.version);
     await render();
-    if (collab) collab.setBaseSha(j.version);
+    // The room's undo steps are from BEFORE the restore: undoing one now
+    // re-inserts old words beside the restored copy, for everyone. Forgotten
+    // here and, through the flag on the version, in every other editor.
+    if (collab) { collab.forgetHistory(); collab.setBaseSha(j.version, { restored: true }); }
     clearDraftCache();
     markDirty();
     $('stat').textContent = `restored — the version from ${fmtWhen(v.updated_at)} is the current one now`;
@@ -28795,6 +28876,19 @@ async function hubCommentDelete(id) {
   return got;
 }
 async function hubReplyAdd(id, text, mentions) {
+  // A card still waiting for the hub's answer has a provisional id; a reply
+  // posted under it went to /comments/pending-…/replies and came back "no
+  // such comment", words gone. Wait for the real id (hubCommentsMerge
+  // leaves it on the card as __clientId) — one round trip, normally.
+  if (String(id).startsWith('pending-')) {
+    for (let i = 0; i < 100; i++) {
+      const real = hubComments.find(x => x.__clientId === id && !x.pending);
+      if (real) { id = real.id; break; }
+      if (!hubComments.some(x => x.id === id)) { $('stat').textContent = 'reply not added: the comment was not posted'; return null; }
+      await new Promise(r => setTimeout(r, 150));
+    }
+    if (String(id).startsWith('pending-')) { $('stat').textContent = 'reply not added: the comment is still posting — try again in a moment'; return null; }
+  }
   const c = hubComments.find(x => x.id === id);
   const was = hubCopy(c);
   if (c) {
@@ -30496,8 +30590,13 @@ const NEW_REPORT_SIZES = [
   { value: 'slide169', label: 'Slide 16:9 — 13.33 × 7.5 in', w: 13.333, h: 7.5 },
   { value: 'slide43',  label: 'Slide 4:3 — 10 × 7.5 in',     w: 10,     h: 7.5 },
 ];
+// "Probe ʻŌlelo Hawaiʻi" slugged to probe-lelo-hawai-i: the kahakō and the
+// ʻokina were "not a letter" and became hyphens. The marks come off (ō → o)
+// and the ʻokina simply goes (Hawaiʻi → hawaii), as the org's own URLs do.
 const slugifyReport = s =>
-  s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+   .replace(/[\u02bb\u2018\u2019']/g, '')
+   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 async function newReport(intoNewWindow) {
   // What this server can start a report FROM. Fetched fresh (it is one tiny
@@ -30550,15 +30649,15 @@ async function newReport(intoNewWindow) {
   $('stat').textContent = `creating "${name}"…`;
   let j;
   try {
-    j = await (await fetch('/__scaffold', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug, template: r.template || '',
-                             scheme: r.scheme || '',
-                             size: { w: size.w, h: size.h } }),
-    })).json();
+    // postLocal, so a crash page or a gone server is said as such rather
+    // than as "Unexpected token '<'"; a template's first build can take a
+    // while, hence the ceiling.
+    j = await postLocal('/__scaffold', { name, slug, template: r.template || '',
+                                         scheme: r.scheme || '',
+                                         size: { w: size.w, h: size.h } }, 120000);
   } catch (e) {
     $('stat').textContent = 'could not create it: ' + e.message;
+    $('stat').title = e.message;
     return;
   }
   if (!j.ok) { $('stat').textContent = j.error || 'could not create it'; return; }

@@ -647,6 +647,27 @@ test('offline is said above the page, and what was done offline is shared when t
   await expect.poll(() => slot(b), { timeout: 15_000 }).toBe('Typed while offline.');
 });
 
+test('a socket that dies without a close event is noticed, and the session rejoins', async () => {
+  // A proxy that swallows the close, a laptop lid, a TCP peer that simply
+  // stops: the browser's socket sits CLOSING (or open and silent) and no
+  // close event ever comes. Both editors said "live" while nothing crossed,
+  // for as long as the room was open (2026-10-22 audit). Under Miniflare
+  // ws.close() alone produces exactly that: the close never completes.
+  const before = await a.evaluate('collab.provider.ws && collab.provider.ws.url');
+  await a.evaluate('collab.provider.ws.close()');
+  // Noticed, and back on a NEW socket, within seconds — never a reload.
+  await expect.poll(() => a.evaluate(`(() => { const p = collab.provider;
+    return p.ws && p.ws.readyState === 1 && p.wsconnected && docsync.api.status().collab.status === 'live'; })()`),
+    { timeout: 30_000, message: 'the dead socket was never replaced' }).toBe(true);
+  expect(before).toBeTruthy();
+  // And the room is whole again: an edit on each side reaches the other.
+  await api(a, `setSlot(${JSON.stringify(SLOT)}, "After the silent drop, from A.")`);
+  await expect.poll(() => slot(b), { timeout: 20_000 }).toBe('After the silent drop, from A.');
+  await api(b, `setSlot(${JSON.stringify(SLOT)}, "After the silent drop, from B.")`);
+  await expect.poll(() => slot(a), { timeout: 20_000 }).toBe('After the silent drop, from B.');
+  await expect.poll(async () => (await status(a)).peers, { timeout: 20_000 }).toBe(2);
+});
+
 test('an unshared project shows no chip and keeps the snapshot undo stack', async ({ page }) => {
   await gotoEditor(page, '?collab=0');
   const s = await status(page);
