@@ -30,6 +30,7 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { test, expect, waitForFirstRender, openFileMenu, openShare } = require('./fixtures/editor-test');
+const { claimPort } = require('./fixtures/ports');
 
 const REPO = path.resolve(__dirname, '../..');
 // PRIMER_HUB_DIR is used as it is: vendored into, then served. Unset, the
@@ -37,14 +38,18 @@ const REPO = path.resolve(__dirname, '../..');
 const HUB_GIVEN = process.env.PRIMER_HUB_DIR || null;
 const HUB_SRC = HUB_GIVEN || path.resolve(REPO, '../staff-updates-internal');
 let HUB_DIR = HUB_GIVEN;
-// Its own ports: collab/'s relays sit on 8788/8789, collab.spec on 8792,
-// collab-drafts on 8793, hub-check on 8796/8797.
-const RELAY_PORT = 8794;
-const HUB_PORT = 8798;
+// Its own ports, claimed in beforeAll (fixtures/ports.js): the relay from
+// 8794 (PRIMER_HUB_RELAY_PORT), the hub from 8798 (PRIMER_HUB_PORT) and each
+// person's door from 8799 and 8800 (PRIMER_HUB_ADA_PORT, PRIMER_HUB_GRACE_PORT)
+// — clear of collab/'s relays on 8788/8789, collab.spec from 8792,
+// collab-drafts from 8793 and hub-check on 8796/8797.
+let RELAY_PORT = 0;
+let HUB_PORT = 0;
 const PROJECT = 'demo-report';
 // Each person reaches the hub through their own door, at their own port.
-const ADA = 'ada@hiappleseed.org', ADA_PORT = 8799;
-const GRACE = 'grace@hibudget.org', GRACE_PORT = 8800;
+const ADA = 'ada@hiappleseed.org';
+const GRACE = 'grace@hibudget.org';
+let ADA_PORT = 0, GRACE_PORT = 0;
 const hubAs = port => `http://127.0.0.1:${port}`;
 
 test.describe.configure({ mode: 'serial' });
@@ -140,6 +145,10 @@ async function open(browser, port) {
 
 test.beforeAll(async ({ browser: b_ }) => {
   browser = b_;
+  RELAY_PORT = await claimPort('hub-relay', 8794, { span: [0, 1000] });
+  HUB_PORT = await claimPort('hub', 8798, { span: [0, 1000] });
+  ADA_PORT = await claimPort('hub-ada', 8799);
+  GRACE_PORT = await claimPort('hub-grace', 8800);
   if (!HUB_GIVEN) HUB_DIR = copyHub(HUB_SRC);
   execFileSync('python3', ['-m', 'docsync.hub', '--into', HUB_DIR], { cwd: REPO, stdio: 'inherit' });
   const { startDev } = await import('../../collab/devserver.mjs');

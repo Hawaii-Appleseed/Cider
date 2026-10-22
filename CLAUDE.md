@@ -263,6 +263,13 @@ Rules that bite:
   20k charts with the working tree's engine and with HEAD's and prints what
   moved — a published report must not move because the engine grew, and every
   render it reports has to be accounted for in `docsync/CHART_PARITY.md`),
+  `python3 -m docsync.build_parity` (the same property for whole pages: every
+  bound report built by the working tree and by HEAD, date pinned, byte for
+  byte; a page that moved is explained by its own files changing, else in
+  `docsync/BUILD_PARITY.md`). Both run in CI as the `Engine parity` job
+  against the commit the PR started from, and the gate waits for them: a
+  chart that moved without `CHART_PARITY.md` changing, or a page the engine
+  moved without `BUILD_PARITY.md` changing, fails the PR (2026-10-21),
   `python3 -m docsync.check` (every report's rendered OUTPUT:
   citation integrity, unrendered markdown, chart content outside its viewBox,
   text below the legibility floor — plus an `edit-mode draft` pass per binding
@@ -296,7 +303,14 @@ Rules that bite:
   both pass in isolation. The old docsync.yml scaffold race (zz-spec-*
   residue, stomped registries) is FIXED: server writes hold a cross-process
   lock and specs clean up surgically — see tests/editor/fixtures/
-  host-state.js before writing any spec that scaffolds or adopts.
+  host-state.js before writing any spec that scaffolds or adopts. The three
+  collab specs claim their ports in beforeAll (`tests/editor/fixtures/
+  ports.js`: `PRIMER_COLLAB_PORT`, `PRIMER_DRAFTS_PORT`, `PRIMER_HUB_RELAY_PORT`,
+  `PRIMER_HUB_PORT`, `PRIMER_HUB_ADA_PORT`, `PRIMER_HUB_GRACE_PORT`, else the
+  first free port from 8792/8793/8794/8798/8799/8800, every tenth), so they
+  run on a machine that already uses those numbers; and a relay they start
+  (`collab/devserver.mjs`) is killed with its process group when the worker
+  that started it dies, hook timeout included — never left holding a port.
 - **Text size has a floor, and it is stated in POINTS.** `docsync/layout.py`
   holds `MIN_TEXT_PT` / `MIN_LABEL_PT` / `MIN_SUBLABEL_PT`; everything else
   converts off them. This exists because one page carries three units and

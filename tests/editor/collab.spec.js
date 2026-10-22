@@ -7,16 +7,19 @@
 // The relay is booted HERE, per spec file, rather than as a second entry in
 // playwright.config's webServer: only this spec needs it, and a ~10s Worker
 // boot on every one of the other ~120 files would be paid for nothing. It
-// gets its own port (8792) and inspector port so it never collides with
-// collab/'s own test relays (8788/8789).
+// claims its own port in beforeAll (PRIMER_COLLAB_PORT, else the first free
+// one from 8792 — fixtures/ports.js) and the inspector port that goes with
+// it, so it collides neither with collab/'s own test relays (8788/8789) nor
+// with whatever else the machine happens to run.
 //
 // Local mode throughout: the editor talks to the relay with a `dev:<login>`
 // token, which the Worker accepts only under its development secret (see
 // collab/src/index.js handleAuth). `?collab=` and `?collabroom=` are honoured
 // by a LOCAL editor only, and the room tag keeps every run in a fresh room.
 const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { claimPort } = require('./fixtures/ports');
 
-const RELAY_PORT = 8792;
+let RELAY_PORT = 0;                    // claimed in beforeAll
 const EDITOR_PORT = process.env.PRIMER_TEST_PORT || 8199;
 const SLOT = 'whopays.p1';
 
@@ -65,6 +68,7 @@ async function open(browser, as) {
 }
 
 test.beforeAll(async ({ browser }) => {
+  RELAY_PORT = await claimPort('collab', 8792, { span: [0, 1000] });
   const { startDev } = await import('../../collab/devserver.mjs');
   relay = await startDev({
     port: RELAY_PORT,

@@ -5,7 +5,9 @@
 //
 // Hosted mode against the in-memory FakeGitHub — one instance for both
 // editors, so what A commits is what B's next Save is measured against — and
-// a real `wrangler dev` relay booted here on its own port (8793). A hosted
+// a real `wrangler dev` relay booted here on a port of its own, claimed in
+// beforeAll (PRIMER_DRAFTS_PORT, else the first free one from 8793 —
+// fixtures/ports.js). A hosted
 // editor ignores `?collab=` by design, so the relay is named the way a real
 // project names it: through the manifest, via a route that adds `collab` to
 // engine/manifest.json. Contexts are built by hand rather than through the
@@ -13,8 +15,9 @@
 // editors and the branch persist across the tests below, which run in order.
 const { test, expect, gotoEditor, PING, EVENTS } = require('./fixtures/editor-test');
 const { FakeGitHub } = require('./fixtures/fake-github');
+const { claimPort } = require('./fixtures/ports');
 
-const RELAY_PORT = 8793;
+let RELAY_PORT = 0;                    // claimed in beforeAll
 const EDITOR_PORT = process.env.PRIMER_TEST_PORT || 8199;
 const SLOT = 'whopays.p1';
 const BRANCH = 'draft/budget-primer';
@@ -86,6 +89,7 @@ async function save(page, choice) {
 }
 
 test.beforeAll(async ({ browser }) => {
+  RELAY_PORT = await claimPort('drafts', 8793, { span: [0, 1000] });
   const { startDev } = await import('../../collab/devserver.mjs');
   relay = await startDev({
     port: RELAY_PORT,
