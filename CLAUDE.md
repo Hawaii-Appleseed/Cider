@@ -232,6 +232,16 @@ Rules that bite:
   `card(detachable=…)`, `is_light_bg`) — zero-stylesheet, importable by any
   project renderer, staged into the browser engine automatically. Add new
   reusable capabilities there, not in one report's renderer.
+- **Two seams with one owner each (2026-10-22).** Every object chord (⌘Z,
+  ⌘D, ⌘C/⌘V, ⌘G, ⌘], ⌘⇧], ⌘A, ⌘X, Delete, Enter, arrows…) is a row of
+  `CHORDS` in edit.html, and both key listeners — the page's (`keysFor`) and
+  the chrome's — do their own field guards and then call `objectChord`.
+  Never add a chord to a listener: add a row, and `tests/editor/seams.spec.js`
+  presses it from both documents. Every width or height lands through
+  `commitSize(d, el, {w, h})` — a handle drag, a group's corner, the pilot's
+  `place()` — which knows where each kind keeps its size (a text box's
+  height floor, a paragraph's `hmin`, a table's width only). Never write
+  `.w`/`.h` on a store from a new site: call it.
 - **A spec waits on the editor, not on a timer (2026-10-22).** `gotoEditor`
   returns when the editor says it is settled (`window.__dsSettled()`: the
   local probe answered, the first catch-up ping applied and any pull it
