@@ -48,8 +48,8 @@ const discover = () => {
 const WANTED = process.env.DS_ONLY || process.env.DS_SWEEP;
 // DS_PART=k/n walks every nth field (and object) from the kth: a big report
 // split across CI jobs, so the slowest sweep is no longer the run's long
-// pole (eviction-code-guide alone took 8.5 minutes). The cell, panel and
-// handle sweeps are small and run in part 1 only.
+// pole (eviction-code-guide alone took 8.5 minutes). Every sweep here walks
+// its part: fields, objects, cells, panels and handles alike.
 const PART = (m => m ? [+m[1], +m[2]] : null)(/^(\d+)\/(\d+)$/.exec(process.env.DS_PART || ''));
 const partOf = i => !PART || i % PART[1] === PART[0] - 1;
 const PART_TAG = PART ? ` (part ${PART[0]}/${PART[1]})` : '';
@@ -403,7 +403,8 @@ async function mouseSweep(page) {
 }
 
 // ---- cells, panels, handles ----------------------------------------------
-const cellSweep = page => page.evaluate(async () => {
+const cellSweep = (page, arg) => page.evaluate(async PART => {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const until = async (f, ms = 4000) => {
     const t0 = performance.now();
@@ -413,7 +414,8 @@ const cellSweep = page => page.evaluate(async () => {
   const D = () => document.getElementById('out').contentDocument;
   const cells = [...D().querySelectorAll('section.page [data-el^="table."] [data-cell]')]
     .filter(td => td.getClientRects().length)
-    .map(td => ({ id: td.closest('[data-el^="table."]').dataset.el, cell: td.dataset.cell }));
+    .map(td => ({ id: td.closest('[data-el^="table."]').dataset.el, cell: td.dataset.cell }))
+    .filter((c, i) => partOf(i));
   const fails = [];
   for (const c of cells) {
     const td = D().querySelector(`[data-el="${CSS.escape(c.id)}"] [data-cell="${c.cell}"]`);
@@ -430,13 +432,15 @@ const cellSweep = page => page.evaluate(async () => {
     await until(() => !renderRunning && !editing, 10000); await sleep(40);
   }
   return { n: cells.length, fails };
-});
+}, arg);
 
-const panelSweep = page => page.evaluate(async () => {
+const panelSweep = (page, arg) => page.evaluate(async PART => {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
   const inv = docsync.api.inventory();
   const fails = [];
-  let charts = 0, tables = 0;
+  let charts = 0, tables = 0, ei = 0;
   for (const pg of inv.pages) for (const e of pg.elements) {
+    if (!partOf(ei++)) continue;
     if (e.kind === 'chart') {
       charts++;
       openChartPanel(e.id);
@@ -455,17 +459,18 @@ const panelSweep = page => page.evaluate(async () => {
     }
   }
   return { charts, tables, fails };
-});
+}, arg);
 
 /** Drag one resize handle of every unlocked object with the real mouse. */
 async function handleSweep(page) {
-  const ids = await page.evaluate(() => {
+  const allIds = await page.evaluate(() => {
     const d = document.getElementById('out').contentDocument;
     const shown = id => { const el = d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`);
       return !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'); };
     return docsync.api.inventory().pages
       .flatMap(p => p.elements).filter(e => !e.locked && !e.hidden && e.box && shown(e.id)).map(e => e.id);
   });
+  const ids = allIds.filter((id, i) => partOf(i));
   const fails = [], noHandles = [];
   let n = 0;
   for (const id of ids) {
@@ -593,11 +598,9 @@ for (const rep of REPORTS) {
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
     const mo = await mouseSweep(page);
-    const whole = !PART || PART[0] === 1;
-    const none = { n: 0, charts: 0, tables: 0, fails: [], covered: [], noHandles: [], refused: [], skipped: [], unmeasured: [] };
-    const ce = whole ? await cellSweep(page) : none;
-    const pa = whole ? await panelSweep(page) : none;
-    const ha = whole ? await handleSweep(page) : none;
+    const ce = await cellSweep(page, PART);
+    const pa = await panelSweep(page, PART);
+    const ha = await handleSweep(page);
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: mouse opened ${mo.n} slots; ${ce.n} cells; ${pa.charts} charts, ${pa.tables} tables; ${ha.n} handles dragged, ${ha.noHandles.length} objects with no resize handle`,
