@@ -3451,14 +3451,14 @@ const writeSlot = (k, v) => {
     console.warn('refused a slot marker inside slot text:', marker);
     $('stat').textContent = `"${marker.trim()}" is a slot marker, and a line of `
       + 'its own here would split this slot — nothing was saved';
-    return;
+    return false;
   }
   if (k === 'sources') {
     const bad = badSourceLines(v);
     if (bad.length) {
       console.warn('refused malformed sources line(s):', bad);
       $('stat').textContent = `refused a malformed sources line: "${bad[0].slice(0, 70)}" — nothing was saved`;
-      return;
+      return false;
     }
   }
   // A slot the RENDERER asks for that this document has not got yet — docsync
@@ -3471,7 +3471,7 @@ const writeSlot = (k, v) => {
   // dict, so where a block sits has never decided anything.
   if (!slotRe(k).test(source)) {
     source = source.replace(/\s*$/, '') + `\n\n[[${k}]]\n${v.trim()}\n`;
-    return;
+    return true;
   }
   // The block's own notes ride along, after the words. They are invisible to
   // the renderer either way, so where they sit is a question of reading
@@ -3479,6 +3479,7 @@ const writeSlot = (k, v) => {
   // answer to it.
   const body = [v.trim(), ...slotNotes(k)].filter(Boolean).join('\n\n');
   source = source.replace(slotRe(k), (m, head) => head + body + '\n');
+  return true;
 };
 
 // --- markdown <-> rich text --------------------------------------------
@@ -6508,7 +6509,7 @@ function layerMenu(d, el, e) {
       item('Convert text to table', async () => {
         pushHistory();
         const r = textToTable(id);
-        if (r.error) { past.pop(); $('stat').textContent = r.error; return; }
+        if (r.error) { withdrawStep(); $('stat').textContent = r.error; return; }
         markDirty(); await render();
         setSel($('out').contentDocument, [r.id]);
         $('stat').textContent = `${r.rows} rows × ${r.cols} columns`;
@@ -8867,7 +8868,7 @@ function tableMenu(d, td, e) {
       for (let r = rg.r0; r <= rg.r1; r++) for (let c = rg.c0; c <= rg.c1; c++) keys.push(`${r},${c}`);
       const cur = ((t.cells || {})[`${ri},${ci}`] || {}).use;
       const row = (label, fn) => { const b = d.createElement('button'); b.textContent = label;
-        b.addEventListener('click', async () => { closeMenu(d); pushHistory(); const ok = await fn(); if (ok === false) { past.pop(); return; }
+        b.addEventListener('click', async () => { closeMenu(d); pushHistory(); const ok = await fn(); if (ok === false) { withdrawStep(); return; }
           markDirty(); await render(); paintCells($('out').contentDocument); }); sub.appendChild(b); };
       Object.keys(cellStyles()).sort().forEach(n => row((cur === n ? '✓ ' : '') + n, () => applyCellStyle(t, keys, n)));
       row('No cell style', () => applyCellStyle(t, keys, null));
@@ -14039,7 +14040,7 @@ async function deleteSel(d) {
     });
   }
   selIds.clear();
-  if (!touched) { past.pop(); return; }
+  if (!touched) { withdrawStep(); return; }
   markDirty();
   await render();
   // AFTER the render: the pipeline writes its own status ("unsaved changes"),
@@ -14169,7 +14170,7 @@ async function duplicateSel(d) {
   const wasGroup = selGroups().length === 1 && selGroups()[0].length === selIds.size
     && selGroups()[0].every(id => selIds.has(id));
   [...selIds].forEach(dup);
-  if (!copies.length) { past.pop(); return; }
+  if (!copies.length) { withdrawStep(); return; }
   // Duplicating a whole group hands back a group — the copy stays together,
   // as Canva's does.
   if (wasGroup && copies.length > 1) {
@@ -14311,7 +14312,7 @@ async function stepRepeatDialog(d) {
   const n = Math.max(1, Math.min(100, Math.round(+got.count) || 1));
   pushHistory();
   const made = stepRepeatIds(ids, n, +got.dx || 0, +got.dy || 0);
-  if (!made.length) { past.pop(); return; }
+  if (!made.length) { withdrawStep(); return; }
   setSel(d, [...ids, ...made]);
   markDirty();
   await render();
@@ -14858,12 +14859,20 @@ function wirePan(d) {
 
 /** Keyboard, inside the page: the top-level listener never hears iframe keys
  *  (undo was dead whenever focus sat in the report — a real bug until now). */
+// The iframe's document is REPLACED by most renders, so a listener on it
+// lives until the next edit unless it is put back every time. wire() runs
+// these on each fresh document; a listener registered anywhere else works
+// exactly once. Register here, never in wire() or keysFor() by hand.
+const DOCUMENT_WIRES = [];
+function onEachDocument(fn) { DOCUMENT_WIRES.push(fn); }
+window.__dsDocumentWires = () => DOCUMENT_WIRES.length;
+onEachDocument(wirePan);
+onEachDocument(d => d.addEventListener('paste', pasteLoose));
+onEachDocument(wireDrop);
+
 function keysFor(d) {
   wireFindKey(d);
   d.addEventListener('keydown', saveKey, true);    // capture: see saveKey
-  wirePan(d);
-  d.addEventListener('paste', pasteLoose);
-  wireDrop(d);
   d.addEventListener('keydown', e => {
     // Before the `editing` guard too — see the top-level listener.
     if (zoomKey(e)) return;
@@ -15074,7 +15083,8 @@ function immovableSlots(d) {
     const key = el.dataset.slot;
     if (!key || seen.has(key) || el.closest('[data-el]') || el.closest('.ds-edit')) return;
     seen.add(key);
-    out.push({ key, page: pageIdOf(el.closest('section.page')) });
+    const pg = el.closest('section.page');
+    out.push({ key, page: pageNumOf(d, pg) ?? pageIdOf(pg) });
   });
   return out;
 }
@@ -16923,8 +16933,7 @@ function storyWrite(key, md) {
     if (!md.trim()) { $('stat').textContent = 'a text box needs words — delete it on the page instead'; return false; }
     b.md = fixOkina(md); return true;
   }
-  writeSlot(key, md);
-  return readSlot(key) === md.replace(/\n{3,}/g, '\n\n').trim();
+  return writeSlot(key, md) !== false;
 }
 function openStoryEditor() {
   if ($('story')) return;
@@ -16957,7 +16966,7 @@ function openStoryEditor() {
       ta.addEventListener('change', async () => {
         if (ta.value === ta.dataset.was) return;
         pushHistory();
-        if (!storyWrite(it.key, ta.value)) { past.pop(); box.classList.add('bad'); return; }
+        if (!storyWrite(it.key, ta.value)) { withdrawStep(); box.classList.add('bad'); return; }
         box.classList.remove('bad');
         ta.dataset.was = ta.value;
         markDirty(); await render();
@@ -19736,6 +19745,21 @@ function pushHistory() {
   future.length = 0;
   syncHistoryButtons();
 }
+/** Take back the step pushHistory just marked, because the action it was
+ *  for turned out to do nothing (a duplicate of nothing copyable, a refused
+ *  conversion, a batch rolled back). Locally the snapshot comes off the
+ *  stack. In a session there is no snapshot: pushHistory marked a boundary
+ *  on the document's Y.UndoManager, and with nothing changed since, the
+ *  boundary is empty and harmless. Every site used to `past.pop()` itself —
+ *  in a session that popped a snapshot from before the session began, or
+ *  nothing, and batch() then JSON.parse'd undefined. */
+function withdrawStep() {
+  if (collab) { syncHistoryButtons(); return null; }
+  const sn = past.pop();
+  if (sn) stepTimes.delete(sn);
+  syncHistoryButtons();
+  return sn;
+}
 async function restore(json) {
   const st = JSON.parse(json);
   source = st.source;
@@ -20821,7 +20845,7 @@ function startDrag(d, el, e0, drillIn = false) {
     // reads, and the list (and every <sup> marker pointing into it) renumbers.
     if (members.length === 1 && (idOf(members[0]) || '').startsWith('endnote.')) {
       const moved = reorderEndnote(d, members[0]);
-      if (moved) markDirty(); else past.pop();   // no change: no undo entry
+      if (moved) markDirty(); else withdrawStep();   // no change: no undo entry
       clearGuides(d);
       await render();                            // snaps it back into the flow
       if (moved) $('stat').textContent = moved;  // after render, so it survives
@@ -24911,6 +24935,7 @@ function wire(roots) {
   // On the DOCUMENT, not its elements: a patch keeps the same document, so
   // re-adding these would double every keystroke and every selection read.
   if (fresh) {
+    DOCUMENT_WIRES.forEach(fn => fn(d));
     keysFor(d);
     wireMarkState(d);          // chrome B/I state tracks the edit selection
     anchorWire(d);             // the armed anchor click, once per document
@@ -31558,7 +31583,10 @@ function _pilotValidateSetSlot(key, md) {
   }
   return { ok: true };
 }
-function _pilotApplySetSlot(key, md) { writeSlot(key, md); return { key }; }
+function _pilotApplySetSlot(key, md) {
+  if (writeSlot(key, md) === false) throw new Error($('stat').textContent || 'the words were refused');
+  return { key };
+}
 
 // An element a pilot can address is USUALLY in the DOM — but inside a batch,
 // an op can name a box/shape an earlier op just created, which exists only in
@@ -33059,7 +33087,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
         args = args.map(a => resolve(a, named));
       } catch (e) {
         // unknown ref can't happen (checked above) — belt and braces
-        const rolled = JSON.parse(past.pop());
+        withdrawStep();
+        const rolled = JSON.parse(before);
         source = rolled.source; layout = rolled.layout;
         return { ok: false, error: `op ${i} (${op.verb}): ${e.message}` };
       }
@@ -33069,7 +33098,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
           // Nothing has rendered yet: put source/layout back exactly as the
           // snapshot holds them and withdraw the history entry. dirty was
           // never set, so the document is untouched by every measure.
-          const rolled = JSON.parse(past.pop());
+          withdrawStep();
+          const rolled = JSON.parse(before);
           source = rolled.source; layout = rolled.layout;
           return { ok: false, error: `op ${i} (${op.verb}): ${v.error}` };
         }
@@ -33079,7 +33109,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       catch (e) {
         // A verb that finds, mid-apply, that it cannot (a merge across
         // another's edge): the whole batch is undone, as a failed check is.
-        const rolled = JSON.parse(past.pop());
+        withdrawStep();
+        const rolled = JSON.parse(before);
         source = rolled.source; layout = rolled.layout;
         return { ok: false, error: `op ${i} (${op.verb}): ${e.message}` };
       }
@@ -33105,10 +33136,9 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     if (unseen.length) {
       const st = JSON.parse(before);
       source = st.source; layout = st.layout;
-      if (!collab) past.pop();
+      withdrawStep();
       markDirty();
       await render();
-      syncHistoryButtons();
       const drawn = _pilotDrawnPages();
       return { ok: false, error: `${unseen.map(a => a.id).join(', ')} would be saved and never seen: page `
         + `${unseen[0].page} does not draw ${unseen[0].verb.replace(/^add/, '').toLowerCase()}s, so nothing was changed`
@@ -33118,10 +33148,9 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       const why = renderError;
       const st = JSON.parse(before);
       source = st.source; layout = st.layout;
-      if (!collab) past.pop();
+      withdrawStep();
       markDirty();
       await render();
-      syncHistoryButtons();
       return { ok: false, error: 'the engine would not build the result, so nothing was changed'
         + (why ? ` — ${why}` : '') };
     }

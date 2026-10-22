@@ -171,3 +171,56 @@ test.describe('one size write', () => {
   });
 });
 const MINH = bb => 0.4;
+
+test.describe('one way to take a step back, one list of document wires, a writeSlot that answers', () => {
+  test('an action that did nothing leaves no undo step, and the batch rolls back to its own snapshot', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    const r = await page.evaluate(async () => {
+      const n0 = past.length;
+      pushHistory(); withdrawStep();                            // the pair, as every no-op action calls it
+      const n1 = past.length;
+      const src = source;
+      const b = await docsync.api.batch([{ verb: 'setSlot', args: ['groc.lead', 'changed'] },
+                                         { verb: 'place', args: ['no.such.thing', { x: 1 }] }]);
+      return { n0, n1, n2: past.length, bok: b.ok, same: source === src, canUndo: !$('undo').disabled };
+    });
+    expect(r.n1).toBe(r.n0);
+    expect(r.n2).toBe(r.n0);
+    expect(r.bok).toBe(false);
+    expect(r.same).toBe(true);
+  });
+
+  test('the wires registered for each document are put back after a render', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    expect(await page.evaluate(() => window.__dsDocumentWires())).toBeGreaterThanOrEqual(3);
+    await page.evaluate(() => docsync.api.setSlot('groc.lead', 'rendered once more'));   // a fresh document
+    await settled(page);
+    const n0 = await page.evaluate(() => layout.boxes.length);
+    let prevented;
+    await afterRenderPaste(page, () => page.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', 'after a render');
+      return !$('out').contentDocument.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    }).then(v => { prevented = v; }));
+    expect(prevented).toBe(true);
+    expect(await page.evaluate(() => layout.boxes.length)).toBe(n0 + 1);
+  });
+
+  test('writeSlot says whether it wrote, and a pilot hears a refusal', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    const r = await page.evaluate(async () => {
+      const a = writeSlot('groc.lead', 'fine');
+      const b = writeSlot('groc.lead', 'words\n\n[[groc.pay.p]]\n\nmore');
+      const c = writeSlot('sources', 'not a source line at all');
+      const d = writeSlot('brand.new.key', 'made');
+      const s = await docsync.api.setSlot('groc.lead', 'x\n\n[[groc.pay.p]]\n\ny');
+      return { a, b, c, d, sok: s.ok, serr: s.error, lead: readSlot('groc.lead') };
+    });
+    expect(r).toMatchObject({ a: true, b: false, c: false, d: true, sok: false, lead: 'fine' });
+    expect(r.serr).toMatch(/slot marker/);
+  });
+});
+async function afterRenderPaste(page, act) {
+  const { afterRender } = require('./fixtures/editor-test');
+  await afterRender(page, act);
+}
