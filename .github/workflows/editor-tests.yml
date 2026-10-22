@@ -133,8 +133,11 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     name: test (${{ matrix.shard }}/12)
-    # A wedged shard holds one of the org's 20 slots until it is killed.
-    timeout-minutes: 15
+    # A wedged shard holds one of the org's 20 slots until it is killed — but
+    # the browser install step alone took 10–13 minutes on four runners at
+    # once (2026-10-22, a slow cache restore), which cut off shards with every
+    # test green. Room for that, still bounded.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -216,7 +219,7 @@ jobs:
       matrix:
         report: ${{ fromJSON(needs.changes.outputs.sweep) }}
     name: sweep (${{ matrix.report }})
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
