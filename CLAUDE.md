@@ -241,7 +241,14 @@ Rules that bite:
   `commitSize(d, el, {w, h})` — a handle drag, a group's corner, the pilot's
   `place()` — which knows where each kind keeps its size (a text box's
   height floor, a paragraph's `hmin`, a table's width only). Never write
-  `.w`/`.h` on a store from a new site: call it.
+  `.w`/`.h` on a store from a new site: call it. Three more: an action that
+  pushed a step and then did nothing calls `withdrawStep()` (never
+  `past.pop()` — in a hub session there is no snapshot to pop, and batch()
+  once JSON.parse'd undefined there); a listener the page's document needs
+  is registered with `onEachDocument(fn)` (the document is replaced by most
+  renders, and `wire()` runs the list on each fresh one — a listener added
+  anywhere else works exactly once); and `writeSlot` returns false when it
+  refused the words, so a caller never assumes they landed.
 - **A spec waits on the editor, not on a timer (2026-10-22).** `gotoEditor`
   returns when the editor says it is settled (`window.__dsSettled()`: the
   local probe answered, the first catch-up ping applied and any pull it
