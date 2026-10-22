@@ -7,7 +7,7 @@
 // docsync/test_docsync.py; this is the editor's promise: anchoring never moves
 // the thing, moving the text does, dragging keeps the paragraph and changes
 // the distance, and releasing leaves it where it stands.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -44,12 +44,12 @@ test('an anchored box follows its paragraph when the text above it grows, and a 
       const got = await docsync.api.addTextBox({ page: pg, x: 5.5, y, w: 2.3, md: 'A note that belongs to this paragraph.' });
       return got.id;
     }, { y: y0, pg: host.page });
-    await page.waitForTimeout(600);
+    await settled(page);
 
     // Anchoring moves NOTHING: the box stays where it was put.
     const r = await page.evaluate(({ id, key }) => docsync.api.anchor(id, key, { edge: 'bottom' }), { id, key: host.key });
     expect(r.ok).toBe(true);
-    await page.waitForTimeout(600);
+    await settled(page);
     const st = await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).anchor, id);
     expect(st.to).toBe(host.key);
     expect(st.edge).toBe('bottom');
@@ -72,7 +72,7 @@ test('an anchored box follows its paragraph when the text above it grows, and a 
 
     // A drag (place) keeps the paragraph and changes the DISTANCE.
     await page.evaluate(({ id, y }) => docsync.api.place(id, { y }), { id, y: +(top2 + 1).toFixed(2) });
-    await page.waitForTimeout(1500);
+    await settled(page);
     const st2 = await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).anchor, id);
     expect(st2.to).toBe(host.key);
     expect(Math.abs(st2.dy - 1.5)).toBeLessThan(0.04);
@@ -80,7 +80,7 @@ test('an anchored box follows its paragraph when the text above it grows, and a 
 
     // ⌘Z undoes the drag as one step: back to half an inch under the paragraph.
     await page.keyboard.press('Meta+z');
-    await page.waitForTimeout(1500);
+    await settled(page);
     expect(Math.abs((await boxTop(page, id)) - top2)).toBeLessThan(0.03);
   });
 
@@ -131,16 +131,16 @@ test('an anchored box can wrap: it floats beside its paragraph, the lines flow a
       const got = await docsync.api.addTextBox({ page: pg, x: 5.5, y, w: 2, md: 'A figure the text should flow around.' });
       return got.id;
     }, { y: +(host.top + 0.2).toFixed(2), pg: host.page });
-    await page.waitForTimeout(600);
+    await settled(page);
     // Wrap needs the anchor, and says so.
     const early = await page.evaluate(id => docsync.api.wrap(id, 'right'), id);
     expect(early.ok).toBe(false);
     expect(early.error).toMatch(/not anchored/);
     await page.evaluate(({ id, key }) => docsync.api.anchor(id, key), { id, key: host.key });
-    await page.waitForTimeout(800);
+    await settled(page);
     const r = await page.evaluate(id => docsync.api.wrap(id, 'right'), id);
     expect(r.ok).toBe(true);
-    await page.waitForTimeout(1200);
+    await settled(page);
     expect(await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).wrap, id)).toBe('right');
     // The page: a float, sitting just before its paragraph in the same flow —
     // a sibling, never a child, so the paragraph's own markup is untouched.
@@ -174,7 +174,7 @@ test('an anchored box can wrap: it floats beside its paragraph, the lines flow a
     expect(p.error).toMatch(/wraps around/);
     // Off again: back on top of the text, absolute, at its anchor distance.
     await page.evaluate(id => docsync.api.wrap(id, null), id);
-    await page.waitForTimeout(1200);
+    await settled(page);
     const back = await page.evaluate(id => {
       const d = document.getElementById('out').contentDocument;
       const el = d.querySelector(`[data-el="${id}"]`);

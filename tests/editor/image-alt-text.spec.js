@@ -5,8 +5,7 @@
 // that is what the menu and describeImage() rewrite; audit() names every image
 // still described by its file name. A designed figure's description (data-desc)
 // is context-menus.spec.js. Local mode.
-const { test, expect, gotoEditor, dialog, fillDialog, submitDialog,
-        } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, dialog, fillDialog, submitDialog, settled } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
@@ -77,7 +76,7 @@ test.describe('image alt text', () => {
       const frame = page.frameLocator('#out');
       const box = frame.locator(`[data-el="${id}"]`);
       await box.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await settled(page);
       await box.click({ button: 'right' });
       await page.locator('#out').contentFrame()
         .getByRole('button', { name: 'Description (for screen readers)…' }).click();

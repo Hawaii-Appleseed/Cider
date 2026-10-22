@@ -5,7 +5,7 @@
 // style. Drop caps and list looks need a pseudo-element, which an inline style
 // cannot reach — TYPE_CSS rides out once, only when something asks for one.
 // Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
@@ -19,7 +19,7 @@ async function addBox(page, md) {
 test.describe('paragraph keys', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
-    await page.waitForTimeout(600);
+    await settled(page);
   });
 
   test('each key lands as the CSS it means', async ({ page }) => {

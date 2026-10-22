@@ -3,7 +3,7 @@
 // Delete shape and Reset to its designed place could not be undone, and a
 // right-click opened a menu about one thing while the selection — and the
 // strip — stayed on another.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const P = 'para.groc.lead', SLOT = 'groc.lead';
 
@@ -37,7 +37,7 @@ test.describe('Escape keeps what was typed', () => {
     expect(await page.evaluate(k => ({ editing, sel: [...selIds], kept: readSlot(k).includes('Zq') }), SLOT))
       .toEqual({ editing: false, sel: [P], kept: true });
     await page.evaluate(() => undo());
-    await page.waitForTimeout(800);
+    await settled(page);
     expect(await page.evaluate(k => readSlot(k), SLOT)).toBe(was);
   });
 
@@ -116,14 +116,14 @@ test.describe('the menu actions that could not be undone', () => {
     await page.waitForTimeout(800);
     expect(await page.evaluate(i => layout.shapes.some(s => s.id === i), id)).toBe(false);
     await page.evaluate(() => undo());
-    await page.waitForTimeout(800);
+    await settled(page);
     expect(await page.evaluate(i => layout.shapes.some(s => s.id === i), id)).toBe(true);
   });
 
   test('Reset to its designed place comes back on ⌘Z', async ({ page }) => {
     await gotoEditor(page, '?project=uhero-trc-summary');
     await page.evaluate(async id => { await docsync.api.place(id, { x: 1, y: 3 }); }, P);
-    await page.waitForTimeout(500);
+    await settled(page);
     const moved = await page.evaluate(id => JSON.stringify(layout.positions[id]), P);
     await center(page, P);
     await rightClick(page, `[data-el="${P}"]`);
@@ -131,7 +131,7 @@ test.describe('the menu actions that could not be undone', () => {
     await page.waitForTimeout(800);
     expect(await page.evaluate(id => layout.positions[id] || null, P)).toBeNull();
     await page.evaluate(() => undo());
-    await page.waitForTimeout(800);
+    await settled(page);
     expect(await page.evaluate(id => JSON.stringify(layout.positions[id]), P)).toBe(moved);
   });
 });

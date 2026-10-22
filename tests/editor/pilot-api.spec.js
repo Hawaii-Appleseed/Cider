@@ -5,14 +5,14 @@
 // through pushHistory (⌘Z undoes a pilot like a human), lands through the one
 // render(), and returns plain data — geometry in page inches — so a pilot
 // never needs a screenshot to know what happened. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
 test.describe('pilot api', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
-    await page.waitForTimeout(600);
+    await settled(page);
   });
 
   test('inventory maps the document: pages, elements with geometry, slots, sources',

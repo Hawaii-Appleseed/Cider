@@ -11,7 +11,7 @@
 //
 // rxkids-fiscal: two designed pages declared to the strip, every chart label
 // an svg_text slot, page 2's how-it-works chart the one with plain words.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const PROJECT = '?project=rxkids-fiscal';
 
@@ -27,7 +27,7 @@ test.describe('duplicating a designed page', () => {
       expect(r.ok).toBe(true);
       expect(r.copied).toBe(true);
       const bid = r.page;
-      await page.waitForTimeout(1200);
+      await settled(page);
 
       const inv = await page.evaluate(() => docsync.api.inventory());
       expect(inv.pageOrder.map(String)).toEqual(['1', bid, '2']);
@@ -59,7 +59,7 @@ test.describe('duplicating a designed page', () => {
 
       // Editing the copy edits the copy — the original's words do not move.
       await page.evaluate(b => docsync.api.setSlot(`copy.${b}.stat.a.n`, '99,999'), bid);
-      await page.waitForTimeout(900);
+      await settled(page);
       const words = await page.evaluate(b => {
         const d = document.getElementById('out').contentDocument;
         return { orig: d.querySelector('[data-slot="stat.a.n"]').textContent,
@@ -73,7 +73,7 @@ test.describe('duplicating a designed page', () => {
       expect(pl.ok).toBe(true);
       expect(pl.box.x).toBeCloseTo(1, 1);
       expect(pl.box.y).toBeCloseTo(6, 1);
-      await page.waitForTimeout(600);
+      await settled(page);
       // Where it DRAWS, in page inches — not its style's left/top: the stat
       // sits in its strip, a frame (L.frame), so the coordinates it stores
       // are the strip's, and the strip carries it if the strip moves.
@@ -127,7 +127,7 @@ test.describe('duplicating a designed page', () => {
       const r = await page.evaluate(() => docsync.api.duplicatePage('p1'));
       expect(r.copied).toBe(true);
       expect(r.page).toBe('p2');
-      await page.waitForTimeout(1200);
+      await settled(page);
       const got = await page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;
         return { order: pageOrder().map(String),
@@ -186,7 +186,7 @@ test.describe('editing a label drawn inside a chart', () => {
       expect(after).toEqual({ editing: false, slot: 'Enroll', drawn: 'Enroll', field: false });
       // ⌘Z is one step back.
       await page.evaluate(() => docsync.api.undo());
-      await page.waitForTimeout(900);
+      await settled(page);
       expect(await page.evaluate(() => docsync.api.getSlot('chart.how.s1.label').md)).toBe('Sign up');
     });
 

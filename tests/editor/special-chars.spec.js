@@ -3,7 +3,7 @@
 // as chips only while typing so an invisible one can be seen; breaks are
 // tokens in the variables grammar — {break:line} {break:optional}
 // {break:column} {break:frame}. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const NBSP = ' ', NBHY = '‑', SHY = '­', EM = ' ';
 
@@ -17,7 +17,7 @@ async function addBox(page, md, extra = {}, pg = 3) {
 test.describe('special characters and breaks', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
-    await page.waitForTimeout(600);
+    await settled(page);
   });
 
   test('special characters are chips while typing and themselves in the file', async ({ page }) => {

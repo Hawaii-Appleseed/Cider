@@ -10,7 +10,7 @@
 // itself without leaving inline styles behind, and the speed control is
 // reachable exactly where the user asked for it — the mini toolbar, when the
 // group is selected.
-const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
 
 async function addExpandableSection(page) {
   return page.evaluate(async () => {
@@ -210,7 +210,7 @@ test.describe('expandable section: preview and speed', () => {
         }, [btnId, y]);
         await page.evaluate(async () => { await render(); });
       }
-      await page.waitForTimeout(400);
+      await settled(page);
 
       await page.frameLocator('#out').locator(`[data-el="text.${btnId}"]`).click();
       await page.waitForTimeout(300);

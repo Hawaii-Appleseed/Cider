@@ -4,7 +4,7 @@
 // renders inside the per-page <svg> layer every report renderer already emits,
 // so no report had to add a call to show one. Drawn as plain SVG with no
 // library, so the same markup serves the browser preview and the offline PDF.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // Mirrors CHART_KINDS in edit.html. A number here rather than a magic 13,
 // so adding a type is one edit and not a puzzle in a failing assertion.
@@ -70,7 +70,7 @@ test.describe('charts', () => {
       c.labels = ['A', 'B']; c.series = [{ name: 'S', data: [30, 70] }];
     });
     await page.evaluate(() => render());
-    await page.waitForTimeout(1200);
+    await settled(page);
 
     await page.selectOption('#chartpop .ch-typesel', 'pie');
     await page.waitForTimeout(1300);
@@ -374,7 +374,7 @@ test('a chart under the report\'s sticky toolbar is still grabbable', async ({ p
     layout.shapes.find(s => s.kind === 'chart').chart.title = 'Title';
   });
   await page.evaluate(() => render());
-  await page.waitForTimeout(1400);
+  await settled(page);
 
   const id = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').id);
   const g = frame.locator(`g[data-shape="${id}"]`);
@@ -432,7 +432,7 @@ test('every chart type in the dropdown renders something', async ({ page }) => {
     c.legend = true; c.values = true;
   });
   await page.evaluate(() => render());
-  await page.waitForTimeout(1400);
+  await settled(page);
 
   const opts = await page.locator('#chartpop .ch-typesel option')
     .evaluateAll(o => o.map(x => x.value));

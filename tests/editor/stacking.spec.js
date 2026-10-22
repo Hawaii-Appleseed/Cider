@@ -8,7 +8,7 @@
 // dragged over a text box rode over it all the way and vanished behind it on
 // the drop, and which of two moved things covered the other depended on their
 // order in the markup. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // Page 3 (index 2) of the fixture report carries the BUDGET BASICS heading,
 // the same in-flow element movable-headings.spec.js drags.
@@ -74,11 +74,11 @@ test.describe('stacking', () => {
 
       // Moving it AGAIN is not a layering decision: it keeps 4.
       await page.evaluate(() => docsync.api.place('basics.h1', { x: 1.5, y: 2.5 }));
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => layout.positions['basics.h1'].z)).toBe(4);
       // Nor is moving the rect: it keeps 3, under the heading now.
       await page.evaluate(() => docsync.api.place('stack-rect', { x: 2, y: 2 }));
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => zOf('stack-rect'))).toBe(3);
 
       // A new text box on that page goes above both; a new shape above that.
