@@ -541,30 +541,6 @@ test("history: a restore supersedes the other editor's unsaved edits, and says s
   expect((await versions()).length).toBe(N + 3);
 });
 
-test('comments: a reply typed under a card before the hub has answered lands on it', async () => {
-  // The hub takes its time with the comment; the reply is typed meanwhile.
-  await b.route('**/comments', async route => {
-    if (route.request().method() !== 'POST') return route.continue();
-    await new Promise(r => setTimeout(r, 1500));
-    route.continue();
-  });
-  await b.locator('#cpanel-text').fill('Replied to while pending.');
-  const got = await b.evaluate(async () => {
-    $('cpanel-add').click();
-    const tmp = hubComments.find(c => c.pending).id;
-    // Straight under the provisional card, as a person typing fast does.
-    return await hubReplyAdd(tmp, 'Reply while pending.', []);
-  });
-  await b.unroute('**/comments');
-  expect(got, 'the reply was dropped').toBeTruthy();
-  const c = (await allComments()).find(x => x.text === 'Replied to while pending.');
-  expect(c, 'the comment landed').toBeTruthy();
-  expect((c.replies || []).map(r => r.text)).toEqual(['Reply while pending.']);
-  await expect(cmtRow(a, 'Reply while pending')).toHaveCount(1, { timeout: 20_000 });
-  await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${c.id}`);
-  await expect(cmtRow(b, 'Replied to while pending')).toHaveCount(0, { timeout: 20_000 });
-});
-
 test('history: a reload and a fresh editor both open on the restored version, not on what came before', async () => {
   const key = await firstSlot(a);
   const current = (await versions())[0];
@@ -1044,6 +1020,31 @@ test('comments: a card taken in hand by the id it wore before the hub answered l
   await expect(cmtRow(b, 'Taken in hand while pending')).toHaveCount(0, { timeout: 20_000 });
   await expect(cmtRow(a, 'Taken in hand while pending')).toHaveCount(0, { timeout: 20_000 });
   expect((await allComments()).length).toBe(3);
+});
+
+test('comments: a reply typed under a card before the hub has answered lands on it', async () => {
+  // The hub takes its time with the comment; the reply is typed meanwhile.
+  await b.route('**/comments', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await new Promise(r => setTimeout(r, 1500));
+    route.continue();
+  });
+  if (!(await b.locator('#cpanel-text').isVisible())) await b.locator('#comments').click();
+  await b.locator('#cpanel-text').fill('Replied to while pending.');
+  const got = await b.evaluate(async () => {
+    $('cpanel-add').click();
+    const tmp = hubComments.find(c => c.pending).id;
+    // Straight under the provisional card, as a person typing fast does.
+    return await hubReplyAdd(tmp, 'Reply while pending.', []);
+  });
+  await b.unroute('**/comments');
+  expect(got, 'the reply was dropped').toBeTruthy();
+  const c = (await allComments()).find(x => x.text === 'Replied to while pending.');
+  expect(c, 'the comment landed').toBeTruthy();
+  expect((c.replies || []).map(r => r.text)).toEqual(['Reply while pending.']);
+  await expect(cmtRow(a, 'Reply while pending')).toHaveCount(1, { timeout: 20_000 });
+  await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${c.id}`);
+  await expect(cmtRow(b, 'Replied to while pending')).toHaveCount(0, { timeout: 20_000 });
 });
 
 test('comments: who may delete - the author, and the owner; nobody else sees the button', async () => {
