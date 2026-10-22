@@ -7493,7 +7493,10 @@ function startResize(d, el, e0, dir) {
  *  - a placed table: w only, its rows set the height;
  *  - a designed element: positions{} (pinned first), w, and for WORDS the
  *    height as a floor (hmin) so longer wording pushes the box open;
- *  - a graphic: nothing — it scales, and its scale is already on the store. */
+ *  - a graphic from a handle: nothing — it scales, and its scale is already
+ *    on the store (startResize never calls this for one); from place(), a
+ *    width or height pins it like any designed element — the engine draws
+ *    a renderer chart to the width it is given. */
 function commitSize(d, el, { w, h } = {}) {
   const id = el.dataset.shape || el.dataset.el;
   const round = v => +(+v).toFixed(2);
@@ -7503,7 +7506,6 @@ function commitSize(d, el, { w, h } = {}) {
     if (h != null) sh.h = round(h);
     markDirty(); return;
   }
-  if (isGraphic(el)) { markDirty(); return; }
   const bx = boxOf(id), tb = tableOf(id);
   if (bx) {
     if (w != null) bx.w = round(w);
