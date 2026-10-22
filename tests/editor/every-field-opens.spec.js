@@ -46,15 +46,26 @@ const discover = () => {
 // which is more than a CI shard's budget. DS_ONLY=<id,id> runs those
 // reports; DS_SWEEP=1 runs them all. Unasked, every test here skips.
 const WANTED = process.env.DS_ONLY || process.env.DS_SWEEP;
-// DS_PART=k/n walks every nth field (and object) from the kth: a big report
-// split across CI jobs, so the slowest sweep is no longer the run's long
-// pole (eviction-code-guide alone took 8.5 minutes). Every sweep here walks
-// its part: fields, objects, cells, panels and handles alike.
-const PART = (m => m ? [+m[1], +m[2]] : null)(/^(\d+)\/(\d+)$/.exec(process.env.DS_PART || ''));
-const partOf = i => !PART || i % PART[1] === PART[0] - 1;
-const PART_TAG = PART ? ` (part ${PART[0]}/${PART[1]})` : '';
-const REPORTS = !WANTED ? []
-  : (process.env.DS_ONLY ? discover().filter(r => process.env.DS_ONLY.split(',').includes(r.id)) : discover());
+// A report can be swept in parts: `id:k/n` walks every nth field (and
+// object, cell, panel, handle) from the kth, so a big report is split
+// across CI jobs. DS_ONLY takes a list of such items — `a:1/4,b,c:2/2` —
+// and ONE run walks them all: a CI job used to run Playwright once per
+// item, and each run started the server and booted the editor afresh,
+// about a minute per item that the job's size estimate never saw.
+// DS_PART=k/n still applies to every item that names no part of its own.
+const parsePart = p => (m => m ? [+m[1], +m[2]] : null)(/^(\d+)\/(\d+)$/.exec(p || ''));
+const PART = parsePart(process.env.DS_PART);
+const tagOf = part => part ? ` (part ${part[0]}/${part[1]})` : '';
+const ITEMS = (() => {
+  if (!WANTED) return [];
+  const all = discover();
+  if (!process.env.DS_ONLY) return all.map(rep => ({ rep, part: PART }));
+  return process.env.DS_ONLY.split(',').map(x => x.trim()).filter(Boolean).map(x => {
+    const [id, p] = x.split(':');
+    const rep = all.find(r => r.id === id);
+    return rep && { rep, part: p ? parsePart(p) : PART };
+  }).filter(Boolean);
+})();
 
 // Known and not yet fixed, by report: exact finding strings as printed.
 // Shrink-only. NEVER add one to silence a new finding.
@@ -357,7 +368,8 @@ const settle = page => page.evaluate(async () => {
   await sleep(60);
 });
 
-async function mouseSweep(page) {
+async function mouseSweep(page, PART) {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
   const keys = (await page.evaluate(() => [...new Set([...document.getElementById('out').contentDocument
     .querySelectorAll('section.page [data-slot]')].map(e => e.dataset.slot))])).filter((k, i) => partOf(i));
   const fails = [], needsDouble = [], covered = [];
@@ -462,7 +474,8 @@ const panelSweep = (page, arg) => page.evaluate(async PART => {
 }, arg);
 
 /** Drag one resize handle of every unlocked object with the real mouse. */
-async function handleSweep(page) {
+async function handleSweep(page, PART) {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
   const allIds = await page.evaluate(() => {
     const d = document.getElementById('out').contentDocument;
     const shown = id => { const el = d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"]`);
@@ -535,12 +548,12 @@ async function handleSweep(page) {
 }
 
 test('every bound report was discovered', () => {
-  test.skip(!WANTED, 'opt-in: DS_ONLY=<id,…> or DS_SWEEP=1');
-  expect(REPORTS.length, REPORTS.map(r => r.id).join(', ')).toBeGreaterThan(0);
+  test.skip(!WANTED, 'opt-in: DS_ONLY=<id[:k/n],…> or DS_SWEEP=1');
+  expect(ITEMS.length, process.env.DS_ONLY || '').toBeGreaterThan(0);
 });
 
-for (const rep of REPORTS) {
-  test(`${rep.id}: every field opens, takes words, and every object moves${PART_TAG}`, async ({ page }) => {
+for (const { rep, part: PART } of ITEMS) {
+  test(`${rep.id}: every field opens, takes words, and every object moves${tagOf(PART)}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
     page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
@@ -588,8 +601,8 @@ for (const rep of REPORTS) {
   });
 }
 
-for (const rep of REPORTS) {
-  test(`${rep.id}: a real pointer opens every field; cells, panels and handles work${PART_TAG}`, async ({ page }) => {
+for (const { rep, part: PART } of ITEMS) {
+  test(`${rep.id}: a real pointer opens every field; cells, panels and handles work${tagOf(PART)}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
     page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
@@ -597,10 +610,10 @@ for (const rep of REPORTS) {
     await gotoEditor(page, rep.id === 'budget-primer' ? '' : `?project=${rep.id}`);
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
-    const mo = await mouseSweep(page);
+    const mo = await mouseSweep(page, PART);
     const ce = await cellSweep(page, PART);
     const pa = await panelSweep(page, PART);
-    const ha = await handleSweep(page);
+    const ha = await handleSweep(page, PART);
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: mouse opened ${mo.n} slots; ${ce.n} cells; ${pa.charts} charts, ${pa.tables} tables; ${ha.n} handles dragged, ${ha.noHandles.length} objects with no resize handle`,
