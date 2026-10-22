@@ -248,7 +248,17 @@ Rules that bite:
   is registered with `onEachDocument(fn)` (the document is replaced by most
   renders, and `wire()` runs the list on each fresh one — a listener added
   anywhere else works exactly once); and `writeSlot` returns false when it
-  refused the words, so a caller never assumes they landed.
+  refused the words, so a caller never assumes they landed. And four
+  more: ask the render pipeline by name — `renderState()` (running, loading,
+  parked, pulling), `renderBusy()`, `await renderIdle()` — never the flags
+  `renderRunning` / `pendingFrame` / `pendingResolve` directly; a batch ref
+  is `@` + a name an op in that batch gives itself with `as`, and any other
+  `@…` is a value for its verb (a swatch); every mounted sheet carries
+  `data-page` = the number its placed things are keyed by (`stampPageIds` in
+  `wire()`), so `pageIdOf` and `pageNumOf` agree; and an error swallowed on
+  purpose goes through `swallowed(where, e)`, which says so once and counts
+  it (`window.__dsSwallowed()`), never a bare `catch (e) {}` except for a
+  localStorage write on a file: URL.
 - **A spec waits on the editor, not on a timer (2026-10-22).** `gotoEditor`
   returns when the editor says it is settled (`window.__dsSettled()`: the
   local probe answered, the first catch-up ping applied and any pull it
