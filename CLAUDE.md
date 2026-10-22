@@ -39,7 +39,7 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   direct `git push origin main` is refused). `tools/wt land <name>` does it:
   pushes the branch, opens the PR (or reuses an open one) and sets it to merge
   itself when the gate passes (`gh pr create --fill`, `gh pr merge --auto
-  --merge`). The 20 test shards run only when the PR touches what they cover
+  --merge`). The 12 test shards run only when the PR touches what they cover
   (docsync/, tests/, the editor shell, serve.py, package.json — the `changes`
   job in editor-tests.yml); otherwise they are skipped and the gate passes
   in about a minute, so a docs-only PR is never stuck waiting on a check
@@ -258,13 +258,13 @@ Rules that bite:
 - **The whole suite runs on GitHub, not here: `npm run test:ci`.** Locally it
   is ~20 minutes and saturates the machine; `tools/ci-test.mjs` snapshots the
   working tree (committed or not, without touching HEAD or the index), pushes
-  it to a throwaway `ci/…` branch, runs editor-tests.yml's 20 shards there
+  it to a throwaway `ci/…` branch, runs editor-tests.yml's 12 shards there
   (a few minutes), prints each failing test with its error, and deletes the
   branch. `test:affected` hands off to it by itself when a change needs
   everything (`--local` keeps it here). The branch is public, so untracked
   files outside the source directories are left out, and listed. Run it when
   the picker says to, before calling a broad refactor done, and whenever you
-  would otherwise have run `npx playwright test`. CI runs the same 20 shards
+  would otherwise have run `npx playwright test`. CI runs the same 12 shards
   on every push to main.
 - **Tests:** `npx playwright test` (editor behaviour; ~780 tests, ~20 min here —
   `npm run test:ci` runs the same suite on GitHub),

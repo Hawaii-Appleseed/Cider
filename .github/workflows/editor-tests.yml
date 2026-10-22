@@ -56,12 +56,26 @@ jobs:
         run: |
           all=$(grep -E '^  - id: ' docsync.yml | sed 's/^  - id: //' | while read id; do
             sed -n "/^  - id: $id\$/,/^  - id: /p" docsync.yml | grep -qE '^      out: ' && echo "$id"; done)
-          # A big report is swept in parts (DS_PART=k/n in the spec), each its own
-          # job, so the slowest sweep is not the run's long pole: whole,
-          # eviction-code-guide took 8.5 minutes and staff-toolkit 7.8.
-          parts() { case "$1" in eviction-code-guide|staff-toolkit) echo 3;; tfc-2027-priorities|wfc-credits|budget-primer|tax-testimony|rxkids) echo 2;; *) echo 1;; esac; }
-          split() { for id in "$@"; do n=$(parts "$id"); if [ "$n" = 1 ]; then echo "$id"; else k=1; while [ $k -le $n ]; do echo "$id:$k/$n"; k=$((k+1)); done; fi; done; }
-          pick() { split $(printf '%s\n' "$@" | sed '/^$/d' | sort -u) | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))'; }
+          # A big report is swept in parts (DS_PART=k/n in the spec), and the
+          # parts are packed into at most six jobs of about equal work: the
+          # org runs 20 jobs at once across every repo, and a run of 48 jobs
+          # spent more time queued than running. Weights are minutes of sweep
+          # per report, measured whole on 2026-10-22; a part is about 2.5
+          # minutes of work and a job holds about 6.
+          pick() { printf '%s\n' "$@" | sed '/^$/d' | sort -u | python3 -c '
+          import json, math, sys
+          W = {"eviction-code-guide": 8.2, "staff-toolkit": 6.8, "tfc-2027-priorities": 3.6, "tax-testimony": 2.8,
+               "wfc-credits": 2.5, "budget-primer": 2.3, "rxkids": 1.9, "rxkids-fiscal": 1.4, "retitc": 1.4,
+               "uhero-trc-summary": 1.2, "our-mission": 0.7, "itep-act24-estimate": 0.5}
+          items = []
+          for id in [l.strip() for l in sys.stdin if l.strip()]:
+              w = W.get(id, 0.5); n = max(1, math.ceil(w / 2.5))
+              items += [(w / n + 0.3, id if n == 1 else f"{id}:{k}/{n}") for k in range(1, n + 1)]
+          items.sort(key=lambda t: -t[0])
+          bins = [[0, []] for _ in range(min(6, len(items)))]
+          for w, it in items:
+              b = min(bins, key=lambda b: b[0]); b[0] += w; b[1].append(it)
+          print(json.dumps([",".join(b[1]) for b in bins if b[1]]))'; }
           if [ "${{ github.event_name }}" = schedule ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
             echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
@@ -108,16 +122,16 @@ jobs:
     needs: changes
     if: needs.changes.outputs.editor == 'true'
     runs-on: ubuntu-latest
-    # Twenty machines, a twentieth of the suite each. One runner took ~45
-    # minutes for all ~780 tests, and four took ~13; each shard costs ~50s of
-    # setup before its first test, and the rest is ~39 tests on two workers.
+    # Twelve machines, a twelfth of the suite each (it was twenty: with the
+    # sweep's jobs beside them the run outgrew the org's 20 slots and most
+    # jobs queued for 3–4 minutes). Each shard costs ~50s of setup before its
+    # first test, and the rest is ~85 tests on two workers, about six minutes.
     # fullyParallel splits by test, not by file, so the shares come out even.
-    # Minutes are free: the repo is public.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    name: test (${{ matrix.shard }}/20)
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    name: test (${{ matrix.shard }}/12)
     # A wedged shard holds one of the org's 20 slots until it is killed.
     timeout-minutes: 15
     steps:
@@ -177,7 +191,7 @@ jobs:
       - uses: ./.github/actions/playwright-chromium
 
       - name: Run the editor test suite
-        run: npx playwright test --shard=${{ matrix.shard }}/20
+        run: npx playwright test --shard=${{ matrix.shard }}/12
 
       # Only a failing shard's: twenty green reports a run say nothing.
       - name: Upload Playwright report
@@ -218,10 +232,15 @@ jobs:
       - name: Sweep ${{ matrix.report }}
         id: sweep
         run: |
-          r="${{ matrix.report }}"
-          case "$r" in *:*) id="${r%%:*}"; part="${r#*:}";; *) id="$r"; part="";; esac
-          echo "name=$(printf '%s' "$r" | tr ':/' '--')" >> "$GITHUB_OUTPUT"
-          DS_ONLY="$id" DS_PART="$part" npx playwright test every-field-opens.spec.js --workers=2
+          echo "name=$(printf '%s' "${{ matrix.report }}" | tr ':/,' '---' | cut -c1-80)" >> "$GITHUB_OUTPUT"
+          rc=0
+          for r in $(printf '%s' "${{ matrix.report }}" | tr ',' ' '); do
+            case "$r" in *:*) id="${r%%:*}"; part="${r#*:}";; *) id="$r"; part="";; esac
+            echo "::group::$r"
+            DS_ONLY="$id" DS_PART="$part" npx playwright test every-field-opens.spec.js --workers=2 || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

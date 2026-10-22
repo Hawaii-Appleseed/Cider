@@ -174,7 +174,7 @@ the browser, so an edit shows in ~1s. **Save** writes the files and commits
 npm ci
 npx playwright install chromium   # the browser itself — npm ci does not fetch it
 npm run test:affected             # the specs and checks YOUR change needs
-npm run test:ci                   # the whole suite, on GitHub's twenty machines
+npm run test:ci                   # the whole suite, on GitHub's twelve machines
 npm run test:full                 # the whole suite here (~20 min), recording the impact map
 python3 docsync/test_docsync.py       # the engine's own self-test
 python3 report2027/tools/test_render.py   # render tolerances + edit.html syntax

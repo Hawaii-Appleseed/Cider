@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run the whole editor suite on GitHub — twenty machines, a few minutes — for
+// Run the whole editor suite on GitHub — twelve machines, a few minutes — for
 // the working tree as it is, committed or not. The laptop runs nothing but
 // the Python checks.
 //
@@ -14,7 +14,7 @@
 // idle, load average 51, the tests getting ~4 of 10 cores beside everything
 // else a person has open). Every test boots the editor, so the floor is CPU,
 // and more workers or fewer sleeps do not move it. GitHub does: the repo is
-// public, so minutes are free, and editor-tests.yml runs 20 shards.
+// public, so minutes are free, and editor-tests.yml runs 12 shards.
 //
 // What it touches:
 //   - Never HEAD, the index or a file. The snapshot is built in a throwaway
