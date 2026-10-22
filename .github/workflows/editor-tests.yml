@@ -42,6 +42,8 @@ jobs:
     outputs:
       editor: ${{ steps.paths.outputs.editor }}
       sweep: ${{ steps.sweep.outputs.reports }}
+      parity: ${{ steps.parity.outputs.parity }}
+      base: ${{ steps.parity.outputs.base }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,7 +62,7 @@ jobs:
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           changed=$(git diff --name-only "$base" "${{ github.sha }}")
-          if echo "$changed" | grep -qE '^(docsync/|report2027/tools/serve\.py$|tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/workflows/editor-tests\.yml$)'; then
+          if echo "$changed" | grep -qE '^(docsync/|report2027/tools/serve\.py$|tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/)'; then
             echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           some=""
           for id in $all; do
@@ -74,10 +76,27 @@ jobs:
           if [ "${{ github.event_name }}" = workflow_dispatch ] || [ "${{ github.event_name }}" = schedule ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
-          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/workflows/editor-tests\.yml$)'; then
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/)'; then
             echo editor=true >> "$GITHUB_OUTPUT"
           else
             echo editor=false >> "$GITHUB_OUTPUT"
+          fi
+      # Does this change touch what a published page is built from — the
+      # engine, a report's own files, the bindings? Then `parity` builds every
+      # page here and at `base` (the commit this push or pull request started
+      # from) and compares. A manual dispatch has no known base and compares
+      # against the branch point; the nightly run has nothing to compare.
+      - id: parity
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
+          git cat-file -e "$base^{commit}" 2>/dev/null || base=""
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = schedule ]; then echo parity=false >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || [ -z "$base" ]; then echo parity=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|docsync\.yml$|report2027/|projects/|docs/js/|\.github/)'; then
+            echo parity=true >> "$GITHUB_OUTPUT"
+          else
+            echo parity=false >> "$GITHUB_OUTPUT"
           fi
 
   test:
@@ -148,8 +167,9 @@ jobs:
       - name: Install the collab relay's dependencies
         run: npm ci --prefix collab
 
-      - name: Install Playwright's Chromium
-        run: npx playwright install --with-deps chromium
+      # Cached per Playwright version (.github/actions/playwright-chromium):
+      # one download a version, not thirty-five a run.
+      - uses: ./.github/actions/playwright-chromium
 
       - name: Run the editor test suite
         run: npx playwright test --shard=${{ matrix.shard }}/20
@@ -189,7 +209,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright-chromium
       - name: Sweep ${{ matrix.report }}
         env:
           DS_ONLY: ${{ matrix.report }}
@@ -217,19 +237,58 @@ jobs:
       - run: pip install --quiet pyyaml
       - run: python3 -m docsync.check
 
+  # The engine grew and no published report moved — or the change says which
+  # did, and why. Two sweeps against `base`, the commit this push or pull
+  # request started from (`changes`): every chart the base engine could draw,
+  # drawn by both engines (docsync.chart_parity, 2s; a render that moved is
+  # accounted for in docsync/CHART_PARITY.md), and every bound report built by
+  # both trees, byte for byte, the date pinned (docsync.build_parity; a page
+  # that moved is explained by its own files changing, or in
+  # docsync/BUILD_PARITY.md). Unexplained movement fails the gate.
+  parity:
+    needs: changes
+    if: needs.changes.outputs.parity == 'true'
+    name: Engine parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+      - name: The commit to compare against
+        id: base
+        run: |
+          base="${{ needs.changes.outputs.base }}"
+          [ -n "$base" ] || base=$(git merge-base origin/main HEAD)
+          echo "comparing $(git rev-parse --short HEAD) against $(git rev-parse --short "$base")"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+      - name: Charts, every render the base engine could draw, drawn by both
+        run: |
+          if python3 -m docsync.chart_parity --base "${{ steps.base.outputs.base }}" --show 10; then exit 0; fi
+          if git diff --name-only "${{ steps.base.outputs.base }}" HEAD | grep -qx docsync/CHART_PARITY.md; then
+            echo "charts moved, and docsync/CHART_PARITY.md changed with them: accounted for"; exit 0; fi
+          echo "::error::charts moved and docsync/CHART_PARITY.md does not say why"; exit 1
+      - name: Reports, every bound page built by both trees
+        run: python3 -m docsync.build_parity --base "${{ steps.base.outputs.base }}" --show 10
+
   # The one check the ruleset on main requires. It always reports: green when
   # the shards passed or had nothing to test, red when any shard failed or was
   # cancelled — so a docs-only PR merges, and a broken editor cannot.
   gate:
     name: Editor tests gate
-    needs: [changes, test, sweep, reports]
+    needs: [changes, test, sweep, reports, parity]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - run: |
-          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}"
+          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}, parity: ${{ needs.parity.result }}"
           [ "${{ needs.changes.result }}" = success ] || exit 1
           case "${{ needs.test.result }}" in success|skipped) ;; *) exit 1 ;; esac
           [ "${{ needs.reports.result }}" = success ] || { echo "docsync.check failed"; exit 1; }
+          case "${{ needs.parity.result }}" in success|skipped) ;; *) echo "engine parity failed: a chart or a page moved and nothing says why"; exit 1 ;; esac
           case "${{ needs.sweep.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac

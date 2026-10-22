@@ -1,0 +1,37 @@
+name: Playwright's Chromium
+description: >-
+  The browser the editor suite runs in, cached once per Playwright version
+  rather than downloaded once per job per run. Thirty-five jobs a run each
+  fetched it, and one of them failing ("Failed to download Chrome for
+  Testing", 2026-10-21) turned main red over nothing. The cache is keyed on
+  the locked @playwright/test version, so a bump misses and fetches the
+  browser that version wants; Chromium's system libraries come from apt, not
+  ~/.cache, so a hit still installs those.
+runs:
+  using: composite
+  steps:
+    - name: Playwright's version
+      id: pw
+      shell: bash
+      run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+    - name: Cache Playwright's Chromium
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.pw.outputs.version }}
+    - name: Install Playwright's Chromium
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      # Three tries: the download is the one step in this suite that reaches
+      # a server nobody in this repo runs.
+      run: |
+        for i in 1 2 3; do
+          if npx playwright install --with-deps chromium; then exit 0; fi
+          echo "the browser did not download (try $i of 3)"; sleep 20
+        done
+        exit 1
+    - name: Install Chromium's system libraries
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps chromium

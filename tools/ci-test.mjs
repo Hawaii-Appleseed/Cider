@@ -80,8 +80,9 @@ if (!flag('--skip-checks') && !reportOnly) {
     const r = spawnSync('python3', args, { cwd: ROOT, encoding: 'utf8' });
     const name = ['python3', ...args].join(' ');
     const tail = (r.stdout + r.stderr).trim().split('\n');
-    // chart_parity is a report, not a gate (its docstring): a chart that moved
-    // may be the fix. Say what it found and carry on.
+    // chart_parity is a report here, not a gate (its docstring): a chart that
+    // moved may be the fix. Say what it found and carry on — CI's `parity`
+    // job holds it to docsync/CHART_PARITY.md changing with it.
     if (args.includes('docsync.chart_parity')) {
       const found = tail.filter(l => /renders compared/.test(l)).pop() || '';
       say(`${r.status ? '~' : '✓'} ${name}: ${found}`);
