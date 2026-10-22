@@ -23342,14 +23342,14 @@ function collabSaved(sha, info) {
   clearDraftCache();
   markDirty();
   if (restored) {
-    $('stat').textContent = hadMine
+    sayNowAndAfterRender(hadMine
       ? 'a collaborator restored an earlier version, which replaced the edits you had not saved — '
         + 'ask them, or bring the newer version back from History'
-      : 'a collaborator restored an earlier version — it is what is on screen now';
+      : 'a collaborator restored an earlier version — it is what is on screen now');
     if (hadMine) { $('stat').classList.add('err'); setTimeout(() => $('stat').classList.remove('err'), 12000); }
     return;
   }
-  $('stat').textContent = 'a collaborator saved the shared draft — it holds what is on screen';
+  sayNowAndAfterRender('a collaborator saved the shared draft — it holds what is on screen');
 }
 
 // ---------------------------------------------------------------- live mode
@@ -24601,9 +24601,20 @@ async function render() {
 // something else has spoken since, that something else was deliberate and this
 // was not.
 let statFromRender = '';
+// A message that must outlive the render about to start: a collaborator's
+// Save or restore is heard (and said) a beat BEFORE the adopt renders, and
+// the render then claimed the row with "rendering…" and its idle hint. The
+// next render says this instead of its hint; stale after a few seconds.
+let sayAfterRender = '', sayAfterRenderAt = 0;
 function renderSays(msg) {
   if ($('stat').textContent !== statFromRender) return;   // someone else is talking
+  if (sayAfterRender && Date.now() - sayAfterRenderAt < 4000) { msg = sayAfterRender; }
+  sayAfterRender = '';
   $('stat').textContent = statFromRender = msg;
+}
+function sayNowAndAfterRender(msg) {
+  $('stat').textContent = msg;
+  sayAfterRender = msg; sayAfterRenderAt = Date.now();
 }
 
 async function renderOnce() {
