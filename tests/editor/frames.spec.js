@@ -10,7 +10,7 @@
 // leaping, because the frame is positioned from birth. (A press on a card's
 // padding that travels before the card is selected bands instead of dragging
 // it — see frame-children-move.spec.js.)
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const CARD = '[data-el="frame.fam-1"]';
 const FIELD = '[data-el="field.fam.h3-1"]';
@@ -86,7 +86,7 @@ test.describe('a card is a frame (tfc-2027-priorities)', () => {
     expect(Math.abs(live.x - before.x), 'x, live').toBeLessThanOrEqual(1.5);
     expect(Math.abs(live.y - before.y), 'y, live').toBeLessThanOrEqual(1.5);
     await page.evaluate(() => render());
-    await page.waitForTimeout(400);
+    await settled(page);
     const drawn = await offsetIn(page, FIELD, CARD);
     expect(Math.abs(drawn.x - before.x), 'x, rendered').toBeLessThanOrEqual(1.5);
     expect(Math.abs(drawn.y - before.y), 'y, rendered').toBeLessThanOrEqual(1.5);

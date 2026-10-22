@@ -5,7 +5,7 @@
 // the page draws. The engine side — fold-in, validation, byte-identity — is
 // checked in docsync/test_docsync.py; this file is the editor's promise:
 // every verb writes ONE `use` or ONE style, and ⌘Z takes it back.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -57,9 +57,9 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
     // Override this one by hand — the picker says so with a + — then Redefine:
     // one edit, and the first shape follows.
     await page.evaluate(id => docsync.api.recolor(id, '#2F3E46'), b);
-    await page.waitForTimeout(1500);
+    await settled(page);
     await page.evaluate(id => docsync.api.select(id), b);
-    await page.waitForTimeout(400);
+    await settled(page);
     await expect(page.locator('#ar-style')).toHaveClass(/ty-style-over/);
     await page.click('#ar-style-more');
     await page.click('#ar-stylebody .tp-btn:text("Redefine")');
@@ -70,7 +70,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
 
     // ⌘Z is one step per verb.
     await page.keyboard.press('Meta+z');
-    await page.waitForTimeout(1500);
+    await settled(page);
     expect(await page.evaluate(() => layout.objectStyles.Alert.fill)).toBe('#C0392B');
   });
 

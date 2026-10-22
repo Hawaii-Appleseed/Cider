@@ -11,7 +11,7 @@
 // — is exercised for real; the server's disk write is serve.py's _upload,
 // small enough to read.
 const path = require('path');
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const PIXEL = path.join(__dirname, 'fixtures', 'spec-pixel.png');
 
@@ -67,7 +67,7 @@ test.describe('insert image', () => {
       layout.boxes.find(b => b.id === id).z = 99;
       return render();
     }, box.id);
-    await page.waitForTimeout(800);
+    await settled(page);
     const el = page.frameLocator('#out')
       .locator(`[data-el="text.${box.id}"]`);
     const b0 = await el.boundingBox();

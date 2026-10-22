@@ -2,7 +2,7 @@
 // one page at a time with every toolbar gone; arrows or click advance, the
 // left edge or ← goes back, Esc exits. Runs on the editor's own iframe and
 // zoom pipeline — nothing re-renders on entry. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const state = (page) => page.evaluate(() => {
   const d = document.getElementById('out').contentDocument;
@@ -95,7 +95,7 @@ test.describe('presentation mode', () => {
     await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(250);
     await page.evaluate(() => render());
-    await page.waitForTimeout(2500);
+    await settled(page);
     const s = await state(page);
     expect(s.presenting).toBe(true);
     expect(s.shown).toHaveLength(1);

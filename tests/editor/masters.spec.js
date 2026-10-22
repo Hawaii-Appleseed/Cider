@@ -6,7 +6,7 @@
 // half (expansion, {page}, validation) is in docsync/test_docsync.py; this is
 // the editor's promise: made from a page, given to another, edited once,
 // detached back into copies.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -28,7 +28,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     const made = await page.evaluate(a => docsync.api.masterFrom(a, 'Section'), ids.a);
     expect(made.ok).toBe(true);
     expect(made.items).toBe(2);
-    await page.waitForTimeout(1200);
+    await settled(page);
     const st = await page.evaluate(() => ({
       master: layout.masters.Section, own: layout.boxes.length, shapes: layout.shapes.length,
       pm: layout.pageMasters }));
@@ -46,7 +46,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     // The second page takes the master from its strip.
     const r = await page.evaluate(b => docsync.api.master(b, 'Section'), ids.b);
     expect(r.ok).toBe(true);
-    await page.waitForTimeout(1200);
+    await settled(page);
     const folioB = `text.${st.master.boxes[0].id}@${ids.b}`;
     const labelB = await page.evaluate(b => pageLabel(b), ids.b);
     await expect(frame(page).locator(`[data-el="${folioB}"]`)).toContainText(`${labelB} · YOUR REPORT`);
@@ -55,7 +55,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     // Edit the instance on page B: the master changes, so page A follows.
     const w = await page.evaluate(id => docsync.api.setBoxText(id, '{page} · A FAIRER TAX CODE'), folioB);
     expect(w.ok).toBe(true);
-    await page.waitForTimeout(1200);
+    await settled(page);
     await expect(frame(page).locator(`[data-el="${folioA}"]`)).toContainText(`${labelA} · A FAIRER TAX CODE`);
     expect(await page.evaluate(() => layout.boxes.length)).toBe(0);   // still no page copy
 
@@ -64,7 +64,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     const ruleA = `${st.master.shapes[0].id}@${ids.a}`;
     const mv = await page.evaluate(id => docsync.api.place(id, { y: 2.5 }), ruleA);
     expect(mv.ok).toBe(true);
-    await page.waitForTimeout(1200);
+    await settled(page);
     expect(await page.evaluate(() => layout.masters.Section.shapes[0].y)).toBe(2.5);
     await expect(frame(page).locator(`[data-shape="${st.master.shapes[0].id}@${ids.b}"]`)).toHaveAttribute('y', '2.5');
     // The Layers panel is back, and lists this page's objects.
@@ -76,7 +76,7 @@ test('a master is made from a page, given to a second page, and edited once for 
 
     // Select the instance: the strip says where it lives, and Delete refuses.
     await page.evaluate(id => docsync.api.select(id), folioA);
-    await page.waitForTimeout(500);
+    await settled(page);
     await expect(page.locator('#ty-key')).toContainText('shared layout');
     await page.keyboard.press('Backspace');
     await page.waitForTimeout(600);
@@ -87,7 +87,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     const dt = await page.evaluate(b => docsync.api.detachMaster(b), ids.b);
     expect(dt.ok).toBe(true);
     expect(dt.items).toBe(2);
-    await page.waitForTimeout(1200);
+    await settled(page);
     const after = await page.evaluate(b => ({
       own: layout.boxes.filter(x => String(x.page) === String(b)).map(x => x.md),
       pm: (layout.pageMasters || {})[b] || null }), ids.b);

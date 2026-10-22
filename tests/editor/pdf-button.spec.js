@@ -3,7 +3,7 @@
 // engine side of that is pinned in docsync/test_docsync.py). Here: the box IS
 // an ordinary editor citizen — inserted from the Text panel, moved, restyled,
 // relabelled, duplicated — with no new code paths to teach. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 async function addButton(page) {
   // Off the cover: a box inserted there lands under the cover's full-bleed
@@ -88,7 +88,7 @@ test.describe('download-pdf button', () => {
       boxes().find(x => x.id === id).fill = '#52796F';
       markDirty(); await render();
     }, b.id);
-    await page.waitForTimeout(800);
+    await settled(page);
     const bg = await page.evaluate(id => {
       const d = document.getElementById('out').contentDocument;
       return d.defaultView.getComputedStyle(

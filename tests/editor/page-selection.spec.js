@@ -3,7 +3,7 @@
 // right-clicking gives a MENU rather than dropping colour swatches straight in
 // — the page used to be the only surface in the editor whose right-click was a
 // picker. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 /** A point on a page where hitPlaced() finds nothing — the exact condition
  *  that routes a click to the page instead of to an object. */
@@ -110,7 +110,7 @@ test.describe('duplicate page', () => {
         markDirty();
       }, bid);
       await page.evaluate(() => render());
-      await page.waitForTimeout(2500);
+      await settled(page);
 
       const before = await page.evaluate(() => ({
         pages: pageOrder().length, shapes: layout.shapes.length }));
@@ -153,7 +153,7 @@ test.describe('duplicate page', () => {
         markDirty();
       }, bid);
       await page.evaluate(() => render());
-      await page.waitForTimeout(2500);
+      await settled(page);
 
       await page.evaluate(pid => duplicatePage(pid), bid);
       await page.waitForTimeout(3000);

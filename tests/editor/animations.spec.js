@@ -3,7 +3,7 @@
 // plays immediately, presentation mode replays a slide's entrances on entry.
 // Published: observer-triggered, script-applied hiding, reduced-motion and
 // print always show content. Engine faces pinned in test_docsync.py. Local.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled: pageSettled } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -44,7 +44,7 @@ test.describe('entrance animations', () => {
         markDirty(); await render();
         return layout.shapes[0].id;
       });
-      await page.waitForTimeout(1000);
+      await pageSettled(page);
 
       const el = frame.locator(`[data-shape="${sid}"]`);
       await el.click({ button: 'right' });
@@ -102,7 +102,7 @@ test.describe('entrance animations', () => {
         delete layout.positions['basics.h1'].anim;
         markDirty(); await render();
       });
-      await page.waitForTimeout(1200);
+      await pageSettled(page);
     });
 
   // The editor keeps animated elements static, so the ONLY way to see an
@@ -123,13 +123,13 @@ test.describe('entrance animations', () => {
         markDirty(); await render();
         return 'text.' + tid;
       });
-      await page.waitForTimeout(1200);
+      await pageSettled(page);
 
       // no animation yet: no play button on the floating mini bar. Selected
       // without typing — a click on a text box opens its words now, and the
       // floating bar stands down while they are open.
       await page.evaluate(k => docsync.api.select(k), id);
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       await expect(frame.locator('.ds-mini button[aria-label^="Play"]')).toHaveCount(0);
 
       // pick one from the menu — it plays once, on the box itself
@@ -151,7 +151,7 @@ test.describe('entrance animations', () => {
 
       // and now the mini bar above it offers to play it again
       await page.evaluate(k => docsync.api.select(k), id);
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       const play = frame.locator('.ds-mini button[aria-label^="Play"]');
       await expect(play).toHaveCount(1);
       await expect(play).toHaveAttribute('aria-label', /rise/);
@@ -187,7 +187,7 @@ test.describe('entrance animations', () => {
       markDirty(); await render();
       return 'text.' + tid;
     });
-    await page.waitForTimeout(1200);
+    await pageSettled(page);
 
     await frame.locator(`[data-el="${id}"]`).click({ button: 'right' });
     await page.waitForTimeout(400);
@@ -236,7 +236,7 @@ test.describe('entrance animations', () => {
         markDirty(); await render();
         return sid;
       });
-      await page.waitForTimeout(1500);
+      await pageSettled(page);
 
       await frame.locator(`[data-shape="${id}"]`).click({ button: 'right' });
       await page.waitForTimeout(400);
@@ -284,7 +284,7 @@ test.describe('entrance animations', () => {
       markDirty(); await render();
       return sid;
     });
-    await page.waitForTimeout(1500);
+    await pageSettled(page);
     await frame.locator(`[data-shape="${id}"]`).click({ button: 'right' });
     await page.waitForTimeout(400);
     await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
@@ -309,7 +309,7 @@ test.describe('entrance animations', () => {
                        duration: 0.3, delay: 0 } });
         markDirty(); await render();
       });
-      await page.waitForTimeout(1500);
+      await pageSettled(page);
       await armListener(page);
 
       await page.click('#present');

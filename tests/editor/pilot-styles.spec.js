@@ -4,7 +4,7 @@
 // through the pilot is the DEFAULT way this thing is meant to be changed, so
 // "make every pull-quote match" was a thing a person could do and an agent
 // could not.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
@@ -18,7 +18,7 @@ async function addBox(page, opts = {}) {
 test.describe('pilot: styles', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
-    await page.waitForTimeout(600);
+    await settled(page);
   });
 
   test('inventory reports both stylesheets, with how many wear each',
@@ -140,7 +140,7 @@ test.describe('pilot: styles', () => {
       .toEqual(['Note', 'Note', 'Note']);
     // That is the argument for a stylesheet: one change, one undo.
     await page.evaluate(() => docsync.api.undo());
-    await page.waitForTimeout(1200);
+    await settled(page);
     expect(await page.evaluate(() => layout.objectStyles)).toBeUndefined();
     expect(await page.evaluate(ids =>
       ids.map(i => boxOf(i).use), [a, b, c]))

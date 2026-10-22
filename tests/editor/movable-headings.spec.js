@@ -5,7 +5,7 @@
 // resizable object (like any other element), while double-clicking its actual
 // text still opens the inline text editor — the same split already proven for
 // prose paragraphs and callout titles. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 test.describe('movable headings', () => {
   test.beforeEach(async ({ page }) => {
@@ -177,7 +177,7 @@ test.describe('movable headings', () => {
     expect(await page.evaluate(() => layout.positions['cover.title'])).toBeTruthy();
     const live = await page.evaluate(() => _pilotMeasure('cover.title'));
     await page.evaluate(() => render());
-    await page.waitForTimeout(800);
+    await settled(page);
     const drawn = await page.evaluate(() => _pilotMeasure('cover.title'));
     expect(Math.abs(drawn.y - live.y), `live ${live.y} vs drawn ${drawn.y}`).toBeLessThan(0.03);
     expect(Math.abs(drawn.x - live.x), `live ${live.x} vs drawn ${drawn.x}`).toBeLessThan(0.03);

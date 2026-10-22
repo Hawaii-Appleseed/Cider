@@ -89,9 +89,42 @@ async function gotoEditor(page, query = '') {
   // Local mode (serve.py answers /__ping) polls its live-reload stream and
   // can pick up one legitimate version bump moments after the first paint,
   // which swaps the iframe's srcdoc wholesale and re-wires every listener.
-  // A click racing that swap can land on an element about to be discarded —
-  // wait for it to settle before interacting with anything inside #out.
-  await page.waitForTimeout(1500);
+  // A click racing that swap can land on an element about to be discarded.
+  // This used to be a fixed 1.5s sleep — a quarter of a typical test, a
+  // thousand times a run; the editor now says when it is settled.
+  await settled(page);
+}
+
+/** Wait until the editor has nothing on its way: the local probe answered,
+ *  its first catch-up ping applied (and any pull that ping started done),
+ *  no render running, no twin iframe mid-load. Asked twice, 40ms apart, so
+ *  a render that is about to start on the far side of a microtask (a click
+ *  whose commit renders on the next tick) is not mistaken for quiet. */
+async function settled(page, timeout = 30_000) {
+  const quiet = () => page.waitForFunction(() => !window.__dsSettled || window.__dsSettled(),
+                                           null, { timeout, polling: 25 });
+  for (let i = 0; i < 4; i++) {
+    await quiet();
+    await page.waitForTimeout(40);
+    if (await page.evaluate(() => !window.__dsSettled || window.__dsSettled())) return;
+  }
+}
+
+/** Run `act` and wait for the render it causes to finish, then for the page
+ *  to settle. Replaces "click, then sleep 800ms": the wait is exactly as
+ *  long as the render. An action that may render nothing (opening words,
+ *  selecting) passes `maybe: true` and gets a short grace instead of a
+ *  failure when no render comes. */
+async function afterRender(page, act, { maybe = false, timeout = 15_000 } = {}) {
+  const s0 = await page.evaluate(() => window.__dsRenderSeq ? window.__dsRenderSeq() : 0);
+  await act();
+  try {
+    await page.waitForFunction(s => window.__dsRenderSeq && window.__dsRenderSeq() > s, s0,
+                               { timeout: maybe ? 350 : timeout, polling: 25 });
+  } catch (e) {
+    if (!maybe) throw e;
+  }
+  await settled(page);
 }
 
 // Plain editor test: real local dev server (serve.py answers /__ping, so the
@@ -247,6 +280,7 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 }
 
 module.exports = {
+  settled, afterRender,
   test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent, selectWithoutTyping,

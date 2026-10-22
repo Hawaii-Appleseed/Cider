@@ -4,7 +4,7 @@
 // one — until the user Ungroups and pulls a piece out. The text still comes
 // from content.md. The fixture's Operating Budget card (page 5) is detachable.
 // Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const TILE = 'card.spent.cards.operating.bullets';
 const TITLE = 'spent.cards.operating.title';
@@ -83,7 +83,7 @@ test.describe('detachable content card', () => {
 
     // and the renderer reproduces the same geometry from what was saved
     await page.evaluate(() => render());
-    await page.waitForTimeout(1500);
+    await settled(page);
     tb = await frame.locator(`[data-el="${TILE}"]`).boundingBox();
     hb = await frame.locator(`[data-el="${TITLE}"]`).boundingBox();
     bb = await frame.locator(`[data-el="${BULLETS}"]`).boundingBox();
@@ -134,7 +134,7 @@ test.describe('detachable content card', () => {
 
     // and the renderer rebuilds it in the same spot from the saved frame
     await page.evaluate(() => render());
-    await page.waitForTimeout(1500);
+    await settled(page);
     t1 = await t.boundingBox();
     expect(Math.abs(t1.x - (t0.x + 37))).toBeLessThan(25);
     expect(Math.abs(t1.y - (t0.y + 83))).toBeLessThan(25);

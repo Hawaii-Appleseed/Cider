@@ -12,7 +12,7 @@
 // bump never arrived at all — so the same test goes on to send a bump that DOES
 // change an engine file and requires the render, proving the plumbing under the
 // negative assertion was live the whole time.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const SENTINEL = 'sentinel — nothing re-rendered';
 const seed = (page) => page.evaluate((s) => { document.getElementById('stat').textContent = s; }, SENTINEL);
@@ -96,7 +96,7 @@ test('renders reuse the imported engine until it really changes', async ({ page 
 // tab doing everything right (docsync/okina.py was the live case).
 test('an engine file added after boot arrives on the next refresh', async ({ page }) => {
   await gotoEditor(page);
-  await page.waitForTimeout(500);
+  await settled(page);
   const r = await page.evaluate(async () => {
     const rel = 'docsync/okina.py';
     const url = Object.keys(M.files).find(u => M.files[u] === rel);

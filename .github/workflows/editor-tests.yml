@@ -56,7 +56,12 @@ jobs:
         run: |
           all=$(grep -E '^  - id: ' docsync.yml | sed 's/^  - id: //' | while read id; do
             sed -n "/^  - id: $id\$/,/^  - id: /p" docsync.yml | grep -qE '^      out: ' && echo "$id"; done)
-          pick() { printf '%s\n' "$@" | sed '/^$/d' | sort -u | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))'; }
+          # A big report is swept in parts (DS_PART=k/n in the spec), each its own
+          # job, so the slowest sweep is not the run's long pole: whole,
+          # eviction-code-guide took 8.5 minutes and staff-toolkit 7.8.
+          parts() { case "$1" in eviction-code-guide|staff-toolkit) echo 3;; tfc-2027-priorities|wfc-credits|budget-primer|tax-testimony|rxkids) echo 2;; *) echo 1;; esac; }
+          split() { for id in "$@"; do n=$(parts "$id"); if [ "$n" = 1 ]; then echo "$id"; else k=1; while [ $k -le $n ]; do echo "$id:$k/$n"; k=$((k+1)); done; fi; done; }
+          pick() { split $(printf '%s\n' "$@" | sed '/^$/d' | sort -u) | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))'; }
           if [ "${{ github.event_name }}" = schedule ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
             echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
@@ -211,14 +216,17 @@ jobs:
       - run: npm ci
       - uses: ./.github/actions/playwright-chromium
       - name: Sweep ${{ matrix.report }}
-        env:
-          DS_ONLY: ${{ matrix.report }}
-        run: npx playwright test every-field-opens.spec.js --workers=2
+        id: sweep
+        run: |
+          r="${{ matrix.report }}"
+          case "$r" in *:*) id="${r%%:*}"; part="${r#*:}";; *) id="$r"; part="";; esac
+          echo "name=$(printf '%s' "$r" | tr ':/' '--')" >> "$GITHUB_OUTPUT"
+          DS_ONLY="$id" DS_PART="$part" npx playwright test every-field-opens.spec.js --workers=2
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: sweep-${{ matrix.report }}
+          name: sweep-${{ steps.sweep.outputs.name }}
           path: playwright-report/
           retention-days: 14
 

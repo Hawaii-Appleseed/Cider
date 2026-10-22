@@ -4,7 +4,7 @@
 // editor lifecycle (insert as a wired grouped pair, delete-orphan cleanup,
 // paste rewiring), the rxkids report as the working host, and the REAL disk
 // build clicked open and closed. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -130,7 +130,7 @@ test.describe('expandable sections', () => {
         pushHistory(); fillTargets(id).set('#C0603F');
         markDirty(); await render();
       }, `tglarrow.${btn.id}`);
-      await page.waitForTimeout(1200);
+      await settled(page);
       expect(await page.evaluate(id => layout.fill[id], `tglarrow.${btn.id}`))
         .toBe('#C0603F');
       await expect(frame.locator('svg.ds-tgl-svg path'))
@@ -272,7 +272,7 @@ test.describe('expandable sections', () => {
         markDirty(); await render();
         return { b, c };
       });
-      await page.waitForTimeout(1200);
+      await settled(page);
       await expect(frame.locator(`[data-el="text.${ids.b}"]`)).toBeVisible();
       await expect(frame.locator(`[data-el="text.${ids.c}"]`)).toBeVisible();
     });
@@ -299,7 +299,7 @@ test.describe('multi-kind targets', () => {
       markDirty(); await render();
       return { sid, tid };
     });
-    await page.waitForTimeout(1200);
+    await settled(page);
     return { btn, content, ...extra };
   }
 

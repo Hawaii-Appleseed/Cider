@@ -2,7 +2,7 @@
 // A text box (the "Text" button) is now resizable on every edge and corner,
 // like a shape. Height is a MIN-height in the renderer, so a coloured panel can
 // be sized on all sides without ever clipping its words. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 async function addTextBox(page) {
   // The Text button now opens a preset popover (Heading/Subheading/Body).
@@ -59,7 +59,7 @@ test.describe('text boxes', () => {
       await page.evaluate(async () => {
         layout.boxes[0].fill = '#EEEEEE'; markDirty(); await render();
       });
-      await page.waitForTimeout(800);
+      await settled(page);
       const unset = () => page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;
         if (d.getElementById('no-border-box')) return;

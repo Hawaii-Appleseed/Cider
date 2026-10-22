@@ -11,7 +11,7 @@
 // delete text boxes". renderOnce() now defers the swap while `editing`; the
 // editor's own finish() renders again and supersedes the deferred twin, so
 // nothing is ever lost and the flag cannot strand.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const SLOT = 'basics.h1';
 
@@ -46,7 +46,7 @@ test.describe('a render landing mid-edit', () => {
     // previous commit, or a live-server bump). Pre-fix, the swap removed the
     // document under the caret.
     await page.evaluate(() => { render(); });
-    await page.waitForTimeout(3500);
+    await settled(page);
 
     const host = frame.locator('.ds-edit');
     await expect(host).toHaveCount(1);          // still open

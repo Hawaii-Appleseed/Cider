@@ -46,6 +46,13 @@ const discover = () => {
 // which is more than a CI shard's budget. DS_ONLY=<id,id> runs those
 // reports; DS_SWEEP=1 runs them all. Unasked, every test here skips.
 const WANTED = process.env.DS_ONLY || process.env.DS_SWEEP;
+// DS_PART=k/n walks every nth field (and object) from the kth: a big report
+// split across CI jobs, so the slowest sweep is no longer the run's long
+// pole (eviction-code-guide alone took 8.5 minutes). The cell, panel and
+// handle sweeps are small and run in part 1 only.
+const PART = (m => m ? [+m[1], +m[2]] : null)(/^(\d+)\/(\d+)$/.exec(process.env.DS_PART || ''));
+const partOf = i => !PART || i % PART[1] === PART[0] - 1;
+const PART_TAG = PART ? ` (part ${PART[0]}/${PART[1]})` : '';
 const REPORTS = !WANTED ? []
   : (process.env.DS_ONLY ? discover().filter(r => process.env.DS_ONLY.split(',').includes(r.id)) : discover());
 
@@ -58,7 +65,8 @@ const PROBE = 'ZQXJ';
 
 /** Open, type, Escape, commit and undo every visible slot. Runs inside the
  *  editor window (page.evaluate) so it sees the same globals the UI does. */
-const sweepSlots = page => page.evaluate(async (PROBE) => {
+const sweepSlots = (page, arg) => page.evaluate(async ([PROBE, PART]) => {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const until = async (f, ms = 4000) => {
     const t0 = performance.now();
@@ -131,7 +139,7 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
     od.execCommand('insertText', false, PROBE);
   };
   const keys = [...new Set([...D().querySelectorAll('section.page [data-slot]')]
-    .map(e => e.dataset.slot))];
+    .map(e => e.dataset.slot))].filter((k, i) => partOf(i));
   const fails = [], shifted = [], covered = [], skipped = [], refused = [], chipWrap = [];
   let n = 0;
   for (const key of keys) {
@@ -244,10 +252,12 @@ const sweepSlots = page => page.evaluate(async (PROBE) => {
     await until(() => visibleOf(key), 6000);
   }
   return { n, keys: keys.length, fails, shifted, covered, skipped, refused, chipWrap };
-}, PROBE);
+}, arg);
 
 /** Move every unlocked object by the pilot API and put it back. */
-const sweepMoves = page => page.evaluate(async () => {
+const sweepMoves = (page, arg) => page.evaluate(async PART => {
+  const partOf = i => !PART || i % PART[1] === PART[0] - 1;
+  let ei = 0;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const until = async (f, ms = 4000) => {
     const t0 = performance.now();
@@ -263,6 +273,7 @@ const sweepMoves = page => page.evaluate(async () => {
   let n = 0, hidden = 0;
   for (const pg of inv.pages) {
     for (const e of pg.elements) {
+      if (!partOf(ei++)) continue;
       if (e.locked || e.hidden || e.kind === 'endnote') continue;   // an endnote entry reorders, it is not placed
       if (!shown(e.id)) { hidden++; continue; }
       if (!e.box) { unmeasured.push(e.id); continue; }
@@ -290,7 +301,7 @@ const sweepMoves = page => page.evaluate(async () => {
     }
   }
   return { n, hidden, fails, unmeasured };
-});
+}, arg);
 
 
 // ---- the real mouse ------------------------------------------------------
@@ -347,8 +358,8 @@ const settle = page => page.evaluate(async () => {
 });
 
 async function mouseSweep(page) {
-  const keys = await page.evaluate(() => [...new Set([...document.getElementById('out').contentDocument
-    .querySelectorAll('section.page [data-slot]')].map(e => e.dataset.slot))]);
+  const keys = (await page.evaluate(() => [...new Set([...document.getElementById('out').contentDocument
+    .querySelectorAll('section.page [data-slot]')].map(e => e.dataset.slot))])).filter((k, i) => partOf(i));
   const fails = [], needsDouble = [], covered = [];
   let n = 0;
   for (const key of keys) {
@@ -524,7 +535,7 @@ test('every bound report was discovered', () => {
 });
 
 for (const rep of REPORTS) {
-  test(`${rep.id}: every field opens, takes words, and every object moves`, async ({ page }) => {
+  test(`${rep.id}: every field opens, takes words, and every object moves${PART_TAG}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
     page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
@@ -533,8 +544,8 @@ for (const rep of REPORTS) {
     await gotoEditor(page, rep.id === 'budget-primer' ? '' : `?project=${rep.id}`);
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
-    const s = await sweepSlots(page);
-    const m = await sweepMoves(page);
+    const s = await sweepSlots(page, [PROBE, PART]);
+    const m = await sweepMoves(page, PART);
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: ${s.n}/${s.keys} slots opened, ${m.n} objects moved; ${s.skipped.length} hidden slots and ${m.hidden} hidden objects skipped`,
@@ -573,7 +584,7 @@ for (const rep of REPORTS) {
 }
 
 for (const rep of REPORTS) {
-  test(`${rep.id}: a real pointer opens every field; cells, panels and handles work`, async ({ page }) => {
+  test(`${rep.id}: a real pointer opens every field; cells, panels and handles work${PART_TAG}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
     page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
@@ -582,9 +593,11 @@ for (const rep of REPORTS) {
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
     const mo = await mouseSweep(page);
-    const ce = await cellSweep(page);
-    const pa = await panelSweep(page);
-    const ha = await handleSweep(page);
+    const whole = !PART || PART[0] === 1;
+    const none = { n: 0, charts: 0, tables: 0, fails: [], covered: [], noHandles: [], refused: [], skipped: [], unmeasured: [] };
+    const ce = whole ? await cellSweep(page) : none;
+    const pa = whole ? await panelSweep(page) : none;
+    const ha = whole ? await handleSweep(page) : none;
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: mouse opened ${mo.n} slots; ${ce.n} cells; ${pa.charts} charts, ${pa.tables} tables; ${ha.n} handles dragged, ${ha.noHandles.length} objects with no resize handle`,

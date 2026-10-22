@@ -18,7 +18,7 @@
 // handles resize it; Escape leaves the words with the box still selected; and
 // while the words are open, a grip under the box moves it without closing
 // them.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 /** The top-level point over `text` inside the first element matching `sel`
  *  in the report — `dx` CSS px into it (null: its middle). Where a person
@@ -148,7 +148,7 @@ test.describe('a click types, a drag moves (tfc-2027-priorities)', () => {
     expect(await page.evaluate(() => editing)).toBe(false);
     expect(Math.abs(await topOf(page, below) - was), 'live').toBeLessThanOrEqual(1);
     await page.evaluate(() => render());
-    await page.waitForTimeout(300);
+    await settled(page);
     expect(Math.abs(await topOf(page, below) - was), 'rendered').toBeLessThanOrEqual(1);
     // And it draws where it was dropped.
     const drawn = await page.evaluate(() => _pilotMeasure('field.sheet.h1-1'));

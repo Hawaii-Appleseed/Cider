@@ -12,7 +12,7 @@
 // leave those with two of everything. Two mousedown handlers is two
 // startDrags, two pushHistorys, and an undo that needs pressing twice — so
 // the tests count undo steps, which is where that would surface.
-const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
 
 /** The report document's identity, as a token that changes when it reloads. */
 const docToken = (page) => page.evaluate(() => {
@@ -78,7 +78,7 @@ test.describe('incremental rendering', () => {
           boxes().find(b => b.id === i).x = xx; markDirty(); await render();
         }, [id, x]);
       }
-      await page.waitForTimeout(500);
+      await settled(page);
 
       const frame = page.frameLocator('#out');
       const el = frame.locator(`[data-el="text.${id}"]`);
@@ -98,7 +98,7 @@ test.describe('incremental rendering', () => {
       // and one Undo really puts it back where it was
       const movedX = await page.evaluate(i => boxes().find(b => b.id === i).x, id);
       await page.keyboard.press('Control+z');
-      await page.waitForTimeout(800);
+      await settled(page);
       const undoneX = await page.evaluate(i => {
         const b = boxes().find(x => x.id === i); return b ? b.x : null;
       }, id);
@@ -115,7 +115,7 @@ test.describe('incremental rendering', () => {
           boxes().find(b => b.id === i).x = xx; markDirty(); await render();
         }, [id, x]);
       }
-      await page.waitForTimeout(500);
+      await settled(page);
 
       // …then drag a designed element on a DIFFERENT page, which no patch
       // replaced: its listeners are the ones the first render gave it.
@@ -145,7 +145,7 @@ test.describe('incremental rendering', () => {
       await page.evaluate(async (i) => {
         boxes().find(b => b.id === i).x = 1.6; markDirty(); await render();
       }, id);
-      await page.waitForTimeout(600);
+      await settled(page);
 
       const frame = page.frameLocator('#out');
       // selection works on the replaced section (without opening the box's
@@ -223,7 +223,7 @@ test.describe('incremental rendering', () => {
     await page.evaluate(async (i) => {
       boxes().find(b => b.id === i).x = 2.7; markDirty(); await render();
     }, id);
-    await page.waitForTimeout(500);
+    await settled(page);
     // Exactly, not approximately: nothing reloaded, so nothing had to be
     // restored — the old path re-applied a remembered scrollTop after a
     // reload, which is a different (and lossier) promise.

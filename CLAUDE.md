@@ -232,6 +232,18 @@ Rules that bite:
   `card(detachable=…)`, `is_light_bg`) — zero-stylesheet, importable by any
   project renderer, staged into the browser engine automatically. Add new
   reusable capabilities there, not in one report's renderer.
+- **A spec waits on the editor, not on a timer (2026-10-22).** `gotoEditor`
+  returns when the editor says it is settled (`window.__dsSettled()`: the
+  local probe answered, the first catch-up ping applied and any pull it
+  started done, no render running, no twin iframe loading), where it used to
+  sleep 1.5s after every boot. In a spec, `settled(page)` from the fixture
+  replaces a sleep after anything whose render you already awaited (a pilot
+  verb, `undo()`, `render()`); `afterRender(page, act, { maybe })` wraps an
+  action whose render starts later (a click, a paste, an upload) and waits
+  exactly for it (`#out[data-ds-render]` counts renders). Reach for
+  `waitForTimeout` only for a CSS transition or a debounce — and say which.
+  The sweep takes `DS_PART=k/n` (every nth field from the kth), which is how
+  CI splits a big report across jobs (`parts()` in editor-tests.yml).
 - **Run the tests your change needs, not the suite: `npm run test:affected`.**
   It runs the specs whose code the change touches, each with the reason, plus
   `boot-errors.spec.js` and the Python checks below when the change calls for

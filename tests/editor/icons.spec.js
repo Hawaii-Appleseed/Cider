@@ -7,7 +7,7 @@
 //
 // The API is mocked here: the suite must not depend on a third party being
 // up, and CI has no business making outbound calls.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const HOUSE = '<g fill="none" stroke="currentColor" stroke-width="2">'
             + '<path d="M3 10a2 2 0 0 1 .709-1.528l7-6"/></g>';
@@ -112,7 +112,7 @@ test.describe('icon picker', () => {
       s.fill = '#B23A48';
     });
     await page.evaluate(() => render());
-    await page.waitForTimeout(1200);
+    await settled(page);
     const recoloured = frame.locator(`[data-shape="${id}"]`);
     expect(await recoloured.evaluate(n => n.style.color)).toBe('rgb(178, 58, 72)');
   });

@@ -11,7 +11,7 @@
 //     with an atomic pop, so no two tabs can run the same op (and a closed
 //     tab's lingering stream cannot swallow one);
 //   · with no editor listening it says so, rather than hanging or pretending.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // The relay is real server state, so these must not run against each other.
 test.describe.configure({ mode: 'serial' });
@@ -54,7 +54,7 @@ test.describe('pilot relay', () => {
 
   test('a read verb needs no browser round trip at all', async ({ page, request }) => {
     await gotoEditor(page);
-    await page.waitForTimeout(1200);
+    await settled(page);
     const r = await pilot(request, { verb: 'audit', tab: await tabOf(page) });
     expect(r.ok).toBe(true);
     expect(r.result.ok).toBe(true);

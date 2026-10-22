@@ -6,7 +6,7 @@
 //
 // Everything works on the AUTHORED text, not the rendered HTML, because that
 // is what a replace has to write back.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 test('⌘F opens it, and a word is found where it actually lives',
   async ({ page }) => {
@@ -60,7 +60,7 @@ test('Change all rewrites every hit as one undo step', async ({ page }) => {
   // does not depend on the fixture's prose.
   await page.evaluate(() => docsync.api.addTextBox(
     { page: 1, x: 1, y: 1, w: 3, md: 'Fiscal Year 2026 and Fiscal Year 2026' }));
-  await page.waitForTimeout(1800);
+  await settled(page);
   const id = await page.evaluate(() => layout.boxes[layout.boxes.length - 1].id);
 
   await page.keyboard.press('Meta+f');
@@ -77,7 +77,7 @@ test('Change all rewrites every hit as one undo step', async ({ page }) => {
   // One undo step for the whole change — a find/replace that took forty undos
   // to back out would not be one anybody trusted.
   await page.evaluate(() => undo());
-  await page.waitForTimeout(1800);
+  await settled(page);
   expect(await page.evaluate(i => layout.boxes.find(b => b.id === i).md, id))
     .toBe('Fiscal Year 2026 and Fiscal Year 2026');
 });
@@ -90,7 +90,7 @@ test('a table cell is searched too', async ({ page }) => {
       rows: [['Widget', 'Sprocket'], ['Widget', '3']] });
   });
   await page.evaluate(() => render());
-  await page.waitForTimeout(1800);
+  await settled(page);
   await page.keyboard.press('Meta+f');
   await page.waitForTimeout(600);
   await page.locator('#find-needle').fill('Sprocket');

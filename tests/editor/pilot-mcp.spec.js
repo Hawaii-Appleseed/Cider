@@ -6,7 +6,7 @@
 // to /__pilot and the verb runs inside the open editor's own docsync.api.
 // This spec pins exactly that — the edit shows up in the LIVE editor tab, and
 // one undo there reverses it.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -90,7 +90,7 @@ test.describe('pilot over MCP', () => {
   test('audit comes back as data — the screenshot a pilot does not have to take',
     async ({ page }) => {
       await gotoEditor(page);
-      await page.waitForTimeout(1200);
+      await settled(page);
       const s = await session();
       const r = await s.call('pilot', { project: 'budget-primer', verb: 'audit',
         tab: await page.evaluate(() => docsync.api.status().tab) });

@@ -13,7 +13,7 @@
 // window in both states, and applyZoom leaves room BELOW the iframe so the
 // last page can still be scrolled clear of a strip that takes clicks. Local
 // mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const geo = (page) => page.evaluate(() => {
   const r = id => {
@@ -185,7 +185,7 @@ test.describe('page strip fold', () => {
     async ({ page }) => {
       await fold(page, true);
       await page.evaluate(() => render());
-      await page.waitForTimeout(2500);
+      await settled(page);
       await fold(page, false);
       await page.waitForTimeout(600);
       // A folded strip hides #rail-list, so every preview host measures 0 wide.

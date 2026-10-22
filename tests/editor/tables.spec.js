@@ -1,7 +1,7 @@
 // Tables (docsync/editor/edit.html + layout.py tables_html): a placed,
 // draggable, editable grid. The "Table" button creates one; cells edit in
 // place on double-click; right-click a cell for rows & columns. Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 async function addTable(page) {
   // Create on a CONTENT page — the cover (page 1) has a full-bleed overlay
@@ -292,7 +292,7 @@ test.describe('table cells edit directly', () => {
     await page.waitForTimeout(1200);
     await page.evaluate(() => { layout.tables[0].rows[1][0] = 'marker'; });
     await page.evaluate(() => render());
-    await page.waitForTimeout(1400);
+    await settled(page);
 
     await frame.locator('td[data-cell="1,0"]').click({ button: 'right' });
     const menu = frame.locator('.ds-menu.ds-tmenu');
