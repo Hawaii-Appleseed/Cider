@@ -15920,18 +15920,30 @@ function visiblePageId() {
  *     endnotes page would validate and then silently never appear.
  *  3. Failing both (an older staged engine), the sheets' own order. */
 function mountedPages(d) {
-  let pages = [...d.querySelectorAll('section[data-page]')].map(pg => {
-    const pid = pg.dataset.page;
-    return { pg, id: /^\d+$/.test(pid) ? +pid : pid };
+  const num = pid => /^\d+$/.test(pid) ? +pid : pid;
+  // Per sheet, not all-or-nothing: a render that patches ONE sheet in place
+  // hands it back without the id the editor stamped on it (stampPageIds),
+  // and a whole-document "sections with data-page" branch then lost that
+  // sheet — a box added to page 2 left page 2 unmounted.
+  const seen = new Set();
+  const pages = [];
+  d.querySelectorAll('section.page').forEach(pg => {
+    const own = pg.dataset.page;
+    const m = own == null ? pg.querySelector('[data-ds-mount]') : null;
+    const pid = own != null ? own : m ? m.dataset.dsMount : null;
+    if (pid == null) return;
+    seen.add(pg);
+    pages.push({ pg, id: num(pid) });
+  });
+  // A marker outside any sheet (an older staged engine) still names a page.
+  d.querySelectorAll('[data-ds-mount]').forEach(m => {
+    const pg = m.closest('section.page');
+    if (pg && seen.has(pg)) return;
+    if (pg) { seen.add(pg); pages.push({ pg, id: num(m.dataset.dsMount) }); }
+    else pages.push({ pg: m, id: num(m.dataset.dsMount) });
   });
   if (!pages.length)
-    pages = [...d.querySelectorAll('[data-ds-mount]')].map(m => {
-      const pid = m.dataset.dsMount;
-      return { pg: m.closest('section.page') || m,
-               id: /^\d+$/.test(pid) ? +pid : pid };
-    });
-  if (!pages.length)
-    pages = [...d.querySelectorAll('section.page')].map((pg, i) => ({ pg, id: i + 1 }));
+    return [...d.querySelectorAll('section.page')].map((pg, i) => ({ pg, id: i + 1 }));
   return pages;
 }
 /** The number a sheet's placed things are keyed by (see mountedPages), or
@@ -24937,8 +24949,10 @@ function stillEntrances(d, roots) {
 function stampPageIds(d) {
   const pages = mountedPages(d);
   pages.forEach(({ pg, id }) => {
-    if (pg && pg.matches && pg.matches('section.page') && !pg.hasAttribute('data-page') && id != null)
+    if (pg && pg.matches && pg.matches('section.page') && !pg.hasAttribute('data-page') && id != null) {
       pg.setAttribute('data-page', String(id));
+      pg.setAttribute('data-page-stamped', '1');   // the editor's, not the renderer's
+    }
   });
 }
 

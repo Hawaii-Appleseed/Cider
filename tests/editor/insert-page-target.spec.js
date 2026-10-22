@@ -22,8 +22,11 @@ const DEMO = '?project=demo-report';
 /** Fails loudly, naming the cause, if the subject stops being the unstamped
  *  case — the alternative is silent loss of the only coverage this path has. */
 async function expectNoStampedPages(page) {
+  // The editor stamps an id of its own on every mounted sheet (stampPageIds,
+  // marked data-page-stamped) — that is not the renderer stamping, which is
+  // what this premise is about.
   const stamped = await page.frameLocator('#out')
-    .locator('section.page[data-page]').count();
+    .locator('section.page[data-page]:not([data-page-stamped])').count();
   expect(stamped,
     'demo-report is the designated renderer with NO stamped page ids; it now '
     + 'stamps them, so this file needs a different subject (or a fixture that '
