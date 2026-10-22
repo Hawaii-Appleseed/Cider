@@ -224,3 +224,54 @@ async function afterRenderPaste(page, act) {
   const { afterRender } = require('./fixtures/editor-test');
   await afterRender(page, act);
 }
+
+test.describe('the render state by name, a batch ref by name, a sheet with one id, errors counted', () => {
+  test('renderState answers, and settles after a render', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    await page.evaluate(() => docsync.api.setSlot('groc.lead', 'again'));
+    await settled(page);
+    expect(await page.evaluate(() => window.__dsRenderState())).toEqual({ running: false, loading: false, parked: false, pulling: false });
+    expect(await page.evaluate(() => typeof window.__dsSwallowed())).toBe('object');
+  });
+
+  test('a batch ref is a name an op gives itself; any other @ is a value', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    const r = await page.evaluate(async () => {
+      pushHistory();
+      layout.swatches = { ...(layout.swatches || {}), Brand: '#1E6194' };
+      markDirty(); await render();
+      const good = await docsync.api.batch([
+        { verb: 'addTextBox', as: 'b', args: [{ page: 2, x: 1, y: 1, w: 2, md: 'B' }] },
+        { verb: 'recolor', args: ['@b', '@Brand'] },                       // a ref, then a swatch
+      ]);
+      const box = good.ok && layout.boxes[layout.boxes.length - 1];
+      const forward = await docsync.api.batch([
+        { verb: 'recolor', args: ['@later', '#FFF6D8'] },
+        { verb: 'addTextBox', as: 'later', args: [{ page: 2, x: 1, y: 3, w: 2, md: 'L' }] },
+      ]);
+      const value = await docsync.api.batch([
+        { verb: 'addShape', args: [{ page: 2, kind: 'rect', x: 1, y: 5, w: 1, h: 1, fill: '@Nope' }] },
+      ]);
+      return { good: good.ok, fill: box && box.fill, forward: forward.error, value: value.error };
+    });
+    expect(r.good).toBe(true);
+    expect(r.fill).toBe('@Brand');
+    expect(r.forward).toMatch(/refs only point backwards/);
+    expect(r.value).toMatch(/no swatch called 'Nope'/);
+  });
+
+  test('every mounted sheet carries the number its placed things are keyed by', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    const r = await page.evaluate(() => {
+      const d = $('out').contentDocument;
+      return [...d.querySelectorAll('section.page')].map(pg => ({ id: pageIdOf(pg), num: pageNumOf(d, pg) }));
+    });
+    expect(r.length).toBeGreaterThan(1);
+    for (const { id, num } of r) if (num != null) expect(id).toBe(String(num));
+    // and the page the selection names is the page a box lands on
+    await page.evaluate(() => { const d = $('out').contentDocument; setSelPage(d, pageIdOf(d.querySelectorAll('section.page')[2])); });
+    const t = await page.evaluate(async () => (await docsync.api.addTextBox({ page: +selPage, x: 1, y: 1, w: 2, md: 'here' })));
+    expect(t.ok).toBe(true);
+    expect(t.page).toBe(3);
+  });
+});
