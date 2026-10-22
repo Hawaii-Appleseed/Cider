@@ -989,6 +989,34 @@ test('comments: resolved from the other editor, the marker and the count drop ev
   expect((await allComments()).find(c => c.text.includes('runs long')).resolved_by).toBeNull();
 });
 
+test('comments: a card taken in hand by the id it wore before the hub answered lands on the thread', async () => {
+  // A new comment shows at once under a provisional id (hubCommentAdd), and
+  // the hub's answer renames it (hubCommentsMerge). A click on the card in
+  // that instant - or a focus held back past it: a render waits while someone
+  // types - names the thread by the old id, and must land on the thread under
+  // its hub id, not on a name nothing carries any more (which left no card in
+  // hand, and the test after this one failing on a comment just posted).
+  await b.locator('#cpanel-text').fill('Taken in hand while pending.');
+  // Press Add and read the provisional id in the same breath, before any answer.
+  const tmpId = await b.evaluate(() => { $('cpanel-add').click(); return hubComments.find(c => c.pending).id; });
+  expect(tmpId).toMatch(/^pending-/);
+  const row = cmtRow(b, 'Taken in hand while pending');
+  await expect(row).not.toHaveAttribute('data-id', tmpId, { timeout: 20_000 });   // the hub has answered
+  const id = await row.getAttribute('data-id');
+  expect(id).not.toMatch(/^pending-/);
+  // Let go of it, then take it in hand by the name it no longer wears.
+  await b.evaluate('hubCommentActive = null; hubCommentsRender()');
+  await expect(row).not.toHaveClass(/active/);
+  await b.evaluate(`hubCommentFocus(${JSON.stringify(tmpId)})`);
+  await expect(row).toHaveClass(/active/);
+  expect(await b.evaluate('hubCommentActive')).toBe(id);
+  // Gone again, so the threads stand as the tests after this expect them.
+  await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${id}`);
+  await expect(cmtRow(b, 'Taken in hand while pending')).toHaveCount(0, { timeout: 20_000 });
+  await expect(cmtRow(a, 'Taken in hand while pending')).toHaveCount(0, { timeout: 20_000 });
+  expect((await allComments()).length).toBe(3);
+});
+
 test('comments: who may delete - the author, and the owner; nobody else sees the button', async () => {
   // Grace wrote nothing yet: no Delete on Ada's comments for her (Ada owns the record).
   await openMenu(cmtRow(b, 'Overall: shorter'));
