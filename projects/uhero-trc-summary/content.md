@@ -69,7 +69,7 @@ Chapters 2 to 8, from income tax to credits (pp. 4–5)
 The data recommendation, and what it means for tax fairness (p. 6)
 
 [[cover.source]]
-Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is the draft's printed page number. The meeting dates and comment address come from the Coalition, not from the draft.
+Summary prepared for the Tax Fairness Coalition from UHERO's draft; "p. N" is the draft's printed page number. The meeting dates, comment address and Commission background come from the Coalition, not from the draft.
 
 [[cover.stamp]]
 Not reviewed or endorsed by UHERO or the Tax Review Commission. Figures are preliminary and may change in the final report.
@@ -84,7 +84,7 @@ Six swaps, one estimate
 Bottom line: UHERO tests swaps and does not say which to pick. Only groceries has a price so far.
 
 [[about.works.p1]]
-A swap pairs two changes. One changes a tax. The other makes up the money, so the state's main spending pool, the **General Fund**, ends 2027 at the same level. UHERO calls that **revenue-neutral**. Counties can still gain or lose (p. 2). Results for the swaps are due in the final report (p. 158).[^uhero-swaps]
+A swap pairs two changes. One changes a tax. The other makes up the money, so the state's main spending pool, the **General Fund**, ends 2027 at the same level. That is **revenue-neutral**; counties can still gain or lose.[^uhero-swaps]
 
 [[about.model.p]]
 The estimates come from a model of Hawaiʻi households built on Census survey data, with gaps filled from IRS records. People in the model can change how much they earn or report; for now, nobody moves away and visitors keep spending as before. **Results for the six swaps are due in the final report** (p. 158).
@@ -117,7 +117,7 @@ What stopping the tax on groceries would do
 The average household would save about $419 a year, and the state would lose $233 million.
 
 [[groc.lead]]
-UHERO's one estimate asks what happens if Hawaiʻi stops taxing **groceries**. They now carry the **general excise tax (GET)**, a broad tax on business sales: 4 percent on most activity, plus 0.5 percent for counties (p. 56). The state and counties would lose **$267.4 million** a year, before counting the tax households pay when they spend their savings (p. 158). The average household would save about **$419 a year** (p. 159).[^uhero-groceries]
+UHERO's one estimate asks what happens if Hawaiʻi stops taxing **groceries**. They now carry the **general excise tax (GET)**: 4 percent on most business sales, plus 0.5 percent for counties (p. 56). The state and counties would lose **$267.4 million** a year, before counting the tax households pay when they spend their savings (p. 158). The average household would save about **$419 a year** (p. 159).[^uhero-groceries]
 
 [[groc.chart.h]]
 What a household saves each year, by income group
@@ -138,7 +138,7 @@ The average household would save about **$419 a year**. Higher-income households
 WHO PAYS DEPENDS ON THE MAKE-UP TAX
 
 [[groc.pay.p]]
-If income taxes rise to cover what residents save, residents as a group break even, but they also cover the $53.3 million visitors save (p. 1). Some households still lose: in UHERO's example, $400 saved on groceries and $500 more in income tax leaves a household $100 worse off (p. 161). UHERO assumes stores cut prices by the full tax. No one knows if they would; studies from Germany and Spain found most did, not all (pp. 66, 160).
+If income taxes rise to cover residents' savings, residents as a group break even but also cover the $53.3 million visitors save (p. 1). Some households still lose: $400 saved on groceries and $500 more in income tax leaves a household $100 worse off (p. 161). UHERO assumes stores cut prices by the full tax; studies from Germany and Spain found most did, not all (p. 66).
 
 [[groc.foot]]
 **Source:** UHERO draft report, section 3.4 (pp. 65–66) and Figure 10.1 (p. 160); UHERO labels them preliminary.
@@ -231,13 +231,13 @@ People claimed **$621.3 million** in credits in 2023: about $243 million to avoi
 Chapter 9, "Other matters," is a placeholder for the final report (p. 157). Fiscal 2025 ended in June 2025.
 
 [[end.eyebrow]]
-The one recommendation, and what it means
+What it means
 
 [[end.h1]]
-Better data, and what to watch
+Gaps, fairness and next steps
 
 [[end.sub]]
-The draft's only recommendation is about data, and its swaps leave out options that would raise new money.
+What the draft leaves out, how it looks through a fairness lens, and what to ask for.
 
 [[rec.h]]
 CH. 11 · THE ONE RECOMMENDATION (P. 162)
@@ -259,12 +259,6 @@ These are the Coalition's observations on the draft, not UHERO's. Nothing below 
 
 [[fair.b3]]
 **How it is paid for decides who wins.** Both grocery swaps give households the same $419 a year on average. One is paid for by higher income taxes. The other is paid for by shrinking the food/excise credit, a refund for low-income households.
-
-[[fair.b4]]
-**Gaps to watch.** The draft gives real estate investment trusts (REITs) one sentence, leaves chapter 9 as a placeholder, and has no estimate yet of what the pension and Social Security tax exclusions cost. No swap has numbers until the final report (pp. 50, 113, 157).
-
-[[fair.b5]]
-**October 28 is a chance to weigh in.** The Commission discusses the draft that day, and the final report is due December 21. Comments can be sent to **tax.research@hawaii.gov**.
 
 [[end.foot]]
 **Source:** UHERO draft report, chapters 2–11. Each chapter row and each numbered source links to that page of the draft's PDF.
@@ -302,8 +296,47 @@ Figure 3. Where Hawaiʻi's state tax money comes from, FY2025 (draft Table 1.1, 
 [[mix.desc]]
 Horizontal bar chart of shares of the 11.46 billion dollars in state tax collections in fiscal 2025: general excise and use tax 40.4 percent, individual income tax 28.7, hotel and rental tax 7.1, county GET surcharges 4.9, estate tax 3.5, corporate income tax 3.5, conveyance tax 0.8.
 
-[[swap.note]]
-Capital gains: profit from selling assets. Food/excise credit: a refund for low-income households.
+[[cover.what.h]]
+What is this?
+
+[[cover.what.p]]
+UHERO, the University of Hawaiʻi Economic Research Organization, was hired by the state Tax Review Commission to study Hawaiʻi's tax system. The Commission reviews the system every five years and reports to the Legislature. This is a draft; the final report is due December 21, 2026.
+
+[[miss.h]]
+What's missing from the draft
+
+[[miss.b1]]
+**No revenue estimates for any swap yet.** The estimates "will appear in the final report" (p. 158).
+
+[[miss.b2]]
+**No swap raises new money.** All six are set to leave State General Fund revenue unchanged in 2027 (pp. 158, 161).
+
+[[miss.b3]]
+**Moving away is not scored yet.** For now nobody moves in or out of Hawaiʻi in the model; the final report will add estimates (pp. 158, 162).
+
+[[miss.b4]]
+**The wealth tax is not on the list.** UHERO calls an annual wealth tax unlikely to raise much if Hawaiʻi acts alone (pp. 118, 128).
+
+[[miss.b5]]
+**Thin or open spots.** Real estate investment trusts (REITs) get one sentence, chapter 9 is a placeholder, and the pension and Social Security exclusions have no cost estimate (pp. 50, 113, 157).
+
+[[adv.h]]
+Bottom line for advocates
+
+[[adv.label]]
+The Coalition's view, not UHERO's.
+
+[[adv.b1]]
+**Ask for full estimates of swaps 3 and 4:** taxing capital gains like regular income, and raising the top income-tax rate one point. Ask for revenue and for who gains and loses by income group (p. 161).
+
+[[adv.b2]]
+**Ask the Commission to consider options that raise new revenue,** not only swaps that leave the General Fund level (p. 158).
+
+[[adv.b3]]
+**Weigh in.** The full Commission discusses the draft on October 28, and the final report is due December 21. Send written comments to **tax.research@hawaii.gov**.
+
+[[adv.foot]]
+**Source:** UHERO draft report, pp. 46, 50, 63, 113, 118, 128, 157–158, 161–162. The Coalition's observations are labeled as such.
 
 [[sources]]
 [uhero]: Dylan T. Moore (lead investigator), Nicholas Lacoste, Sumit Ilamkar and Timothy Malone, University of Hawaiʻi Economic Research Organization, On Hawaiʻi's Tax System, draft report prepared for the Hawaiʻi Tax Review Commission, October 6, 2026. — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf

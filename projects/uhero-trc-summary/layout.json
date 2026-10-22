@@ -1,1 +1,105 @@
-{"positions":{},"shapes":[],"boxes":[],"tables":[{"id":"swaps","flow":true,"header":true,"headerFill":"#354F52","headerColor":"#FFFFFF","band":"#F4F6F4","colw":[47,53],"rows":[["The change","The make-up change"],["No GET on groceries","Raise all income-tax rates by the same percentage"],["No GET on groceries","Cut the food/excise tax credit"],["Tax long-term capital gains like regular income","Lower the top three income-tax rates"],["Raise the top income-tax rate by 1 point","Lower the bottom three rates, or enlarge the food/excise credit"],["Exempt long-term capital gains from tax","Raise the top three income-tax rates"],["Raise the GET rate by half a point","Lower all income-tax rates by the same percentage"]]},{"id":"chapters","flow":true,"header":true,"headerFill":"#354F52","headerColor":"#FFFFFF","band":"#F4F6F4","colw":[22,62,16],"rows":[["Chapter","What the draft finds","In the draft"],["**2 · Individual income tax**","Higher earners pay a bigger share of their income, and Acts 46 and 24 are changing the tax. It brought in $3.29 billion in fiscal 2025 (pp. 3, 28, 35).","[pp. 26–55](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=28)"],["**3 · General excise tax**","The GET is Hawaiʻi's biggest tax and hits business sales at every step: $4.63 billion in fiscal 2025, 40.4 percent of state taxes (pp. 3, 56).","[pp. 56–72](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=58)"],["**4 · Visitors and tourism**","Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax brought in $816.2 million in fiscal 2025 (pp. 73–74, 77).","[pp. 73–85](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=75)"],["**5 · Property and real estate**","Homeowners pay the lowest property tax rate in the country: 0.29 percent of home value, against 0.90 percent nationwide. Only the counties can set it (pp. 87–88).","[pp. 86–99](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=88)"],["**6 · Business taxes**","The corporate income tax raised $400.4 million net in fiscal 2025. UHERO says a large rate cut could raise total revenue, but on 2010 data it will revisit (pp. 101, 107).","[pp. 100–117](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=102)"],["**7 · Wealth and estates**","UHERO thinks an annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax collections swing: $405.8 million in fiscal 2025, including one $315 million payment (pp. 118, 120).","[pp. 118–132](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=120)"],["**8 · Tax credits**","Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). For the solar credit, 72 percent of what individuals claimed went to filers earning $100,000 or more (p. 147).","[pp. 133–156](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=135)"]]}],"sections":{}}
+{
+  "positions": {},
+  "shapes": [],
+  "boxes": [],
+  "tables": [
+    {
+      "id": "swaps",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "band": "#F4F6F4",
+      "colw": [
+        50,
+        50
+      ],
+      "rows": [
+        [
+          "In plain English",
+          "Precise wording"
+        ],
+        [
+          "**Cut the grocery tax; raise income taxes**",
+          "No GET on groceries; raise all income-tax rates by the same percentage"
+        ],
+        [
+          "**Cut the grocery tax; trim a low-income credit**",
+          "No GET on groceries; cut the food/excise tax credit"
+        ],
+        [
+          "**Tax profit from selling assets like regular income; cut top rates**",
+          "Tax long-term capital gains like regular income; lower the top three income-tax rates"
+        ],
+        [
+          "**Raise the top rate to cut low rates or boost a credit**",
+          "Raise the top income-tax rate by 1 point; lower the bottom three rates, or enlarge the food/excise credit"
+        ],
+        [
+          "**Stop taxing profit from selling assets; raise top rates**",
+          "Exempt long-term capital gains from tax; raise the top three income-tax rates"
+        ],
+        [
+          "**Raise the sales tax (GET) a little; cut income taxes**",
+          "Raise the GET rate by half a point; lower all income-tax rates by the same percentage"
+        ]
+      ]
+    },
+    {
+      "id": "chapters",
+      "flow": true,
+      "header": true,
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "band": "#F4F6F4",
+      "colw": [
+        22,
+        62,
+        16
+      ],
+      "rows": [
+        [
+          "Chapter",
+          "What the draft finds",
+          "In the draft"
+        ],
+        [
+          "**2 · Individual income tax**",
+          "Higher earners pay a bigger share of their income, and Acts 46 and 24 are changing the tax. It brought in $3.29 billion in fiscal 2025 (pp. 3, 28, 35).",
+          "[pp. 26–55](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=28)"
+        ],
+        [
+          "**3 · General excise tax**",
+          "The GET is Hawaiʻi's biggest tax and hits business sales at every step: $4.63 billion in fiscal 2025, 40.4 percent of state taxes (pp. 3, 56).",
+          "[pp. 56–72](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=58)"
+        ],
+        [
+          "**4 · Visitors and tourism**",
+          "Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax brought in $816.2 million in fiscal 2025 (pp. 73–74, 77).",
+          "[pp. 73–85](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=75)"
+        ],
+        [
+          "**5 · Property and real estate**",
+          "Homeowners pay the lowest property tax rate in the country: 0.29 percent of home value, against 0.90 percent nationwide. Only the counties can set it (pp. 87–88).",
+          "[pp. 86–99](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=88)"
+        ],
+        [
+          "**6 · Business taxes**",
+          "The corporate income tax raised $400.4 million net in fiscal 2025. UHERO says a large rate cut could raise total revenue, but on 2010 data it will revisit (pp. 101, 107).",
+          "[pp. 100–117](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=102)"
+        ],
+        [
+          "**7 · Wealth and estates**",
+          "UHERO thinks an annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax collections swing: $405.8 million in fiscal 2025, including one $315 million payment (pp. 118, 120).",
+          "[pp. 118–132](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=120)"
+        ],
+        [
+          "**8 · Tax credits**",
+          "Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). For the solar credit, 72 percent of what individuals claimed went to filers earning $100,000 or more (p. 147).",
+          "[pp. 133–156](https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=135)"
+        ]
+      ]
+    }
+  ],
+  "sections": {}
+}

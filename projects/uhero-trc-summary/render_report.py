@@ -152,6 +152,11 @@ page = f"""
   {C.html("cover.deck", "deck")}
   </div>
 
+  <div class="datebox what"{L.frame("cover.whatbox")}>
+    <div class="box-h"{L.attr("cover.what.h")}>{C.t("cover.what.h")}</div>
+    {C.html("cover.what.p", "box-p")}
+  </div>
+
   <div class="klabel"{L.attr("cover.figures.h")}>{C.t("cover.figures.h")}</div>
   <div class="figs"{L.frame("cover.figs")}>
     {fig("a", " fig-warn")}{fig("b")}{fig("c")}
@@ -162,9 +167,6 @@ page = f"""
     {C.html("cover.dates.p", "box-p")}
   </div>
 
-  <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
-  {C.html("fair.note", "note")}
-  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 5))}</ul>
 
   <div class="cfwrap"><div class="cover-foot"{L.frame("cover.foot")}>
     <div class="cfoot-l"{L.attr("cover.source")}>{C.t("cover.source")}</div>
@@ -178,7 +180,6 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
   {L.flow_table("swaps", SWAPS_DEFAULT)}
-  {C.html("swap.note", "cap")}
   <h2 class="figt"{L.attr("groc.h1")}>{C.t("groc.h1")}</h2>
   {C.html("groc.lead", "body")}
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
@@ -210,6 +211,22 @@ page = f"""
   <div class="endnotes"{L.frame("endnotes.box")}><span class="srch"{L.attr("endnotes.h2")}>{C.t("endnotes.h2")}</span>{ENDNOTES_SLOT}</div>
   {foot("end.foot", 3)}
 {C.extras("page3")} {L.layer(3)}{L.text_boxes(3)}{L.tables_html(3)}
+</section>
+
+<section class="page">
+  {head("end.eyebrow", "end.h1", "end.sub", "end")}
+  <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
+  {C.html("fair.note", "note")}
+  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 4))}</ul>
+  <h2{L.attr("miss.h")}>{C.t("miss.h")}</h2>
+  <ul class="fl"{L.frame("miss.list")}>{"".join(f'<li class="fb"{L.frame(f"miss.li.{n}")}>{C.html(f"miss.b{n}", "fbp")}</li>' for n in range(1, 6))}</ul>
+  <div class="box"{L.frame("adv.box")}>
+    <div class="box-h"{L.attr("adv.h")}>{C.t("adv.h")}</div>
+    <div class="advl"{L.attr("adv.label")}>{C.t("adv.label")}</div>
+    {"".join(f'<div class="advb"{L.frame(f"adv.li.{n}")}>{C.html(f"adv.b{n}", "box-p")}</div>' for n in range(1, 4))}
+  </div>
+  {foot("adv.foot", 4)}
+{C.extras("page4")} {L.layer(4)}{L.text_boxes(4)}{L.tables_html(4)}
 </section>
 """
 
@@ -323,7 +340,7 @@ html = f"""<!DOCTYPE html>
                       letter-spacing:.06em; text-transform:uppercase; }}
   table.ds-flow td {{ font-size:13.5px; line-height:1.3; color:{TEXT}; border-top:1px solid {LINE}; }}
   table.ds-flow td:first-child {{ color:{INK}; font-weight:600; }}
-  .page table.ds-flow td {{ padding-top:5px; padding-bottom:5px; }}
+  .page table.ds-flow td {{ padding-top:3px; padding-bottom:3px; }}
 
   .split {{ display:flex; gap:26px; align-items:flex-start; margin-top:6px; }}
   .splitl {{ flex:0 0 3.9in; }}
@@ -339,6 +356,9 @@ html = f"""<!DOCTYPE html>
   .fl {{ list-style:none; margin:6px 0 0; padding:0; }}
   .fb {{ padding:5px 0; border-top:1px solid {LINE}; }}
   .fbp {{ font-size:14px; line-height:1.45; color:{TEXT}; margin:0; }}
+  .advl {{ font-size:13.5px; color:{ASH}; margin:-2px 0 6px; font-style:italic; }}
+  .advb {{ padding:5px 0; border-top:1px solid rgba(255,255,255,.25); }}
+  .box:not(.box-green) .box-p {{ font-size:14.5px; }}
   .fbp b {{ color:{PRIMARY_DARK}; }}
 
   /* --- Footers, endnotes ---------------------------------------------- */
