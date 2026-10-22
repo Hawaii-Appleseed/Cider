@@ -47,11 +47,11 @@ test.describe('expandable sections', () => {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
 
-      // first click: the whole pair, and no resize handles
+      // first click: the whole pair — the group's own corners, no piece's handles
       await el.click();
       await page.waitForTimeout(400);
       expect(await page.evaluate(() => selIds.size)).toBe(2);
-      await expect(frame.locator('.ds-handles')).toHaveCount(0);
+      await expect(frame.locator('.ds-handles:not(.ds-handles-group)')).toHaveCount(0);
 
       // second click, no movement: just this piece — and handles appear
       await el.click();
