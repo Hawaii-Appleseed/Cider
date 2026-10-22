@@ -32350,9 +32350,10 @@ function _pilotValidateFill(fill) {
     return { ok: false, error: 'recolor(id, "#hex" | "@Swatch" | "linear-gradient(…)" | null)' };
   const f = fill.trim();
   if (HEX_RE.test(f) || /^(linear|radial|conic)-gradient\(/.test(f)) return { ok: true };
-  if (f.startsWith('@'))
-    return (layout.swatches || {})[f.slice(1)] ? { ok: true }
-      : { ok: false, error: `no swatch called '${f.slice(1)}'` };
+  const sw = /^@(.+?)(?:\s+\d+(?:\.\d+)?%)?$/.exec(f);        // '@Name', '@Name 20%'
+  if (sw)
+    return (layout.swatches || {})[sw[1]] ? { ok: true }
+      : { ok: false, error: `no swatch called '${sw[1]}'` };
   return { ok: false, error: `'${fill}' is not a colour — a #hex, a @Swatch or a gradient` };
 }
 const PILOT_BATCH_VERBS = {
@@ -32989,13 +32990,24 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     // validated before its referent exists, so its validation runs at apply
     // time, and a failure there rolls the WHOLE batch back from the snapshot
     // pushHistory took — all-or-nothing either way, just enforced later.
-    const hasRef = a => typeof a === 'string' ? a.startsWith('@')
+    // A swatch is written '@Name' too ('@Name 20%' with a tint), as a fill,
+    // a stroke or a colour: that is a value, not a ref — the swatch the
+    // report has, or any tinted one, is passed through untouched. Every
+    // single verb runs through here now, so addShape({fill: '@Brand 20%'})
+    // was refused as "names no earlier op's 'as'".
+    // And with no op named by `as`, nothing can be a ref at all: a '@Nope'
+    // then reaches its verb, which says "no swatch called 'Nope'".
+    const anyAs = ops.some(op => op && op.as);
+    const swatchRef = v => typeof v === 'string' && v.startsWith('@')
+      && (/\s/.test(v.trim()) || !!(layout.swatches || {})[v.slice(1).trim()]);
+    const refStr = v => anyAs && typeof v === 'string' && v.startsWith('@') && !swatchRef(v);
+    const hasRef = a => typeof a === 'string' ? refStr(a)
       : (a && typeof a === 'object')
-        ? Object.values(a).some(v => typeof v === 'string' && v.startsWith('@'))
+        ? Object.values(a).some(refStr)
         : false;
     const resolve = (a, named) => {
       const one = v => {
-        if (typeof v !== 'string' || !v.startsWith('@')) return v;
+        if (!refStr(v)) return v;
         if (!(v.slice(1) in named)) throw new Error(`unknown ref '${v}'`);
         return named[v.slice(1)];
       };
@@ -33039,7 +33051,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
         // Every named ref must point at an EARLIER op's `as` — a forward or
         // unknown name is a spelling mistake, refused now, not at apply.
         const names = refs.flatMap(a => typeof a === 'string' ? [a]
-          : Object.values(a).filter(v => typeof v === 'string' && v.startsWith('@')));
+          : Object.values(a).filter(refStr));
         const bad = names.find(n => !defined.has(n.slice(1)));
         if (bad) return { ok: false, error: `op ${i} (${op.verb}): ref '${bad}' names `
           + `no earlier op's 'as' — refs only point backwards` };

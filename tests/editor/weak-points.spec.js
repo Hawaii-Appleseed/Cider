@@ -73,6 +73,22 @@ test.describe('a pilot verb on its own is refused as a batch is', () => {
     });
   }
 
+  test('a swatch, tinted or not, is a colour and never a batch ref', async ({ page }) => {
+    await gotoEditor(page, PROJ);
+    const r = await page.evaluate(async () => {
+      pushHistory();
+      layout.swatches = { ...(layout.swatches || {}), Brand: '#1E6194' };
+      markDirty(); await render();
+      const s = await docsync.api.addShape({ page: 2, kind: 'rect', x: 2, y: 3, w: 2, h: 1, fill: '@Brand 20%' });
+      const b = await docsync.api.addTextBox({ page: 2, x: 1, y: 1, w: 3, md: 'R' });
+      const c = await docsync.api.recolor(b.id, '@Brand');
+      const d = await docsync.api.recolor(b.id, '@Nope');
+      return { s: s.ok, sfill: s.ok && layout.shapes.find(x => x.id === s.id.replace(/^shape\./, '')) ? 'shape' : s.error,
+               c: c.ok, fill: layout.boxes.find(x => 'text.' + x.id === b.id).fill, d: d.ok, derr: d.error };
+    });
+    expect(r).toMatchObject({ s: true, c: true, fill: '@Brand', d: false, derr: "no swatch called 'Nope'" });
+  });
+
   test('a hex colour, a swatch and null still recolour', async ({ page }) => {
     await gotoEditor(page, PROJ);
     const id = await addBox(page, { page: 2, x: 1, y: 1, w: 3, md: 'R' });
