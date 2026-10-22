@@ -255,7 +255,7 @@ test.describe('HTML export', () => {
       range: flattenMedia('@media (400px <= width <= 900px){p{color:red}}', 1200),
       bare:  flattenMedia('@media screen{a{color:blue}}', 1200),
       print: flattenMedia('@media print{.page{height:11in}}', 1200),
-      keep:  flattenMedia('@media (prefers-color-scheme:dark){b{color:#fff}}', 1200),
+      keep:  flattenMedia('@media (orientation:landscape){b{color:#fff}}', 1200),
       list:  flattenMedia('@media print,(min-width:900px){i{color:teal}}', 1200),
       vw:    freezeViewportUnits('img{max-width:calc(100vw - 20px);'
              + 'background:url(data:image/png;base64,AA12vw+BB)}', 1200),
@@ -265,7 +265,9 @@ test.describe('HTML export', () => {
     expect(out.range).toBe('');
     expect(out.bare).toBe('a{color:blue}');
     expect(out.print).toBe('');                     // a block is not a printed sheet
-    expect(out.keep).toContain('@media (prefers-color-scheme:dark)');   // undecidable: kept
+    expect(out.keep).toContain('@media (orientation:landscape)');   // undecidable: kept
+    // (prefers-color-scheme and prefers-reduced-motion ARE decided now — the
+    // block is a still of the editor's light sheet; export-failures.spec.js)
     expect(out.list).toBe('i{color:teal}');         // one arm of the OR is true
     // vw is frozen at the design viewport — but never inside a data: URI.
     expect(out.vw).toContain('calc(1200px - 20px)');

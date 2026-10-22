@@ -220,6 +220,24 @@ def _register_project(pid: str, root: Path, binding) -> None:
     _default_registry.cache_clear()
 
 
+@functools.lru_cache(maxsize=64)
+def _binding_name(root: Path, pid: str) -> str:
+    """The title a binding gives itself (`name:` in docsync.yml — what the
+    staff hub's list shows), else the id with its hyphens opened. The
+    registry used to title-case the id for every project, so a download of
+    "RxKids Hawaiʻi" was Rxkids.pdf and "Tax Testimony One-Pager" was
+    Tax-Testimony.pdf. Read raw, since Binding carries no name field."""
+    try:
+        import yaml
+        raw = yaml.safe_load((root / "docsync.yml").read_text()) or {}
+        for b in raw.get("bindings") or []:
+            if isinstance(b, dict) and b.get("id") == pid and b.get("name"):
+                return str(b["name"])
+    except Exception:                                  # noqa: BLE001
+        pass
+    return pid.replace("-", " ").title()
+
+
 @functools.lru_cache(maxsize=1)
 def _default_registry() -> dict:
     """The editor's start-page registry, derived from what this server serves.
@@ -239,7 +257,7 @@ def _default_registry() -> dict:
             continue
         base = (f"../_repo-{pid}" if p["root"] != SELF_ROOT
                 else "." if e.dir.name == "primer" else f"../{e.dir.name}")
-        entry = {"name": pid.replace("-", " ").title(), "base": base}
+        entry = {"name": _binding_name(p["root"], pid), "base": base}
         repo = _origin_of(p["root"])
         if repo:
             entry["repo"] = repo
@@ -482,6 +500,18 @@ class _WarmChrome:
             raise RuntimeError(f"{method}: {d['error'].get('message')}")
         return d.get("result", {})
 
+    def _still(self, s, deadline):
+        """An export is a still. A page's scroll-reveal (opacity 0 until an
+        IntersectionObserver fires) and count-up numbers never ran in a
+        capture nobody scrolls: rxkids' PNG read "3,680" for 14,808 and was
+        white below the fold. Every well-made page honours reduced motion
+        (its own rule puts each reveal at its end state and skips the
+        counting), so the capture asks for it — before navigation, so the
+        page's first paint already knows."""
+        self.call("Emulation.setEmulatedMedia",
+                  {"features": [{"name": "prefers-reduced-motion", "value": "reduce"}]},
+                  s, deadline)
+
     def pdf(self, url: str, budget_ms: int = 12000, timeout: float = 45) -> bytes:
         """What `--virtual-time-budget=12000 --no-pdf-header-footer
         --print-to-pdf` wrote, byte for byte bar the timestamps: load, then
@@ -496,6 +526,7 @@ class _WarmChrome:
                           deadline=deadline)["sessionId"]
             on = lambda ev: (lambda d: d.get("method") == ev and d.get("sessionId") == s)
             self.call("Page.enable", None, s, deadline)
+            self._still(s, deadline)
             self.call("Page.navigate", {"url": url}, s, deadline)
             self._wait(on("Page.loadEventFired"), deadline)
             self.call("Emulation.setVirtualTimePolicy",
@@ -550,6 +581,7 @@ class _WarmChrome:
                                                    "awaitPromise": True}, s, deadline)
                 return r.get("result", {}).get("value")
             self.call("Page.enable", None, s, deadline)
+            self._still(s, deadline)
             size(1600)
             self.call("Page.navigate", {"url": url}, s, deadline)
             self._wait(on("Page.loadEventFired"), deadline)
@@ -1969,9 +2001,25 @@ class Handler(SimpleHTTPRequestHandler):
                 bad = _export_bad_args(req)
                 if bad:
                     return self._json(400, {"ok": False, "error": bad})
-                body = b"%PDF-1.4 fake export for tests"
+                # The kind asked for, in the kind's own type: the editor
+                # refuses a "file" whose type is not what it asked for (a
+                # crash page used to be saved as Report.pdf), so a PNG/JPEG
+                # export gets a real zip of one real (1×1) PNG per page.
+                if req.get("fmt") in ("png", "jpeg"):
+                    import io as _io
+                    import zipfile as _zf
+                    px = base64.b64decode(
+                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk"
+                        "YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+                    buf = _io.BytesIO()
+                    with _zf.ZipFile(buf, "w") as z:
+                        for i in range(1, 4):
+                            z.writestr(f"page-{i:02d}.png", px)
+                    body, ctype = buf.getvalue(), "application/zip"
+                else:
+                    body, ctype = b"%PDF-1.4 fake export for tests", "application/pdf"
                 self.send_response(200)
-                self.send_header("Content-Type", "application/pdf")
+                self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -2285,7 +2333,7 @@ class Handler(SimpleHTTPRequestHandler):
                     CONTENT.pop(str(cur["root"]), None)
                     _default_registry.cache_clear()
                 _register_project(pid, root, b)
-                registry[pid] = {"name": pid.replace("-", " ").title(),
+                registry[pid] = {"name": _binding_name(root, pid),
                                  "base": f"../_repo-{pid}",
                                  **({"repo": origin} if origin else {}),
                                  "local_root": str(root)}

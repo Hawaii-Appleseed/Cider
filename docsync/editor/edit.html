@@ -31129,6 +31129,13 @@ function mediaFeature(feat, viewPx) {
     const v = len(m[1]);
     return v === null ? null : cmp(viewPx, '=', v);
   }
+  // The block is a STILL of what the editor showed: no motion (a scroll-
+  // reveal that waits for an observer the pasted block will never run left
+  // thirteen sections of a page at opacity 0), and the editor's own light
+  // scheme (a dark-mode host flipped a block's words light on its white
+  // sheet). Decided here like a width.
+  if ((m = /^prefers-reduced-motion(?:\s*:\s*(.+))?$/i.exec(s))) return !m[1] || m[1].trim() === 'reduce';
+  if ((m = /^prefers-color-scheme\s*:\s*(.+)$/i.exec(s))) return m[1].trim() === 'light';
   return null;                                   // orientation, hover, height…
 }
 
@@ -31479,11 +31486,32 @@ async function downloadSource() {
 // local server's Chrome renders, re-encoded or cropped here (a canvas), so
 // the server keeps its two formats and a page's pixels are made once.
 const fflateLib = () => import('https://cdn.jsdelivr.net/npm/fflate@0.8.3/esm/browser.js');
+/** The server's answer to an export, or the reason there is none. Only a
+ *  JSON body used to count as a failure: a crash page (500, HTML), a 404
+ *  from some other server on the port, an empty 200 — each was saved as
+ *  "Report.pdf" and announced as downloaded, and the person found out when
+ *  the file would not open. A file is a file only when the status is good
+ *  and the body is the kind asked for. */
+async function exportAnswer(r, kinds) {
+  const type = (r.headers.get('Content-Type') || '').toLowerCase();
+  if (type.includes('application/json')) {
+    let j = {}; try { j = await r.json(); } catch (e) {}
+    throw new Error(j.error || `the server refused the export (HTTP ${r.status})`);
+  }
+  const text = async () => { try { return (await r.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160); } catch (e) { return ''; } };
+  if (!r.ok) throw new Error(`the live server hit an error (HTTP ${r.status}) — nothing was downloaded. ${await text()}`.trim());
+  if (!kinds.some(k => type.includes(k))) {
+    throw new Error(`the server answered with ${type || 'no content type'} instead of a file — nothing was downloaded. `
+      + `Is the live server still the editor's? ${await text()}`.trim());
+  }
+  const blob = await r.blob();
+  if (!blob.size) throw new Error('the server answered with an empty file — nothing was downloaded');
+  return blob;
+}
 async function exportBlob(body) {
   const r = await fetch('/__export', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ project: M.id, content: source, layout: JSON.stringify(layout, null, 2) + '\n', ...body }) });
-  if ((r.headers.get('Content-Type') || '').includes('application/json')) throw new Error((await r.json()).error || 'export failed');
-  return r.blob();
+  return exportAnswer(r, body.fmt === 'pdf' ? ['application/pdf'] : ['application/zip', 'image/png', 'application/octet-stream']);
 }
 function saveBlob(blob, name) {
   const url = URL.createObjectURL(blob);
@@ -31656,17 +31684,11 @@ async function doExport(fmt) {
       body: JSON.stringify({ fmt, marks, project: M.id, ...(spec ? { pages: spec } : {}),
         content: source, layout: JSON.stringify(layout, null, 2) + '\n' }),
     });
-    if ((r.headers.get('Content-Type') || '').includes('application/json')) {
-      throw new Error((await r.json()).error || 'export failed');
-    }
-    const url = URL.createObjectURL(await r.blob());
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    $('stat').textContent = `downloaded ${name}`;
+    const blob = await exportAnswer(r, fmt === 'pdf' ? ['application/pdf'] : ['application/zip', 'application/octet-stream']);
+    saveBlob(blob, name);
   } catch (e) {
     $('stat').textContent = 'export failed: ' + e.message;
+    $('stat').title = e.message;
   }
 }
 
