@@ -263,9 +263,6 @@ These are the Coalition's observations on the draft and not UHERO's, and UHERO h
 [[fair.b3]]
 **How a swap is paid for decides who wins,** since both grocery swaps give households the same $419 a year on average, yet one is paid for by higher income taxes and the other by shrinking the food/excise credit, which is a refund for low-income households (p. 161).
 
-[[fair.b4]]
-**The draft has gaps worth watching,** since it gives real estate investment trusts (REITs) only one sentence, leaves chapter 9 as a placeholder, and has no estimate yet of what the pension and Social Security tax exclusions cost, so no swap has numbers until the final report (pp. 50, 113, 157).
-
 [[end.foot]]
 **Source:** UHERO draft report, chapters 2–11. Each chapter row and each numbered source links to that page of the draft's PDF.
 

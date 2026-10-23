@@ -231,7 +231,7 @@ page = f"""
   {head("end.eyebrow", "end.h1", "end.sub", "end")}
   <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
   {C.html("fair.note", "note")}
-  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 5))}</ul>
+  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 4))}</ul>
   <h2{L.attr("miss.h")}>{C.t("miss.h")}</h2>
   <ul class="fl"{L.frame("miss.list")}>{"".join(f'<li class="fb"{L.frame(f"miss.li.{n}")}>{C.html(f"miss.b{n}", "fbp")}</li>' for n in range(1, 6))}</ul>
   <div class="box"{L.frame("adv.box")}>
