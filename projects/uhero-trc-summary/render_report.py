@@ -193,11 +193,12 @@ page = f"""
   {C.html("about.works.p1", "lead")}
   <div class="slabel tbl"{L.attr("about.pairs.h")}>{C.t("about.pairs.h")}</div>
   {L.flow_table("swaps", SWAPS_DEFAULT)}
+  <div class="swnote">{C.html("swap.note", "cap")}</div>
   <h2 class="figt"{L.attr("groc.h1")}>{C.t("groc.h1")}</h2>
   {C.html("groc.lead", "body")}
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
   <div class="split"{L.frame("groc.split")}><div class="splitl">
-  {chart(L, "chart.decile", decile_spec(), w=3.9, h=1.15,
+  {chart(L, "chart.decile", decile_spec(), w=3.9, h=0.9,
          desc=describe(C, "groc.chart.desc", "Yearly gain per household from "
                        "exempting groceries, by income tenth, from 156 dollars "
                        "in the lowest to 729 dollars in the highest"))}
@@ -230,7 +231,7 @@ page = f"""
   {head("end.eyebrow", "end.h1", "end.sub", "end")}
   <h2{L.attr("fair.h")}>{C.t("fair.h")}</h2>
   {C.html("fair.note", "note")}
-  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 4))}</ul>
+  <ul class="fl"{L.frame("fair.list")}>{"".join(bullet(n) for n in range(1, 5))}</ul>
   <h2{L.attr("miss.h")}>{C.t("miss.h")}</h2>
   <ul class="fl"{L.frame("miss.list")}>{"".join(f'<li class="fb"{L.frame(f"miss.li.{n}")}>{C.html(f"miss.b{n}", "fbp")}</li>' for n in range(1, 6))}</ul>
   <div class="box"{L.frame("adv.box")}>
@@ -325,11 +326,12 @@ html = f"""<!DOCTYPE html>
              font-weight:700; color:{INK}; }}
   h2 {{ font-family:Barlow, sans-serif; font-weight:700; font-size:17px;
         line-height:1.25; margin:12px 0 0; color:{PRIMARY_DARK}; }}
-  h2.figt {{ margin-top:10px; padding-top:6px; border-top:1px solid {LINE}; }}
+  h2.figt {{ margin-top:6px; padding-top:4px; border-top:1px solid {LINE}; }}
   .lead {{ font-size:15px; line-height:1.52; color:{TEXT}; margin:0; }}
   .body {{ font-size:14.5px; line-height:1.5; color:{TEXT}; margin:5px 0 0; }}
   .body b, .lead b {{ font-weight:700; color:{INK}; }}
   .note, .cap {{ font-size:13.5px; line-height:1.45; color:{MUTED}; margin:6px 0 0; }}
+  .swnote .cap {{ margin:3px 0 0; line-height:1.35; }}
   .cap b {{ color:{BODY}; }}
 
   .box {{ margin:16px 0 0; }}
@@ -367,8 +369,8 @@ html = f"""<!DOCTYPE html>
 
 
   .fl {{ list-style:none; margin:6px 0 0; padding:0; }}
-  .fb {{ padding:5px 0; border-top:1px solid {LINE}; }}
-  .fbp {{ font-size:14px; line-height:1.45; color:{TEXT}; margin:0; }}
+  .fb {{ padding:2px 0; border-top:1px solid {LINE}; }}
+  .fbp {{ font-size:13.5px; line-height:1.42; color:{TEXT}; margin:0; }}
   .advl {{ font-size:13.5px; color:{ASH}; margin:-2px 0 6px; font-style:italic; }}
   .advb {{ padding:5px 0; border-top:1px solid rgba(255,255,255,.25); }}
   .box:not(.box-green) .box-p {{ font-size:14.5px; }}
