@@ -297,8 +297,10 @@ function mergeKeys(base, restored, current) {
  * restored order).
  *
  * @param {{content: string, layout: string|object}} base
- * @returns {{content: string, layout: object, kept: string[], taken: string[]}}
- *   kept/taken: slot keys whose current words survived / were replaced
+ * @returns {{content: string, layout: object, kept: string[], taken: string[], dropped: string[]}}
+ *   kept/taken: slot keys whose current words survived / were replaced;
+ *   dropped: slots in `current` that neither `base` nor `restored` has (a
+ *   colleague added them since the saved version), which the restore loses
  */
 export function mergeRestore(base, restored, current) {
   const B = parseContent(base.content), R = parseContent(restored.content), C = parseContent(current.content);
@@ -314,6 +316,7 @@ export function mergeRestore(base, restored, current) {
     if (was && now && now.text !== was.text && now.text !== b.text) taken.push(b.key);   // unsaved words, in a slot the restore changes
     return b;
   });
+  const dropped = C.blocks.filter(b => b.kind === 'slot' && !slotOf(B, b.key) && !slotOf(R, b.key)).map(b => b.key);
   const lay = v => normalizeLayout(layoutObject(v));
   const lb = lay(base.layout), lr = lay(restored.layout), lc = lay(current.layout);
   const layout = {};
@@ -323,5 +326,5 @@ export function mergeRestore(base, restored, current) {
     else layout[k] = lr[k];
   }
   for (const k of Object.keys(lc)) if (!(k in lr) && !(k in lb)) layout[k] = lc[k];
-  return { content: serializeContent({ preamble: R.preamble, blocks }), layout, kept, taken };
+  return { content: serializeContent({ preamble: R.preamble, blocks }), layout, kept, taken, dropped };
 }

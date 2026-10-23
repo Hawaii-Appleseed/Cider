@@ -1932,3 +1932,29 @@ test('no GitHub token was asked for or stored', async () => {
     expect((await status(page)).status).toBe('live');
   }
 });
+
+test('restore: the confirm names a paragraph a colleague added since the saved version, and the restore drops it', async () => {
+  const hist = await versions();
+  const target = hist.length - 1;                 // the oldest: it has no such paragraph
+  // Grace adds a section and does not Save; it reaches Ada's editor through the room.
+  const r = await b.evaluate(`docsync.api.addSection('basics', 'added-by-grace', 'Grace wrote this after the last Save.')`);
+  const key = 'extra.basics.added-by-grace';
+  expect(JSON.stringify(r)).toContain(key);
+  await expect.poll(() => a.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(true);
+  await a.locator('#history').click();
+  await expect(historyRows(a).nth(target)).toBeVisible({ timeout: 10_000 });
+  await historyRows(a).nth(target).locator('.hub-history-restore').click();
+  const msg = a.locator('dialog[open] .dsdlg-msg');
+  await expect(msg).toHaveText(/will be dropped/);
+  await expect(msg).toContainText(key);
+  await expect(msg).toHaveText(/added since it was saved/);
+  // Cancel keeps it; Restore drops it, for both editors.
+  await closeDialog(a);
+  expect(await a.evaluate(`source.includes('[[${key}]]')`)).toBe(true);
+  await a.locator('#history').click();
+  await historyRows(a).nth(target).locator('.hub-history-restore').click();
+  await a.locator('dialog[open] button.dsdlg-ok').click();
+  await expect(a.locator('#stat')).toHaveText(/restored — the version from/, { timeout: 20_000 });
+  expect(await a.evaluate(`source.includes('[[${key}]]')`)).toBe(false);
+  await expect.poll(() => b.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(false);
+});

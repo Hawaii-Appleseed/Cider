@@ -27759,27 +27759,34 @@ $('hpanel-show').onchange = () => hubHistoryPaint($('out') && $('out').contentDo
 async function hubRestoreWarning(v) {
   const names = collab && collab.unsavedPeers ? collab.unsavedPeers().map(p => p.name || p.login || 'someone') : [];
   const mine = source !== original || (M.layout && layoutSaid(layout) !== layoutSaid(JSON.parse(layoutOrig || '{}')));
-  if (!names.length && !mine) return '';
-  const who = [...new Set(names)];
-  if (mine) who.push('you');
-  const list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who[who.length - 1] : who[0];
-  let detail = '';
+  let m = null;
   if (collab && collab.mergeRestore) {
     try {
       const [c, l] = await Promise.all([
         fetch(`${docStore()}/history/${v.version}/content`, { cache: 'no-store' }),
         M.layout ? fetch(`${docStore()}/history/${v.version}/layout`, { cache: 'no-store' }) : null]);
       if (c.ok && (!l || l.ok)) {
-        const m = collab.mergeRestore({ content: original, layout: layoutOrig || '{}' },
+        m = collab.mergeRestore({ content: original, layout: layoutOrig || '{}' },
           { content: await c.text(), layout: l ? await l.text() : (layoutOrig || '{}') },
           { content: source, layout: layout });
-        detail = m.taken.length
-          ? ` Words in ${m.taken.length === 1 ? 'this paragraph' : m.taken.length + ' paragraphs'} would be replaced (${m.taken.slice(0, 4).join(', ')}${m.taken.length > 4 ? ', …' : ''}); every other paragraph keeps what is typed in it.`
-          : ' Nothing they typed is in a paragraph this version changes, so it all stays.';
       }
     } catch (e) { /* the generic sentence below is true without it */ }
   }
-  return `${list.charAt(0).toUpperCase() + list.slice(1)} ${who.length > 1 || who[0] === 'you' && who.length === 1 ? 'have' : 'has'} unsaved words in this session.${detail || ' A paragraph this version changes is replaced; the others keep what is typed in them.'}\n\n`;
+  // A slot added since the saved version has no place in the restored one: it goes.
+  const lost = m && m.dropped && m.dropped.length
+    ? `This version does not have ${m.dropped.length === 1 ? 'the paragraph' : 'the paragraphs'} added since it was saved (${m.dropped.slice(0, 4).join(', ')}${m.dropped.length > 4 ? ', …' : ''}), so ${m.dropped.length === 1 ? 'it' : 'they'} will be dropped.\n\n`
+    : '';
+  if (!names.length && !mine) return lost;
+  const who = [...new Set(names)];
+  if (mine) who.push('you');
+  const list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who[who.length - 1] : who[0];
+  let detail = '';
+  if (m) {
+    detail = m.taken.length
+      ? ` Words in ${m.taken.length === 1 ? 'this paragraph' : m.taken.length + ' paragraphs'} would be replaced (${m.taken.slice(0, 4).join(', ')}${m.taken.length > 4 ? ', …' : ''}); every other paragraph keeps what is typed in it.`
+      : ' Nothing they typed is in a paragraph this version changes, so it all stays.';
+  }
+  return `${list.charAt(0).toUpperCase() + list.slice(1)} ${who.length > 1 || who[0] === 'you' && who.length === 1 ? 'have' : 'has'} unsaved words in this session.${detail || ' A paragraph this version changes is replaced; the others keep what is typed in them.'}\n\n${lost}`;
 }
 async function hubRestore(v) {
   const warn = await hubRestoreWarning(v);
