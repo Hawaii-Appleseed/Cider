@@ -11247,25 +11247,83 @@ function findElOf(t) {
   }
   return null;
 }
-/** Scroll to a hit's place and make it show: a bare scroll left the person
- *  hunting for which of a page's paragraphs was meant. */
-function findShow(t) {
+/** The Range over the exact words a hit matched, in the rendered node, or null.
+ *  The hit is an offset in the AUTHORED markdown; the page holds the rendered
+ *  text, so the hit is found again there: the same pattern, the same
+ *  occurrence number among this target's hits, accepted only if it reads the
+ *  same words (a hit inside a link's URL or a marker has no rendered twin,
+ *  and the whole node is flashed instead). */
+function findRangeOf(el, hit) {
+  if (!hit || !hit.hit) return null;
+  const d = el.ownerDocument;
+  const nodes = [];
+  let text = '';
+  const w = d.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    nodes.push({ n, from: text.length });
+    text += n.nodeValue;
+  }
+  let re;
+  try { re = findRe(findState.needle, findState); } catch (e) { return null; }
+  const ord = findState.hits.filter(h => h.target.key === hit.target.key && h.at < hit.at).length;
+  const found = [];
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0] === '') { re.lastIndex += 1; continue; }
+    found.push([m.index, m.index + m[0].length, m[0]]);
+    if (found.length > 400) break;
+  }
+  const same = f => f[2].toLowerCase() === hit.hit.toLowerCase();
+  const pick = (found[ord] && same(found[ord]) && found[ord]) || found.find(same);
+  if (!pick) return null;
+  const at = off => {
+    for (let i = nodes.length - 1; i >= 0; i--) if (nodes[i].from <= off) return [nodes[i].n, off - nodes[i].from];
+    return null;
+  };
+  const s0 = at(pick[0]), e0 = at(pick[1] - 1);
+  if (!s0 || !e0) return null;
+  const r = d.createRange();
+  r.setStart(s0[0], s0[1]);
+  r.setEnd(e0[0], e0[1] + 1);
+  return r;
+}
+/** Take down whatever a "Show me" put up, in the page's own document. */
+function findUnshow(d) {
+  if (!d) return;
+  try { d.defaultView.CSS.highlights.delete('find-show'); } catch (e) { /* no highlight API */ }
+  const st = d.getElementById('find-show-style');
+  if (st) st.remove();
+  d.querySelectorAll('[data-find-flash]').forEach(n => {
+    n.removeAttribute('data-find-flash');
+    if (n.dataset.findWas !== undefined) { n.style.outline = n.dataset.findWas; delete n.dataset.findWas; }
+  });
+}
+let findShowTimer = 0;
+/** Scroll to a hit's place and make it show: the exact words matched (CSS
+ *  highlight over a Range), or the whole slot/box/cell when those words have
+ *  no rendered twin or the browser has no highlight API. */
+function findShow(t, hit) {
   if (t.key === 'sources') { openSources(); return; }
   const el = findElOf(t);
   if (!el) { $('stat').textContent = `${t.label} is not on a page right now`; return; }
   jumpTo(el, 'center');
   const d = el.ownerDocument;
-  d.querySelectorAll('[data-find-flash]').forEach(n => {
-    n.removeAttribute('data-find-flash'); n.style.outline = n.dataset.findWas || ''; delete n.dataset.findWas;
-  });
-  el.dataset.findWas = el.style.outline;
+  clearTimeout(findShowTimer);
+  findUnshow(d);
+  const win = d.defaultView;
+  const range = findRangeOf(el, hit);
   el.setAttribute('data-find-flash', '');
-  el.style.outline = '3px solid #E8A317';
-  setTimeout(() => {
-    if (el.hasAttribute('data-find-flash')) {
-      el.removeAttribute('data-find-flash'); el.style.outline = el.dataset.findWas || ''; delete el.dataset.findWas;
-    }
-  }, 2200);
+  if (range && win.CSS && win.CSS.highlights && win.Highlight) {
+    const st = d.createElement('style');
+    st.id = 'find-show-style';
+    st.textContent = '::highlight(find-show){background:#E8A317;color:#000}';
+    d.head.appendChild(st);
+    win.CSS.highlights.set('find-show', new win.Highlight(range));
+  } else {
+    el.dataset.findWas = el.style.outline;
+    el.style.outline = '3px solid #E8A317';
+  }
+  findShowTimer = setTimeout(() => { findUnshow(d); }, 2200);
 }
 
 const findRe = (needle, { cased, whole, grep }) => {
@@ -11522,7 +11580,7 @@ function paintFindList() {
         document.createTextNode(h.after));
       p.classList.add('find-go');
       p.title = 'Show me';
-      p.addEventListener('click', () => findShow(h.target));
+      p.addEventListener('click', () => findShow(h.target, h));
       g.appendChild(p);
     });
     list.appendChild(g);

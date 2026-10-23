@@ -192,7 +192,15 @@ const sweepSlots = (page, arg) => page.evaluate(async ([PROBE, PART]) => {
       // An EMPTY slot opens as a dashed box a click can land in (a line
       // tall), by design: its "growth" is that box, not a reflow.
       const emptySlot = (was || '').trim() === '';
-      const lineH = parseFloat(getComputedStyle(host).lineHeight) || 20;
+      // The line height of the TEXT that wraps: a stand-in is a bare div around
+      // a generated <p class="deck">, and the div's own line-height is only
+      // what it inherits (cover.deck: 21.75px at 14.5px against the paragraph's
+      // 23.68px at 16px). Measured on the div, one chip-wrapped line of 24px
+      // read as "taller than a line" wherever the fonts put the chip a hair
+      // past the edge, so the same field shifted on one machine and not another.
+      const textEl = (!host.classList.contains('ds-edit-in') && host.firstElementChild
+        && /^(P|LI|H[1-6])$/.test(host.firstElementChild.tagName)) ? host.firstElementChild : host;
+      const lineH = parseFloat(getComputedStyle(textEl).lineHeight) || 20;
       const chips = /\[\^/.test(was || '') && dh > 0 && dh <= lineH + 2 && Math.abs(dw) <= before.w * 0.05;
       if (!emptySlot && (Math.abs(dw) > Math.max(8, before.w * 0.05) || Math.abs(dh) > 3)) {
         const line = `${key}: ${before.w}x${before.h} → ${Math.round(r1.width)}x${Math.round(r1.height)}${host.classList.contains('ds-edit-in') ? ' (in place)' : ' (stand-in)'}`;

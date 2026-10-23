@@ -194,6 +194,12 @@ jobs:
       # one download a version, not thirty-five a run.
       - uses: ./.github/actions/playwright-chromium
 
+      # Long-page PNG strips and the cold pageless PDF, through a real Chrome
+      # (the Playwright one; skips by itself if none is found).
+      - name: Export through Chrome (long PNG, cold pageless PDF)
+        if: matrix.shard == 1
+        run: python3 report2027/tools/test_export_chrome.py
+
       - name: Run the editor test suite
         run: npx playwright test --shard=${{ matrix.shard }}/12
 
