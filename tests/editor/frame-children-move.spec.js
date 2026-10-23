@@ -91,13 +91,13 @@ test.describe('a section and the things in it (uhero-trc-summary cover)', () => 
   test('a drag across a section\'s surface bands what it crosses and moves nothing', async ({ page }) => {
     const field = await boxOf(page, FIELD);
     // From the band's empty top-right corner to just past the title's left
-    // edge, short of its last line: brand, stamp and title, not the deck.
+    // edge, short of its last line: logo, stamp and title, not the deck.
     const from = await pointOf(page, FIELD, 0.98, 0.03);
     const to = await pointOf(page, TITLE, 0, 0.8, -8);
     await drag(page, from, to);
     expect(await placed(page), 'nothing moved').toEqual([]);
     expect(await boxOf(page, FIELD)).toEqual(field);
-    expect(await selected(page)).toEqual(['cover.brand', 'cover.h1', 'cover.pill']);
+    expect(await selected(page)).toEqual(['cover.h1', 'cover.logo', 'cover.pill']);
   });
 
   test('a click on a section\'s surface selects it, and then it drags with what is in it', async ({ page }) => {
