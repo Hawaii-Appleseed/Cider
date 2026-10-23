@@ -39,7 +39,7 @@
     unicode-range:U+02BB; }
 
   body { margin:0; background:#EDF1EE; }
-  .page { width:12.5in; min-height:160.0in; margin:0 auto;
+  .page { width:12.5in; min-height:0in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }
   
   html,body{margin:0;padding:0;background:#fff;}
@@ -2098,6 +2098,6 @@ n.querySelectorAll('.px-links a').forEach(function(a){a.addEventListener('click'
 document.addEventListener('click',function(e){if(!n.contains(e.target)){n.classList.remove('is-open');b.setAttribute('aria-expanded','false');}});
 })();
 </script>
-</section>
+<style>.page{width:12.5in;min-height:0}@page{size:12.5in auto;margin:0}</style></section>
 </body>
 </html>

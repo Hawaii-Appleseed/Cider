@@ -512,7 +512,8 @@ class _WarmChrome:
                   {"features": [{"name": "prefers-reduced-motion", "value": "reduce"}]},
                   s, deadline)
 
-    def pdf(self, url: str, budget_ms: int = 12000, timeout: float = 45) -> bytes:
+    def pdf(self, url: str, budget_ms: int = 12000, timeout: float = 45,
+            width_px: int | None = None) -> bytes:
         """What `--virtual-time-budget=12000 --no-pdf-header-footer
         --print-to-pdf` wrote, byte for byte bar the timestamps: load, then
         budget_ms of fast-forwarded page time for timers, fonts and
@@ -527,6 +528,10 @@ class _WarmChrome:
             on = lambda ev: (lambda d: d.get("method") == ev and d.get("sessionId") == s)
             self.call("Page.enable", None, s, deadline)
             self._still(s, deadline)
+            if width_px:     # a pageless sheet is laid out at ITS width, not the window's
+                self.call("Emulation.setDeviceMetricsOverride",
+                          {"width": width_px, "height": 1000, "deviceScaleFactor": 1,
+                           "mobile": False}, s, deadline)
             self.call("Page.navigate", {"url": url}, s, deadline)
             self._wait(on("Page.loadEventFired"), deadline)
             self.call("Emulation.setVirtualTimePolicy",
@@ -537,11 +542,28 @@ class _WarmChrome:
             self.call("Emulation.setVirtualTimePolicy", {"policy": "advance"}, s, deadline)
             # Tagged (Chrome's default now; asked for so it stays so) and
             # bookmarked from the headings (INDESIGN_PARITY.md 34).
-            r = self.call("Page.printToPDF", {"printBackground": True,
-                                              "preferCSSPageSize": True,
-                                              "displayHeaderFooter": False,
-                                              "generateTaggedPDF": True,
-                                              "generateDocumentOutline": True}, s, deadline)
+            args = {"printBackground": True,
+                    "preferCSSPageSize": True,
+                    "displayHeaderFooter": False,
+                    "generateTaggedPDF": True,
+                    "generateDocumentOutline": True}
+            if width_px:
+                # Pageless: one sheet as tall as the content. Chrome ignores
+                # `@page{size:Win auto}` and a script-set @page height laid out
+                # ~10% taller than it measured (a second, mostly empty page), so
+                # the sheet is measured here and handed to printToPDF as paper.
+                self.call("Emulation.setEmulatedMedia",
+                          {"media": "print",
+                           "features": [{"name": "prefers-reduced-motion", "value": "reduce"}]},
+                          s, deadline)      # measure what print will lay out
+                h = self.call("Runtime.evaluate", {
+                    "expression": "Math.ceil(Math.max(document.body.getBoundingClientRect().bottom"
+                                  "+scrollY, document.documentElement.scrollHeight))",
+                    "returnByValue": True}, s, deadline)["result"]["value"]
+                args.update({"preferCSSPageSize": False, "paperWidth": width_px / 96,
+                             "paperHeight": (h + 2) / 96, "marginTop": 0, "marginBottom": 0,
+                             "marginLeft": 0, "marginRight": 0})
+            r = self.call("Page.printToPDF", args, s, deadline)
             return base64.b64decode(r["data"])
         finally:
             try:
@@ -628,14 +650,14 @@ def _warm_chrome() -> _WarmChrome:
     return c
 
 
-def _warm_pdf(html: Path) -> bytes | None:
+def _warm_pdf(html: Path, width_px: int | None = None) -> bytes | None:
     """html printed by the warm Chrome, or None if that failed for any reason
     — the caller then takes the cold one-shot launch, so this can only make an
     export faster, never make one fail. A failed Chrome is dropped, and the
     next export starts a fresh one."""
     with WARM_LOCK:
         try:
-            return _warm_chrome().pdf(html.resolve().as_uri())
+            return _warm_chrome().pdf(html.resolve().as_uri(), width_px=width_px)
         except Exception as e:                               # noqa: BLE001
             print(f"  warm Chrome PDF failed ({e}); using a one-shot Chrome")
             if WARM_CHROME[0] is not None:
@@ -666,6 +688,41 @@ def _page_width_px(html: str) -> int:
     the one-shot Chrome cannot measure it. Letter when there is none."""
     m = PAGE_W_RE.search(html)
     return round(float(m.group(1)) * 96) if m else 816
+
+
+PAGELESS_RE = re.compile(r"@page\{size:\s*([\d.]+)in\s+auto")
+
+# A pageless report names its sheet `@page{size:12.5in auto}`, which is what the
+# author means, but Chrome ignores an `auto` height and prints Letter (measured:
+# our-mission came out as 612x792pt pages, two of them, not one sheet). So the
+# export measures the sheet itself and states the height in inches. A script,
+# not a CDP call, so the warm Chrome and the cold one-shot both get it; it
+# re-measures on a timer because charts, fonts and count-ups change the height
+# after load (the virtual-time budget fast-forwards the timer).
+PAGELESS_SIZE_JS = """<script data-ds-pageless>(function(){var W=%s;
+function f(){var m=document.body.getBoundingClientRect().bottom+scrollY;
+document.querySelectorAll('section.page').forEach(function(p){
+var r=p.getBoundingClientRect();m=Math.max(m,r.bottom+scrollY);});
+if(!m)return;var h=(Math.ceil(m)+2)/96,s=document.getElementById('ds-pageless-size');
+if(!s){s=document.createElement('style');s.id='ds-pageless-size';document.head.appendChild(s);}
+s.textContent='@page{size:'+W+'in '+h.toFixed(3)+'in;margin:0}';}
+f();setInterval(f,200);addEventListener('load',f);})();</script>"""
+
+
+def _pageless_width_in(html: str):
+    """The sheet width in inches when the HTML is a pageless report, else None."""
+    m = PAGELESS_RE.search(html)
+    return float(m.group(1)) if m else None
+
+
+def _size_pageless(html: str) -> str:
+    """The export's HTML with the sheet-measuring script added, if pageless."""
+    w = _pageless_width_in(html)
+    if w is None:
+        return html
+    tag = PAGELESS_SIZE_JS % w
+    k = html.rfind("</body>")
+    return html[:k] + tag + html[k:] if k >= 0 else html + tag
 
 
 def _leave_background():
@@ -2914,6 +2971,7 @@ class Handler(SimpleHTTPRequestHandler):
                     if isinstance(keep, str):
                         return self._json(400, {"ok": False, "error": keep})
                     out_html.write_text(_only_pages(html, keep))
+                out_html.write_text(_size_pageless(out_html.read_text()))
                 data = self._chrome_pdf(out_html)
                 return self._bytes(200, "application/pdf", data, f"{pid}.pdf")
             html = out_html.read_text()
@@ -3000,13 +3058,16 @@ class Handler(SimpleHTTPRequestHandler):
         prof = Path(tempfile.mkdtemp(prefix="primer-chrome-"))
         pdf = prof / "out.pdf"
         try:
-            data = _warm_pdf(out_html)
+            wi = _pageless_width_in(out_html.read_text())
+            wpx = round(wi * 96) if wi else None
+            data = _warm_pdf(out_html, wpx)
             if data:
                 return data
             if not self._chrome_capture(
                 [CHROME, "--headless=new", "--disable-gpu", "--no-sandbox",
                  "--no-first-run", f"--user-data-dir={prof}",
                  "--virtual-time-budget=12000", "--no-pdf-header-footer",
+                 *([f"--window-size={wpx},1000"] if wpx else []),
                  "--export-tagged-pdf", "--generate-pdf-document-outline",
                  f"--print-to-pdf={pdf}", out_html.resolve().as_uri()],
                 pdf, deadline=50, settle=2.0):

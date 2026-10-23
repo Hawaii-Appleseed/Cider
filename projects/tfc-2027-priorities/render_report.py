@@ -34,7 +34,7 @@ _OUT = Path(os.environ.get("DOCSYNC_OUT") or (HERE / "index.html"))
 # configured height, so a value trimmed exactly to today's content would flag
 # every future sentence as clipped.
 # 160in was the scaffold's no-clip import default, ~6x the real page.
-L = Layout(_LAYOUT, page=(12.5, 38.5))
+L = Layout(_LAYOUT, page=(12.5, None))
 C = Content(_CONTENT, styles=L)
 
 EDIT = bool(os.environ.get("DOCSYNC_EDIT"))
@@ -380,13 +380,12 @@ BUCKET_CSS = """
 # original.html) already says what this document means on paper \u2014 .sheet at
 # max-width:100% with break-inside rules per section \u2014 but it can't be reached
 # while the wrapper holds a fixed width above it. Released here, printing only:
-# the screen canvas is unchanged, and @page names the paper Chrome was assuming
-# anyway rather than leaving it to the default margin box.
+# the screen canvas is unchanged. (This once released .page to Letter and named
+# `@page{size:letter}`; the report is pageless now, so the sheet prints at its own
+# 12.5in width and Layout.page_style() sets `@page{size:12.5in auto}`.)
 PRINT_CSS = """
-@page { size: letter; margin: 0.25in; }
 @media print {
   body { background:#fff; }
-  .page { width:auto; min-height:0; margin:0; overflow:visible; }
   /* The last page held nothing but the source line: the document ran about
      three quarters of an inch past the third sheet, all of it whitespace the
      screen layout wants and paper does not. Reclaimed from the four places
@@ -462,7 +461,7 @@ html = f"""<!DOCTYPE html>
 <title>{C.text("title")}</title>
 <style>
   body {{ margin:0; background:#EDF1EE; }}
-  .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
+  .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}
   {FAMILY_CSS}

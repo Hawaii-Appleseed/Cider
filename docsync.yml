@@ -138,7 +138,7 @@ bindings:
       # Rx Kids Brand Standard Guidelines (July 2026) palette: navy text, red, blue,
       # green, orange, white — the swatches the editor offers for recolouring.
       palette: ["#10125A", "#EE303C", "#0083CA", "#00A84F", "#F7941D", "#FFC20E", "#AB3192", "#FFFFFF"]
-      page: [12.5, 84]
+      page: [12.5, null]
       margins: [0.3, 0.3]
       engine:
         # The untouched source render_report.py reads at build time — must be
@@ -236,7 +236,7 @@ bindings:
       out: projects/our-mission/index.html
       layout: projects/our-mission/layout.json
       palette: ["#FFFFFF", "#2F3E46", "#52796F", "#84A98C", "#CAD2C5", "#6E7A7E", "#354F52", "#F7F9F5"]
-      page: [12.5, 160]
+      page: [12.5, null]
       margins: [0.3, 0.3]
       engine:
         # Files render_report.py reads MUST be listed here or the browser's
@@ -378,7 +378,7 @@ bindings:
       out: projects/tfc-2027-priorities/index.html
       layout: projects/tfc-2027-priorities/layout.json
       palette: ["#52796F", "#FFFFFF", "#FBFCFA", "#222E33", "#5A6B6C", "#8A9899", "#DCE3DC", "#C3CEC5"]
-      page: [12.5, 38.5]
+      page: [12.5, null]
       margins: [0.3, 0.3]
       engine:
         # Files render_report.py reads MUST be listed here or the browser's
@@ -607,7 +607,7 @@ bindings:
       layout: projects/wfc-credits/layout.json
       assets: projects/wfc-credits/assets
       palette: ["#52796F", "#84A98C", "#2F3E46", "#354F52", "#CAD2C5", "#E5E9E2", "#F4F7F4", "#FFFFFF"]
-      page: [12.5, 160]
+      page: [12.5, null]
       margins: [0.3, 0.3]
       engine:
         # Files render_report.py reads MUST be listed here or the browser's
