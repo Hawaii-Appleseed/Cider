@@ -327,6 +327,12 @@ describe('mergeRestore: a restore as a per-slot diff', async () => {
       { content: doc('A-typed', 'B0'), layout: lay({}) });
     assert.equal(m.content, doc('A1', 'B0')); assert.deepEqual(m.taken, ['a']);
   });
+  test('a slot a colleague added since the saved version is reported as dropped', () => {
+    const m = mergeRestore(
+      { content: doc('A', 'B'), layout: lay({}) }, { content: doc('A', 'B'), layout: lay({}) },
+      { content: doc('A', 'B') + '\n[[c]]\nnew\n', layout: lay({}) });
+    assert.equal(m.content, doc('A', 'B')); assert.deepEqual(m.dropped, ['c']);
+  });
   test('layout is merged key by key', () => {
     const m = mergeRestore(
       { content: doc('A', 'B'), layout: lay({ p: { x: 1 }, q: { x: 1 } }) },

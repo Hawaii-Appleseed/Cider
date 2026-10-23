@@ -401,6 +401,8 @@ bindings:
     build: python3 projects/uhero-trc-summary/render_report.py && python3 -m docsync.stage --id uhero-trc-summary
     outputs:
       - projects/uhero-trc-summary/index.html
+    watch:
+      - projects/uhero-trc-summary/assets/*.png
     editor:
       pages:
         - ["page1", "Page 1"]
@@ -416,6 +418,10 @@ bindings:
       palette: ["#FFFFFF", "#52796F", "#354F52", "#2F3E46", "#84A98C", "#CAD2C5", "#F3F6F3", "#A8603F"]
       page: [8.5, 11]
       margins: [0.55, 0.5]
+      engine:
+        # The cover logo is inlined at render time, so the browser's virtual
+        # filesystem needs the file as well.
+        - projects/uhero-trc-summary/assets/HawaiiTaxFairness_Horizontal_white-text.png
 
   # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed policy brief" template.
   - id: my-report

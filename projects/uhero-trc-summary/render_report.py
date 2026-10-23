@@ -15,6 +15,7 @@ DATA constants below, not read from a file, so nothing needs declaring under
 `editor.engine` in docsync.yml.
 """
 from pathlib import Path
+import base64
 import os
 import sys
 
@@ -33,6 +34,17 @@ _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
 _OUT = Path(os.environ.get("DOCSYNC_OUT") or (HERE / "index.html"))
 EDIT = bool(os.environ.get("DOCSYNC_EDIT"))
+
+def data_uri(path):
+    return "data:image/png;base64," + base64.b64encode(Path(path).read_bytes()).decode()
+
+
+def img_el(el_id, cls, src, desc):
+    """One image element, honouring replace/radius/filter overrides; `desc`
+    is the attribute string describe() returns (its description is a slot)."""
+    src = L.img_src(el_id, src)
+    return f'<img class="{cls}"{L.attr(el_id, L.img_css(el_id))} src="{src}"{desc}>'
+
 
 L = Layout(_LAYOUT, page=(8.5, 11))
 C = Content(_CONTENT, styles=L)
@@ -145,7 +157,7 @@ page = f"""
 <section class="page cover">
   <div class="cfield"{L.frame("cover.field")}>
   <div class="mast">
-    <div class="brand"{L.attr("cover.brand")}>{C.t("cover.brand")}</div>
+    {img_el("cover.logo", "brand-logo", data_uri(HERE / "assets" / "HawaiiTaxFairness_Horizontal_white-text.png"), describe(C, "cover.logo.desc", "Hawaiʻi Tax Fairness Coalition"))}
     <div class="pill"{L.attr("cover.pill")}>{C.t("cover.pill")}</div>
   </div>
   {L.spacer("cover.h1")}<h1 class="cover-h1"{L.attr("cover.h1")}>{C.t("cover.h1")}</h1>
@@ -267,6 +279,7 @@ html = f"""<!DOCTYPE html>
            padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.35); }}
   .brand {{ font-family:Barlow, sans-serif; font-weight:700; font-size:13.5px;
             letter-spacing:.14em; color:#fff; }}
+  .brand-logo {{ height:0.55in; width:auto; display:block; }}
   .pill {{ font-family:Barlow, sans-serif; font-weight:600; font-size:13.5px;
            letter-spacing:.06em; text-transform:uppercase; color:{ASH}; }}
   .cover-h1 {{ font-family:Barlow, sans-serif; font-weight:800; font-size:40px;

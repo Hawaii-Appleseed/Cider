@@ -341,8 +341,8 @@ Bottom line for advocates (the Coalition's view, not UHERO's)
 [uhero-groceries]: UHERO draft report, chapter 10, the grocery exemption's revenue and household effects (pp. 158–161, Figure 10.1 on p. 160). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=160
 [uhero-rec]: UHERO draft report, chapter 11, "What we cannot know yet, and how Hawaiʻi could know more," the one recommendation (pp. 162–163). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=164
 
-[[cover.brand]]
-TAX FAIRNESS COALITION
+[[cover.logo.desc]]
+Hawaiʻi Tax Fairness Coalition
 
 [[foot.running]]
 UHERO DRAFT SUMMARY · TAX FAIRNESS COALITION
