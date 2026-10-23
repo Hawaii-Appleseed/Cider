@@ -83,13 +83,13 @@ CHAPTERS_DEFAULT = {"header": True, "headerFill": "#354F52", "headerColor": "#FF
                     "band": "#F4F6F4", "colw": [22, 62, 16],
                     "rows": [
              ["Chapter", "What the draft finds", "In the draft"],
-             ["**2 · Individual income tax**", "Higher earners pay a bigger share of their income, and Acts 46 and 24 are changing the tax. It brought in $3.29 billion in fiscal 2025 (pp. 3, 28, 35).", f"[pp. 26–55]({_PDF}#page=28)"],
-             ["**3 · General excise tax**", "The GET is Hawaiʻi's biggest tax and hits business sales at every step: $4.63 billion in fiscal 2025, 40.4 percent of state taxes (pp. 3, 56).", f"[pp. 56–72]({_PDF}#page=58)"],
-             ["**4 · Visitors and tourism**", "Taxing visitors can help residents, but only if residents are paid back for what they pay too. The hotel and rental tax brought in $816.2 million in fiscal 2025 (pp. 73–74, 77).", f"[pp. 73–85]({_PDF}#page=75)"],
-             ["**5 · Property and real estate**", "Homeowners pay the lowest property tax rate in the country: 0.29 percent of home value, against 0.90 percent nationwide. Only the counties can set it (pp. 87–88).", f"[pp. 86–99]({_PDF}#page=88)"],
-             ["**6 · Business taxes**", "The corporate income tax raised $400.4 million net in fiscal 2025. UHERO says a large rate cut could raise total revenue, but on 2010 data it will revisit (pp. 101, 107).", f"[pp. 100–117]({_PDF}#page=102)"],
-             ["**7 · Wealth and estates**", "UHERO thinks an annual wealth tax is unlikely to raise much if Hawaiʻi acts alone. Estate tax collections swing: $405.8 million in fiscal 2025, including one $315 million payment (pp. 118, 120).", f"[pp. 118–132]({_PDF}#page=120)"],
-             ["**8 · Tax credits**", "Credits are spending by another name: $621.3 million claimed in 2023 (p. 133). For the solar credit, 72 percent of what individuals claimed went to filers earning $100,000 or more (p. 147).", f"[pp. 133–156]({_PDF}#page=135)"]]}
+             ["**2 · Individual income tax**", "Higher earners pay a larger share of their income in Hawaiʻi's individual income tax, which brought in $3.29 billion in fiscal 2025, and Act 24 adds a 13 percent top rate above $500,000 for single filers (pp. 3, 28, 35).", f"[pp. 26–55]({_PDF}#page=28)"],
+             ["**3 · General excise tax**", "The general excise tax is the state's largest, at $4.63 billion or 40.4 percent of fiscal 2025 collections, and because it applies to sales between businesses it can pile up at each stage of production (pp. 3, 56, 60).", f"[pp. 56–72]({_PDF}#page=58)"],
+             ["**4 · Visitors and tourism**", "Taxing visitors can help residents, but only if residents are paid back for the share they also pay; the hotel and vacation-rental tax, for example, raised $816.2 million in fiscal 2025 (pp. 73–74, 77).", f"[pp. 73–85]({_PDF}#page=75)"],
+             ["**5 · Property and real estate**", "Hawaiʻi homeowners pay 0.29 percent of their home value in property tax, the lowest rate of the 50 states and well below the 0.90 percent national figure, and only the counties may set it (pp. 87–88).", f"[pp. 86–99]({_PDF}#page=88)"],
+             ["**6 · Business taxes**", "The corporate income tax raised $400.4 million net in fiscal 2025, and UHERO says a large rate cut could raise total revenue once the effects on other taxes are counted, although that rests on 2010 data (pp. 101, 107).", f"[pp. 100–117]({_PDF}#page=102)"],
+             ["**7 · Wealth and estates**", "UHERO considers an annual wealth tax unlikely to raise much revenue if Hawaiʻi acts alone, while estate tax collections swing widely, reaching $405.8 million in fiscal 2025 including a one-time $315 million payment (pp. 118, 120).", f"[pp. 118–132]({_PDF}#page=120)"],
+             ["**8 · Tax credits**", "Credits work like spending, and taxpayers claimed $621.3 million of them in 2023, while 72 percent of what individuals claimed in solar credits went to filers earning $100,000 or more (pp. 133, 147).", f"[pp. 133–156]({_PDF}#page=135)"]]}
 
 
 def decile_spec() -> dict:
@@ -102,6 +102,7 @@ def decile_spec() -> dict:
         "values": True, "grid": False,
         "format": {"prefix": "$", "decimals": 0},
         "labelColor": INK,
+        "axisMax": 900,
     }
 
 
@@ -184,7 +185,7 @@ page = f"""
   {C.html("groc.lead", "body")}
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
   <div class="split"{L.frame("groc.split")}><div class="splitl">
-  {chart(L, "chart.decile", decile_spec(), w=3.9, h=1.3,
+  {chart(L, "chart.decile", decile_spec(), w=3.9, h=1.15,
          desc=describe(C, "groc.chart.desc", "Yearly gain per household from "
                        "exempting groceries, by income tenth, from 156 dollars "
                        "in the lowest to 729 dollars in the highest"))}
@@ -222,7 +223,6 @@ page = f"""
   <ul class="fl"{L.frame("miss.list")}>{"".join(f'<li class="fb"{L.frame(f"miss.li.{n}")}>{C.html(f"miss.b{n}", "fbp")}</li>' for n in range(1, 6))}</ul>
   <div class="box"{L.frame("adv.box")}>
     <div class="box-h"{L.attr("adv.h")}>{C.t("adv.h")}</div>
-    <div class="advl"{L.attr("adv.label")}>{C.t("adv.label")}</div>
     {"".join(f'<div class="advb"{L.frame(f"adv.li.{n}")}>{C.html(f"adv.b{n}", "box-p")}</div>' for n in range(1, 4))}
   </div>
   {foot("adv.foot", 4)}
