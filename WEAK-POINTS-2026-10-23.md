@@ -112,7 +112,9 @@ A pageless document's `PAGE_H_IN` is the 200in sentinel. our-mission's sheet
 is 24in; `place(id, {y: 5000})` answered ok with `y: 199.41`, and the box was
 drawn past a sheet that is `overflow:hidden`: gone. The drag placer, a
 group's clamp and the resize clamp all used the sentinel. `pageBottomIn(page)`
-measures the drawn sheet for a pageless document and is used by all three.
+measures the drawn sheet for a pageless document (plus an inch of give: the
+last card of a web page is nudged down like any other, and the CI sweeps move
+it) and is used by all three.
 
 ### 13. `addTable` off the page was accepted
 
