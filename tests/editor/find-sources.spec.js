@@ -99,3 +99,38 @@ test.describe('Show me', () => {
     expect(tag).toBe('TD');
   });
 });
+
+test.describe('Show me highlights the exact words', () => {
+  test('only the matched span is highlighted, and it is cleaned up', async ({ page }) => {
+    await gotoEditor(page);
+    await page.evaluate(async () => {
+      pushHistory();
+      boxes().push({ id: 'hbox', page: 3, x: 1, y: 1, w: 4, z: 5,
+        md: 'alpha **bold** zqxspan beta zqxspan gamma' });
+      markDirty(); await render();
+    });
+    await page.waitForTimeout(400);
+    await openFind(page, 'zqxspan');
+    await page.locator('#find-list .find-hit').first().click();
+    const got = () => page.evaluate(() => {
+      const w = $('out').contentWindow, d = $('out').contentDocument;
+      const h = w.CSS.highlights.get('find-show');
+      return { text: h ? [...h].map(r => r.toString()) : null,
+               startOffset: h ? [...h][0].startOffset : null,
+               styled: !!d.getElementById('find-show-style'),
+               outlined: !!d.querySelector('[data-find-flash]')?.style.outline };
+    });
+    const on = await got();
+    expect(on.text).toEqual(['zqxspan']);
+    expect(on.outlined).toBe(false);
+    // the second hit lands on the second occurrence
+    await page.locator('#find-list .find-hit').nth(1).click();
+    const second = await got();
+    expect(second.text).toEqual(['zqxspan']);
+    expect(second.startOffset).toBeGreaterThan(on.startOffset);
+    await page.waitForTimeout(2500);
+    const off = await got();
+    expect(off.text).toBeNull();
+    expect(off.styled).toBe(false);
+  });
+});

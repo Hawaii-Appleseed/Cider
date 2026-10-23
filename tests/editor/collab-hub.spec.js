@@ -31,6 +31,10 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { test, expect, waitForFirstRender, openFileMenu, openShare } = require('./fixtures/editor-test');
 const { claimPort } = require('./fixtures/ports');
+// Pyodide arrives once per run from disk, not once per context from the CDN
+// (fixtures/pyodide-cache.js): this spec opens a context per person and per
+// fresh-visitor test, and the downloads stacked past the 75s first-render wait.
+const { newContext } = require('./fixtures/pyodide-cache');
 
 const REPO = path.resolve(__dirname, '../..');
 // PRIMER_HUB_DIR is used as it is: vendored into, then served. Unset, the
@@ -130,7 +134,7 @@ async function waitLive(page) {
 
 /** A staff member's browser: through their door, no GitHub anything. */
 async function open(browser, port) {
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   // Autosave is on by default on the hub; these tests press Save themselves
   // and count versions, so it is off here and exercised by its own test.
   // (Only when nothing is set: this runs in the report's frame on every
@@ -358,7 +362,7 @@ test('Share shows the record, and a change narrows the document', async () => {
 });
 
 test('a viewer watches: the chip says so, Save stays off, and their edit reaches nobody', async () => {
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   const page = await ctx.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/edit.html?project=${PROJECT}`);
   await waitForFirstRender(page);
@@ -570,7 +574,7 @@ test('history: a viewer reads the list and may neither name nor restore', async 
   const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   let r = await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/${room}`, { data: { default: 'viewer', people: { [ADA]: 'editor' } } });
   expect(r.status()).toBe(200);
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   const page = await ctx.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/edit.html?project=${PROJECT}`);
   await waitForFirstRender(page);
@@ -1099,7 +1103,7 @@ test('comments: Show flashes the paragraph; a comment on something no longer on 
 test('comments: a viewer may comment and resolve, and is shown the same panel', async () => {
   await a.request.put(`${hubAs(ADA_PORT)}/api/collab/share/Hawaii-Appleseed~Cider~${PROJECT}`,
                       { data: { default: 'viewer', people: { [ADA]: 'editor' } } });
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   const page = await ctx.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/edit.html?project=${PROJECT}`);
   await waitForFirstRender(page);
@@ -1624,7 +1628,7 @@ test("suggesting: a viewer's edit is proposed, shown inline, and an editor accep
   const key = (inv.pages.slice(1).flatMap(p => p.slots || []).find(s => s.text && s.text.length > 40)
             || inv.pages.flatMap(p => p.slots || []).find(s => s.text && s.text.length > 40)).key;
   const before = await slot(a, key);
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   const page = await ctx.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/edit.html?project=${PROJECT}`);
   await waitForFirstRender(page);
@@ -1730,7 +1734,7 @@ test('suggestions: Accept all applies every one; the list page and the Editor ta
       kind: 'suggestion', anchor: k, text: `Proposal ${i + 1}`,
       change: { content: { [k]: { before: was[k], after: `Proposed words ${i + 1}.` } } } } });
   // The list page and the Editor tab say so, for an editor.
-  const fresh = await browser.newContext();
+  const fresh = await newContext(browser);
   const page = await fresh.newPage();
   await page.goto(`${hubAs(ADA_PORT)}/primer/index.html`);
   await expect(page.locator(`#list a.tile[href$="project=${PROJECT}"]`)).toContainText('2 suggested');
@@ -1763,7 +1767,7 @@ test('suggestions: Accept all applies every one; the list page and the Editor ta
 
 test('the list says what changed since you looked, and the Editor tab counts it', async () => {
   // A browser that has seen nothing of this document: to it, it changed.
-  const fresh = await browser.newContext();
+  const fresh = await newContext(browser);
   const page = await fresh.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/index.html`);
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
@@ -1787,7 +1791,7 @@ test('a comment that names you reaches the list page and the Editor tab, and res
   await clearComments();
   const made = await (await a.request.post(`${hubAs(ADA_PORT)}${ROOM_URL}/comments`, { data: { text: 'Grace, your call.', mentions: [GRACE] } })).json();
   expect(made.mentions).toEqual([GRACE]);
-  const fresh = await browser.newContext();
+  const fresh = await newContext(browser);
   const page = await fresh.newPage();
   await page.goto(`${hubAs(GRACE_PORT)}/primer/index.html`);
   const tile = page.locator(`#list a.tile[href$="project=${PROJECT}"]`);
