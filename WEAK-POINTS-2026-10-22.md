@@ -144,7 +144,14 @@ restored an earlier version, which replaced the edits you had not
 saved — ask them, or bring the newer version back from History". Not
 done (see "Left"): asking the room first whether anyone holds unsaved
 words, and restoring as a per-slot diff so untouched slots keep
-concurrent edits.
+concurrent edits. Both done since: each editor says `unsaved` in its
+presence once it has written words no Save has recorded, and `hubRestore`
+names those people in the confirm (and which paragraphs the restore would
+replace); the restore itself is a 3-way per-slot merge
+(`mergeRestore`, collab/ydoc.mjs), so a paragraph the restored version
+does not change keeps what is typed in it, and the saved baseline is the
+restored version, so those words stay unsaved for everyone. The hub's
+`restore()` still leaves the room to the editor.
 
 ### 12. Replying to a comment before the hub had answered dropped the reply
 
@@ -276,11 +283,6 @@ on a scratch repo with no identity.)
   renames the prose token but not its `[id]:` line. "Show me" scrolls to
   a slot but highlights nothing; hits in cells and boxes are not
   clickable. Worth its own pass with the Find panel's owner.
-- **Restore, the rest of it** (item 11): ask the room whether anyone
-  holds unsaved words before restoring and name them in the confirm;
-  apply the restore as a per-slot diff so untouched slots keep
-  concurrent edits. The hub's `restore()` deliberately leaves the room
-  to the editor, so this is editor work in `hubRestore`.
 - **The report template never uses the typed title** ("YOUR REPORT
   TITLE HERE", footers "YOUR REPORT"); the typed name goes only to
   `[[title]]` and the window. `docsync/templates` + `new.create()`.

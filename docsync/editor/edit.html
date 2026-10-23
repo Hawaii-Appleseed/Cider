@@ -23384,7 +23384,7 @@ async function collabBranchStillOurs() {
 /** A collaborator saved: their commit holds this document (to within a
  *  keystroke), so from here "unsaved changes" means changed since THEIR
  *  save — and the room's draft branch exists now, whoever created it. */
-function collabSaved(sha, info) {
+async function collabSaved(sha, info) {
   if (!collab || !sha) return;
   const f = collab.files();
   // A RESTORE by someone else replaced the whole document — unsaved words
@@ -23394,6 +23394,18 @@ function collabSaved(sha, info) {
   const restored = info && info.restored;
   const hadMine = restored && (source !== original || layoutSaid(layout) !== layoutSaid(JSON.parse(layoutOrig || '{}')));
   original = f.content; layoutOrig = f.layoutText;
+  // A restore is applied as a per-slot diff, so the room may still hold words
+  // the restored version does not: the saved baseline is the version itself,
+  // not what the room holds, or those words would read as saved and Save
+  // would stay grey over them.
+  if (restored && docStore()) {
+    try {
+      const [c, l] = await Promise.all([
+        fetch(`${docStore()}/history/${sha}/content`, { cache: 'no-store' }),
+        M.layout ? fetch(`${docStore()}/history/${sha}/layout`, { cache: 'no-store' }) : null]);
+      if (c.ok && (!l || l.ok)) { original = await c.text(); if (l) layoutOrig = await l.text(); }
+    } catch (e) { /* the room's copy stands as the baseline */ }
+  }
   if (docStore()) { docVersion = sha; hubMarkSeen(sha); }
   if (collabShared() && !draftBranch && !docStore()) {
     draftBranch = sharedDraftBranch();
@@ -23404,8 +23416,11 @@ function collabSaved(sha, info) {
   markDirty();
   if (restored) {
     sayNowAndAfterRender(hadMine
-      ? 'a collaborator restored an earlier version, which replaced the edits you had not saved — '
-        + 'ask them, or bring the newer version back from History'
+      ? (dirty
+        ? 'a collaborator restored an earlier version: edits you had not saved in paragraphs it changed were replaced '
+          + '(ask them, or bring the newer version back from History); the rest are kept — Save to keep them'
+        : 'a collaborator restored an earlier version, which replaced the edits you had not saved — '
+          + 'ask them, or bring the newer version back from History')
       : 'a collaborator restored an earlier version — it is what is on screen now');
     if (hadMine) { $('stat').classList.add('err'); setTimeout(() => $('stat').classList.remove('err'), 12000); }
     return;
@@ -27693,26 +27708,75 @@ $('hpanel-close').onclick = () => hubHistoryToggle(false);
 $('hpanel-named').onclick = () => { hubHistoryNamedOnly = !hubHistoryNamedOnly; hubHistoryRender(); };
 $('hpanel-show').onchange = () => hubHistoryPaint($('out') && $('out').contentDocument);
 /** Bring a version back: a new version on top, everyone in the session gets it. */
+/** Who in the room holds words no Save has recorded, and which paragraphs of
+ *  them a restore to `v` would replace, as a sentence for the confirm. Empty
+ *  when nobody does. Asked of the room's presence (each editor says `unsaved`
+ *  when it wrote words no Save has recorded), and the paragraphs from the
+ *  same per-slot diff the restore itself applies. */
+async function hubRestoreWarning(v) {
+  const names = collab && collab.unsavedPeers ? collab.unsavedPeers().map(p => p.name || p.login || 'someone') : [];
+  const mine = source !== original || (M.layout && layoutSaid(layout) !== layoutSaid(JSON.parse(layoutOrig || '{}')));
+  if (!names.length && !mine) return '';
+  const who = [...new Set(names)];
+  if (mine) who.push('you');
+  const list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who[who.length - 1] : who[0];
+  let detail = '';
+  if (collab && collab.mergeRestore) {
+    try {
+      const [c, l] = await Promise.all([
+        fetch(`${docStore()}/history/${v.version}/content`, { cache: 'no-store' }),
+        M.layout ? fetch(`${docStore()}/history/${v.version}/layout`, { cache: 'no-store' }) : null]);
+      if (c.ok && (!l || l.ok)) {
+        const m = collab.mergeRestore({ content: original, layout: layoutOrig || '{}' },
+          { content: await c.text(), layout: l ? await l.text() : (layoutOrig || '{}') },
+          { content: source, layout: layout });
+        detail = m.taken.length
+          ? ` Words in ${m.taken.length === 1 ? 'this paragraph' : m.taken.length + ' paragraphs'} would be replaced (${m.taken.slice(0, 4).join(', ')}${m.taken.length > 4 ? ', …' : ''}); every other paragraph keeps what is typed in it.`
+          : ' Nothing they typed is in a paragraph this version changes, so it all stays.';
+      }
+    } catch (e) { /* the generic sentence below is true without it */ }
+  }
+  return `${list.charAt(0).toUpperCase() + list.slice(1)} ${who.length > 1 || who[0] === 'you' && who.length === 1 ? 'have' : 'has'} unsaved words in this session.${detail || ' A paragraph this version changes is replaced; the others keep what is typed in them.'}\n\n`;
+}
 async function hubRestore(v) {
+  const warn = await hubRestoreWarning(v);
   if (!await dsConfirm(`Bring back the version from ${fmtWhen(v.updated_at)}${v.label ? ` ("${v.label}")` : ''}?\n\n`
+      + warn
       + 'It becomes the current version — a new Save on top of the others, so nothing is lost. '
       + 'Everyone in this session gets it.', { okLabel: 'Restore' })) return;
   $('stat').textContent = 'restoring…';
   try {
+    if (collab) await collab.drainNow();   // a collaborator's words still held back by an open box count
     const r = await fetch(`${docStore()}/restore`, { method: 'POST',
       headers: { 'content-type': 'application/json' }, body: JSON.stringify({ version: v.version }) });
     const j = await hubJson(r);
     if (!r.ok) throw new Error(j.error || `the hub answered ${r.status}`);
     // Adopt the files the way a collaborator's change lands, then record the
     // version the way a Save does: the room learns it through baseSha.
+    // As a per-slot diff: a paragraph the restored version does not change
+    // (against the version it goes on top of) keeps whatever is typed in it,
+    // so a colleague's unsaved words elsewhere survive. The hub's restore()
+    // leaves the room to the editor on purpose; this is where it is handled.
+    let kept = [];
+    if (collab && collab.mergeRestore) {
+      try {
+        const m = collab.mergeRestore({ content: original, layout: layoutOrig || '{}' },
+          { content: j.content, layout: j.layout != null ? j.layout : (layoutOrig || '{}') },
+          { content: source, layout: layout });
+        kept = m.kept;
+        j.__merged = m;
+      } catch (e) { j.__merged = null; }
+    }
     pushHistory();
-    source = j.content;
+    source = j.__merged ? j.__merged.content : j.content;
     if (M.layout && j.layout != null) {
-      layout = JSON.parse(j.layout);
+      layout = j.__merged ? j.__merged.layout : JSON.parse(j.layout);
       layout.positions = layout.positions || {}; layout.shapes = layout.shapes || []; layout.sections = layout.sections || {};
       syncPageSize();
     }
-    original = source; layoutOrig = M.layout && j.layout != null ? j.layout : layoutOrig;
+    // The saved baseline is the restored version itself; `source` may carry
+    // colleagues' unsaved words the diff kept, and those stay unsaved.
+    original = j.content; layoutOrig = M.layout && j.layout != null ? j.layout : layoutOrig;
     docVersion = j.version;
     hubMarkSeen(j.version);
     await render();
@@ -27722,7 +27786,8 @@ async function hubRestore(v) {
     if (collab) { collab.forgetHistory(); collab.setBaseSha(j.version, { restored: true }); }
     clearDraftCache();
     markDirty();
-    $('stat').textContent = `restored — the version from ${fmtWhen(v.updated_at)} is the current one now`;
+    $('stat').textContent = `restored — the version from ${fmtWhen(v.updated_at)} is the current one now`
+      + (kept.length ? `; unsaved words in ${kept.length === 1 ? 'a paragraph' : kept.length + ' paragraphs'} it did not change were kept — Save to keep them` : '');
   } catch (e) {
     $('stat').textContent = 'restore failed: ' + e.message;
   }

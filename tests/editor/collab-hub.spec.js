@@ -1832,6 +1832,80 @@ test('a comment that names you reaches the list page and the Editor tab, and res
   await clearComments();
 });
 
+// Restore, the rest of it (WEAK-POINTS 2026-10-22 item 11): the confirm names
+// whoever holds unsaved words, and the restore is a per-slot diff, so a
+// paragraph the restored version does not change keeps what is typed in it.
+const secondSlot = page => page.evaluate('source.match(/\\[\\[([^\\]]+)\\]\\][\\s\\S]*?\\[\\[([^\\]]+)\\]\\]/)[2]');
+const saveAs = async (page, other) => {
+  await page.locator('#save').click();
+  await expect(page.locator('#stat')).toHaveText(/saved — anyone opening/, { timeout: 20_000 });
+  await expect(other.locator('#save')).toBeDisabled({ timeout: 20_000 });
+};
+const restoreRow = async (page, i) => {
+  await page.locator('#history').click();
+  await expect(historyRows(page).nth(i)).toBeVisible({ timeout: 10_000 });
+  await historyRows(page).nth(i).locator('.hub-history-restore').click();
+};
+
+test('restore: the confirm names who holds unsaved words, and a paragraph the version leaves alone keeps theirs', async () => {
+  const k1 = await firstSlot(a), k2 = await secondSlot(a);
+  expect(k2).not.toBe(k1);
+  await a.evaluate(`docsync.api.batch([{verb:'setSlot',args:[${JSON.stringify(k1)},'R1 base']},{verb:'setSlot',args:[${JSON.stringify(k2)},'R2 base']}])`);
+  await saveAs(a, b);                                        // V1
+  await a.evaluate(`docsync.api.setSlot(${JSON.stringify(k1)}, "R1 changed")`);
+  await saveAs(a, b);                                        // V2, current
+  // Nobody holds unsaved words yet: the confirm is the plain one.
+  await restoreRow(a, 1);
+  await expect(a.locator('dialog[open]')).not.toContainText('unsaved words');
+  await a.locator('dialog[open] button.dsdlg-cancel').click();   // (the click closed the panel)
+  // Grace types in the OTHER paragraph and does not save.
+  await b.evaluate(`docsync.api.setSlot(${JSON.stringify(k2)}, "Grace, unsaved in k2")`);
+  await expect.poll(() => slot(a, k2), { timeout: 20_000 }).toBe('Grace, unsaved in k2');
+  await expect.poll(() => a.evaluate('collab.unsavedPeers().map(p => p.login || p.name).join()'), { timeout: 20_000 }).toMatch(/grace/i);
+  expect(await b.evaluate('collab.unsavedPeers().length')).toBe(0);   // Ada has written nothing since the Save
+  await restoreRow(a, 1);
+  const dlg = a.locator('dialog[open]');
+  await expect(dlg).toContainText(/grace/i);
+  await expect(dlg).toContainText('unsaved words in this session');
+  await expect(dlg).toContainText('it all stays');            // nothing of hers is in a paragraph V1 changes
+  await dlg.locator('button.dsdlg-ok').click();
+  await expect(a.locator('#stat')).toHaveText(/restored — the version from/, { timeout: 20_000 });
+  expect(await slot(a, k1)).toBe('R1 base');                  // the restore took the paragraph it changes
+  expect(await slot(a, k2)).toBe('Grace, unsaved in k2');     // and left hers alone
+  await expect.poll(() => slot(b, k1), { timeout: 20_000 }).toBe('R1 base');
+  expect(await slot(b, k2)).toBe('Grace, unsaved in k2');
+  // Hers is still unsaved, for her AND for Ada: the baseline is the restored version.
+  await expect(b.locator('#save')).toBeEnabled();
+  await expect(a.locator('#save')).toBeEnabled();
+  await expect(b.locator('#stat')).toHaveText(/restored an earlier version/);
+  expect(await b.evaluate('collab.canUndo()')).toBe(false);
+  // She saves, and her words are in the store on top of the restored paragraph.
+  await saveAs(b, a);
+  const hist = await versions();
+  const body = await (await a.request.get(`${DOC_URL()}/history/${hist[0].version}/content`)).text();
+  expect(body).toContain('R1 base');
+  expect(body).toContain('Grace, unsaved in k2');
+});
+
+test('restore: unsaved words in a paragraph the version DOES change are replaced, and the confirm says which', async () => {
+  const k1 = await firstSlot(a);
+  const hist = await versions();                      // newest first: Grace's Save, the restore, V2, V1
+  const v2 = hist.findIndex(h => h.restored_from) + 1;
+  await b.evaluate(`docsync.api.setSlot(${JSON.stringify(k1)}, "Grace, unsaved in k1")`);
+  await expect.poll(() => slot(a, k1), { timeout: 20_000 }).toBe('Grace, unsaved in k1');
+  await expect.poll(() => a.evaluate('collab.unsavedPeers().length'), { timeout: 20_000 }).toBe(1);
+  await restoreRow(a, v2);                            // V2 has k1 = "R1 changed"
+  const dlg = a.locator('dialog[open]');
+  await expect(dlg).toContainText('would be replaced');
+  await expect(dlg).toContainText(k1);
+  await dlg.locator('button.dsdlg-ok').click();
+  await expect(a.locator('#stat')).toHaveText(/restored — the version from/, { timeout: 20_000 });
+  expect(await slot(a, k1)).toBe('R1 changed');
+  await expect.poll(() => slot(b, k1), { timeout: 20_000 }).toBe('R1 changed');
+  await expect(b.locator('#save')).toBeDisabled();    // nothing of hers is left unsaved
+  await expect(b.locator('#stat')).toHaveText(/replaced the edits you had not saved/);
+});
+
 test('save: an expired sign-in cannot pass for a Save, and nothing is marked saved', async () => {
   // Access answers a signed-out browser with its sign-in page: 200, HTML.
   const key = await firstSlot(a);
