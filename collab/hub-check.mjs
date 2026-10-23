@@ -72,7 +72,7 @@ const eq = (label, got, want) =>
 /* ------------------------------------------------------------- the hub */
 
 /** `wrangler pages dev` over the hub repo, with the relay's class bound. */
-export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000 }) {
+export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000, relayName = 'primer-collab' }) {
   const persistDir = mkdtempSync(pathJoin(tmpdir(), 'hub-check-'));
   // Run from the hub's directory, with this repo's wrangler binary. From
   // here, `wrangler pages dev` would read collab/wrangler.jsonc and merge in
@@ -87,7 +87,7 @@ export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000 }
     // The binding under test. `@primer-collab` is the other wrangler, found
     // through the local dev registry — the same shape as the dashboard
     // binding, which names a script and a class.
-    '--do', 'PRIMER_ROOM=PrimerRoom@primer-collab',
+    '--do', `PRIMER_ROOM=PrimerRoom@${relayName}`,
     '--kv', 'COLLAB',
     // The document store (functions/api/docs/), local R2 emulation.
     '--r2', 'PRIMER_DOCS',

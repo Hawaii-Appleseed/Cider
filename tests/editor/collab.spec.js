@@ -571,6 +571,14 @@ test('both editors type in the SAME paragraph at once, each sees the other\'s wo
     // between B's double-click and the caret placement below rebuilds the
     // host with the caret at the end, and then "start" is the end.
     if (pg === b) await expect.poll(() => slot(b), { timeout: 10_000 }).toBe(base + ' says Ada');
+    // ...and the repaint that follows has finished - in A as well: the test
+    // before this one ends on a remote undo landing in A. By design a remote
+    // edit is adopted into `source` at once but painted one quiet beat later
+    // (collabRenderSoon, 300ms), and that paint replaces the report frame's
+    // DOM: a double-click begun in between loses its element mid-gesture
+    // ("Element is not attached to the DOM"). A person's click races it the
+    // same way, harmlessly; a test that needs a stable element waits.
+    await expect.poll(() => pg.evaluate('!collabRenderTimer && !renderRunning'), { timeout: 10_000 }).toBe(true);
     const el = pg.frameLocator('#out').locator(`[data-slot="${SLOT}"]`).first();
     await el.scrollIntoViewIfNeeded();
     await el.dblclick();

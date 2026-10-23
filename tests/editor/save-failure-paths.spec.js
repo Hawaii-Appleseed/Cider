@@ -14,8 +14,16 @@ const { execSync } = require('child_process');
 
 const SAVE = /\/__save(\?|$)/, PUSH = /\/__push(\?|$)/, EVENTS = /\/__events(\?|$)/;
 
+// The pinned ping answers for the server, so it must answer what the server
+// WOULD now: the poll lands every 1.5s, and a fixed `ahead` overwrote a Save's
+// "2 ahead" (or a test's own setPushState) with the stale number it started
+// with - "Push (1)" for "Push (2)", a Push button that went disabled under a
+// click. Tests that change the server's count change it here.
+const serverAhead = new WeakMap();
+const setAhead = (context, n) => serverAhead.set(context, n);
 async function go(page, context, ahead = 0) {
-  await context.route(PING, route => route.fulfill({ json: { ok: true, v: 1, ahead } }));
+  setAhead(context, ahead);
+  await context.route(PING, route => route.fulfill({ json: { ok: true, v: 1, ahead: serverAhead.get(context) } }));
   await gotoEditor(page);
 }
 /** Type something (a new paragraph at the end), as the pilot would. */
@@ -37,6 +45,7 @@ test.describe('a slow Save', () => {
     await go(page, context);
     await context.route(SAVE, async r => {
       await new Promise(res => setTimeout(res, 1500));
+      setAhead(context, 1);
       r.fulfill({ json: { ok: true, ahead: 1, message: 'saved locally' } });
     });
     await dirtyIt(page);
@@ -60,6 +69,7 @@ test.describe('a slow Save', () => {
     await context.route(SAVE, async r => {
       calls.push('save');
       await new Promise(res => setTimeout(res, 1500));
+      setAhead(context, 2);
       r.fulfill({ json: { ok: true, ahead: 2, message: 'saved locally' } });
     });
     await context.route(PUSH, r => { calls.push('push'); r.fulfill({ json: { ok: true, ahead: 0, message: 'pushed' } }); });
@@ -108,6 +118,7 @@ test.describe('a server that answers wrongly, or not at all', () => {
     expect((await state(page)).dirty).toBe(true);
     // Push too.
     await context.route(PUSH, r => r.abort('connectionrefused'));
+    setAhead(context, 1);
     await page.evaluate(() => setPushState(1));
     await page.click('#push');
     await expect(stat).toContainText('push failed');

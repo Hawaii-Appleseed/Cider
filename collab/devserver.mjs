@@ -50,8 +50,12 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
  * @param {number} o.port
  * @param {Record<string,string>} [o.vars]   extra `--var` bindings (e.g. ALLOWED_ORIGINS)
  * @param {number} [o.timeoutMs]             default 90s
+ * @param {string} [o.name]                  worker name (default: wrangler.jsonc's). Local dev
+ *   wranglers register under it, and a `pages dev` binding `Class@name` finds
+ *   the relay by it: two relays with one name (parallel workers, or another
+ *   spec's relay) and the binding reaches whichever registered last.
  */
-export async function startDev({ port, vars = {}, timeoutMs = 90_000 }) {
+export async function startDev({ port, vars = {}, timeoutMs = 90_000, name = '' }) {
   if (!existsSync(WRANGLER)) {
     throw new Error(`${WRANGLER} is missing — collab/ is its own npm project: npm ci --prefix collab`);
   }
@@ -63,6 +67,7 @@ export async function startDev({ port, vars = {}, timeoutMs = 90_000 }) {
   const args = ['dev', '--ip', '127.0.0.1', '--port', String(port),
                 '--inspector-port', String(port + 1000),
                 '--persist-to', persistDir, '--log-level', 'warn'];
+  if (name) args.push('--name', name);
   for (const [k, v] of Object.entries(vars)) args.push('--var', `${k}:${v}`);
   // Its own process group (detached), so wrangler and the workerd it spawns
   // go together: killing only the parent left workerd holding the port.

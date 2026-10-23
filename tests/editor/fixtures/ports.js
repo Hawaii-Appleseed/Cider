@@ -39,7 +39,12 @@ async function claimPort(name, from, { span = [0] } = {}) {
     span.forEach(o => claimed.add(named + o));
     return named;
   }
-  for (let p = from, i = 0; i < TRIES; p += STEP, i++) {
+  // Probing is probe-then-bind, so two workers of one spec (--repeat-each runs
+  // the same serial file in several at once) can both see 8802 free and then
+  // fight for it: one wrangler dies with EADDRINUSE. Each worker therefore
+  // starts in its own hundred, clear of the 500 its probes can cover.
+  const lane = Number(process.env.TEST_PARALLEL_INDEX) || 0;
+  for (let p = from + 100 * lane, i = 0; i < TRIES; p += STEP, i++) {
     if (span.some(o => claimed.has(p + o))) continue;
     let ok = true;
     for (const o of span) if (!(await bindable(p + o))) { ok = false; break; }
