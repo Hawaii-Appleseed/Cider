@@ -51,6 +51,25 @@ test.describe('report templates', () => {
     expect(brief.schemes[0].id).toBe('charcoal');
   });
 
+  test('the typed title lands on the cover and in every page footer',
+    async ({ request }) => {
+    for (const template of ['appleseed-report', 'appleseed-brief', 'appleseed-onepager']) {
+      removeYmlBindings(SLUG);
+      execSync(`rm -rf ${JSON.stringify(path.join(REPO, 'projects', SLUG))}`);
+      const j = await (await request.post('/__scaffold', { data: {
+        name: 'Kupuna Care Gap', slug: SLUG, template } })).json();
+      expect(j.ok, j.error).toBe(true);
+      const lay = JSON.parse(fs.readFileSync(
+        path.join(REPO, 'projects', SLUG, 'layout.json'), 'utf8'));
+      const mds = lay.boxes.map(b => b.md);
+      expect(mds.filter(m => /YOUR REPORT|title here/i.test(m)), template).toEqual([]);
+      expect(lay.boxes.find(b => b.id === 'tpl-title').md).toBe('Kupuna Care Gap');
+      if (template === 'appleseed-report') {
+        expect(mds.filter(m => /^\d · KUPUNA CARE GAP$/.test(m)).length, template).toBeGreaterThan(0);
+      }
+    }
+  });
+
   test('a scheme recolours the scaffold; a bad one is refused before files land',
     async ({ request }) => {
     const j = await (await request.post('/__scaffold', { data: {

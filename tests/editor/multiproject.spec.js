@@ -12,7 +12,7 @@ async function openList(page) {
   await openFileMenu(page);
   await page.click('#file-open');
   await page.locator('#openpop').waitFor({ state: 'visible' });
-  return page.locator('#open-list button');
+  return page.locator('#open-list button[data-open]');
 }
 
 async function withTwoProjectRegistry(context) {
