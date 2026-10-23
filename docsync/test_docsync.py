@@ -1219,6 +1219,38 @@ check("the style rides out with the first layer", _L.layer(1), "<style>")
 check_eq("and only once", _L.layer(2), "")
 check_eq("a report with no override renders exactly as before", _layout({}).layer(1), "")
 
+# A report BUILT pageless (the web-page reports: our-mission, wfc-credits,
+# rxkids, tfc-2027-priorities pass page=(12.5, None)) is the same as one whose
+# layout.json says h:null — and its stylesheet must not carry the sentinel as a
+# min-height (that was the 160in sheet: 11 letter pages, 8 empty).
+def _built_pageless():
+    t = _tmp_json(); t.write_text("{}")
+    return Layout(t, page=(12.5, None))
+_BP = _built_pageless()
+check_eq("built pageless: page_h is the sentinel", _BP.page_h, PAGELESS_H)
+check_eq("built pageless: the .page min-height is 0, not the sentinel", _BP.page_min_h, 0)
+check("built pageless: the sheet is `Win auto`", _BP.page_style(), "@page{size:12.5in auto;margin:0}")
+check_eq("a fixed page keeps its own min-height",
+         _layout({"page": {"w": 8.5, "h": 11}}).page_min_h, 11.0)
+check_eq("a layout override of a built-pageless report wins",
+         _layout({"page": {"w": 8.5, "h": 11}}).page_h, 11.0)
+# The shipped renderers, rebuilt: no min-height of 160in/84in/38.5in left.
+import subprocess as _sp
+for _slug in ("our-mission", "wfc-credits", "rxkids", "tfc-2027-priorities"):
+    _out = Path(tempfile.mkdtemp()) / "out.html"
+    _r = _sp.run([sys.executable, str(Path(__file__).resolve().parent.parent / "projects" / _slug / "render_report.py")],
+                 env={**os.environ, "DOCSYNC_OUT": str(_out)}, capture_output=True, text=True)
+    _h = _out.read_text() if _out.exists() else ""
+    check(f"{_slug} builds", _r.stdout, "wrote")
+    check(f"{_slug}: .page has no fixed height", _h, ".page{width:12.5in;min-height:0}")
+    check(f"{_slug}: the print sheet is 12.5in wide with auto height", _h, "@page{size:12.5in auto")
+    if "min-height:160in" in _h or "min-height:84.0in" in _h or "min-height:38.5in" in _h:
+        FAILS.append(f"{_slug}: a fixed sheet height is still in the stylesheet")
+    if _slug == "tfc-2027-priorities" and "size: letter" in _h:
+        FAILS.append("tfc prints on its own letter @page again; it is pageless")
+    if _slug == "rxkids" and "break-before: page" in _h:
+        FAILS.append("rxkids forces a page break between tabs; a pageless sheet runs on")
+
 check_page_raises("a non-object page is refused", {"page": [8.5, 11]}, "must be an object")
 check_page_raises("a non-numeric width is refused", {"page": {"w": "wide", "h": 11}},
                   "is not a number")
@@ -3064,6 +3096,12 @@ with tempfile.TemporaryDirectory() as _td:
              ["chrome bit"])
     check_eq("editability defaults to warn", _bs["t-plain"].editability,
              "warn")
+
+    _reg.write_text("bindings:\n  - id: t-web\n    content: c.md\n    editor:\n"
+                    "      dir: d\n      render: r.py\n      out: o.html\n"
+                    "      page: [12.5, null]\n")
+    check_eq("a manifest page of [w, null] is pageless",
+             load_registry(_reg)[0].editor.page, (12.5, None))
     _reg.write_text("bindings:\n  - id: t-bad\n    content: c.md\n"
                     "    editability: loose\n")
     try:

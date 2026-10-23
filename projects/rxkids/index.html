@@ -39,7 +39,7 @@
     unicode-range:U+02BB; }
 
   body { margin:0; background:#e7e7ee; }
-  .page { width:12.5in; min-height:84in; margin:0 auto;
+  .page { width:12.5in; min-height:0in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }
   
         body {
@@ -2437,8 +2437,9 @@
     .rxk-tabs, .rxk-next, .rxk-sources-bar .tfc-expand-icon { display: none !important; }
     .tfc-expand-content { max-height: none !important; overflow: visible !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
-    .rxk-panel { animation: none !important; break-before: page; }
-    .rxk-panel:first-of-type { break-before: auto; }
+    /* Pageless (one continuous sheet): the tabs stack in order with no forced
+       page break between them. */
+    .rxk-panel { animation: none !important; }
     .tfc-full-width { break-inside: avoid; }
   }
 
@@ -3104,7 +3105,7 @@
     <a href="https://rxkids.org/about/" target="_blank" class="tfc-btn tfc-btn-outline">About the Program</a>
     <p class="rxk-partner">Rx Kids is led by Michigan State University and administered by GiveDirectly. RxKeiki Hawaiʻi is a Hawaiʻi Appleseed proposal modeled on the program.</p>
 </div>
-</div><style>@media screen and (max-width:12.5in){[data-placed],.page [style*="position:absolute"]:not(.shape-layer){position:static !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;width:auto !important;max-width:100% !important;transform:none !important;rotate:none !important;margin:0 0 12px !important}.ds-spacer{display:none !important}.page img{max-width:100% !important;height:auto}.page table{display:block;max-width:100%;overflow-x:auto}}</style></section>
+</div><style>@media screen and (max-width:12.5in){[data-placed],.page [style*="position:absolute"]:not(.shape-layer){position:static !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;width:auto !important;max-width:100% !important;transform:none !important;rotate:none !important;margin:0 0 12px !important}.ds-spacer{display:none !important}.page img{max-width:100% !important;height:auto}.page table{display:block;max-width:100%;overflow-x:auto}}</style><style>.page{width:12.5in;min-height:0}@page{size:12.5in auto;margin:0}</style></section>
 <script>
 
         // Sequential word animation

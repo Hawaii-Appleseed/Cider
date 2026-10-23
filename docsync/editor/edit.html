@@ -21859,7 +21859,9 @@ async function boot() {
   // never draws. Only a manifest with no `pages` key at all keeps the
   // Budget Primer default below.
   if (Array.isArray(M.pages)) EXTRA_PAGES = M.pages;
-  PAGE_W_IN = M.page.w; PAGE_H_IN = M.page.h;
+  PAGE_W_IN = M.page.w;
+  // A report BUILT pageless (docsync.yml page: [w, null]) has no bottom: the same sentinel as File > Resize > Pageless.
+  PAGE_H_IN = M.page.h == null ? PAGELESS_H : M.page.h;
   MARGIN_IN = M.margins.side; TOP_IN = M.margins.top;
   $('title').textContent = M.id;
   // The window/tab title is the report, not the tool. Several of these are
@@ -23329,7 +23331,7 @@ async function startCollab() {
       return { ok: true, inventory: { project: inv.project, pageOrder: inv.pageOrder,
                                       styles: inv.styles,
                                       pages: inv.pages.map(p => ({ id: p.id, index: p.index, slots: p.slots, elements: p.elements })) },
-               page: { w: PAGE_W_IN, h: PAGE_H_IN, pageless: !!(layout.page && layout.page.h == null) },
+               page: { w: PAGE_W_IN, h: PAGE_H_IN, pageless: isPageless() },
                fit: fitReport() };
     },
     presence: collabPresence,
@@ -26018,7 +26020,8 @@ function makeEndnotesSection() {
 
 /** True when this document is one continuous sheet rather than pages. */
 const isPageless = () =>
-  !!(layout.page && (layout.page.h === null || layout.page.h === undefined));
+  layout.page ? (layout.page.h === null || layout.page.h === undefined)
+              : !!(M && M.page && (M.page.h === null || M.page.h === undefined));
 
 /** Set when a citation is placed with no endnotes section in the document:
  *  the section is created when that edit COMMITS, inside its own render. */
@@ -30460,6 +30463,7 @@ function currentDocSize() {
     return DOC_SIZES.find(d => Math.abs(d.w - p.w) < 0.02
       && (pageless ? d.h === null : d.h !== null && Math.abs(d.h - p.h) < 0.02)) || null;
   }
+  if (isPageless()) return DOC_SIZES.find(d => d.h === null && Math.abs(d.w - PAGE_W_IN) < 0.02) || null;
   return DOC_SIZES.find(d => d.h !== null
     && Math.abs(d.w - PAGE_W_IN) < 0.02 && Math.abs(d.h - PAGE_H_IN) < 0.02) || null;
 }
@@ -31216,8 +31220,8 @@ $('size-list').onclick = async (e) => {
  *  to one that was resized and put back. */
 async function applyDocSize(d) {
   const built = M.page || {};
-  const isBuilt = d.h !== null && Math.abs(d.w - built.w) < 0.02
-                               && Math.abs(d.h - built.h) < 0.02;
+  const isBuilt = Math.abs(d.w - built.w) < 0.02
+    && (d.h === null ? built.h == null : built.h != null && Math.abs(d.h - built.h) < 0.02);
   if (isBuilt) delete layout.page;
   else layout.page = d.h === null ? { w: d.w, h: null } : { w: d.w, h: d.h };
   syncPageSize();
@@ -31241,7 +31245,7 @@ function syncPageSize() {
   // A pageless document has no bottom. The rules that keep content on the page
   // still need a number, so they get one no report will reach — the same
   // sentinel layout.py uses, so the two sides agree.
-  PAGE_H_IN = p ? (p.h === null || p.h === undefined ? PAGELESS_H : p.h) : M.page.h;
+  PAGE_H_IN = p ? (p.h === null || p.h === undefined ? PAGELESS_H : p.h) : (M.page.h == null ? PAGELESS_H : M.page.h);
 }
 
 $('download').onclick = () => {
@@ -31273,7 +31277,9 @@ function exportPages() {
     if (a < 1 || hi < a) return `pages: ${part.trim()} is not a range from 1 upward`;
     for (let k = a; k <= hi; k++) keep.add(k);
   }
-  if (Math.max(...keep) > n) return `pages: the report has ${n} page${n === 1 ? '' : 's'}`;
+  if (Math.max(...keep) > n) return isPageless()
+    ? 'pages: this report is one continuous page, so there is nothing to pick from — leave the field empty'
+    : `pages: the report has ${n} page${n === 1 ? '' : 's'}`;
   return [...keep].sort((a, b) => a - b);
 }
 // A report's own on-page "Download PDF" button (docsync.blocks.pdf_button)
@@ -31337,7 +31343,13 @@ const asDataUrl = async url => {
  *  <style>, images as data: URIs. A file that reaches for assets/ is only
  *  identical while it sits next to them — and a Squarespace block never
  *  does. Session uploads already live in memory as data URLs. */
-async function inlineEverything(doc) {
+async function inlineEverything(doc, opts = {}) {
+  // What the caller may want to tell the user: opts.fonts / opts.scripts turn
+  // the two network-or-folder inlinings on (a Squarespace block keeps its font
+  // links and takes no script, so they are off by default).
+  const res = { fonts: [], fontsLinked: [], scriptsInlined: 0, scriptsLeft: [] };
+  if (opts.fonts) await inlineWebFonts(doc, res);
+  if (opts.scripts) await inlineScripts(doc, res);
   for (const link of [...doc.querySelectorAll('link[rel~="stylesheet"]')]) {
     const href = link.getAttribute('href') || '';
     // A web font's stylesheet stays a link — it is fetched from the web
@@ -31365,6 +31377,75 @@ async function inlineEverything(doc) {
     if (/^(data:|https?:|#)/i.test(src)) continue;
     try { img.setAttribute('href', localImages.get(src) || await asDataUrl(withBase(src))); }
     catch (e) { /* keep the relative path */ }
+  }
+  return res;
+}
+
+/** Google Fonts links -> @font-face rules with the woff2 files inline as data:
+ *  URIs, so the exported file sets itself in its fonts with no network (the
+ *  families are SIL OFL, which allows redistributing them). Only the latin and
+ *  latin-ext subsets are kept: the other subsets (cyrillic, greek, vietnamese…)
+ *  are most of the bytes and no Hawaiian-policy report uses them; the ʻokina
+ *  is in latin. A stylesheet whose CSS or any file will not fetch is left as
+ *  its <link> — the web copy beats a half-embedded one — and listed in
+ *  res.fontsLinked so the package can say so. res.fonts collects every face's
+ *  bytes for the package's fonts/ folder. */
+async function inlineWebFonts(doc, res) {
+  for (const link of [...doc.querySelectorAll('link[rel~="stylesheet"]')]) {
+    const href = link.getAttribute('href') || '';
+    if (!/^(https?:)?\/\/fonts\.googleapis\.com\//i.test(href)) continue;
+    try {
+      const r = await fetch(href.startsWith('//') ? 'https:' + href : href);
+      if (!r.ok) throw new Error('css ' + r.status);
+      const css = await r.text();
+      const faces = [];
+      for (const m of css.matchAll(/(?:\/\*\s*([\w-]+)\s*\*\/\s*)?@font-face\s*{([^}]*)}/g)) {
+        if (m[1] && !/^latin(-ext)?$/.test(m[1])) continue;
+        const body = m[2];
+        const get = k => ((new RegExp(k + '\\s*:\\s*([^;]+)', 'i')).exec(body) || [])[1];
+        const url = /url\((['"]?)(https?:[^'")]+)\1\)/.exec(body);
+        if (!url) continue;
+        const fr = await fetch(url[2]);
+        if (!fr.ok) throw new Error('font ' + fr.status);
+        const buf = new Uint8Array(await fr.arrayBuffer());
+        faces.push({ family: (get('font-family') || 'font').replace(/['"]/g, '').trim(),
+                     weight: (get('font-weight') || '400').trim(),
+                     style: (get('font-style') || 'normal').trim(),
+                     subset: m[1] || '', url: url[2], bytes: buf, rule: m[0].replace(/^\/\*[^*]*\*\/\s*/, '') });
+      }
+      if (!faces.length) throw new Error('no faces');
+      let inline = '';
+      for (const f of faces) {
+        const uri = await new Promise(ok => {
+          const fr = new FileReader();
+          fr.onload = () => ok(fr.result);
+          fr.readAsDataURL(new Blob([f.bytes], { type: 'font/woff2' }));
+        });
+        inline += f.rule.replace(f.url, uri) + '\n';
+      }
+      const st = doc.createElement('style');
+      st.setAttribute('data-ds-fonts', '');
+      st.textContent = inline;
+      link.replaceWith(st);
+      res.fonts.push(...faces);
+    } catch (e) { res.fontsLinked.push(href); }     // keep the <link>
+  }
+}
+
+/** A relative <script src> (the primer's primer.js) -> an inline script, so
+ *  the file does not need the folder it was exported from. */
+async function inlineScripts(doc, res) {
+  for (const sc of [...doc.querySelectorAll('script[src]')]) {
+    const src = sc.getAttribute('src') || '';
+    if (/^(data:|https?:|\/\/)/i.test(src)) { res.scriptsLeft.push(src); continue; }
+    try {
+      const r = await fetch(withBase(src));
+      if (!r.ok) throw new Error(r.status);
+      const code = await r.text();
+      sc.removeAttribute('src');
+      sc.textContent = code.replace(/<\/script/gi, '<\\/script');
+      res.scriptsInlined++;
+    } catch (e) { res.scriptsLeft.push(src); }      // keep the reference
   }
 }
 
@@ -31600,7 +31681,7 @@ async function exportHtml(forSquarespace) {
   try {
     const raw = await renderClean();
     const doc = new DOMParser().parseFromString(raw, 'text/html');
-    await inlineEverything(doc);
+    await inlineEverything(doc, { scripts: !forSquarespace });
 
     let out, name;
     if (!forSquarespace) {
@@ -31871,27 +31952,35 @@ async function exportPackage() {
     Object.entries(unzipSync(new Uint8Array(await (await exportBlob({ fmt: 'png' })).arrayBuffer())))
       .forEach(([n, b]) => { files[`pages/${n}`] = b; });
     const doc = new DOMParser().parseFromString(await renderClean(), 'text/html');
-    await inlineEverything(doc);
+    const inl = await inlineEverything(doc, { fonts: true, scripts: true });
     files[`${slug}.html`] = strToU8('<!DOCTYPE html>\n' + doc.documentElement.outerHTML);
+    // Faces whose bytes inlineWebFonts already holds, plus any @font-face still
+    // pointing at a URL (fetched here, as before).
     const css = [...doc.querySelectorAll('style')].map(n => n.textContent).join('\n');
-    const faces = fontFaces(css);
+    const faces = [...inl.fonts, ...fontFaces(css)];
     let fontCss = '', got = 0;
     const names = new Set();
     for (const [i, f] of faces.entries()) {
       const ext = (/\.(woff2?|ttf|otf)(\?|$)/i.exec(f.url) || [, 'woff2'])[1].toLowerCase();
-      let n = `${f.family.replace(/[^A-Za-z0-9]+/g, '-')}-${f.weight.replace(/\s+/g, '_')}${f.style === 'italic' ? '-italic' : ''}`;
+      let n = `${f.family.replace(/[^A-Za-z0-9]+/g, '-')}-${f.weight.replace(/\s+/g, '_')}${f.style === 'italic' ? '-italic' : ''}${f.subset ? '-' + f.subset : ''}`;
       if (names.has(n)) n += `-${i}`;
       names.add(n);
       try {
-        const r = await fetch(f.url);
-        if (!r.ok) continue;
-        files[`fonts/${n}.${ext}`] = new Uint8Array(await r.arrayBuffer());
+        const bytes = f.bytes || new Uint8Array(await (await fetch(f.url)).arrayBuffer());
+        if (!bytes.length) continue;
+        files[`fonts/${n}.${ext}`] = bytes;
         fontCss += f.rule.replace(f.url, `${n}.${ext}`) + '\n';
         got++;
       } catch (e) { /* a font that will not download is named in the README */ }
     }
     if (fontCss) files['fonts/fonts.css'] = strToU8(fontCss);
     const fams = [...new Set(faces.map(f => f.family))];
+    const fontNote = inl.fontsLinked.length
+      ? `Fonts NOT embedded: ${inl.fontsLinked.length} Google Fonts stylesheet${inl.fontsLinked.length === 1 ? '' : 's'} could not be fetched, so the HTML still links ${inl.fontsLinked.length === 1 ? 'it' : 'them'} (it needs a connection to show those fonts).`
+      : (inl.fonts.length ? 'Fonts: embedded in the HTML as woff2 (latin and latin-ext subsets), and in fonts/.' : '');
+    const scriptNote = inl.scriptsLeft.length
+      ? `Scripts still loaded from elsewhere: ${inl.scriptsLeft.join(', ')}.`
+      : (inl.scriptsInlined ? `${inl.scriptsInlined} script${inl.scriptsInlined === 1 ? '' : 's'} inlined into the HTML.` : '');
     files['README.txt'] = strToU8([
       `${slug} — package from the draft editor, ${new Date().toISOString().slice(0, 10)}`, '',
       `${slug}.pdf          the report as printed`,
@@ -31900,9 +31989,15 @@ async function exportPackage() {
       'fonts/               the font files the report loads, and fonts.css pointing at them',
       '', 'Fonts: ' + (fams.join(', ') || 'none beyond the system\'s'),
       `${got} of ${faces.length} font file${faces.length === 1 ? '' : 's'} included.`,
+      ...(fontNote ? [fontNote] : []), ...(scriptNote ? [scriptNote] : []),
       'The Google Fonts used here are under the SIL Open Font License; check any other font\'s licence before passing it on.',
     ].join('\n') + '\n');
     saveBlob(new Blob([zipSync(files, { level: 6 })], { type: 'application/zip' }), `${slug}-package.zip`);
+    // Said in the status line too, not only the README: a fallback is a decision
+    // the person should see without opening the zip.
+    $('stat').textContent += ` — ${got} font file${got === 1 ? '' : 's'} embedded`
+      + (inl.fontsLinked.length ? `; fonts LINKED, not embedded (could not fetch ${inl.fontsLinked.length})` : '')
+      + (inl.scriptsLeft.length ? '; a script is still external' : '');
   } catch (e) { $('stat').textContent = 'package failed: ' + e.message; }
 }
 
@@ -33078,7 +33173,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       // specifically, rather than at whichever tab claims first.
       tab: PILOT_TAB,
       page: { w: PAGE_W_IN, h: PAGE_H_IN,
-              pageless: !!(layout.page && layout.page.h == null) },
+              pageless: isPageless() },
       overflow: [...new Set(lastFit.map(b => b.page))],
       selected: [...selIds], selectedPage: selPage,
       // Live collaboration, when this project has a relay: status is one of
@@ -34067,7 +34162,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       items.push({ id, page: pg ? pg.dataset.page : null, b: m });
     });
     const tol = 0.05;
-    const pageH = (layout.page && layout.page.h === null) ? Infinity : PAGE_H_IN;
+    const pageH = isPageless() ? Infinity : PAGE_H_IN;
     items.forEach(({ id, page, b }) => {
       if (b.x < -tol || b.y < -tol
           || b.x + b.w > PAGE_W_IN + tol || b.y + b.h > pageH + tol)
