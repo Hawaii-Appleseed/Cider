@@ -153,9 +153,15 @@ test.beforeAll(async ({ browser: b_ }) => {
   execFileSync('python3', ['-m', 'docsync.hub', '--into', HUB_DIR], { cwd: REPO, stdio: 'inherit' });
   const { startDev } = await import('../../collab/devserver.mjs');
   const { startPages } = await import('../../collab/hub-check.mjs');
-  relay = await startDev({ port: RELAY_PORT });
+  // A name of its own: the hub finds the relay through wrangler's local dev
+  // registry BY NAME, and every relay boots as "primer-collab" - so with a
+  // second one running (this file in another worker, collab.spec's relay) the
+  // hub's room binding went to whichever registered last, and two editors
+  // saw four peers, a stranger's versions, someone else's room.
+  const relayName = `primer-collab-hub-${RELAY_PORT}`;
+  relay = await startDev({ port: RELAY_PORT, name: relayName });
   try {
-    pages = await startPages({ port: HUB_PORT, hubDir: HUB_DIR });
+    pages = await startPages({ port: HUB_PORT, hubDir: HUB_DIR, relayName });
   } catch (e) { await relay.stop(); throw e; }
   proxies.push(await identityProxy(ADA, ADA_PORT), await identityProxy(GRACE, GRACE_PORT));
   ({ ctx: ctxA, page: a } = await open(browser, ADA_PORT));
