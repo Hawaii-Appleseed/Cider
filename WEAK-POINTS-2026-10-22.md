@@ -277,12 +277,11 @@ on a scratch repo with no identity.)
   finds no `@font-face`. The self-contained primer HTML also links
   `primer.js` relatively. Both are `exportPackage`/`inlineEverything`
   work with a design question (ship woff2 or keep the link).
-- **Find never looks at the sources list** (`findTargets` takes only
-  slots with a `[data-slot]` in the DOM; `sources` has none), so a
-  source title or URL gets "Nothing found", and renaming a citation
-  renames the prose token but not its `[id]:` line. "Show me" scrolls to
-  a slot but highlights nothing; hits in cells and boxes are not
-  clickable. Worth its own pass with the Find panel's owner.
+- ~~**Find never looks at the sources list**~~ Fixed: `findTargets` adds a
+  `sources` target, so source titles/URLs are found and a citation rename
+  renames its `[id]:` line; "Show me" now highlights the place (and opens the
+  sources manager for a source hit); box and cell hits are clickable.
+  (tests/editor/find-sources.spec.js)
 - **The report template never uses the typed title** ("YOUR REPORT
   TITLE HERE", footers "YOUR REPORT"); the typed name goes only to
   `[[title]]` and the window. `docsync/templates` + `new.create()`.

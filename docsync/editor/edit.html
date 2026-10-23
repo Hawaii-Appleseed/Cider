@@ -11208,6 +11208,14 @@ function findTargets() {
         read: () => readSlot(k), write: v => writeSlot(k, v) });
     });
   }
+  // The citation list is a slot with no [data-slot] on the page (it renders as
+  // the endnotes, or nowhere), so the DOM walk above never met it: a source's
+  // title or URL gave "Nothing found", and renaming a citation id renamed the
+  // [^id] tokens in the words but left its "[id]:" line behind.
+  if (/^\[\[sources\]\]/m.test(source) && !out.some(t => t.key === 'sources')) {
+    out.push({ kind: 'slot', key: 'sources', label: 'sources', use: () => undefined,
+      read: () => readSlot('sources'), write: v => writeSlot('sources', v) });
+  }
   (layout.boxes || []).forEach(b => out.push({
     kind: 'box', key: b.id, label: b.id, use: () => (b.style || {}).use,
     read: () => b.md || '', write: v => { b.md = fixOkina(v); },
@@ -11218,8 +11226,46 @@ function findTargets() {
       use: () => (t.style || {}).use,
       read: () => String(t.rows[r][c] ?? ''),
       write: v => { t.rows[r][c] = fixOkina(v); },
+      cellAt: [t.id, r, c],
     }))));
   return out;
+}
+
+/** The node on the page a Find target lives in, or null (the sources list has none). */
+function findElOf(t) {
+  const d = $('out').contentDocument;
+  if (!d) return null;
+  const q = id => d.querySelector(`[data-el="${CSS.escape(id)}"]`);
+  if (t.kind === 'slot') return d.querySelector(`[data-slot="${CSS.escape(t.key)}"]`);
+  if (t.kind === 'box') return q('text.' + t.key) || q(t.key);
+  if (t.kind === 'cell') {
+    const [id, r, c] = t.cellAt;
+    const tbl = q('table.' + id) || q(id);
+    const tr = tbl && (tbl.matches('table') ? tbl : tbl.querySelector('table'));
+    const row = tr && tr.rows[r];
+    return (row && row.cells[c]) || tbl;
+  }
+  return null;
+}
+/** Scroll to a hit's place and make it show: a bare scroll left the person
+ *  hunting for which of a page's paragraphs was meant. */
+function findShow(t) {
+  if (t.key === 'sources') { openSources(); return; }
+  const el = findElOf(t);
+  if (!el) { $('stat').textContent = `${t.label} is not on a page right now`; return; }
+  jumpTo(el, 'center');
+  const d = el.ownerDocument;
+  d.querySelectorAll('[data-find-flash]').forEach(n => {
+    n.removeAttribute('data-find-flash'); n.style.outline = n.dataset.findWas || ''; delete n.dataset.findWas;
+  });
+  el.dataset.findWas = el.style.outline;
+  el.setAttribute('data-find-flash', '');
+  el.style.outline = '3px solid #E8A317';
+  setTimeout(() => {
+    if (el.hasAttribute('data-find-flash')) {
+      el.removeAttribute('data-find-flash'); el.style.outline = el.dataset.findWas || ''; delete el.dataset.findWas;
+    }
+  }, 2200);
 }
 
 const findRe = (needle, { cased, whole, grep }) => {
@@ -11474,15 +11520,9 @@ function paintFindList() {
       b.textContent = h.hit;
       p.append(document.createTextNode(h.before), b,
         document.createTextNode(h.after));
-      if (h.target.kind === 'slot') {
-        p.classList.add('find-go');
-        p.title = 'Show me';
-        p.addEventListener('click', () => {
-          const d = $('out').contentDocument;
-          const el = d && d.querySelector(`[data-slot="${CSS.escape(h.target.key)}"]`);
-          if (el) jumpTo(el, 'center');
-        });
-      }
+      p.classList.add('find-go');
+      p.title = 'Show me';
+      p.addEventListener('click', () => findShow(h.target));
       g.appendChild(p);
     });
     list.appendChild(g);
