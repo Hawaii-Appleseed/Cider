@@ -29,7 +29,7 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { test, expect, waitForFirstRender, openFileMenu, openShare } = require('./fixtures/editor-test');
+const { test, expect, waitForFirstRender, openFileMenu, openShare, clickAddSection, fillDialog, submitDialog } = require('./fixtures/editor-test');
 const { claimPort } = require('./fixtures/ports');
 // Pyodide arrives once per run from disk, not once per context from the CDN
 // (fixtures/pyodide-cache.js): this spec opens a context per person and per
@@ -1947,9 +1947,15 @@ test('restore: the confirm names a paragraph a colleague added since the saved v
   const hist = await versions();
   const target = hist.length - 1;                 // the oldest: it has no such paragraph
   // Grace adds a section and does not Save; it reaches Ada's editor through the room.
-  const r = await b.evaluate(`docsync.api.addSection('basics', 'added-by-grace', 'Grace wrote this after the last Save.')`);
-  const key = 'extra.basics.added-by-grace';
-  expect(JSON.stringify(r)).toContain(key);
+  // The way a person does: + Section, a page and a short name, then Escape out of the
+  // inline editor the new section opens in.
+  await clickAddSection(b);
+  await fillDialog(b, { page: 'page1', slug: 'added-by-grace' });
+  await submitDialog(b);
+  await b.frameLocator('#out').locator('.ds-edit').waitFor({ state: 'visible' });
+  await b.keyboard.press('Escape');
+  const key = 'extra.page1.added-by-grace';
+  await expect.poll(() => b.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(true);
   await expect.poll(() => a.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(true);
   await a.locator('#history').click();
   await expect(historyRows(a).nth(target)).toBeVisible({ timeout: 10_000 });
