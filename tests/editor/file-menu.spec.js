@@ -266,7 +266,7 @@ test.describe('File ▸ Open', () => {
     await openFileMenu(page);
     await page.click('#file-open');
     await expect(page.locator('#openpop')).toBeVisible();
-    const items = page.locator('#open-list button');
+    const items = page.locator('#open-list button[data-open]');
     expect(await items.count()).toBeGreaterThan(0);
     await expect(page.locator('#open-list button[aria-current="true"]')).toHaveCount(1);
   });
@@ -275,7 +275,7 @@ test.describe('File ▸ Open', () => {
     await gotoEditor(page);
     await openFileMenu(page);
     await page.click('#file-open');
-    const other = page.locator('#open-list button:not([aria-current="true"])').first();
+    const other = page.locator('#open-list button[data-open]:not([aria-current="true"])').first();
     test.skip(await other.count() === 0, 'only one report registered on this server');
     const id = await other.getAttribute('data-open');
     await other.click();

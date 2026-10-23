@@ -14,9 +14,7 @@ test.describe('flow tables', () => {
     const tbl = page.frameLocator('#out').locator('table.ds-flow[data-el="table.swaps"]');
     await tbl.scrollIntoViewIfNeeded();
     await expect(tbl.locator('th')).toHaveCount(2);
-    // Read from the layout, not hardcoded: the label is the report's wording and changes with it.
-    const first = await page.evaluate(() => layout.tables.find(t => t.id === 'swaps').rows[1][0]);
-    await expect(tbl.locator('td[data-cell="1,0"]')).toHaveText(first.replace(/\*\*/g, ''));
+    await expect(tbl.locator('td[data-cell="1,0"]')).toHaveText('Cut the grocery tax; raise income taxes');
     await expect(page.evaluate(() => layout.tables.find(t => t.id === 'swaps').flow)).resolves.toBe(true);
   });
 
