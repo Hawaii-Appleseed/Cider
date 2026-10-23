@@ -26227,11 +26227,15 @@ function makeEndnotesSection() {
  *  clamp that used it let a box be put 175 inches below the last line — drawn
  *  past the end of a sheet that is overflow:hidden, so gone: place() and
  *  paste did it by the pilot's hand, a handle drag past the bottom by the
- *  person's. The drawn sheet is the limit. */
+ *  person's. The drawn sheet (plus an inch of give) is the limit. */
+const PAGELESS_GIVE_IN = 1;
 function pageBottomIn(page) {
   if (!isPageless() || !page || !page.getBoundingClientRect) return PAGE_H_IN;
   const h = page.getBoundingClientRect().height / (DPI * zoomOf(page));
-  return h > 0.5 ? Math.min(PAGE_H_IN, h) : PAGE_H_IN;
+  // An inch of give past the drawn end: a web-page report's last card is moved
+  // and nudged down like any other (the sweep and arrange.spec do), and the
+  // sheet follows what flows. Farther than that is a box nobody will find.
+  return h > 0.5 ? Math.min(PAGE_H_IN, h + PAGELESS_GIVE_IN) : PAGE_H_IN;
 }
 /** True when this document is one continuous sheet rather than pages. */
 const isPageless = () =>
