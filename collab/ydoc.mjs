@@ -268,3 +268,60 @@ export function writeFiles(ydoc, files) {
 export function checkY(ydoc) {
   return assertWellFormed(docFromY(ydoc));
 }
+
+/* ------------------------------------------------------- a restore as a diff */
+
+/** One level of the 3-way rule: a key the restored copy leaves as it was in
+ *  the base keeps whatever the room holds now (including "gone"); a key it
+ *  changed takes the restored value; a key only the room has (added since the
+ *  base) stays. */
+function mergeKeys(base, restored, current) {
+  const out = {};
+  for (const k of Object.keys(restored)) {
+    if (k in base && deepEqual(restored[k], base[k])) { if (k in current) out[k] = current[k]; }
+    else out[k] = restored[k];
+  }
+  for (const k of Object.keys(current)) if (!(k in restored) && !(k in base)) out[k] = current[k];
+  return out;
+}
+
+/**
+ * A restore as a per-slot diff. `base` is the version the restore goes on top
+ * of (what everyone's "saved" is), `restored` the version being brought back,
+ * `current` what the editor shows now (base plus whatever people have typed
+ * and not saved). Every slot the restored copy does NOT change relative to
+ * the base keeps its current words; every slot it changes takes the restored
+ * words: the restore wins where the two meet. Layout the same way, key by
+ * key and one level into positions / sections / and the like. Slots only the
+ * room added since the base are not carried (they have no place in the
+ * restored order).
+ *
+ * @param {{content: string, layout: string|object}} base
+ * @returns {{content: string, layout: object, kept: string[], taken: string[]}}
+ *   kept/taken: slot keys whose current words survived / were replaced
+ */
+export function mergeRestore(base, restored, current) {
+  const B = parseContent(base.content), R = parseContent(restored.content), C = parseContent(current.content);
+  const slotOf = (doc, key) => doc.blocks.find(b => b.kind === 'slot' && b.key === key);
+  const kept = [], taken = [];
+  const blocks = R.blocks.map(b => {
+    if (b.kind !== 'slot') return b;
+    const was = slotOf(B, b.key), now = slotOf(C, b.key);
+    if (was && now && was.text === b.text) {
+      if (now.text !== b.text) kept.push(b.key);
+      return { ...b, text: now.text };
+    }
+    if (was && now && now.text !== was.text && now.text !== b.text) taken.push(b.key);   // unsaved words, in a slot the restore changes
+    return b;
+  });
+  const lay = v => normalizeLayout(layoutObject(v));
+  const lb = lay(base.layout), lr = lay(restored.layout), lc = lay(current.layout);
+  const layout = {};
+  for (const k of Object.keys(lr)) {
+    if (k in lb && deepEqual(lr[k], lb[k])) { if (k in lc) layout[k] = lc[k]; }
+    else if (isObj(lr[k]) && isObj(lb[k]) && isObj(lc[k])) layout[k] = mergeKeys(lb[k], lr[k], lc[k]);
+    else layout[k] = lr[k];
+  }
+  for (const k of Object.keys(lc)) if (!(k in lr) && !(k in lb)) layout[k] = lc[k];
+  return { content: serializeContent({ preamble: R.preamble, blocks }), layout, kept, taken };
+}

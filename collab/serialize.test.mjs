@@ -308,3 +308,30 @@ describe('refusals and edge cases', () => {
     assert.ok(serializeLayout(o).endsWith('}\n'));
   });
 });
+
+describe('mergeRestore: a restore as a per-slot diff', async () => {
+  const { mergeRestore } = await import('./ydoc.mjs');
+  const doc = (a, b) => `[[a]]\n${a}\n\n[[b]]\n${b}\n`;
+  const lay = p => JSON.stringify({ positions: p, shapes: [], sections: {} });
+  test('a slot the restore leaves alone keeps current words; a changed one takes the restored', () => {
+    const m = mergeRestore(
+      { content: doc('A0', 'B0'), layout: lay({ x: 1, y: 1 }) },
+      { content: doc('A1', 'B0'), layout: lay({ x: 1, y: 1 }) },
+      { content: doc('A0', 'B-typed'), layout: lay({ x: 1, y: 1 }) });
+    assert.equal(m.content, doc('A1', 'B-typed'));
+    assert.deepEqual(m.kept, ['b']); assert.deepEqual(m.taken, []);
+  });
+  test('unsaved words in a slot the restore changes are replaced and reported', () => {
+    const m = mergeRestore(
+      { content: doc('A0', 'B0'), layout: lay({}) }, { content: doc('A1', 'B0'), layout: lay({}) },
+      { content: doc('A-typed', 'B0'), layout: lay({}) });
+    assert.equal(m.content, doc('A1', 'B0')); assert.deepEqual(m.taken, ['a']);
+  });
+  test('layout is merged key by key', () => {
+    const m = mergeRestore(
+      { content: doc('A', 'B'), layout: lay({ p: { x: 1 }, q: { x: 1 } }) },
+      { content: doc('A', 'B'), layout: lay({ p: { x: 9 }, q: { x: 1 } }) },
+      { content: doc('A', 'B'), layout: lay({ p: { x: 1 }, q: { x: 5 } }) });
+    assert.deepEqual(m.layout.positions, { p: { x: 9 }, q: { x: 5 } });
+  });
+});

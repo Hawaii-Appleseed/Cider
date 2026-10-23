@@ -66,9 +66,9 @@ export const ORIGIN = Object.freeze({
 // The bridge lives in ../ydoc.mjs so the room can use it too; re-exported
 // here because the editor bundle and the tests import it from this module.
 import {
-  deepEqual, toY, docFromY, filesFromY, applyText, syncMap, syncArray, syncBlocks, writeFiles, checkY,
+  deepEqual, toY, docFromY, filesFromY, applyText, syncMap, syncArray, syncBlocks, writeFiles, checkY, mergeRestore,
 } from '../ydoc.mjs';
-export { deepEqual, toY, docFromY, filesFromY, applyText, syncMap, syncArray, syncBlocks, writeFiles, checkY };
+export { deepEqual, toY, docFromY, filesFromY, applyText, syncMap, syncArray, syncBlocks, writeFiles, checkY, mergeRestore };
 
 /* ------------------------------------------------------------- presence */
 
@@ -110,6 +110,7 @@ function peerOf(clientId, st) {
     boxes: Array.isArray(st.boxes) ? st.boxes : [],  // [{id,x,y,w,h}] in inches: where they are moving something TO
     agent: st.agent ?? null,    // {by, what, target}: an AI is editing THROUGH this editor right now
     comments: st.comments ?? null,  // when this editor last changed the document's comments (a stamp)
+    unsaved: !!st.unsaved,      // this editor wrote words into the room that no Save has recorded yet
   };
 }
 
@@ -228,6 +229,7 @@ export class CollabSession {
     // setBaseSha() is META origin and the editor already knows about it.
     this.shadow.getMap('meta').observe((ev, tr) => {
       if (tr.origin === ORIGIN.REMOTE && ev.keysChanged.has('baseSha')) {
+        this.#wrote = false;   // somebody's Save or restore now holds what the room held
         const m = this.shadow.getMap('meta');
         const restored = m.get('restored') != null && m.get('restored') === m.get('baseSha');
         if (restored) this.undoManager.clear();
@@ -326,6 +328,7 @@ export class CollabSession {
   #unwatch = [];             // teardown for the DOM listeners, run by close()
   #readyRes; #readyRej;
   #lastEmitted = null;
+  #wrote = false;            // this editor wrote into the room since the last recorded Save (rides presence as `unsaved`)
   #localSinceEmit = false;   // the editor moved the shadow since it was last handed the document
 
   /* ----------------------------------------------------------- presence */
@@ -340,7 +343,8 @@ export class CollabSession {
     const next = { sel: p.sel || [], page: p.page ?? null, slot: p.slot ?? null, drag: !!p.drag,
                    cursor: p.cursor ?? null, anchor: p.anchor ?? null, view: p.view ?? null,
                    idle: !!p.idle, boxes: p.boxes || [],
-                   agent: p.agent ?? null, comments: p.comments ?? null };
+                   agent: p.agent ?? null, comments: p.comments ?? null,
+                   unsaved: this.#wrote };
     const sig = JSON.stringify(next);
     // Nothing moved at all, which is the common case four times a second: no
     // second serialisation, and nothing below it can have changed either.
@@ -349,7 +353,7 @@ export class CollabSession {
     // Something moved — but WHAT? `idle` is the editor's own verdict about
     // inactivity, and counting its arrival as activity would reset the very
     // timer it is reporting on. So the activity signal is everything else.
-    const { idle: _away, ...doing } = next;
+    const { idle: _away, unsaved: _unsaved, ...doing } = next;
     const input = JSON.stringify(doing);
     if (input !== this.#lastInput) { this.#lastInput = input; this.#touch(); }
     const aw = this.provider.awareness;
@@ -537,7 +541,7 @@ export class CollabSession {
     if (this.state.phase !== 'ready') return false;
     let changed = false;
     this.shadow.transact(() => { changed = writeFiles(this.shadow, files); }, ORIGIN.LOCAL);
-    if (changed) { this.#localSinceEmit = true; this.#touch(); }
+    if (changed) { this.#localSinceEmit = true; this.#wrote = true; this.#touch(); }
     if (changed && this.debug) checkY(this.shadow);
     return changed;
   }
@@ -588,7 +592,16 @@ export class CollabSession {
   redo() { this.undoManager.redo(); return this.files(); }
 
   baseSha() { return this.shadow.getMap('meta').get('baseSha') ?? null; }
+  /** A restore as a per-slot diff against what the editor shows (see ydoc.mjs). */
+  mergeRestore(base, restored, current) { return mergeRestore(base, restored, current); }
+
+  /** Who (other than us) has written words no Save has recorded: the peers
+   *  whose presence says `unsaved`. Asked of the room's awareness, not of any
+   *  editor's own notion of dirty (which every editor shares once words land). */
+  unsavedPeers() { return (this.peers || []).filter(p => p.unsaved); }
+
   setBaseSha(sha, info) {
+    this.#wrote = false;
     this.shadow.transact(() => {
       const m = this.shadow.getMap('meta');
       m.set('baseSha', sha || null);

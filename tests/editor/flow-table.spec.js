@@ -14,7 +14,7 @@ test.describe('flow tables', () => {
     const tbl = page.frameLocator('#out').locator('table.ds-flow[data-el="table.swaps"]');
     await tbl.scrollIntoViewIfNeeded();
     await expect(tbl.locator('th')).toHaveCount(2);
-    await expect(tbl.locator('td[data-cell="1,0"]')).toHaveText('No GET on groceries');
+    await expect(tbl.locator('td[data-cell="1,0"]')).toHaveText('Cut the grocery tax; raise income taxes');
     await expect(page.evaluate(() => layout.tables.find(t => t.id === 'swaps').flow)).resolves.toBe(true);
   });
 
