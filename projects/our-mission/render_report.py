@@ -26,7 +26,7 @@ _LAYOUT = Path(os.environ.get("DOCSYNC_LAYOUT") or (HERE / "layout.json"))
 _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
 _OUT = Path(os.environ.get("DOCSYNC_OUT") or (HERE / "index.html"))
 
-L = Layout(_LAYOUT, page=(12.5, 160.0))
+L = Layout(_LAYOUT, page=(12.5, None))
 C = Content(_CONTENT, styles=L)
 
 EDIT = bool(os.environ.get("DOCSYNC_EDIT"))
@@ -141,7 +141,7 @@ html = f"""<!DOCTYPE html>
 <style>
 {OKINA_FACES}
   body {{ margin:0; background:#EDF1EE; }}
-  .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
+  .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}{FLOOR_CSS}{FIVE_CSS}
   {EDIT_CSS}

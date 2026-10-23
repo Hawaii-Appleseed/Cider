@@ -44,7 +44,7 @@ _CONTENT = Path(os.environ.get("DOCSYNC_CONTENT") or (HERE / "content.md"))
 _OUT = Path(os.environ.get("DOCSYNC_OUT") or (HERE / "index.html"))
 EDIT = bool(os.environ.get("DOCSYNC_EDIT"))
 
-L = Layout(_LAYOUT, page=(12.5, 84))    # ~1200px wide (matches the editor's own
+L = Layout(_LAYOUT, page=(12.5, None))    # ~1200px wide (matches the editor's own
                                         # canvas width) x tall enough for the
                                         # page's natural content height (~82in;
                                         # content ends ~7885px at 96dpi) plus a
@@ -584,8 +584,9 @@ MODERN_CSS = """
     .rxk-tabs, .rxk-next, .rxk-sources-bar .tfc-expand-icon { display: none !important; }
     .tfc-expand-content { max-height: none !important; overflow: visible !important; }
     .tfc-reveal { opacity: 1 !important; transform: none !important; }
-    .rxk-panel { animation: none !important; break-before: page; }
-    .rxk-panel:first-of-type { break-before: auto; }
+    /* Pageless (one continuous sheet): the tabs stack in order with no forced
+       page break between them. */
+    .rxk-panel { animation: none !important; }
     .tfc-full-width { break-inside: avoid; }
   }
 
@@ -1736,7 +1737,7 @@ html = f"""<!DOCTYPE html>
 <style>
 {OKINA_FACES}
   body {{ margin:0; background:#EDF1EE; }}
-  .page {{ width:{L.page_w}in; min-height:{L.page_h}in; margin:0 auto;
+  .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}
   {BRAND_CSS}

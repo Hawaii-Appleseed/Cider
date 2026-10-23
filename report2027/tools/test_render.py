@@ -195,6 +195,30 @@ def main():
     if (only.count("data-ds-skip class=\"page") != 2 or only.count('<section class="page"') != 2
             or "section.page[data-ds-skip]{display:none" not in only.split("</head>")[0]):
         FAILS.append("_only_pages should hide pages 1 and 4 and keep 2 and 3:\n" + only)
+    # Pageless reports (`@page{size:12.5in auto}`): Chrome ignores the auto, so
+    # the export measures the sheet and prints it as ONE page of its own size.
+    pl = ('<html><head><style>@page{size:12.5in auto;margin:0}body{margin:0}'
+          '.page{width:12.5in;min-height:0}</style></head><body>'
+          '<section class="page"><div style="height:30in;background:#eee"></div></section></body></html>')
+    if _sv._pageless_width_in(pl) != 12.5 or _sv._pageless_width_in(html) is not None:
+        FAILS.append("_pageless_width_in should read 12.5 from `@page{size:12.5in auto` and None for a paged report")
+    if "data-ds-pageless" not in _sv._size_pageless(pl) or _sv._size_pageless(html) != html:
+        FAILS.append("_size_pageless should add its script to a pageless export and leave a paged one alone")
+    if os.path.exists(_sv.CHROME):
+        import re as _re2, tempfile as _tf2
+        _p = Path(_tf2.mkdtemp()) / "pl.html"
+        _p.write_text(pl)
+        try:
+            _pdf = _sv._warm_pdf(_p, 1200)
+        finally:
+            if _sv.WARM_CHROME[0] is not None:
+                _sv.WARM_CHROME[0].close()
+                _sv.WARM_CHROME[0] = None
+        _n = len(_re2.findall(rb"/Type\s*/Page\b", _pdf or b""))
+        _box = _re2.findall(rb"/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)", _pdf or b"")
+        if _n != 1 or not _box or abs(float(_box[0][0]) - 900) > 1 or not 2150 < float(_box[0][1]) < 2200:
+            FAILS.append(f"a pageless export should be ONE 900pt-wide sheet as tall as its 30in content "
+                         f"(~2160pt); got {_n} page(s), box {_box[:1]}")
     alone = _sv._page_alone(html, 3)
     if (alone.count("data-ds-skip class=\"page") != 3 or "body>:not(section.page):not(:has(section.page))" not in alone
             or alone.index("section.page{margin:0") > alone.index("</head>")):
