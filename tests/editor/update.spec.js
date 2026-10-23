@@ -88,20 +88,34 @@ test.describe('version and updates', () => {
     // The server restarts into the new code, so it goes away and comes back.
     // Reloading into that gap shows a browser error page, which reads as "the
     // update broke it" — so the client must wait for a live answer first.
-    let down = true;
+    //
+    // The outage is counted in refused pings, not timed: a wall-clock window
+    // (it was 1.5s from the install POST) is what made this flaky, because a
+    // slow shard could let the whole window pass before the client's first
+    // poll and a fast one let the reload land while the next ping was still
+    // being aborted. Three refusals, then the server answers, however long
+    // that takes. And the reload is witnessed by a marker that only the OLD
+    // document carries, not by waitForNavigation, which is a race against the
+    // very navigation it is waiting for and says nothing about WHICH
+    // document it saw.
+    let refusals = 0, restarted = false;
     await context.route(UPDATE, route => {
+      restarted = true;
       route.fulfill({ json: { ok: true, restarting: true, sha: 'def5678' } });
-      setTimeout(() => { down = false; }, 1500);
     });
     await context.unroute(PING).catch(() => {});
-    await context.route(PING, route => down
-      ? route.abort()
-      : route.fulfill({ json: { ok: true, v: 90010, ahead: 0, update: { sha: 'def5678', behind: 0, can: false } } }));
+    await context.route(PING, route => (restarted && refusals < 3)
+      ? (refusals++, route.abort())
+      : route.fulfill({ json: restarted
+          ? { ok: true, v: 90010, ahead: 0, update: { sha: 'def5678', behind: 0, can: false } }
+          : { ok: true, v: 90010, ahead: 0, update: { sha: 'abc1234', date: '2026-07-26', behind: 1, can: true, log: ['editor: a fix'] } } }));
 
-    const reloaded = page.waitForNavigation({ timeout: 30000 });
+    await page.evaluate(() => { window.__oldDocument = true; });
     await upd(page).click();
     await expect(page.locator('#stat')).toContainText(/restarting/);
-    await reloaded;
+    // Gone from the page means the page was reloaded.
+    await page.waitForFunction(() => window.__oldDocument === undefined, null, { timeout: 30000 });
+    expect(refusals, 'the client saw the server down before it reloaded').toBe(3);
     // Back up on the new version — which the chip reports in its TOOLTIP now,
     // not as a sha sitting in the toolbar (see "the version chip stays out of
     // the way" below).
