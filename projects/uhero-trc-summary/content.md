@@ -368,6 +368,48 @@ Where Hawaiʻi's state tax money comes from, FY2025 (draft Table 1.1, p. 3)
 [[mix.desc]]
 Horizontal bar chart of shares of the 11.46 billion dollars in state tax collections in fiscal 2025: general excise and use tax 40.4 percent, individual income tax 28.7, hotel and rental tax 7.1, county GET surcharges 4.9, estate tax 3.5, corporate income tax 3.5, conveyance tax 0.8.
 
+[[cover.what.h]]
+What is this?
+
+[[cover.what.p]]
+UHERO was hired by the state Tax Review Commission (the body that reviews Hawaiʻi's tax system every five years and reports to the Legislature) to study that system. This is a draft, and the final report is due to the Commission on December 21, 2026.
+
+[[miss.h]]
+What is missing from the draft
+
+[[miss.b1]]
+**No swap has a revenue estimate yet,** because the draft says the estimates will appear in the final report (p. 158).
+
+[[miss.b2]]
+**No swap raises new money,** since all six are set to leave State General Fund revenue unchanged in 2027 (pp. 158, 161).
+
+[[miss.b3]]
+**The effect of people moving away is not scored yet,** because the model assumes that nobody moves in or out of Hawaiʻi, and the final report will add estimates (pp. 158, 162).
+
+[[miss.b4]]
+**A wealth tax is not among the swaps,** and UHERO considers an annual wealth tax unlikely to raise much revenue if Hawaiʻi acts alone (pp. 118, 128).
+
+[[miss.b5]]
+**Several sections are thin or open,** since real estate investment trusts (companies that own and lease property) receive one sentence, chapter 9 is a placeholder, and the pension exclusions have no cost estimate (pp. 50, 113, 157).
+
+[[adv.h]]
+Bottom line for advocates (the Coalition's view, not UHERO's)
+
+[[adv.b1]]
+**The Commission should ask for full estimates of the two swaps that lean toward lower earners** (taxing capital gains like regular income, and raising the top income-tax rate by one percentage point), showing both the revenue and who gains and loses at each income level (p. 161).
+
+[[adv.b2]]
+**Members of the public can weigh in** at the full Commission discussion on October 28, and written comments can be sent to **tax.research@hawaii.gov**.
+
+[[adv.b3]]
+**The Commission should also consider options that raise new revenue,** since every swap in the draft leaves the General Fund level (p. 158), and that revenue could help pay for tax credits for working families, school meals and rent relief.
+
+[[adv.foot]]
+**Source:** UHERO draft report, pp. 46, 50, 63, 113, 118, 128, 157–158, 161–162. The Coalition's views are labeled as such.
+
+[[cover.logo.desc]]
+Hawaiʻi Tax Fairness Coalition
+
 [[sources]]
 [uhero]: Dylan T. Moore (lead investigator), Nicholas Lacoste, Sumit Ilamkar and Timothy Malone, University of Hawaiʻi Economic Research Organization, On Hawaiʻi's Tax System, draft report prepared for the Hawaiʻi Tax Review Commission, October 6, 2026. — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf
 [uhero-swaps]: UHERO draft report, chapter 10, "Joint tax reforms: revenue and household effects," the six swaps (p. 161). — https://files.hawaii.gov/tax/stats/trc/docs2025/2026-10-08_UHERO_draft_report.pdf#page=163
