@@ -6,7 +6,9 @@
 #   tools/wt ls                        every worktree of both repos, with status
 #   tools/wt port [<name>]             the test port assigned to a Cider worktree
 #   tools/wt rm <name> [--hub] [--force]   remove a finished worktree and its branch
-#   tools/wt land <name>               Cider: push it, open its pull request, merge when the gate passes
+#   tools/wt land <name> [--check-only|--run-hub-spec|--skip-hub-spec]
+#                                      Cider: push it, open its pull request, merge when the gate passes
+#                                      (first runs collab-hub.spec.js locally if the branch touches the relay/sync code)
 #   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
 #   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
 #
@@ -294,17 +296,56 @@ $(echo "$others" | head -8 | sed 's/^/    /')"
 # The hub is not landed here: it ships by `git push origin <name>:main`, and its
 # tests decide whether production moves (its CLAUDE.md).
 
+# The hub spec (tests/editor/collab-hub.spec.js) skips itself on GitHub, which
+# has no hub checkout, so CI never runs it. Land gates it here instead: when the
+# branch touches the relay or sync code and the hub is checked out beside Cider
+# (or at PRIMER_HUB_DIR), run it before pushing; a failure refuses the landing.
+# Test hooks: WT_GATE_FILES (changed-file list, replaces the git diff),
+# WT_HUB_SPEC_CMD (replaces the playwright command).
+HUB_SPEC_PATHS='^(docsync/editor/|collab/|report2027/tools/serve\.py$|tests/editor/collab[^/]*\.spec\.js$)'
+
+hub_gate() {  # hub_gate <dir> <name> <mode: auto|force|skip>
+  local dir="$1" name="$2" mode="$3" files hub port
+  if [ "$mode" = skip ]; then
+    echo "!!!!!!!! --skip-hub-spec: collab-hub.spec.js NOT RUN, by explicit override. !!!!!!!!" >&2
+    return 0
+  fi
+  if [ "$mode" = auto ]; then
+    files="${WT_GATE_FILES-$(git -C "$dir" diff --name-only origin/main...HEAD)}"
+    printf '%s\n' "$files" | grep -Eq "$HUB_SPEC_PATHS" \
+      || { echo "Hub spec: not needed (branch touches no relay/sync code)."; return 0; }
+  fi
+  hub="${PRIMER_HUB_DIR:-$(cd "$dir/.." 2>/dev/null && pwd)/staff-updates-internal}"
+  if [ ! -d "$hub/functions/api/collab" ]; then
+    echo "Hub spec NOT RUN: no staff-updates-internal checkout at $(short "$hub") (set PRIMER_HUB_DIR); GitHub CI skips it too, so nothing has run it."
+    return 0
+  fi
+  [ -d "$dir/collab/node_modules" ] || { echo "Hub spec: npm ci --prefix collab ..."; npm ci --prefix "$dir/collab" >/dev/null 2>&1 \
+    || die "npm ci --prefix collab failed; fix it, or land with --skip-hub-spec"; }
+  port=$(alloc_port "cider:$name")
+  echo "Hub spec: running collab-hub.spec.js (hub $(short "$hub"), port $port, one retry) ..."
+  if (cd "$dir" && PRIMER_HUB_DIR="${PRIMER_HUB_DIR:-}" PRIMER_TEST_PORT="$port" \
+        ${WT_HUB_SPEC_CMD:-npx playwright test tests/editor/collab-hub.spec.js --retries=1}); then
+    echo "Hub spec: passed."
+  else
+    die "the hub spec FAILED, so '$name' is not landed. Fix it, or override once with: tools/wt land $name --skip-hub-spec"
+  fi
+}
+
 cmd_land() {
-  local name=""
+  local name="" hubmode=auto checkonly=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --hub) die "the hub ships by 'git push origin <name>:main' from its worktree, not by pull request (see its CLAUDE.md)" ;;
+      --skip-hub-spec) hubmode=skip ;;
+      --run-hub-spec) hubmode=force ;;
+      --check-only) checkonly=1 ;;
       -*) die "unknown option: $1" ;;
       *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
     esac
     shift
   done
-  [ -n "$name" ] || die "usage: wt land <name>"
+  [ -n "$name" ] || die "usage: wt land <name> [--check-only|--run-hub-spec|--skip-hub-spec]"
   local dir="$CIDER-$name" behind ahead url
   is_git "$dir" || die "no Cider worktree $(short "$dir")"
   [ "$(git -C "$dir" rev-parse --abbrev-ref HEAD)" = "$name" ] || die "$(short "$dir") is not on branch '$name'"
@@ -316,6 +357,9 @@ cmd_land() {
   [ "$behind" = 0 ] || die "'$name' is $behind commit(s) behind origin/main — rebase first: git -C $(short "$dir") rebase origin/main"
   ahead=$(git -C "$dir" rev-list --count origin/main..HEAD)
   [ "$ahead" -gt 0 ] || die "'$name' has nothing origin/main does not already have"
+
+  hub_gate "$dir" "$name" "$hubmode"
+  if [ "$checkonly" = 1 ]; then echo "--check-only: gate done, nothing pushed."; return 0; fi
 
   git -C "$dir" push -q origin "HEAD:refs/heads/$name" \
     || die "the push of '$name' was refused. If origin's '$name' is this branch from before a rebase:
