@@ -1,5 +1,7 @@
 // Find & Change reaches the sources list, renames a citation's [id]: line with
-// its [^id] tokens, and "Show me" highlights and works for boxes and cells
+// its [^id] tokens, "Show me" on a source hit jumps to its endnote on the page
+// (the manager only for a source nothing cites), and "Show me" highlights and
+// works for boxes and cells
 // (docsync/editor/edit.html findTargets / findShow; WEAK-POINTS-2026-10-22.md
 // "Found and left").
 const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
@@ -43,12 +45,45 @@ test.describe('Find & Change and the sources list', () => {
     expect(r.box).toContain('[^wf-renamed]');
   });
 
-  test('a source hit opens the sources manager', async ({ page }) => {
+  test('Show me on a cited source jumps to its endnote on the page and lights the words', async ({ page }) => {
     await gotoEditor(page);
-    await openFind(page, ID);
+    const frame = page.frameLocator('#out');
+    const title = await page.evaluate(() => parseSources().find(s => s.id === 'workforce-profile').text);
+    const word = title.split(/\s+/).find(w => /^[A-Za-z]{6,}$/.test(w));
+    expect(word).toBeTruthy();
+    await openFind(page, word);
+    const group = page.locator('#find-list .find-group', { hasText: 'sources' });
+    const row = group.locator('.find-hit').first();
+    await expect(row).toHaveClass(/find-go/);
+    const before = await page.evaluate(() => $('out').contentWindow.scrollY);
+    await row.click();
+    // The entry itself is the place, not the whole sources slot and not the manager.
+    const flashed = frame.locator('[data-find-flash]');
+    await expect(flashed).toHaveCount(1);
+    expect(await flashed.getAttribute('data-el')).toMatch(/^endnote\./);
+    await expect(page.locator('#srclist')).toHaveCount(0);
+    // The hit's words are what is lit, and the page scrolled to them.
+    await expect.poll(() => page.evaluate(() => {
+      const w = $('out').contentWindow;
+      const h = w.CSS.highlights.get('find-show');
+      return h ? [...h].map(r => r.toString()) : null;
+    })).toEqual([expect.stringMatching(new RegExp('^' + word + '$', 'i'))]);
+    await expect.poll(() => page.evaluate(() => $('out').contentWindow.scrollY)).not.toBe(before);
+  });
+
+  test('Show me on a source nothing cites opens the sources manager', async ({ page }) => {
+    await gotoEditor(page);
+    await page.evaluate(async () => {
+      pushHistory();
+      writeSlot('sources', readSlot('sources').trimEnd() + '\n[zz-uncited]: Cited nowhere yet — https://example.org/zqxuncited\n');
+      markDirty(); await render();
+    });
+    await settled(page);
+    await openFind(page, 'zqxuncited');
     const row = page.locator('#find-list .find-group', { hasText: 'sources' }).locator('.find-hit').first();
     await row.click();
     await expect(page.locator('#srclist')).toBeVisible();
+    await expect(page.frameLocator('#out').locator('[data-find-flash]')).toHaveCount(0);
   });
 });
 
