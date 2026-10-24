@@ -260,23 +260,19 @@ on a scratch repo with no identity.)
 
 ## Found and left
 
-- **Web-page reports export as mostly blank sheets** (export sweep):
-  our-mission (`page: [12.5, 160]`) renders `.page{min-height:160in}`, so
-  its PNG is 2400×16000 with content in the top fifth, its PDF eleven
-  letter pages of which eight are empty, 35MB because one image is
-  embedded per page; wfc-credits the same shape. rxkids/tfc/wfc PDFs are
-  a letter pagination of the mobile reflow (no `@page`), with cards cut
-  at breaks, and page ranges are refused ("the report has 1 page"). These
-  are the renderers' own `min-height:{page_h}in` and the bindings' sheet
-  sizes (`projects/*/render_report.py`, `docsync/scaffold.py:182`); the
-  fix is pageless bindings (`h: null`) and an `@page{size: W auto}` for
-  web pages — a change to four reports' renderers, outside an editor
-  audit.
-- **The package never includes fonts** ("0 of 0 font files"):
-  `inlineEverything` keeps Google Fonts as `<link>`s, so `fontFaces()`
-  finds no `@font-face`. The self-contained primer HTML also links
-  `primer.js` relatively. Both are `exportPackage`/`inlineEverything`
-  work with a design question (ship woff2 or keep the link).
+- ~~**Web-page reports export as mostly blank sheets**~~ Fixed (PR
+  `webpage-export`): the four are pageless bindings (`page: [12.5, null]`,
+  `@page{size:12.5in auto}`, the sheet measured and printed as one page);
+  the export carries its Google Fonts inline (`serve._inline_webfonts`,
+  cached under `~/.cider/fonts`) and the warm Chrome waits for
+  `document.fonts.ready`; tfc-2027-priorities and wfc-credits now load
+  Manrope/Poppins at all (wfc-credits' sheet also lacked the site's
+  `.ha-est` scope and rendered as unstyled Times); our-mission prints its
+  hero without the WebGL canvas hole and the blurred-shadow boxes. Pinned
+  by `report2027/tools/test_export_chrome.py` (one sheet, 12.5in, content
+  height, ≥90% of the text in the page's own faces).
+- ~~**The package never includes fonts**~~ Fixed in PR #26 (woff2 embedded
+  and in fonts/, primer.js inlined; `export-package.spec.js`).
 - ~~**Find never looks at the sources list**~~ Fixed: `findTargets` adds a
   `sources` target, so source titles/URLs are found and a citation rename
   renames its `[id]:` line; "Show me" now highlights the place (and opens the

@@ -259,6 +259,22 @@
       --morph:0;}
   }
   
+  @media print {
+    .ha-mission .ha-char{ opacity:1 !important; transform:none !important; --wght:700; transition:none; }
+    .ha-mission .ha-mark-wrap{ opacity:1 !important; transform:none !important; }
+    .ha-mission .ha-mark-canvas{ display:none !important; }
+    /* Solid ash, not the gradient: a background-clip:text gradient prints as
+       a faint box behind the words. */
+    .ha-mission .ha-hero h1 .ha-mark, .ha-mission .ha-hero h1 .ha-mark.is-webgl{
+      animation:none; background:none; color:var(--ha-ash); -webkit-text-fill-color:var(--ha-ash);
+    }
+    .ha-mission .ha-hero h1 .ha-char, .ha-mission .ha-hero-lead{ text-shadow:none; }
+    [class*="reveal"], [class*="fade"], [class*="animate"], [data-aos]{
+      opacity:1 !important; transform:none !important; visibility:visible !important;
+    }
+  }
+
+  
 </style>
 </head>
 <body>

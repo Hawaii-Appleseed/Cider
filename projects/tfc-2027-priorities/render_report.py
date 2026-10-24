@@ -383,6 +383,15 @@ BUCKET_CSS = """
 # the screen canvas is unchanged. (This once released .page to Letter and named
 # `@page{size:letter}`; the report is pageless now, so the sheet prints at its own
 # 12.5in width and Layout.page_style() sets `@page{size:12.5in auto}`.)
+# The page's stacks name Manrope and Poppins first and the original never
+# loaded either, so every reader without them installed — and every export —
+# got Helvetica. The faces are the brand's (hawaiiappleseed.org loads the same
+# two); linked from Google Fonts, which the export carries inline (serve.py
+# _inline_webfonts) so the PDF is set in them too.
+FONT_LINK = ('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800'
+             '&family=Poppins:wght@400;500;600;700&display=swap">')
+
 PRINT_CSS = """
 @media print {
   body { background:#fff; }
@@ -459,6 +468,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
+{FONT_LINK}
 <style>
   body {{ margin:0; background:#EDF1EE; }}
   .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;

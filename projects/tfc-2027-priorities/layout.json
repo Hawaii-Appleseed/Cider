@@ -3,5 +3,10 @@
   "shapes": [],
   "boxes": [],
   "tables": [],
-  "sections": {}
+  "sections": {},
+  "website": {
+    "site": "reports",
+    "slug": "tfc-2027-priorities",
+    "home": "hub"
+  }
 }

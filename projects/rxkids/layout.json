@@ -9,5 +9,10 @@
   },
   "shapes": [],
   "boxes": [],
-  "tables": []
+  "tables": [],
+  "website": {
+    "site": "reports",
+    "slug": "rxkids",
+    "home": "hub"
+  }
 }

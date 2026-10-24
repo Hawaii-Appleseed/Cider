@@ -130,11 +130,21 @@ bindings:
     # itself changes.
     watch:
       - projects/rxkids/assets/*.png
+    publish:
+      repo: Hawaii-Appleseed/reports
+      branch: main
+      home: hub
+      when: save
+      command: python3 -m docsync.website --id rxkids --write
+      paths: [rxkids]
+      message: "docs(site): RxKeiki page edited in Cider"
+      url: https://hawaii-appleseed.github.io/reports/rxkids/
     editor:
       dir: docs/rxkids
       render: projects/rxkids/render_report.py
       out: projects/rxkids/index.html
       layout: projects/rxkids/layout.json
+      assets: projects/rxkids/assets
       # Rx Kids Brand Standard Guidelines (July 2026) palette: navy text, red, blue,
       # green, orange, white — the swatches the editor offers for recolouring.
       palette: ["#10125A", "#EE303C", "#0083CA", "#00A84F", "#F7941D", "#FFC20E", "#AB3192", "#FFFFFF"]
@@ -230,11 +240,21 @@ bindings:
     build: python3 projects/our-mission/render_report.py
     outputs:
       - projects/our-mission/index.html
+    publish:
+      repo: Hawaii-Appleseed/reports
+      branch: main
+      home: hub
+      when: save
+      command: python3 -m docsync.website --id our-mission --write
+      paths: [our-mission]
+      message: "docs(site): Our Mission page edited in Cider"
+      url: https://hawaii-appleseed.github.io/reports/our-mission/
     editor:
       dir: docs/our-mission
       render: projects/our-mission/render_report.py
       out: projects/our-mission/index.html
       layout: projects/our-mission/layout.json
+      assets: projects/our-mission/assets
       palette: ["#FFFFFF", "#2F3E46", "#52796F", "#84A98C", "#CAD2C5", "#6E7A7E", "#354F52", "#F7F9F5"]
       page: [12.5, null]
       margins: [0.3, 0.3]
@@ -372,11 +392,21 @@ bindings:
     build: python3 projects/tfc-2027-priorities/render_report.py
     outputs:
       - projects/tfc-2027-priorities/index.html
+    publish:
+      repo: Hawaii-Appleseed/reports
+      branch: main
+      home: hub
+      when: save
+      command: python3 -m docsync.website --id tfc-2027-priorities --write
+      paths: [tfc-2027-priorities]
+      message: "docs(site): TFC 2027 priorities page edited in Cider"
+      url: https://hawaii-appleseed.github.io/reports/tfc-2027-priorities/
     editor:
       dir: docs/tfc-2027-priorities
       render: projects/tfc-2027-priorities/render_report.py
       out: projects/tfc-2027-priorities/index.html
       layout: projects/tfc-2027-priorities/layout.json
+      assets: projects/tfc-2027-priorities/assets
       palette: ["#52796F", "#FFFFFF", "#FBFCFA", "#222E33", "#5A6B6C", "#8A9899", "#DCE3DC", "#C3CEC5"]
       page: [12.5, null]
       margins: [0.3, 0.3]

@@ -120,6 +120,31 @@ if EDIT:
     BODY = re.sub(r'<script type="module">(?:(?!</script>).)*?from \'three\'.*?</script>', "", BODY,
                   count=1, flags=re.S)
 
+# On paper (File ▸ Export, the hub's PDF) the hero was a hole: the three.js
+# canvas that draws the "economic justice" mark over transparent words does not
+# print (a WebGL canvas prints blank), the per-letter unfold waits for a scroll
+# that never comes, and the blurred text-shadows under the hero type print as
+# grey rectangles (Skia rasterises a blurred shadow for PDF). So in print the
+# canvas is hidden and the words carry their own CSS gradient, every reveal is
+# at its end state, and the shadows are off. Print only: the screen page and
+# the editor keep the motion.
+PRINT_CSS = """
+  @media print {
+    .ha-mission .ha-char{ opacity:1 !important; transform:none !important; --wght:700; transition:none; }
+    .ha-mission .ha-mark-wrap{ opacity:1 !important; transform:none !important; }
+    .ha-mission .ha-mark-canvas{ display:none !important; }
+    /* Solid ash, not the gradient: a background-clip:text gradient prints as
+       a faint box behind the words. */
+    .ha-mission .ha-hero h1 .ha-mark, .ha-mission .ha-hero h1 .ha-mark.is-webgl{
+      animation:none; background:none; color:var(--ha-ash); -webkit-text-fill-color:var(--ha-ash);
+    }
+    .ha-mission .ha-hero h1 .ha-char, .ha-mission .ha-hero-lead{ text-shadow:none; }
+    [class*="reveal"], [class*="fade"], [class*="animate"], [data-aos]{
+      opacity:1 !important; transform:none !important; visibility:visible !important;
+    }
+  }
+"""
+
 # Every sheet, in order: this page, then any blank page added in the editor.
 # Going through L.page_order() plus L.pagemeta() is what lets the page strip
 # offer "+ Page" and reordering — the editor withholds both from a renderer
@@ -144,6 +169,7 @@ html = f"""<!DOCTYPE html>
   .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}{FLOOR_CSS}{FIVE_CSS}
+  {PRINT_CSS}
   {EDIT_CSS}
 </style>
 </head>
