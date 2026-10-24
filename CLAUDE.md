@@ -50,6 +50,15 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   person's session lands when its own person says so. A merge to main reaches
   every installed editor (`tools/selfupdate.py` pulls `origin/main` within
   about 20 minutes).
+  **`tests/editor/collab-hub.spec.js` never runs on GitHub**: there is no
+  `staff-updates-internal` checkout there, so it skips itself and reports green;
+  a CI skip is not a pass. `tools/wt land` runs it locally (one retry) before
+  pushing when the branch touches `docsync/editor/`, `collab/`,
+  `report2027/tools/serve.py` or `tests/editor/collab*.spec.js` and the hub is
+  beside the clone (or at `PRIMER_HUB_DIR`); a failure refuses the landing
+  (`--skip-hub-spec` overrides, loudly). No hub checkout: it says so in one line
+  and lands anyway. `tools/wt land <name> --check-only` runs just the gate;
+  `tools/test-land-gate.sh <name>` tests it.
 - An engine commit runs `.githooks/post-commit`, which vendors the engine into
   the consumers THIS machine names in `vendor.local.yml` (gitignored; Devin's
   names `~/BudgetPrimerFinal`). A fresh clone has none, so nothing happens.
