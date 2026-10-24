@@ -68,8 +68,14 @@ do not try these, make a token, or ask anyone for a key: stop and ask your
 person to ask Devin. Each one says so itself when the access is missing.
 
 - Shipping the editor or a report to the staff hub: `python3 -m docsync.hub
-  --into <hub worktree>` (its live-words check reads R2). Land the change in
-  Cider; Devin ships it to the hub.
+  --into <hub worktree>` (its two live checks read R2: a ship that would HIDE
+  live words in a slot the renderer stops drawing is refused, and so is one
+  whose renderer READS a slot the live report lacks — a seeded room never takes
+  a new key from a deployment, so the page would show "new slot" markers;
+  `--seed-new` adds those slots to the hub document first, with the project's
+  words, through the hub's `POST /api/docs-seed/<room>` — store and room,
+  service token from the Keychain). Land the change in Cider; Devin ships it
+  to the hub.
 - Deploying the relay Worker (`cd collab && npm run deploy` or `npm run
   deploy:staging`), and so `tools/wt stage <name>` for a Cider worktree.
   `tools/wt stage <name> --hub` only pushes a hub branch, which anyone can.
