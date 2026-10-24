@@ -275,24 +275,31 @@ on a scratch repo with no identity.)
   and in fonts/, primer.js inlined; `export-package.spec.js`).
 - ~~**Find never looks at the sources list**~~ Fixed: `findTargets` adds a
   `sources` target, so source titles/URLs are found and a citation rename
-  renames its `[id]:` line; "Show me" now highlights the place (and opens the
-  sources manager for a source hit); box and cell hits are clickable.
+  renames its `[id]:` line; "Show me" on a source hit jumps to its endnote on
+  the page and lights the words (`findEndnoteOf`; the sources manager only for
+  a source nothing cites); box and cell hits are clickable.
   (tests/editor/find-sources.spec.js)
-- **The report template never uses the typed title** ("YOUR REPORT
-  TITLE HERE", footers "YOUR REPORT"); the typed name goes only to
-  `[[title]]` and the window. `docsync/templates` + `new.create()`.
-- **The Layers panel does not follow the page while open** (title stays
-  "Layers — page 1" after scrolling to page 52 until reopened);
-  `railThumbs()` clones every sheet on every render (28ms at 50 pages,
-  linear). Neither hurts at today's sizes.
-- **Zero projects is unreachable from the UI** (no way to forget a
-  project); with an empty registry the editor still boots the default
-  engine while Open says "no other reports". start.html handles it.
-- **Suspected, not confirmed**: on the report/brief templates the first
-  click on the cover opens the full-bleed photo box, so the first
-  keystrokes land beside `![Cover photo placeholder]`; a local-mode
-  network blip shows the server-gone line (item 5) while the collab chip
-  still says live.
+- ~~**The report template never uses the typed title**~~ Fixed (PR #29,
+  `_apply_title`): cover, footers, the rendered `<title>` and the binding's
+  name (what an export is named by) are all the typed title; pinned
+  end-to-end in test_docsync.py ("new report: the page <title> is the typed
+  title").
+- ~~**The Layers panel does not follow the page while open**~~ Fixed (PR
+  #29; tests/editor/layers-follow-page.spec.js).
+- ~~**Zero projects is unreachable from the UI**~~ Fixed (PR #29: forget a
+  project, and an empty registry starts the editor).
+- ~~The first click on a template cover opens the photo box~~ Fixed (PR
+  #29; tests/editor/cover-photo-click.spec.js).
+- **Suspected, not confirmed**: a local-mode network blip shows the
+  server-gone line (item 5) while the collab chip still says live. Checked
+  2026-10-23: the two measure different things — the line is three missed
+  `/__ping` polls (~6s) of the local server, the chip is the relay socket —
+  so both can be true at once; left as it is.
+- Restore in a hub session (item 11) was checked again 2026-10-23: the
+  confirm names who holds unsaved words and which paragraphs the version
+  replaces, a colleague's words in paragraphs it does not change survive,
+  and a paragraph added since is named before it is dropped
+  (collab-hub.spec.js "restore: …", three tests). Nothing left to do.
 
 ## What was checked and works
 
