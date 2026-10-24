@@ -204,6 +204,49 @@ def main():
         FAILS.append("_pageless_width_in should read 12.5 from `@page{size:12.5in auto` and None for a paged report")
     if "data-ds-pageless" not in _sv._size_pageless(pl) or _sv._size_pageless(html) != html:
         FAILS.append("_size_pageless should add its script to a pageless export and leave a paged one alone")
+    # Web fonts ride in the export (serve._inline_webfonts): a Google Fonts
+    # <link> becomes @font-face rules with the files inline, latin subsets only;
+    # a stylesheet that will not fetch keeps its <link>.
+    _css = ("/* cyrillic */\n@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800;\n"
+            "  src: url(https://fonts.gstatic.com/s/m/cyr.woff2) format('woff2'); unicode-range: U+0400-045F; }\n"
+            "/* latin-ext */\n@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800;\n"
+            "  src: url(https://fonts.gstatic.com/s/m/ext.woff2) format('woff2'); unicode-range: U+0100-02BA; }\n"
+            "/* latin */\n@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800;\n"
+            "  src: url(https://fonts.gstatic.com/s/m/lat.woff2) format('woff2'); unicode-range: U+0000-00FF; }\n")
+    _asked = []
+
+    def _fake_fetch(url):
+        _asked.append(url)
+        if "css2" in url:
+            if "Nope" in url:
+                raise RuntimeError("no such family")
+            return _css.encode()
+        return b"wOF2" + url.rsplit("/", 1)[-1].encode()
+    _real_fetch = _sv._font_fetch
+    _sv._font_fetch = _fake_fetch
+    try:
+        _link = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap">'
+        _page = f"<html><head>{_link}<style>b{{}}</style></head><body>x</body></html>"
+        _out = _sv._inline_webfonts(_page)
+        if _link in _out or "<style data-ds-fonts>" not in _out:
+            FAILS.append("_inline_webfonts should replace the Google Fonts <link> with a <style data-ds-fonts>")
+        if _out.count("@font-face") != 2 or "cyr.woff2" in _out or "0400-045F" in _out:
+            FAILS.append("_inline_webfonts should keep the latin and latin-ext faces and drop the cyrillic one")
+        if "data:font/woff2;base64," not in _out or "https://fonts.gstatic.com" in _out:
+            FAILS.append("_inline_webfonts should inline every kept face as a data: URI")
+        if not any("family=Manrope:wght@200..800&display=swap" in u for u in _asked):
+            FAILS.append("_inline_webfonts should fetch the href with &amp; unescaped")
+        if "cyr.woff2" in " ".join(_asked):
+            FAILS.append("_inline_webfonts should not download a subset it drops")
+        _bad = '<link href="https://fonts.googleapis.com/css2?family=Nope" rel="stylesheet">'
+        _kept = _sv._inline_webfonts(f"<html><head>{_bad}</head><body>x</body></html>")
+        if _bad not in _kept or "data-ds-fonts" in _kept:
+            FAILS.append("_inline_webfonts should leave a <link> whose stylesheet will not fetch")
+        _plain = "<html><head><style>b{}</style></head><body>x</body></html>"
+        if _sv._inline_webfonts(_plain) != _plain:
+            FAILS.append("_inline_webfonts should leave a page with no web fonts as it was")
+    finally:
+        _sv._font_fetch = _real_fetch
     if os.path.exists(_sv.CHROME):
         import re as _re2, tempfile as _tf2
         _p = Path(_tf2.mkdtemp()) / "pl.html"

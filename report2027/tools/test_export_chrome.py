@@ -166,6 +166,74 @@ html,body{{margin:0}}.page{{width:8in;height:{h}px;background:linear-gradient(#f
     check("cold pdf: the text is on that page", "pageless" in doc[0].get_text(), True)
 
 
+# ---- the web-page reports, as File ▸ Export makes them ---------------------
+# our-mission, wfc-credits, rxkids and tfc-2027-priorities are 12.5in pageless
+# sheets. Their PDFs used to be mostly blank Letter pages (a 160in sheet, then
+# a Letter pagination of the phone reflow) set in the fallbacks for Manrope,
+# Poppins and Libre Franklin, with our-mission's hero a hole where a WebGL
+# canvas did not print. The real export path — the publish render, the fonts
+# carried inline, the measuring script, the warm Chrome — must give ONE sheet
+# at the design width, as tall as its content, with most of the text in the
+# faces the page names (a web font Chrome embeds comes out as a Type3 font;
+# a fallback keeps its own name).
+WEB_PAGES = {
+    # id: (height range in inches, families most text must be in)
+    "our-mission": ((15, 40), ("Type3", "Poppins", "Manrope")),
+    "wfc-credits": ((40, 120), ("Type3", "Poppins", "Manrope")),
+    "rxkids": ((40, 200), ("Type3", "LibreFranklin", "Georgia")),   # print stacks all four tabs
+    "tfc-2027-priorities": ((20, 60), ("Type3", "Poppins", "Manrope")),
+}
+
+
+def web_pages(serve, tmp):
+    import subprocess
+    import fitz
+    root = HERE.parent.parent
+    for pid, (hrange, fams) in WEB_PAGES.items():
+        proj = root / "projects" / pid
+        if not (proj / "render_report.py").is_file():
+            print(f"skip {pid}: not in this checkout")
+            continue
+        out = proj / f"__export-test-{os.getpid()}.html"      # beside its assets, as the export does
+        try:
+            env = {**os.environ, "DOCSYNC_OUT": str(out)}
+            env.pop("DOCSYNC_EDIT", None)
+            r = subprocess.run([sys.executable, str(proj / "render_report.py")], cwd=str(root), env=env,
+                               capture_output=True, text=True)
+            check(f"{pid}: the publish render builds", r.returncode, 0)
+            if r.returncode:
+                continue
+            html = serve._inline_webfonts(out.read_text())
+            check(f"{pid}: the export carries its web fonts (no Google Fonts <link> left)",
+                  bool(serve.FONT_LINK_RE.search(html)), False)
+            out.write_text(serve._size_pageless(html))
+            data = serve._warm_pdf(out, 1200)
+            check(f"{pid}: the warm Chrome printed it", data is not None, True)
+            if not data:
+                continue
+            doc = fitz.open(stream=data, filetype="pdf")
+            check(f"{pid}: one continuous sheet", doc.page_count, 1)
+            rect = doc[0].rect
+            check(f"{pid}: the sheet is the design width (12.5in)", round(rect.width / 72, 2), 12.5)
+            check(f"{pid}: the sheet is as tall as its content ({rect.height / 72:.1f}in)",
+                  hrange[0] <= rect.height / 72 <= hrange[1], True)
+            chars, right = 0, 0
+            for b in doc[0].get_text("dict")["blocks"]:
+                for line in b.get("lines", []):
+                    for sp in line["spans"]:
+                        n = len(sp["text"].strip())
+                        chars += n
+                        if any(f in sp["font"] for f in fams):
+                            right += n
+            check(f"{pid}: the text is set in the page's own faces ({right}/{chars} characters)",
+                  chars > 500 and right / max(chars, 1) >= 0.9, True)
+        finally:
+            out.unlink(missing_ok=True)
+    if serve.WARM_CHROME[0] is not None:
+        serve.WARM_CHROME[0].close()
+        serve.WARM_CHROME[0] = None
+
+
 def main():
     serve = load_serve()
     chrome = find_chrome(serve)
@@ -175,6 +243,7 @@ def main():
         serve.CHROME = chrome
         with tempfile.TemporaryDirectory(prefix="export-chrome-") as t:
             png_long(serve, Path(t))
+            web_pages(serve, Path(t))
             pageless_cold(serve, Path(t))
     stitch_alone(serve)
     print("FAILED: " + ", ".join(FAILS) if FAILS else "all ok")

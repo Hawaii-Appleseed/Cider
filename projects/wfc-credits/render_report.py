@@ -41,6 +41,11 @@ SRC = (HERE / "original.html").read_text()
 _body_m = re.search(r"<body[^>]*>(.*)</body>", SRC, re.S | re.I)
 _head_src = SRC[:_body_m.start()] if _body_m else ""
 STYLE = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", _head_src, re.S | re.I))
+# The site's brand faces (Manrope, Poppins) come by <link> from Google Fonts,
+# and an editor sheet keeps no other <link>: without this the sheet and every
+# export were set in Helvetica. The export carries the faces inline (serve.py
+# _inline_webfonts), so the PDF is set in them offline too.
+FONT_LINKS = "\n".join(re.findall(r"<link\b[^>]*fonts\.g(?:oogleapis|static)\.com[^>]*>", _head_src, re.I))
 
 # An imported page's DARK palette is a trap in the editor. The sheet this
 # wrapper draws is always white, and a dark theme only recolours the text — so
@@ -133,6 +138,14 @@ BODY = re.sub(r"<!--wfc:endnotes-->", _endnotes, BODY)
 DESIGNED_PAGES = 1
 
 
+# The Estimates site styles everything under `.ha-est` — the class on ITS
+# <body>. The sheet here is the body's contents without that body, so nothing
+# in STYLE matched: the editor and every export showed the page as unstyled
+# Times (one 75in column). The publish path (WFC_SITE) puts the sheet back in
+# the site's own body and needs no wrapper; the sheet gets one.
+if not SITE:
+    BODY = f'<div class="ha-est">{BODY}</div>'
+
 SHEETS = ("".join(L.sheet(pid, BODY if pid == DESIGNED_PAGES else "")
                   for pid in L.page_order(DESIGNED_PAGES))
           + L.pagemeta(range(1, DESIGNED_PAGES + 1)))
@@ -143,6 +156,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{C.text("title")}</title>
+{FONT_LINKS}
 <style>
   body {{ margin:0; background:#EDF1EE; }}
   .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
