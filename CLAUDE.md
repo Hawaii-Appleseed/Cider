@@ -437,6 +437,17 @@ Rules that bite:
   "+ New report" offers them beside the blank canvas — editor File ▸ Open ▸
   New report and start.html both read `GET /__templates`; `/__scaffold`
   takes a `template` field; `docsync.new.create(template=…)` does the work.
+  **A written document lays itself out at creation (2026-10-24):**
+  `python3 -m docsync.new --id <slug> --template appleseed-report --text
+  report.md --build` (`docsync/compose.py`; `/__scaffold` takes `text`, the
+  local MCP server's `new_report` tool is the same call) turns `# title`,
+  `## sections`, `###`, `> quotes`, bullets and `[^id]` citations with their
+  `[^id]: source` lines into the template's own section pages — headline,
+  hairline, body, footer, contents and sources filled — so the editor opens
+  on a report, not a pattern page. The styles come off the template's
+  elements (`templates.section_pattern`), never restated. Pagination is a
+  generous estimate; the editor's `audit()` is the measurement. The
+  binding now carries `name:`, so `docsync.hub` lists the project.
   A template is DATA riding the one blank renderer (layout.json + palette +
   copied assets), never a different renderer. The three shipped templates
   are digested from Hawaiʻi Appleseed's PUBLISHED 2025–26 reports
