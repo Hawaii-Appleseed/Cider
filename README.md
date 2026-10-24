@@ -79,7 +79,9 @@ checkout.
 
 A local install is complete in itself: the start page's **“+ New report”**
 scaffolds a blank project straight onto disk (no repo, no token, no GitHub —
-`docsync/new.py` via the server's `/__scaffold`), and **“Adopt existing…”**
+`docsync/new.py` via the server's `/__scaffold`; given a written document,
+`--text report.md` lays it out on a template's pages at the same time, see
+`docsync/compose.py`), and **“Adopt existing…”**
 registers any docsync repo already cloned on this computer by its folder
 path (`/__adopt`). Inside the editor, **File ▸ Connect GitHub** signs the
 computer in with a one-time code (the local server proxies the device flow,

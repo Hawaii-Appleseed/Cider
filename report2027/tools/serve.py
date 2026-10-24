@@ -2382,6 +2382,10 @@ class Handler(SimpleHTTPRequestHandler):
         # one alongside "Blank canvas" (its select has no reason to reset),
         # so it is dropped here rather than refused there.
         scheme = str(req.get("scheme") or "").strip() if template else ""
+        # A written document to lay out on the template's pages (docsync.compose):
+        # the MCP server's new_report and a script pass it; the form does not.
+        text = str(req.get("text") or "")
+        meta = {k: str(req.get(k) or "").strip() for k in ("subtitle", "date", "author")}
         size = req.get("size") or {}
         try:
             w = float(size.get("w", 8.5))
@@ -2398,7 +2402,7 @@ class Handler(SimpleHTTPRequestHandler):
             with _host_lock():
                 yml_before = yml.read_text() if yml.is_file() else ""
                 create(slug, name, w, h, root=SELF_ROOT, template=template,
-                       scheme=scheme)
+                       scheme=scheme, text=text, meta=meta)
         except NewProjectError as e:
             return self._json(200, {"ok": False, "error": str(e)})
         except Exception as e:                   # noqa: BLE001 — report it

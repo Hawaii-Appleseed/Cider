@@ -466,26 +466,34 @@ It rides along on `GET /__templates`, and the MCP server serves it as
 
 The flow when a user hands you text and asks for a report:
 
-1. **Scaffold from a template, not blank**: `POST /__scaffold` with
-   `{name, slug, template: 'appleseed-report' | 'appleseed-brief',
-   scheme: 'blue'|'slate'|'teal'|'charcoal'}` (scheme optional — each
-   template's default first in its `schemes` listing). The scaffold lands a
-   cover with placeholder art, inside cover/contents, the executive-summary
-   page, and — on the report — **page 4, the section page**: headline over a
-   hairline, bold-caps lead-in, body, subheading, footer, already placed in
-   the right styles.
-2. **Fill what exists** with `setBoxText` (template words live in text boxes,
-   so `setSlot` reaches only the title) — title, subtitle, date, TOC entries,
-   the summary and section-page text.
-3. **Each further section**: `addPage(<current page count>)` — the
-   argument APPENDS (argless inserts after the page in view) — then one
-   `batch()` of
-   `addTextBox`/`addShape` ops copied from the style guide's patterns
-   (heading at 0.7,0.7; hairline rect at y 1.62 filled with the topic
-   colour; body at 15px over 7.1in; footer `"<n> · <TITLE>"`).
-4. **Citations**: `addSource(id, text, url)` and `[^id]` tokens in the text.
-5. **Check with `audit()`**, fix what it names, then `save()`. Push stays
-   with the human.
+1. **Write the document as markdown first, then scaffold WITH it** — one
+   call lays the whole thing out on the template's pages
+   (`docsync/compose.py`): `# title`, optional `Subtitle:` / `Date:` /
+   `Author:` lines under it, the paragraphs before the first `##` as the
+   executive summary, each `##` a section page in the house pattern
+   (headline, hairline, bold-caps lead-in, body, footer), `###` a
+   subheading in the topic colour, `> ` a pull quote, bullets as a list,
+   `[^id]` citations with `[^id]: Source — https://…` lines anywhere.
+   The contents page and `[[sources]]` are filled from it.
+   - no editor open: `python3 -m docsync.new --id <slug> --template
+     appleseed-report|appleseed-brief [--scheme blue|slate|teal|charcoal]
+     --text report.md --build`
+   - the editor app running: `POST /__scaffold {slug, name?, template,
+     scheme?, text}` — or the local MCP server's `new_report` tool, the
+     same call.
+   Pagination is an estimate on the generous side; the page is
+   `overflow:hidden`, so step 3 is not optional.
+2. **The devices the template keeps**: page 3's callout, pull-quote and
+   chart placeholder stay when the summary fits beside them — fill them with
+   `setBoxText`, replace the chart with the Chart tool, or `remove` them.
+   A page whose text the estimate got wrong is fixed with `place`, or a
+   paragraph moved onto `addPage`.
+3. **Check with `audit()`**, fix what it names (overflow first), then
+   `save()`. Push stays with the human.
+
+Building page by page by hand — `addPage(<current page count>)` then one
+`batch()` of `addTextBox`/`addShape` per the style guide's patterns — is
+still how a section is added to a report that already exists.
 
 ## Editing the editor itself (`edit.html`)
 
