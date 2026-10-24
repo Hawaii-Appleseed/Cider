@@ -71,3 +71,5 @@ credentials.json
 client_secret*.json
 service-account*.json
 *_api_key
+docs/*/collab-client.js
+docs/*/sw.js
