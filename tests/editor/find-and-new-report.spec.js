@@ -91,4 +91,32 @@ test.describe('+ New report', () => {
       expect(fs.existsSync(path.join(REPO, 'projects', SLUG, 'layout.json'))).toBe(true);
     });
   });
+
+  test.describe('a report from pasted text', () => {
+    const SLUG = 'zz-spec-from-text';
+    test.afterEach(() => {
+      removeYmlBindings(SLUG);
+      for (const dir of [`projects/${SLUG}`, `docs/${SLUG}`]) {
+        execSync(`rm -rf ${JSON.stringify(path.join(REPO, dir))}`);
+      }
+    });
+    // affected-by: docsync/compose.py docsync/new.py docsync/templates/__init__.py report2027/tools/serve.py
+    test('lays the sections out on the template and builds', async ({ request }) => {
+      const text = '# Spec From Text\nDate: March 2027\n\nThe summary paragraph.\n\n'
+        + '## First section\n\nBody of the first.[^src]\n\n### A subheading\n\n- one\n- two\n\n'
+        + '## Second section\n\nBody of the second.\n\n[^src]: A source — https://example.org/';
+      const j = await (await request.post('/__scaffold', { data: {
+        slug: SLUG, template: 'appleseed-report', scheme: 'teal', text,
+      } })).json();
+      expect(j.ok, j.error).toBe(true);
+      const lay = JSON.parse(fs.readFileSync(path.join(REPO, 'projects', SLUG, 'layout.json'), 'utf8'));
+      const heads = lay.boxes.filter(b => b.id.startsWith('txt-h-')).map(b => [b.page, b.md]);
+      expect(heads).toEqual([[4, 'First section'], [5, 'Second section']]);
+      expect(lay.boxes.find(b => b.id === 'tpl-title').md).toBe('Spec From Text');
+      expect(lay.boxes.find(b => b.id === 'tpl-date').md).toBe('MARCH 2027');
+      const content = fs.readFileSync(path.join(REPO, 'projects', SLUG, 'content.md'), 'utf8');
+      expect(content).toContain('[src]: A source — https://example.org/');
+      expect(fs.readFileSync(path.join(REPO, 'docsync.yml'), 'utf8')).toContain('name: "Spec From Text"');
+    });
+  });
 });
