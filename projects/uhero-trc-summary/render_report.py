@@ -338,13 +338,16 @@ html = f"""<!DOCTYPE html>
   .box:not(.box-green) {{ background:{INK}; color:#fff; padding:11px 16px 12px; }}
   .box:not(.box-green) .box-h {{ color:{ASH}; }}
   .box:not(.box-green) .box-p, .box:not(.box-green) .box-p b {{ color:#fff; }}
-  .box-green {{ padding-top:2px; }}
+  /* page 3's recommendation: a tinted panel with a teal bar, so the one
+     conclusion outweighs the table caption above it */
+  .box-green {{ background:{PAPER}; border-left:4px solid {PRIMARY};
+                padding:8px 18px 10px 16px; margin-top:12px; }}
   .box-h {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
             letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY_DARK};
             margin-bottom:4px; }}
   .box-green .box-h {{ font-size:17px; letter-spacing:0; text-transform:none; }}
   .box-p {{ font-size:13.5px; line-height:1.5; color:{TEXT}; margin:0; }}
-  .box-green .box-p {{ font-size:15px; line-height:1.55; }}
+  .box-green .box-p {{ font-size:15px; line-height:1.5; }}
   .box-p b {{ color:{INK}; }}
   .ds-graphic {{ margin-top:8px; }}
 
@@ -386,11 +389,16 @@ html = f"""<!DOCTYPE html>
            font-size:13.5px; color:#464646; }}
   .srch {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
            letter-spacing:.1em; text-transform:uppercase; color:{INK}; margin-right:6px; }}
-  .endnotes {{ margin:14px 0 0; padding-top:8px; border-top:1px solid {LINE};
+  .endnotes {{ margin:10px 0 0; padding-top:6px; border-top:1px solid {LINE};
                font-size:13.5px; line-height:1.45; color:{MUTED}; }}
-  .en {{ white-space:normal; }}
-  .enn {{ font-weight:700; color:{INK}; }}
-  .ensep {{ color:{MUTED}; }}
+  /* the sources as a numbered list in two columns: each entry is its own
+     block, the middot run-in separators are hidden, the heading spans both */
+  .endnotes {{ column-count:2; column-gap:0.35in; }}
+  .endnotes .srch {{ display:block; column-span:all; margin:0 0 3px; }}
+  .en {{ display:block; white-space:normal; break-inside:avoid;
+         padding-left:16px; text-indent:-16px; margin:0 0 3px; }}
+  .enn {{ font-weight:700; color:{INK}; display:inline-block; width:12px; text-indent:0; }}
+  .ensep {{ display:none; }}
   .endnotes a {{ color:{MUTED}; text-decoration:none; }}
   sup {{ font-size:10.6px; line-height:0; }}
   sup a.fn {{ color:{PRIMARY}; text-decoration:none; font-weight:700; }}
@@ -429,6 +437,7 @@ html = f"""<!DOCTYPE html>
     .split {{ flex-direction:column; gap:10px; }}
     .splitl {{ flex:none; }}
     .swhead {{ display:none; }}
+    .endnotes {{ column-count:1; }}
     .swaps {{ border-top:2px solid {PRIMARY_DARK}; }}
     .swrow {{ grid-template-columns:1fr; gap:2px; padding:9px 8px; }}
     .sw.a {{ padding-left:0; }}
