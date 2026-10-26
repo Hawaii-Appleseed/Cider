@@ -55,6 +55,21 @@ L = Layout(_LAYOUT, page=(12.5, None))    # ~1200px wide (matches the editor's o
                                         # tail on the published page.
 C = Content(_CONTENT, styles=L)
 
+# The PUBLISHED page fills the window. The editor's draft keeps the fixed sheet: it measures
+# and clamps every move in sheet inches off a `.page` of exactly page_w, and a fluid page made
+# every vertical move in the every-field-opens sweep land off target. The engine injects its own
+# `.page{width:12.5in}` (docsync.yml `page:`) after this sheet, so only !important beats it.
+# The hero is the one band with a pinned child (the logo, placed in sheet inches), so it stays a
+# page_w column centred in the page and only its background bleeds to the window edges.
+FLUID_CSS = "" if os.environ.get("DOCSYNC_EDIT") else f"""
+  .page {{ width: auto !important; }}
+  .tfc-container {{ max-width: none !important; }}
+  .page .tfc-hero {{
+      width: min({L.page_w}in, 100% + 48px) !important;
+      margin-left: calc((100% - min({L.page_w}in, 100% + 48px)) / 2) !important;
+      margin-right: 0 !important;
+      box-shadow: 0 0 0 100vmax var(--rx-tint); clip-path: inset(0 -100vmax); }}"""
+
 
 def esc(s: str) -> str:
     return _html.escape(s, quote=True)
@@ -520,10 +535,7 @@ MODERN_CSS = """
 
   /* Responsive: the sheet is fluid below its design width, the hero stacks, and the
      two wide graphics (funding timeline, cost table) scroll sideways inside their card */
-  /* Fill the window at any width. The engine's own `.page{width:12.5in}` (docsync.yml `page:`) is
-     injected after this sheet, so only !important beats it. */
-  .page { width: auto !important; }
-  .tfc-container { max-width: none !important; }
+  @media (max-width: 1230px) { .page { width: auto !important; max-width: 12.5in; } }
   /* 1200px = the sheet width: below it the engine releases every pinned element itself */
   @media (max-width: 1200px) {
     .tfc-hero { flex-direction: column; align-items: stretch; gap: 22px; padding: 28px 24px 36px !important; }
@@ -1767,15 +1779,7 @@ html = f"""<!DOCTYPE html>
   .tfc-hero, .tfc-full-width {{
       width: auto !important; left: 0 !important; right: auto !important;
       margin-left: -24px !important; margin-right: -24px !important; }}
-  /* The page now fills the window. The hero is the one band with a pinned child
-     (the logo, laid out from layout.json in sheet inches), so it stays a
-     {L.page_w}in column centred in the page, and only its background bleeds to the
-     window edges. At or below the sheet width it is the full-width band as before. */
-  .page .tfc-hero {{
-      width: min({L.page_w}in, 100% + 48px) !important;
-      margin-left: calc((100% - min({L.page_w}in, 100% + 48px)) / 2) !important;
-      margin-right: 0 !important;
-      box-shadow: 0 0 0 100vmax var(--rx-tint); clip-path: inset(0 -100vmax); }}
+  {FLUID_CSS}
   /* Vertical rhythm. original.html gave every band `padding: 80px 0 140px`
      (its own comment: "Increased bottom padding") — tuned for a Squarespace
      page where sections scroll past one at a time. Stacked into one continuous

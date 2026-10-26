@@ -1942,10 +1942,9 @@
   .tfc-hero, .tfc-full-width {
       width: auto !important; left: 0 !important; right: auto !important;
       margin-left: -24px !important; margin-right: -24px !important; }
-  /* The page now fills the window. The hero is the one band with a pinned child
-     (the logo, laid out from layout.json in sheet inches), so it stays a
-     12.5in column centred in the page, and only its background bleeds to the
-     window edges. At or below the sheet width it is the full-width band as before. */
+  
+  .page { width: auto !important; }
+  .tfc-container { max-width: none !important; }
   .page .tfc-hero {
       width: min(12.5in, 100% + 48px) !important;
       margin-left: calc((100% - min(12.5in, 100% + 48px)) / 2) !important;
@@ -2382,10 +2381,7 @@
 
   /* Responsive: the sheet is fluid below its design width, the hero stacks, and the
      two wide graphics (funding timeline, cost table) scroll sideways inside their card */
-  /* Fill the window at any width. The engine's own `.page{width:12.5in}` (docsync.yml `page:`) is
-     injected after this sheet, so only !important beats it. */
-  .page { width: auto !important; }
-  .tfc-container { max-width: none !important; }
+  @media (max-width: 1230px) { .page { width: auto !important; max-width: 12.5in; } }
   /* 1200px = the sheet width: below it the engine releases every pinned element itself */
   @media (max-width: 1200px) {
     .tfc-hero { flex-direction: column; align-items: stretch; gap: 22px; padding: 28px 24px 36px !important; }
