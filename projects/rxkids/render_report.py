@@ -55,6 +55,21 @@ L = Layout(_LAYOUT, page=(12.5, None))    # ~1200px wide (matches the editor's o
                                         # tail on the published page.
 C = Content(_CONTENT, styles=L)
 
+# The PUBLISHED page fills the window. The editor's draft keeps the fixed sheet: it measures
+# and clamps every move in sheet inches off a `.page` of exactly page_w, and a fluid page made
+# every vertical move in the every-field-opens sweep land off target. The engine injects its own
+# `.page{width:12.5in}` (docsync.yml `page:`) after this sheet, so only !important beats it.
+# The hero is the one band with a pinned child (the logo, placed in sheet inches), so it stays a
+# page_w column centred in the page and only its background bleeds to the window edges.
+FLUID_CSS = "" if os.environ.get("DOCSYNC_EDIT") else f"""
+  .page {{ width: auto !important; }}
+  .tfc-container {{ max-width: none !important; }}
+  .page .tfc-hero {{
+      width: min({L.page_w}in, 100% + 48px) !important;
+      margin-left: calc((100% - min({L.page_w}in, 100% + 48px)) / 2) !important;
+      margin-right: 0 !important;
+      box-shadow: 0 0 0 100vmax var(--rx-tint); clip-path: inset(0 -100vmax); }}"""
+
 
 def esc(s: str) -> str:
     return _html.escape(s, quote=True)
@@ -410,7 +425,7 @@ MODERN_CSS = """
   .tfc-hero { gap: 56px; }
   .tfc-hero-image-container { margin-left: auto; }
   .tfc-hero-image-container { max-width: 540px; }
-  .rxk-facts { position: relative; z-index: 3; max-width: 1000px; margin: -40px auto 0; display: grid;
+  .rxk-facts { position: relative; z-index: 3; max-width: 1000px; margin: 28px auto 0; display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)); background: #fff; border: 1px solid var(--rx-line);
     border-radius: 20px; box-shadow: var(--rx-lift); }
   .rxk-fact { padding: 24px 32px; text-align: left; }
@@ -418,7 +433,7 @@ MODERN_CSS = """
   .rxk-fact-value { display: block; font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1;
     color: var(--rx-navy); font-family: OkinaOpenSans, 'Libre Franklin', 'Franklin Gothic Heavy', Arial, sans-serif; }
   .rxk-fact-label { display: block; margin-top: 6px; font-size: .98rem; line-height: 1.45; color: var(--rx-ink); }
-  @media (max-width: 768px) { .rxk-facts { grid-template-columns: 1fr; margin-top: -24px; }
+  @media (max-width: 768px) { .rxk-facts { grid-template-columns: 1fr; margin-top: 24px; }
     .rxk-fact + .rxk-fact { border-left: none; border-top: 1px solid var(--rx-line); } }
 
   /* Phase 3: the long TANF explainer sits behind one button */
@@ -523,7 +538,7 @@ MODERN_CSS = """
   @media (max-width: 1230px) { .page { width: auto !important; max-width: 12.5in; } }
   /* 1200px = the sheet width: below it the engine releases every pinned element itself */
   @media (max-width: 1200px) {
-    .tfc-hero { flex-direction: column; align-items: stretch; gap: 22px; padding: 28px 24px 64px !important; }
+    .tfc-hero { flex-direction: column; align-items: stretch; gap: 22px; padding: 28px 24px 36px !important; }
     /* [style] + .page lift this above the engine's own phone rule, which also sets width:auto !important */
     .page .tfc-hero .rxkeiki-logo[style] { position: static !important; left: auto !important; top: auto !important;
       width: min(100%, 460px) !important; max-width: 460px !important; margin: 0 auto !important; display: block;
@@ -537,7 +552,7 @@ MODERN_CSS = """
     .rxk-tab { padding: 15px 14px; font-size: .95rem; }
     .tfc-section-title { font-size: 1.75rem; }
     .tfc-section-subtitle { font-size: 1.05rem; }
-    .rxk-facts { margin-top: -28px; }
+    .rxk-facts { margin-top: 24px; }
     .rxk-fact { padding: 18px 22px; }
     .rxk-fact-value { font-size: 1.8rem; }
     .rxk-feature-grid, .rxk-bill-grid { gap: 16px; margin-top: 32px; }
@@ -1737,7 +1752,7 @@ html = f"""<!DOCTYPE html>
 <style>
 {OKINA_FACES}
   body {{ margin:0; background:#EDF1EE; }}
-  .page {{ width:{L.page_w}in; min-height:{L.page_min_h}in; margin:0 auto;
+  .page {{ width:auto; min-height:{L.page_min_h}in; margin:0 auto;
            background:#fff; position:relative; overflow:hidden; }}
   {STYLE}
   {BRAND_CSS}
@@ -1764,6 +1779,7 @@ html = f"""<!DOCTYPE html>
   .tfc-hero, .tfc-full-width {{
       width: auto !important; left: 0 !important; right: auto !important;
       margin-left: -24px !important; margin-right: -24px !important; }}
+  {FLUID_CSS}
   /* Vertical rhythm. original.html gave every band `padding: 80px 0 140px`
      (its own comment: "Increased bottom padding") — tuned for a Squarespace
      page where sections scroll past one at a time. Stacked into one continuous
