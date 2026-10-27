@@ -32723,10 +32723,12 @@ function _pilotValidateAddShape(o = {}) {
              error: `'${kind}' is not a shape — one of ${PILOT_SHAPE_KINDS.join(', ')}` };
   const n = _pilotNums(o, ['x', 'y', 'w', 'h'], 'addShape', { zeroH: kind === 'line' });
   if (!n.ok) return n;
+  if (o && o.r != null && !(typeof o.r === 'number' && isFinite(o.r) && o.r >= 0 && o.r <= 0.4))
+    return { ok: false, error: 'addShape: r is a corner radius in inches, 0 to 0.4' };
   return _pilotPageDraws(page, 'addShape');
 }
 function _pilotApplyAddShape({ page, kind = 'rect', x, y, w = 2, h, fill,
-                               stroke, sw, z, rx, data } = {}) {
+                               stroke, sw, z, rx, r, data } = {}) {
   const pid = page != null ? page : visiblePageId();
   const id = freeShapeId(kind);
   // Same defaults as the Shapes panel (solid, on top, sage) so an argless
@@ -32739,6 +32741,8 @@ function _pilotApplyAddShape({ page, kind = 'rect', x, y, w = 2, h, fill,
                sw: sw != null ? +sw : 0.02,
                z: z != null ? +z : nextZ(2, pid) };
   if (rx != null) sh.rx = +rx;
+  // A rectangle's corner radius, in inches — the engine reads `r` (rx is not a rect key).
+  if (r != null && kind === 'rect' && +r > 0) sh.r = +r;
   if (kind === 'qr') { sh.data = String(data || 'https://www.hiappleseed.org'); sh.fill = fill || '#000000'; sh.stroke = 'none'; if (h == null) sh.h = sh.w; }
   if (kind === 'polygon') sh.sides = 6;
   if (kind === 'star') { sh.points = 5; sh.inner = 0.5; }
@@ -33281,6 +33285,38 @@ const PILOT_BATCH_VERBS = {
   setNotes: { validate: (k, notes) => (slotRe(k || '').test(source) && Array.isArray(notes) && notes.every(n => typeof n === 'string'))
       ? { ok: true } : { ok: false, error: 'setNotes(slotKey, [note text, …]) — a slot that exists' },
     apply: (k, notes) => { setSlotNotes(k, notes); return { key: k, notes: slotNotes(k).map(NOTE_BODY) }; } },
+  // A shape's own look, after it exists: corner radius (rectangles), outline and
+  // stacking. recolor() does the fill and place() the box; this is the rest of
+  // what the right-click menu's border and layer rows set.
+  setShape: { validate: (id, p) => {
+      const s = shapeOf(id);
+      if (!s) return { ok: false, error: `no shape '${id}' — setShape works on shapes; a text box styles through setStyle` };
+      if (isLocked(id)) return { ok: false, error: `'${id}' is locked — unlock it first` };
+      if (!p || typeof p !== 'object' || Array.isArray(p))
+        return { ok: false, error: 'setShape(id, {r, stroke, sw, z}) — r: corner radius in inches (rectangles), stroke: #hex | "none", sw: outline width in inches, z: stacking order' };
+      const bad = Object.keys(p).filter(k => !['r', 'stroke', 'sw', 'z'].includes(k));
+      if (bad.length) return { ok: false, error: `setShape: ${bad.join(', ')} not settable here — r, stroke, sw, z` };
+      if ('r' in p) {
+        if (s.kind !== 'rect') return { ok: false, error: `setShape: only rectangles have corners, '${id}' is a ${s.kind}` };
+        if (typeof p.r !== 'number' || !isFinite(p.r) || p.r < 0 || p.r > 0.4)
+          return { ok: false, error: 'setShape: r is a corner radius in inches, 0 to 0.4 (0 for square)' };
+      }
+      if ('sw' in p && !(typeof p.sw === 'number' && isFinite(p.sw) && p.sw >= 0))
+        return { ok: false, error: 'setShape: sw is a width in inches, 0 or more' };
+      if ('z' in p && !(typeof p.z === 'number' && isFinite(p.z)))
+        return { ok: false, error: 'setShape: z is a number — higher is nearer the front; text boxes sit at 3' };
+      if ('stroke' in p && !(p.stroke === 'none' || (typeof p.stroke === 'string' && HEX_RE.test(p.stroke.trim()))))
+        return { ok: false, error: 'setShape: stroke is a #hex or "none"' };
+      return { ok: true };
+    },
+    apply: (id, p) => {
+      const s = shapeOf(id);
+      if ('r' in p) { if (p.r) s.r = p.r; else delete s.r; }
+      if ('stroke' in p) s.stroke = p.stroke.trim();
+      if ('sw' in p) s.sw = p.sw;
+      if ('z' in p) s.z = p.z;
+      return { id, r: s.r || 0, stroke: s.stroke, sw: s.sw, z: s.z };
+    } },
   flip: { validate: (id, f) => {
       const v = _pilotValidatePlace(id);
       if (!v.ok) return v;
@@ -34204,6 +34240,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async setNotes(k, notes) { return _pilotOne('setNotes', [k, notes]); },
   /** flip(id, 'h' | 'v' | 'hv' | null) — on shapes, boxes, tables, placed pieces. */
   async flip(id, f) { return _pilotOne('flip', [id, f]); },
+  /** setShape(id, {r, stroke, sw, z}) — a shape's corner radius (inches, rectangles), outline and stacking order. */
+  async setShape(id, p) { return _pilotOne('setShape', [id, p]); },
   /** Style housekeeping (76): unusedStyles() — {text, object, cell,
    *  swatches} nothing uses; dropUnusedStyles(kinds?) deletes them;
    *  duplicateStyle(scope, name, newName?); overrides() — text whose own keys
