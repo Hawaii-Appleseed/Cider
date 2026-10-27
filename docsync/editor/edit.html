@@ -25704,6 +25704,11 @@ function wire(roots) {
       outline:1px dashed #95B7A2; outline-offset:3px; }
     [data-slot] { cursor:text; }
     [data-el] svg [data-slot] { cursor:grab; }
+    /* While the words are open the whole box is a text field: a press there
+       places the caret, and only the grip under the box moves it. Without
+       this the box's padding, and words inside a drawing, kept the grab hand
+       over a field you are typing in. */
+    [data-el]:has(.ds-edit), [data-el]:has(.ds-edit) *, .ds-edit, .ds-edit * { cursor:text; }
     /* ONE ring per object. A movable element's ring (hover dashed, selected
        solid) belongs to the [data-el] wrapper; the slot INSIDE it drawing its
        own hover ring painted a second, inner box on the same visual object.
