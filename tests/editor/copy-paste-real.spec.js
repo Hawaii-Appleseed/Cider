@@ -29,12 +29,12 @@ test('words copied from one box paste into another', async ({ page, context }) =
   const b = await addBox(page, { page: 1, x: 1, y: 4, w: 3, md: 'Beta' });
   await settled(page);
   await clickBox(page, a);
-  await page.keyboard.press('Meta+a');
-  await page.keyboard.press('Meta+c');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('ControlOrMeta+c');
   await page.keyboard.press('Escape');
   await clickBox(page, b);
-  await page.keyboard.press('Meta+a');
-  await page.keyboard.press('Meta+v');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('ControlOrMeta+v');
   await expect.poll(() => hostText(page)).toBe('Alpha words here');
 });
 
@@ -45,11 +45,11 @@ test('⌘C right after a click copies the box, and ⌘V pastes it', async ({ pag
   await settled(page);
   const n0 = await nBoxes(page);
   await clickBox(page, a);                              // words open, nothing selected
-  await page.keyboard.press('Meta+c');
+  await page.keyboard.press('ControlOrMeta+c');
   expect(await page.evaluate(() => !!clip)).toBe(true);
   expect(await page.evaluate(() => $('out').contentWindow.navigator.clipboard.readText())).toBe('Copy me please');
   await page.keyboard.press('Escape');                  // out of the words, box still selected
-  await page.keyboard.press('Meta+v');
+  await page.keyboard.press('ControlOrMeta+v');
   await expect.poll(() => nBoxes(page)).toBe(n0 + 1);
   expect(await page.evaluate(() => layout.boxes[layout.boxes.length - 1].md)).toBe('Copy me please');
 });
