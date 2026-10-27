@@ -44,6 +44,7 @@ jobs:
       sweep: ${{ steps.sweep.outputs.reports }}
       parity: ${{ steps.parity.outputs.parity }}
       base: ${{ steps.parity.outputs.base }}
+      shards: ${{ steps.shards.outputs.shards }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,6 +120,23 @@ jobs:
             echo parity=false >> "$GITHUB_OUTPUT"
           fi
 
+      # Which shards run. A pull request, a manual dispatch and the nightly run
+      # run all twelve. A push to main runs shard 1 only: the pull request that
+      # produced it already passed every shard on the same tree (the ruleset
+      # keeps main to merged PRs), so a second full run per merge only queued
+      # the next PR behind it — the org runs 20 jobs at once across every repo.
+      # Shard 1 is the cheap canary: it also carries the engine self-test, the
+      # render tolerances, the edit.html syntax guard and the Chrome export.
+      # The nightly run is the full backstop for two PRs that merged close
+      # together and broke each other.
+      - id: shards
+        run: |
+          if [ "${{ github.event_name }}" = push ]; then
+            echo 'shards=[1]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'shards=[1,2,3,4,5,6,7,8,9,10,11,12]' >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     needs: changes
     if: needs.changes.outputs.editor == 'true'
@@ -131,7 +149,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shard: ${{ fromJSON(needs.changes.outputs.shards) }}
     name: test (${{ matrix.shard }}/12)
     # A wedged shard holds one of the org's 20 slots until it is killed — but
     # the browser install step alone took 10–13 minutes on four runners at
@@ -218,7 +236,9 @@ jobs:
   # of them in one shard ran past its budget. Which reports: `changes`.
   sweep:
     needs: changes
-    if: needs.changes.outputs.sweep != '[]' && needs.changes.outputs.sweep != ''
+    # Not on a push to main: the pull request already swept the same tree, and
+    # the nightly run sweeps everything (see `shards` above).
+    if: github.event_name != 'push' && needs.changes.outputs.sweep != '[]' && needs.changes.outputs.sweep != ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
