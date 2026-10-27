@@ -10,9 +10,6 @@
   "shapes": [],
   "boxes": [],
   "tables": [],
-  "website": {
-    "site": "reports",
-    "slug": "rxkids",
-    "home": "hub"
-  }
+  "sections": {},
+  "masters": {}
 }

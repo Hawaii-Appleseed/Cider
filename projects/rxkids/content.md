@@ -51,7 +51,7 @@ What is RxKeiki?
 The Program
 
 [[what.body]]
-Based on the successful Rx Kids program, RxKeiki is a proposal for **universal, no-strings-attached cash support** for every pregnant mom in Hawaiʻi and her baby. There are Rx Kids programs in cities across Michigan.
+Based on the highly successful Rx Kids model, RxKeiki is a proposal to deliver **universal, no-strings-attached cash support** to every expecting mother in Hawaiʻi. There are Rx Kids programs in cities across Michigan.
 
 [[what.scene.right.title]]
 No Strings Attached
@@ -63,13 +63,13 @@ Families decide how to use the funds based on their unique needs—whether for r
 Universal Support
 
 [[what.scene.left.body]]
-Every pregnant mom who lives in Hawaiʻi receives support—no income test, and no need to be on Medicaid or any other benefit.
+Every pregnant mother who lives in Hawaiʻi receives support—no income test, and no requirement to be enrolled in Medicaid or any other government programs.
 
 [[what.scene.bottom.title]]
 Critical First Year
 
 [[what.scene.bottom.body]]
-Monthly payments start at birth and run for six months, and for up to twelve as funding allows—stability during the most important developmental period.
+Monthly payments start at birth and run for six months (potentially up to twelve as funding allows), providing stability during the most important developmental period.
 
 [[benefits.h2]]
 Benefits of Rx Kids
@@ -144,7 +144,7 @@ More prenatal visits and pediatric check-ups
 More babies surviving their first month of life
 
 [[works.4]]
-Low overhead, with safeguards that get payments to eligible families
+Low overhead costs, with safeguards to ensure payments get to eligible families
 
 [[flint.button]]
 Example: Flint Michigan
@@ -531,7 +531,7 @@ Next: The bill
 Back to Home
 
 [[teaser.h2]]
-Go deeper
+More information
 
 [[teaser.evidence.title]]
 The evidence
