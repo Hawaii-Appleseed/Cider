@@ -7233,9 +7233,24 @@ function isTextEl(el) {
   return el.matches('[data-slot]') || !!el.querySelector('[data-slot]');
 }
 
+// A shape thinner than this has no room for handles on its own edges: the side
+// handles sit a few pixels either side of it, so grabbing a 0.06in accent bar
+// to MOVE it landed on its west handle and widened it leftwards instead
+// (Devin, 2026-10-27). Below this, a narrow object keeps only the handles at
+// its ends — the body is then the thing to grab — and an object thin both ways
+// keeps one corner.
+const THIN_HANDLES_IN = 0.3;
+function thinHandles(dirs, b) {
+  const narrow = b.w < THIN_HANDLES_IN, short = b.h < THIN_HANDLES_IN;
+  if (narrow && short) return dirs.filter(x => x === 'se');
+  if (narrow) return dirs.filter(x => x === 'n' || x === 's');
+  if (short) return dirs.filter(x => x === 'e' || x === 'w');
+  return dirs;
+}
+
 function showHandles(d, page, el) {
   hideHandles(d);
-  const dirs = handlesFor(el);
+  let dirs = handlesFor(el);
   // Nothing to drag at all — the expand button's chevron, whose size comes
   // from its button's type and which has no position of its own. Return
   // before the overlay: the no-corners branch below would otherwise hand it
@@ -7244,6 +7259,12 @@ function showHandles(d, page, el) {
   // button it labels.
   if (!dirs.length) return;
   const b = shapeBox(el, page);
+  // Not lines: a line is thin by nature and its end handles are the point.
+  const sh0 = el.dataset.shape && (layout.shapes || []).find(x => x.id === el.dataset.shape);
+  if (!(sh0 && (sh0.kind === 'line' || sh0.kind === 'arrow'))) {
+    dirs = thinHandles(dirs, b);
+    if (!dirs.length) return;
+  }
   const ov = d.createElement('div');
   ov.className = 'ds-handles';
   ov.style.cssText = `left:${b.x}in;top:${b.y}in;width:${b.w}in;height:${b.h}in`;
