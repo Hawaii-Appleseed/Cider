@@ -4,6 +4,17 @@
 // characters of every line. Local mode.
 const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
 
+/** Open the heading's words, retrying: under four parallel workers a click
+ *  that lands while the sheet is still settling does not always open them. */
+async function openWords(page) {
+  const h1 = page.frameLocator('#out').locator('[data-el="basics.h1"]');
+  for (let i = 0; i < 4; i++) {
+    await h1.dblclick();
+    try { await page.waitForFunction(() => editing === true, null, { timeout: 2500 }); return; }
+    catch (e) { await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
+  }
+}
+
 test.describe('handle placement', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
@@ -55,7 +66,8 @@ test.describe('handle placement', () => {
   test('while the words are open, the move grip sits beside the box, not on the text below', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await frame.locator('[data-el="basics.h1"]').dblclick();
+    await page.waitForTimeout(400);                       // the scroll settling under the pointer
+    await openWords(page);
     const grip = frame.locator('.ds-handles .ds-movegrip');
     await expect(grip).toHaveCount(1);
     const box = await frame.locator('.ds-handles').boundingBox();
@@ -66,15 +78,21 @@ test.describe('handle placement', () => {
     expect(g.x + g.width <= box.x + 0.01 || g.x >= box.x + box.width - 0.01).toBe(true);
   });
 
-  test('while typing, the edge pills and the frame hairline step back from the words', async ({ page }) => {
+  test('while typing, a side handle still resizes, to the pixel, and the caret stays', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await frame.locator('[data-el="basics.h1"]').dblclick();
+    await page.waitForTimeout(400);                       // the scroll settling under the pointer
+    await openWords(page);
     await expect(frame.locator('.ds-handles.ds-typing')).toHaveCount(1);
-    for (const d of ['n', 's', 'e', 'w']) await expect(frame.locator(`.ds-handles .ds-h-${d}`)).toBeHidden();
-    await expect(frame.locator('.ds-handles .ds-h-se')).toBeVisible();
-    await expect(frame.locator('.ds-handles .ds-movegrip')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(frame.locator('.ds-handles .ds-h-e')).toBeVisible();   // back once the words close
+    const e = await frame.locator('.ds-handles .ds-h-e').boundingBox();
+    const at = { x: e.x + e.width / 2, y: e.y + e.height / 2 };
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x - 96, at.y, { steps: 6 });
+    await page.mouse.up();
+    // Precise: the grip ends up under the pointer, wherever the zoom puts it.
+    await expect.poll(async () => Math.abs((await frame.locator('.ds-handles .ds-h-e').boundingBox()).x
+      + e.width / 2 - (at.x - 96)), { timeout: 5000 }).toBeLessThan(2);
+    expect(await page.evaluate(() => editing), 'the words are still open').toBe(true);
   });
 });

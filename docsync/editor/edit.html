@@ -25785,6 +25785,13 @@ function wire(roots) {
     .ds-lifted { box-shadow:0 12px 32px rgba(47,62,70,.28) !important;
                  transform:scale(1.015); opacity:.96;
                  outline:2px solid #6B9E78 !important; outline-offset:2px; }
+    /* A RESIZE does not lift. The 1.5% scale grew the box about its centre, so
+       its edge sat a few pixels past the pointer (0.75% of a wide box) and the
+       handles, measured off the scaled box, followed it: the edge you were
+       dragging never landed where the cursor was, and the frame it left behind
+       was that scaled size. An inline transform (a rotated or scaled piece)
+       still wins over this, as it should. */
+    body.ds-resizing .ds-lifted { transform:none; }
     /* …but none of that survives contact with an SVG child: the outline paints
        around the whole page-sized viewport (the recurring giant box — this was
        its FOURTH appearance, during drag and resize), and a CSS scale on an
@@ -25909,14 +25916,11 @@ function wire(roots) {
             border:1.5px solid #6B9E78; border-radius:4px;
             box-shadow:0 1px 3px rgba(20,30,35,.28); }
     .ds-h:hover { background:#6B9E78; }
-    /* While the words are open the frame is quiet: the overlay's own hairline
-       doubled the selection ring a pixel or two from the first and last
-       letters, and the edge pills (and the stem of the rotate grip) crowd a
-       one-line box, sitting over the line above and below it. What stays is
-       what a typist needs: the selection ring, the four corner dots and the
-       move grip. Escape closes the words and the full set of handles is back. */
+    /* While the words are open the overlay's own hairline goes (it doubled the
+       selection ring a pixel or two from the first and last letters) and the
+       rotate stem, which hangs over the line above. Every resize handle
+       STAYS: a box is sized with the caret still in it. */
     .ds-handles.ds-typing { outline:none; }
-    .ds-typing .ds-h-n, .ds-typing .ds-h-s, .ds-typing .ds-h-e, .ds-typing .ds-h-w,
     .ds-typing .ds-rot { display:none; }
     .ds-h-ne, .ds-h-nw, .ds-h-se, .ds-h-sw { border-radius:50%; }
     .ds-h-e { right:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
