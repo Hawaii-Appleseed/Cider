@@ -7293,7 +7293,7 @@ function showHandles(d, page, el) {
   // taking focus, and the drop commits a position, not the text.
   if (editing && richHost && (el === richHost || el.contains(richHost))) {
     const g = d.createElement('div');
-    g.className = 'ds-h ds-movegrip';
+    g.className = 'ds-h ds-movegrip' + (b.x < 0.4 ? ' ds-movegrip-r' : '');
     g.title = 'Drag to move — the words stay open';
     g.setAttribute('aria-label', 'Move');
     g.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">'
@@ -25916,11 +25916,17 @@ function wire(roots) {
     .ds-h-ne { right:-9px; top:-9px; width:9px; height:9px; cursor:nesw-resize; }
     .ds-h-sw { left:-9px; bottom:-9px; width:9px; height:9px; cursor:nesw-resize; }
     /* The move grip, only while the box's words are open (showHandles): a
-       round four-arrow button hanging under the box, clear of the south
-       handle, the one place a press moves the box instead of the caret. */
-    .ds-movegrip { left:50%; bottom:-31px; width:22px; height:22px; margin-left:-11px;
+       round four-arrow button, the one place a press moves the box instead
+       of the caret. It hangs off the SIDE, level with the middle, clear of
+       the west handle. It used to hang under the box, which is where the
+       next paragraph's first line is: the grip sat on top of the words below
+       the one being edited. A side margin is empty; a box that starts within
+       a grip's width of the page's left edge flips it to the right side
+       (showHandles adds .ds-movegrip-r). */
+    .ds-movegrip { left:-33px; top:50%; width:22px; height:22px; margin-top:-11px;
                    border-radius:50%; display:grid; place-items:center;
                    color:#2F3E46; cursor:move; box-shadow:0 1px 4px rgba(20,30,35,.25); }
+    .ds-movegrip.ds-movegrip-r { left:auto; right:-33px; }
     .ds-movegrip:hover { color:#fff; }
     .ds-movegrip svg { display:block; pointer-events:none; }
     /* the rotate grip hangs above the box on a short stem — only for elements

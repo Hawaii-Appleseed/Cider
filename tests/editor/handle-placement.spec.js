@@ -51,4 +51,18 @@ test.describe('handle placement', () => {
       expect(Math.abs((se.y + se.height / 2) - (ring.y + ring.height / 2))).toBeLessThan(1);
       expect(ring.width).toBeGreaterThan(se.width + 6);
     });
+
+  test('while the words are open, the move grip sits beside the box, not on the text below', async ({ page }) => {
+    const frame = page.frameLocator('#out');
+    await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
+    await frame.locator('[data-el="basics.h1"]').dblclick();
+    const grip = frame.locator('.ds-handles .ds-movegrip');
+    await expect(grip).toHaveCount(1);
+    const box = await frame.locator('.ds-handles').boundingBox();
+    const g = await grip.boundingBox();
+    // Beside the box: no part of it below the box's bottom edge, where the
+    // next paragraph's first line is, and none inside the box either.
+    expect(g.y + g.height).toBeLessThanOrEqual(box.y + box.height + 0.01);
+    expect(g.x + g.width <= box.x + 0.01 || g.x >= box.x + box.width - 0.01).toBe(true);
+  });
 });
