@@ -65,4 +65,16 @@ test.describe('handle placement', () => {
     expect(g.y + g.height).toBeLessThanOrEqual(box.y + box.height + 0.01);
     expect(g.x + g.width <= box.x + 0.01 || g.x >= box.x + box.width - 0.01).toBe(true);
   });
+
+  test('while typing, the edge pills and the frame hairline step back from the words', async ({ page }) => {
+    const frame = page.frameLocator('#out');
+    await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
+    await frame.locator('[data-el="basics.h1"]').dblclick();
+    await expect(frame.locator('.ds-handles.ds-typing')).toHaveCount(1);
+    for (const d of ['n', 's', 'e', 'w']) await expect(frame.locator(`.ds-handles .ds-h-${d}`)).toBeHidden();
+    await expect(frame.locator('.ds-handles .ds-h-se')).toBeVisible();
+    await expect(frame.locator('.ds-handles .ds-movegrip')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(frame.locator('.ds-handles .ds-h-e')).toBeVisible();   // back once the words close
+  });
 });

@@ -7307,6 +7307,9 @@ function showHandles(d, page, el) {
     });
     ov.appendChild(g);
   }
+  // Typing: the box is a text field now, so the chrome steps back from the
+  // words (see .ds-typing). Escape closes the words and brings it all back.
+  if (editing && richHost && (el === richHost || el.contains(richHost))) ov.classList.add('ds-typing');
   ov.dataset.for = el.dataset.shape || el.dataset.el;
   page.appendChild(ov);
 }
@@ -25906,6 +25909,15 @@ function wire(roots) {
             border:1.5px solid #6B9E78; border-radius:4px;
             box-shadow:0 1px 3px rgba(20,30,35,.28); }
     .ds-h:hover { background:#6B9E78; }
+    /* While the words are open the frame is quiet: the overlay's own hairline
+       doubled the selection ring a pixel or two from the first and last
+       letters, and the edge pills (and the stem of the rotate grip) crowd a
+       one-line box, sitting over the line above and below it. What stays is
+       what a typist needs: the selection ring, the four corner dots and the
+       move grip. Escape closes the words and the full set of handles is back. */
+    .ds-handles.ds-typing { outline:none; }
+    .ds-typing .ds-h-n, .ds-typing .ds-h-s, .ds-typing .ds-h-e, .ds-typing .ds-h-w,
+    .ds-typing .ds-rot { display:none; }
     .ds-h-ne, .ds-h-nw, .ds-h-se, .ds-h-sw { border-radius:50%; }
     .ds-h-e { right:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
     .ds-h-w { left:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
