@@ -32543,7 +32543,7 @@ function _pilotApplySetChart(id, patch) {
 
 function _pilotApplyAddTextBox({ page, x, y, w = 3, h, md = 'Your text here', style, fill } = {}) {
   md = fixOkina(md);
-  const pid = page != null ? page : visiblePageId();
+  const pid = page != null ? _pilotPageId(page) : visiblePageId();
   const id = freeBoxId();
   const box = { id, page: pid, x: x != null ? +x : placeX(w), y: y != null ? +y : 2,
                 w: +w, z: nextZ(1, pid), md };
@@ -32561,6 +32561,14 @@ function _pilotApplyAddTextBox({ page, x, y, w = 3, h, md = 'Your text here', st
 // behind the editor or fake a table out of a text box. Same objects the tools
 // make (a chart is a kind:"chart" shape, a table a layout.json table), so the
 // person gets the same panel, menus and handles as for one they drew.
+// A caller (the staff-hub connector sends JSON) may say page "1" for the page
+// whose id is the number 1; an object saved with the string never matched its
+// sheet and was refused as "would be saved and never seen". Use the page's own id.
+const _pilotPageId = pid => {
+  if (pid == null) return pid;
+  const hit = pageOrder().find(p => String(p) === String(pid));
+  return hit != null ? hit : pid;
+};
 const _pilotPageKnown = pid => pid == null
   || pageOrder().map(String).includes(String(pid))
   || designedPages.some(p => String(p.id) === String(pid))
@@ -32613,7 +32621,7 @@ function _pilotValidateAddChart(o) {
   return { ok: true };
 }
 function _pilotApplyAddChart({ page, x, y, w = 4, h = 2.8, chart, fill } = {}) {
-  const pid = page != null ? page : visiblePageId();
+  const pid = page != null ? _pilotPageId(page) : visiblePageId();
   const id = freeShapeId('chart');
   const spec = chart ? clone(chart)
     : { labels: ['First', 'Second', 'Third'], series: [{ name: 'Series 1', data: [12, 19, 8] }],
@@ -32661,7 +32669,7 @@ function _pilotValidateAddTable(o) {
   return { ok: true };
 }
 function _pilotApplyAddTable(o) {
-  const pid = o.page != null ? o.page : visiblePageId();
+  const pid = o.page != null ? _pilotPageId(o.page) : visiblePageId();
   const id = freeTableId();
   // Ragged rows are padded, numbers become the text they read as: a table's
   // cells are words, and the engine refuses a grid that is not rectangular.
@@ -32729,7 +32737,7 @@ function _pilotValidateAddShape(o = {}) {
 }
 function _pilotApplyAddShape({ page, kind = 'rect', x, y, w = 2, h, fill,
                                stroke, sw, z, rx, r, data } = {}) {
-  const pid = page != null ? page : visiblePageId();
+  const pid = page != null ? _pilotPageId(page) : visiblePageId();
   const id = freeShapeId(kind);
   // Same defaults as the Shapes panel (solid, on top, sage) so an argless
   // call lands exactly what a panel click lands.
@@ -32758,8 +32766,9 @@ function _pilotValidateSetStyle(key, patch) {
   if (!patch || typeof patch !== 'object' || Array.isArray(patch))
     return { ok: false, error: 'style patch must be an object, e.g. { size: 14, color: "#2F3E46" }' };
   const isBox = (key || '').startsWith('text.') && boxOf(key);
-  if (!isBox && !slotRe(key).test(source))
-    return { ok: false, error: `no slot or text box '${key}' — check inventory()` };
+  const isTable = (key || '').startsWith('table.') && tableOfId(String(key));
+  if (!isBox && !isTable && !slotRe(key).test(source))
+    return { ok: false, error: `no slot, text box or table '${key}' — check inventory()` };
   // A `use` naming a style that does not exist is refused by the engine at
   // LOAD, so writing one here would not set a style — it would produce a
   // document that will not open, several steps away from the call that did it.
@@ -32773,6 +32782,13 @@ function _pilotValidateSetStyle(key, patch) {
   return { ok: true };
 }
 function _pilotApplySetStyle(key, patch) {
+  // A table's type is its own `style` (setTable's style option); setStyle used to
+  // refuse a table id outright, so the same words were spelled two ways.
+  if ((key || '').startsWith('table.') && tableOfId(String(key))) {
+    const t = tableOfId(String(key));
+    t.style = { ...(t.style || {}), ...patch };
+    return { key, style: clone(t.style) };
+  }
   setStyle(key, patch);
   return { key, style: styleOf(key) };
 }
@@ -33412,6 +33428,16 @@ const PILOT_BATCH_VERBS = {
       Object.entries(patch).forEach(([k, v]) => { if (v == null) delete t[k]; else t[k] = clone(v); });
       return { id: 'table.' + t.id };
     } },
+  // A cell's words, in place: setTable takes every option but rows, so renaming
+  // one header meant deleting the table and building it again.
+  setCell: { validate: (id, r, c, md) => {
+      const t = tableOfId(String(id || ''));
+      if (!t) return { ok: false, error: `no table '${id}'` };
+      if (!(Number.isInteger(r) && Number.isInteger(c) && r >= 0 && c >= 0 && r < t.rows.length && c < t.rows[0].length))
+        return { ok: false, error: `setCell(id, row, col, md) — a cell inside a ${t.rows.length}x${t.rows[0].length} table, counting from 0` };
+      if (typeof md !== 'string' && typeof md !== 'number') return { ok: false, error: 'setCell: the words are a string' };
+      return { ok: true };
+    }, apply: (id, r, c, md) => { const t = tableOfId(id); t.rows[r][c] = String(md); return { id: 'table.' + t.id, row: r, col: c }; } },
   splitCell: { validate: (id, r, c, dir) => {
       const t = tableOfId(String(id || ''));
       if (!t) return { ok: false, error: `no table '${id}'` };
@@ -33903,7 +33929,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
    *  fresh addTextBox's id does not exist to place() until the batch's own
    *  render has run) — call addTextBox alone first, then batch the rest. */
   async batch(ops) {
-    if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
+    // Someone is typing: give them a few seconds to click out (a person asking
+    // Claude for a change is usually mid-sentence in a box) before refusing.
+    for (let i = 0; editing && i < 30; i++) await new Promise(r => setTimeout(r, 250));
+    if (editing) return { ok: false, error: 'an inline text editor is open — close it first (click outside the box, or press Esc), then send the same call again' };
     if (!Array.isArray(ops) || !ops.length)
       return { ok: false, error: 'batch needs a non-empty array of {verb, args}' };
     // An op may carry `as: 'name'`; later ops may say '@name' where an id
@@ -33959,6 +33988,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       if (verb === 'defineStyle')
         return a0 && a0.from && pendingStyles.has(a0.scope + ':' + a0.from);
       if (verb === 'dropStyle') return pendingStyles.has(a0 + ':' + a1);
+      if (verb === 'cellStyle') return typeof args[2] === 'string' && pendingStyles.has('cell:' + args[2]);
       return false;
     };
     for (let i = 0; i < ops.length; i++) {
@@ -33985,6 +34015,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       }
       if (op.verb === 'defineStyle' && args[0] && args[0].scope && args[0].name)
         pendingStyles.add(args[0].scope + ':' + String(args[0].name).trim());
+      if (op.verb === 'defineCellStyle' && typeof args[0] === 'string' && args[1] != null)
+        pendingStyles.add('cell:' + args[0]);
       if (op.as) defined.add(String(op.as));
     }
     const before = snapshot(), wasFailed = renderFailed;
@@ -34240,6 +34272,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async setNotes(k, notes) { return _pilotOne('setNotes', [k, notes]); },
   /** flip(id, 'h' | 'v' | 'hv' | null) — on shapes, boxes, tables, placed pieces. */
   async flip(id, f) { return _pilotOne('flip', [id, f]); },
+  /** setCell(id, row, col, md) — one table cell's words. */
+  async setCell(id, r, c, md) { return _pilotOne('setCell', [id, r, c, md]); },
   /** setShape(id, {r, stroke, sw, z}) — a shape's corner radius (inches, rectangles), outline and stacking order. */
   async setShape(id, p) { return _pilotOne('setShape', [id, p]); },
   /** Style housekeeping (76): unusedStyles() — {text, object, cell,
