@@ -7293,7 +7293,7 @@ function showHandles(d, page, el) {
   // taking focus, and the drop commits a position, not the text.
   if (editing && richHost && (el === richHost || el.contains(richHost))) {
     const g = d.createElement('div');
-    g.className = 'ds-h ds-movegrip';
+    g.className = 'ds-h ds-movegrip' + (b.x < 0.4 ? ' ds-movegrip-r' : '');
     g.title = 'Drag to move — the words stay open';
     g.setAttribute('aria-label', 'Move');
     g.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">'
@@ -7307,6 +7307,9 @@ function showHandles(d, page, el) {
     });
     ov.appendChild(g);
   }
+  // Typing: the box is a text field now, so the chrome steps back from the
+  // words (see .ds-typing). Escape closes the words and brings it all back.
+  if (editing && richHost && (el === richHost || el.contains(richHost))) ov.classList.add('ds-typing');
   ov.dataset.for = el.dataset.shape || el.dataset.el;
   page.appendChild(ov);
 }
@@ -25782,6 +25785,13 @@ function wire(roots) {
     .ds-lifted { box-shadow:0 12px 32px rgba(47,62,70,.28) !important;
                  transform:scale(1.015); opacity:.96;
                  outline:2px solid #6B9E78 !important; outline-offset:2px; }
+    /* A RESIZE does not lift. The 1.5% scale grew the box about its centre, so
+       its edge sat a few pixels past the pointer (0.75% of a wide box) and the
+       handles, measured off the scaled box, followed it: the edge you were
+       dragging never landed where the cursor was, and the frame it left behind
+       was that scaled size. An inline transform (a rotated or scaled piece)
+       still wins over this, as it should. */
+    body.ds-resizing .ds-lifted { transform:none; }
     /* …but none of that survives contact with an SVG child: the outline paints
        around the whole page-sized viewport (the recurring giant box — this was
        its FOURTH appearance, during drag and resize), and a CSS scale on an
@@ -25906,6 +25916,12 @@ function wire(roots) {
             border:1.5px solid #6B9E78; border-radius:4px;
             box-shadow:0 1px 3px rgba(20,30,35,.28); }
     .ds-h:hover { background:#6B9E78; }
+    /* While the words are open the overlay's own hairline goes (it doubled the
+       selection ring a pixel or two from the first and last letters) and the
+       rotate stem, which hangs over the line above. Every resize handle
+       STAYS: a box is sized with the caret still in it. */
+    .ds-handles.ds-typing { outline:none; }
+    .ds-typing .ds-rot { display:none; }
     .ds-h-ne, .ds-h-nw, .ds-h-se, .ds-h-sw { border-radius:50%; }
     .ds-h-e { right:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
     .ds-h-w { left:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
@@ -25916,11 +25932,17 @@ function wire(roots) {
     .ds-h-ne { right:-9px; top:-9px; width:9px; height:9px; cursor:nesw-resize; }
     .ds-h-sw { left:-9px; bottom:-9px; width:9px; height:9px; cursor:nesw-resize; }
     /* The move grip, only while the box's words are open (showHandles): a
-       round four-arrow button hanging under the box, clear of the south
-       handle, the one place a press moves the box instead of the caret. */
-    .ds-movegrip { left:50%; bottom:-31px; width:22px; height:22px; margin-left:-11px;
+       round four-arrow button, the one place a press moves the box instead
+       of the caret. It hangs off the SIDE, level with the middle, clear of
+       the west handle. It used to hang under the box, which is where the
+       next paragraph's first line is: the grip sat on top of the words below
+       the one being edited. A side margin is empty; a box that starts within
+       a grip's width of the page's left edge flips it to the right side
+       (showHandles adds .ds-movegrip-r). */
+    .ds-movegrip { left:-33px; top:50%; width:22px; height:22px; margin-top:-11px;
                    border-radius:50%; display:grid; place-items:center;
                    color:#2F3E46; cursor:move; box-shadow:0 1px 4px rgba(20,30,35,.25); }
+    .ds-movegrip.ds-movegrip-r { left:auto; right:-33px; }
     .ds-movegrip:hover { color:#fff; }
     .ds-movegrip svg { display:block; pointer-events:none; }
     /* the rotate grip hangs above the box on a short stem — only for elements

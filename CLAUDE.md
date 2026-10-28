@@ -704,7 +704,7 @@ Rules that bite:
   `typeOnClick` from startDrag's release); a press that travels MOVES; the
   handles resize; Escape leaves the words and keeps the box selected (the way
   to align, lock or delete it — shift-click also selects without typing);
-  and while the words are open, a grip under the box (`.ds-movegrip`) moves
+  and while the words are open, a grip beside the box (`.ds-movegrip`; under it, it covered the next paragraph) moves
   it without closing them. Groups still take a click to select, a second to
   drill in, a third to type; words inside a drawing keep their double-click.
   The guarantee has three nets: `docsync.check`'s IMMOVABLE TEXT (a
