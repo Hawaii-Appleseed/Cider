@@ -20784,9 +20784,16 @@ function placer(d, el, page) {
   const stored = shapeId ? shapeOf(shapeId)
                          : (bx || layout.positions[id]);
   const placedBefore = !!stored && stored.x !== undefined;
-  const box = placedBefore
-    ? { ...measured, x: +stored.x + delta.x, y: +stored.y + delta.y }
-    : { ...measured };
+  // Except an ANCHORED one: its anchor, not its x/y, decides where it is drawn
+  // (the spacer it follows, plus dy), and when the flow above the spacer
+  // changes the stored y goes stale. Trusted anyway, the drag started from
+  // the stale place: the UHERO cover's deck stored 1.07in below where it
+  // stood, so it leapt down the page the moment it was picked up - "I can't
+  // move it". Beyond rounding, the measurement wins.
+  const recorded = placedBefore ? { x: +stored.x + delta.x, y: +stored.y + delta.y } : null;
+  const stale = recorded && stored.anchor
+    && (Math.abs(recorded.x - measured.x) > 0.05 || Math.abs(recorded.y - measured.y) > 0.05);
+  const box = recorded && !stale ? { ...measured, ...recorded } : { ...measured };
   // The width a placement pins (see pinW), decided before the trial below so
   // the trial lays the element out exactly as the placement will.
   const wPin = (shapeId ? null : (layout.positions[id] || {}).w)
