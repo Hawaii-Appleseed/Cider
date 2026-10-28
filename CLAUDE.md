@@ -99,6 +99,19 @@ exact line in `editability_ok` if it is genuinely a list, e.g. a contents page).
 
 ## Default to driving the editor, not editing files
 
+**A report on the staff hub is changed through the document, never the code
+(Devin's rule, 2026-10-28).** "Make this box nicer", "remove that card",
+"restyle this section" is a document change: the hub connector's
+`read_report`, then `edit_report` (text) or `arrange_report` (remove, place,
+recolor, setStyle, addShape, charts, tables) while the report is open in the
+editor. It saves in the report itself — no worktree, no PR, no hub push. Do
+not edit a report's `render_report.py` / `layout.json`, `docsync/`, or start
+`tools/wt new|land` / `docsync.hub` for it; if the editor cannot do it, say so
+and ask. `.claude/hooks/guard-report-templates.py` (a PreToolUse hook in
+`.claude/settings.json`) DENIES those edits for every session in this repo;
+a person who means to work on the code runs `.claude/hooks/allow-template`
+(a 2-hour window, per person). Claude never opens it.
+
 When the user asks for a visual/content change — move, resize, restyle,
 retext, recolor an element, swap an image, adjust a chart — **drive
 `edit.html`** instead of editing `content.md` / `layout.json` / any file

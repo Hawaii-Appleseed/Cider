@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Open (or close) the window in which Claude may edit report template / engine
+# code. Read by .claude/hooks/guard-report-templates.py. A person runs this, never Claude.
+# The window is per person (~/.cache) and covers Cider and the hub alike.
+#   .claude/hooks/allow-template            open for 120 minutes
+#   .claude/hooks/allow-template 30         open for 30 minutes
+#   .claude/hooks/allow-template off        close it
+#   .claude/hooks/allow-template status     show whether it is open
+set -euo pipefail
+W="$HOME/.cache/cider-wt/allow-template"
+mkdir -p "$(dirname "$W")"
+case "${1:-120}" in
+  off)    rm -f "$W"; echo "template edits locked" ;;
+  status) u=$(cat "$W" 2>/dev/null || echo 0)
+          if [ "$u" -gt "$(date +%s)" ]; then echo "open until $(date -r "$u" +%H:%M)"; else echo "locked"; fi ;;
+  *[!0-9]*) echo "usage: allow-template [minutes|off|status]" >&2; exit 2 ;;
+  *)      u=$(( $(date +%s) + $1 * 60 )); echo "$u" > "$W"
+          echo "template edits open until $(date -r "$u" +%H:%M)" ;;
+esac
