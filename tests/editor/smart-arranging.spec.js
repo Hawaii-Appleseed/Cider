@@ -122,7 +122,7 @@ test.describe('smarter arranging', () => {
       await gotoEditor(page, '?project=demo-report');
       const [a, b, c] = await addBoxes(page, [[0.8, 8], [5.2, 8], [2.6, 9.5]]);
       // c is 1in wide; a ends at 1.8 and b starts at 5.2, so the middle is 3.0.
-      // Drag it up into the row and drop it 0.05in short of the middle.
+      // Drag it up into the row and drop it 0.03in short of the middle.
       const C0 = await boxOf(page, c);
       const pts = await page.evaluate(([id, dx, dy]) => {
         const f = document.getElementById('out');
@@ -134,7 +134,7 @@ test.describe('smarter arranging', () => {
         // does not travel types; one that travels moves either way).
         const x0 = fr.left + r.left + 3, y0 = fr.top + r.top + r.height / 2;
         return { x0, y0, x1: x0 + dx * px, y1: y0 + dy * px };
-      }, [c, 3.0 - 0.05 - C0.x, -1.5]);
+      }, [c, 3.0 - 0.03 - C0.x, -1.5]);
       await page.mouse.move(pts.x0, pts.y0);
       await page.mouse.down();
       await page.mouse.move(pts.x0 + 10, pts.y0 - 10, { steps: 3 });
