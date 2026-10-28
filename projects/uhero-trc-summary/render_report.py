@@ -294,16 +294,20 @@ html = f"""<!DOCTYPE html>
   .klabel {{ font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
              letter-spacing:.1em; text-transform:uppercase; color:{PRIMARY_DARK};
              margin:0.2in 0 0; }}
-  .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); margin:8px 0 0;
-           border-top:2px solid {PRIMARY_DARK}; }}
-  .fig {{ padding:12px 18px 0 0; }}
-  /* by class, not .fig + .fig: the editor's strut beside a moved fact would
-     break the sibling chain and take the rule off its neighbour */
-  .fig-b, .fig-c {{ border-left:1px solid {LINE}; padding-left:18px; }}
-  .fig-n {{ font-family:Barlow, sans-serif; font-size:32px; font-weight:800;
-            line-height:1; color:{PRIMARY_DARK}; }}
+  /* Key facts: three tinted cards, each with an accent bar on top (rust for
+     the warning figure, teal for the rest). Styled per card rather than by
+     sibling selectors, so a fact moved in the editor keeps its look. */
+  .figs {{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;
+           margin:8px 0 0; }}
+  .fig {{ background:#F2F5F1; border-top:4px solid {TEAL}; border-radius:0 0 6px 6px;
+          padding:14px 16px 15px; box-sizing:border-box; }}
+  .fig-warn {{ background:#F8F0EB; border-top-color:{WARM}; }}
+  .fig-n {{ font-family:Barlow, sans-serif; font-size:38px; font-weight:800;
+            line-height:1; letter-spacing:-.01em; color:{PRIMARY_DARK}; }}
   .fig-warn .fig-n {{ color:{WARM}; }}
-  .fig-l {{ font-size:13.5px; color:{BODY}; margin-top:8px; line-height:1.4; }}
+  .fig-l {{ font-size:12.5px; letter-spacing:.02em; color:{BODY}; margin-top:9px;
+            padding-top:9px; border-top:1px solid rgba(53,79,82,.14); line-height:1.4; }}
+  .fig-warn .fig-l {{ border-top-color:rgba(168,96,63,.22); }}
   .datebox {{ display:grid; grid-template-columns:1.6in 1fr; }}
   .datebox {{ margin:0.2in 0 0; padding:9px 0 0; border-top:1px solid {LINE}; }}
   .datebox .box-h {{ margin:2px 16px 0 0; }}
@@ -415,9 +419,7 @@ html = f"""<!DOCTYPE html>
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:26px; }}
     h1 {{ font-size:27px; }}
-    .figs {{ grid-template-columns:1fr; }}
-    .fig {{ padding:12px 0; }}
-    .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
+    .figs {{ grid-template-columns:1fr; gap:10px; }}
     .datebox {{ grid-template-columns:1fr; }}
     .datebox .box-h {{ margin:0 0 4px; }}
     .split {{ flex-direction:column; gap:10px; }}
@@ -429,9 +431,7 @@ html = f"""<!DOCTYPE html>
     .cfwrap, .pfwrap {{ position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:26px; }}
     h1 {{ font-size:27px; }}
-    .figs {{ grid-template-columns:1fr; }}
-    .fig {{ padding:12px 0; }}
-    .fig-b, .fig-c {{ border-left:0; padding-left:0; border-top:1px solid {LINE}; }}
+    .figs {{ grid-template-columns:1fr; gap:10px; }}
     .datebox {{ grid-template-columns:1fr; }}
     .datebox .box-h {{ margin:0 0 4px; }}
     .split {{ flex-direction:column; gap:10px; }}
