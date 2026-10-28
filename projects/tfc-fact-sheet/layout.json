@@ -1,0 +1,550 @@
+{
+  "positions": {},
+  "fill": {
+    "page.1": "#232322"
+  },
+  "shapes": [
+    {
+      "id": "txt-rule-3",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.52,
+      "w": 1.2,
+      "h": 0.05,
+      "fill": "#FDCF21"
+    },
+    {
+      "id": "txt-rule-7",
+      "page": 3,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.52,
+      "w": 1.2,
+      "h": 0.05,
+      "fill": "#FDCF21"
+    },
+    {
+      "id": "txt-rule-16",
+      "page": 4,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.955,
+      "w": 1.2,
+      "h": 0.05,
+      "fill": "#FDCF21"
+    },
+    {
+      "id": "txt-rule-23",
+      "page": 5,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.955,
+      "w": 1.2,
+      "h": 0.05,
+      "fill": "#FDCF21"
+    },
+    {
+      "id": "txt-rule-30",
+      "page": 6,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.52,
+      "w": 1.2,
+      "h": 0.05,
+      "fill": "#FDCF21"
+    }
+  ],
+  "boxes": [
+    {
+      "id": "tpl-photo",
+      "page": 1,
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "z": 1,
+      "md": "![Cover photo placeholder](assets/cover-photo-placeholder.svg)"
+    },
+    {
+      "id": "tpl-kick",
+      "page": 1,
+      "x": 0.7,
+      "y": 8,
+      "w": 3,
+      "z": 3,
+      "md": "POLICY BRIEF",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 700,
+        "size": 14,
+        "color": "#FDCF21",
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "tpl-title",
+      "page": 1,
+      "x": 0.7,
+      "y": 8.35,
+      "w": 5.2,
+      "z": 3,
+      "md": "Tax Fairness Fact Sheet: Our Top Three 2027 Priorities",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#FFFFFF",
+        "case": "upper",
+        "leading": 1.1
+      }
+    },
+    {
+      "id": "tpl-date",
+      "page": 1,
+      "x": 5.6,
+      "y": 8,
+      "w": 2.2,
+      "z": 3,
+      "md": "OCTOBER 2026",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 700,
+        "size": 14,
+        "color": "#FDCF21",
+        "align": "right",
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "tpl-logo",
+      "page": 1,
+      "x": 6.15,
+      "y": 9.55,
+      "w": 1.65,
+      "z": 3,
+      "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+    },
+    {
+      "id": "tpl-covernote",
+      "page": 1,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 4.6,
+      "z": 3,
+      "md": "The backdrop is a placeholder — swap it for a cover photo (Insert ▸ Image, size to the page, send to back), then delete this note.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 11,
+        "color": "#9C9C98",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "txt-foot-1",
+      "page": 2,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "2 · TAX FAIRNESS FACT SHEET: OU…",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-2",
+      "page": 2,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Summary",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 38,
+        "color": "#232322",
+        "case": "upper"
+      }
+    },
+    {
+      "id": "txt-body-4",
+      "page": 2,
+      "x": 0.7,
+      "y": 1.85,
+      "w": 7.1,
+      "z": 2,
+      "md": "**LOCAL FAMILIES ARE LEAVING BECAUSE THEY** can't afford to stay, while the tax code rewards those who profit most from our islands. In 2027 the Coalition is working on three changes that ask the wealthiest to pay their fair share and keep money in the pockets of working families.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-5",
+      "page": 3,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "3 · TAX FAIRNESS FACT SHEET: OU…",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-6",
+      "page": 3,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "1. Fix the Conveyance Tax",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 38,
+        "color": "#232322",
+        "case": "upper"
+      }
+    },
+    {
+      "id": "txt-body-8",
+      "page": 3,
+      "x": 0.7,
+      "y": 1.85,
+      "w": 7.1,
+      "z": 2,
+      "md": "**THE CONVEYANCE TAX IS PAID WHEN** real estate changes hands. Its rates have not changed since 2009, even as high-end and investment property in Hawaiʻi has soared in value.[^uhero] Today none of its revenue goes to the Department of Hawaiian Home Lands (DHHL).[^leg]\n\n- The tax raised **$96.0 million** in FY2025, only 0.8 percent of state tax collections.[^uhero]\n- The rate applies to the whole price, so the tax jumps at set prices: a cash sale just under $1 million owes about $2,000, while a sale at $1 million owes $3,000.[^uhero]\n- Nearly **30,000 beneficiaries** are waiting for a homestead lot, many for more than four decades.[^dhhl]\n- Act 279's historic $600 million appropriation still left DHHL needing **$800 million more** for about 6,000 lots.[^dhhl]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-sub-9",
+      "page": 3,
+      "x": 0.7,
+      "y": 5.173,
+      "w": 7.1,
+      "z": 2,
+      "md": "What we support",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 22,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "txt-body-10",
+      "page": 3,
+      "x": 0.7,
+      "y": 5.594,
+      "w": 7.1,
+      "z": 2,
+      "md": "A conveyance tax that asks more of high-value and investment property sales, protects local families buying a home to live in, and dedicates the new revenue to DHHL.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-sub-11",
+      "page": 3,
+      "x": 0.7,
+      "y": 6.183,
+      "w": 7.1,
+      "z": 2,
+      "md": "What it would raise",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 22,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "txt-body-12",
+      "page": 3,
+      "x": 0.7,
+      "y": 6.604,
+      "w": 7.1,
+      "z": 2,
+      "md": "Last session's House version (SB 3028 SD2 HD1) was estimated to raise **$271 million in its first year, rising to $303 million by FY2031**. That includes up to **$60 million a year for DHHL**, plus dedicated funding for rental housing, urban development, and land conservation.[^leg]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-quote-13",
+      "page": 3,
+      "x": 0.7,
+      "y": 7.761,
+      "w": 7.1,
+      "z": 2,
+      "md": "Those who profit most from our islands should also invest the most in their future.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 21,
+        "color": "#232322",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "txt-foot-14",
+      "page": 4,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "4 · TAX FAIRNESS FACT SHEET: OU…",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-15",
+      "page": 4,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "2. Keep Working Families' Tax Credits",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 38,
+        "color": "#232322",
+        "case": "upper"
+      }
+    },
+    {
+      "id": "txt-body-17",
+      "page": 4,
+      "x": 0.7,
+      "y": 2.285,
+      "w": 7.1,
+      "z": 2,
+      "md": "**IN 2023,** Act 163 doubled two of Hawaiʻi's most important credits for working families: the state earned income tax credit, raised from 20 to 40 percent of the federal credit, and the refundable food/excise tax credit, which offsets the general excise tax on groceries and other basics.[^act163] Both expansions are repealed on December 31, 2027, and a 2026 bill to extend them was not enacted.[^hb2306]\n\n- Working families would receive about **$76 million less** in 2028: about $43 million from the earned income tax credit and $34 million from the food/excise credit.[^model]\n- Renewing both would cost the state the same amount, about **$307 million over tax years 2028 to 2031**.[^model]\n- About **180,000 households** would receive less in credits in 2028. A single-parent household that loses part of a credit gives up **$817** on average.[^model]\n- Among the lowest-income fifth of households, 75 percent would lose part of a credit, averaging **$460 each**. That group takes 45 percent of the total loss.[^model]\n- About **2,100 more people**, including about 500 keiki, would fall below the poverty line. The earned income tax credit alone reaches about 78,000 Hawaiʻi households a year.[^model][^eitc]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-sub-18",
+      "page": 4,
+      "x": 0.7,
+      "y": 6.78,
+      "w": 7.1,
+      "z": 2,
+      "md": "What we support",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 22,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "txt-body-19",
+      "page": 4,
+      "x": 0.7,
+      "y": 7.201,
+      "w": 7.1,
+      "z": 2,
+      "md": "Extending the earned income and food/excise tax credits before they expire.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-quote-20",
+      "page": 4,
+      "x": 0.7,
+      "y": 7.656,
+      "w": 7.1,
+      "z": 2,
+      "md": "Working families would lose an estimated $76 million in 2028 alone.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 21,
+        "color": "#232322",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "txt-foot-21",
+      "page": 5,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "5 · TAX FAIRNESS FACT SHEET: OU…",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-22",
+      "page": 5,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "3. Tax Capital Gains at the Same Rate as Ordinary Income",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 38,
+        "color": "#232322",
+        "case": "upper"
+      }
+    },
+    {
+      "id": "txt-body-24",
+      "page": 5,
+      "x": 0.7,
+      "y": 2.285,
+      "w": 7.1,
+      "z": 2,
+      "md": "**A NURSE OR A HOTEL WORKER** pays Hawaiʻi's regular income tax rates on every paycheck. But profits from selling stocks, land, and other investments are capped at **7.25 percent**, even for the highest-income households, whose wages are now taxed at up to **13 percent**.[^model3]\n\n- Act 24 (2026) raised the top rate on wages but left the capital gains rate alone, so the gap between work and wealth grew from 3.75 to **5.75 percentage points**.[^model3]\n- Taxing capital gains like wages would raise an estimated **$110 million or more a year**.[^model3]\n- About **90 percent** of it would come from the top 1 percent of households. Most local families would pay nothing more.[^model3]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-sub-25",
+      "page": 5,
+      "x": 0.7,
+      "y": 5.374,
+      "w": 7.1,
+      "z": 2,
+      "md": "What we support",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 22,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "txt-body-26",
+      "page": 5,
+      "x": 0.7,
+      "y": 5.795,
+      "w": 7.1,
+      "z": 2,
+      "md": "Taxing capital gains at the same rates as ordinary income, so that income from investments is not taxed at lower rates than income from regular work.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-quote-27",
+      "page": 5,
+      "x": 0.7,
+      "y": 6.484,
+      "w": 7.1,
+      "z": 2,
+      "md": "Tax wealth like work.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 21,
+        "color": "#232322",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "txt-foot-28",
+      "page": 6,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "6 · TAX FAIRNESS FACT SHEET: OU…",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-29",
+      "page": 6,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Take action",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 38,
+        "color": "#232322",
+        "case": "upper"
+      }
+    },
+    {
+      "id": "txt-body-31",
+      "page": 6,
+      "x": 0.7,
+      "y": 1.85,
+      "w": 7.1,
+      "z": 2,
+      "md": "**SIGN UP AT HITAXFAIRNESS.ORG AND WE'LL** tell you when these bills are moving and when to submit testimony.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    }
+  ],
+  "tables": [],
+  "sections": {}
+}
