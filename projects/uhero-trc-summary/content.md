@@ -396,7 +396,7 @@ What is missing from the draft
 Bottom line for advocates (the Coalition's view, not UHERO's)
 
 [[adv.b1]]
-**The Commission should ask for full estimates of the two swaps that lean toward lower earners** (taxing capital gains like regular income, and raising the top income-tax rate by one percentage point), showing both the revenue and who gains and loses at each income level (p. 161).
+**The Commission should ask for full estimates of the capital-gains and top-rate swaps** (taxing capital gains like regular income, and raising the top income-tax rate by one percentage point), showing both the revenue and who gains and loses at each income level (p. 161).
 
 [[adv.b2]]
 **Members of the public can weigh in** at the full Commission discussion on October 28, and written comments can be sent to **tax.research@hawaii.gov**.
