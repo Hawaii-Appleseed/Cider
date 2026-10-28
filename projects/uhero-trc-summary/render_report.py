@@ -195,7 +195,7 @@ page = f"""
   {L.flow_table("swaps", SWAPS_DEFAULT)}
   <div class="swnote">{C.html("swap.note", "cap")}</div>
   <h2 class="figt"{L.attr("groc.h1")}>{C.t("groc.h1")}</h2>
-  {C.html("groc.lead", "body")}
+  <div class="callout"{L.frame("groc.callout")}>{C.html("groc.lead", "body")}</div>
   <h2 class="figt"{L.attr("groc.chart.h")}>{C.t("groc.chart.h")}</h2>
   <div class="split"{L.frame("groc.split")}><div class="splitl">
   {chart(L, "chart.decile", decile_spec(), w=3.9, h=0.9,
@@ -364,6 +364,12 @@ html = f"""<!DOCTYPE html>
   table.ds-flow td:first-child {{ color:{INK}; font-weight:600; }}
   .page table.ds-flow td {{ padding-top:3px; padding-bottom:3px; }}
 
+  /* The grocery estimate's headline numbers, set apart as a callout: a sage
+     panel with a teal bar on the left, the figures in slate. */
+  .callout {{ background:#F2F5F1; border-left:4px solid {TEAL}; border-radius:0 6px 6px 0;
+              padding:10px 16px 11px; margin:6px 0 4px; }}
+  .callout .body {{ margin:0; }}
+  .callout .body b {{ color:{PRIMARY_DARK}; font-weight:800; }}
   .split {{ display:flex; gap:26px; align-items:flex-start; margin-top:6px; }}
   .splitl {{ flex:0 0 3.9in; }}
   .pcts {{ flex:1; padding-top:2px; }}
