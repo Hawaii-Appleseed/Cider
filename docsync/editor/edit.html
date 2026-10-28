@@ -19845,7 +19845,8 @@ const DPI = 96;                        // CSS px per inch — the one real const
 // at boot; the defaults are only what a letter-portrait report happens to use.
 let PAGE_W_IN = 8.5, PAGE_H_IN = 11;
 let MARGIN_IN = 0.62, TOP_IN = 0.75;
-const SNAP_IN = 0.06;                  // how close before it pulls into line
+const SNAP_IN = 0.04;                  // how close before it pulls into line (~4px)
+const SNAP_REACH_IN = 1;               // a neighbour's line only counts within this of the box, across
 const NUDGE_IN = 0.05, NUDGE_BIG_IN = 0.25;
 
 /**
@@ -19868,18 +19869,40 @@ const inchBox = (el, page) => {
  * of everything else on the page. Alignment you can feel is the difference
  * between arranging and fiddling.
  */
+const SNAP_SEL = '[data-el], [data-shape], h1, h2.sub, .card, .branch, .photo';
 function snapLines(d, page, moving) {
   const skip = Array.isArray(moving) ? moving : [moving];   // a group skips itself
   const xs = [0, MARGIN_IN, PAGE_W_IN / 2, PAGE_W_IN - MARGIN_IN, PAGE_W_IN];
   const ys = [0, TOP_IN, PAGE_H_IN / 2, PAGE_H_IN - 0.9, PAGE_H_IN];
   const boxes = [];                 // for equal spacing (spaceSnap)
-  page.querySelectorAll('[data-el], [data-shape], h1, h2.sub, .card, .branch, .photo')
-      .forEach(el => {
+  // Snap to SIBLINGS: what sits at the same nesting level as the thing being
+  // moved, plus the container it is in. The edges of every field inside every
+  // other card are not alignment targets - on a page of tally rows there were
+  // hundreds of them, so any position was within reach of one and a box
+  // snapped nearly everywhere (a bullet list "snaps in the wrong place").
+  const holder = el => {
+    const p = el.parentElement && el.parentElement.closest(SNAP_SEL);
+    return p && page.contains(p) ? p : null;
+  };
+  // A neighbour's line carries the span it runs along, so a box is only pulled
+  // by lines of things it is actually beside (snapAxis checks the reach).
+  const addLines = b => {
+    for (const k of [0, 0.5, 1]) {
+      xs.push({ v: b.x + b.w * k, a: b.y, b: b.y + b.h });
+      ys.push({ v: b.y + b.h * k, a: b.x, b: b.x + b.w });
+    }
+  };
+  const level = skip[0] ? holder(skip[0]) : null;
+  if (level) {
+    const lb = inchBox(level, page);
+    if (lb.w >= 0.1 && lb.h >= 0.1) addLines(lb);
+  }
+  page.querySelectorAll(SNAP_SEL).forEach(el => {
     if (skip.some(m => el === m || m.contains(el) || el.contains(m))) return;
+    if (holder(el) !== level) return;
     const b = inchBox(el, page);
     if (b.w < 0.1 || b.h < 0.1) return;
-    xs.push(b.x, b.x + b.w / 2, b.x + b.w);
-    ys.push(b.y, b.y + b.h / 2, b.y + b.h);
+    addLines(b);
     // Spacing is between SIBLINGS: a box inside another one (a card's title
     // in its card) is not a neighbour of anything beside the card.
     if (!boxes.some(o => o.el.contains(el))) {
@@ -19895,7 +19918,19 @@ function snapLines(d, page, moving) {
     const mg = marginGuides(sheet ? sheet.id : null);
     if (mg) { xs.push(mg.l, mg.r, ...mg.cols); ys.push(mg.t, mg.b); }
   }
-  return { xs, ys, boxes };
+  // Lines a hundredth apart are one line: fewer targets to land near.
+  const uniq = a => {
+    const m = new Map();
+    for (const l of a) {
+      const k = Math.round((l.v ?? l) * 100), o = m.get(k);
+      if (!o) m.set(k, l);
+      else if (typeof o === 'object' && typeof l === 'object')
+        m.set(k, { v: o.v, a: Math.min(o.a, l.a), b: Math.max(o.b, l.b) });
+      else m.set(k, typeof o === 'object' ? l : o);   // a page line has no span: always counts
+    }
+    return [...m.values()];
+  };
+  return { xs: uniq(xs), ys: uniq(ys), boxes };
 }
 
 /**
@@ -19959,12 +19994,17 @@ function spaceSnap(boxes, axis, x, y, w, h) {
  * it grabbed any stray line there and the box snapped to the wrong place.
  */
 const SNAP_MID_MAX = 3;                // inches
-function snapAxis(lines, lo, size) {
+function snapAxis(lines, lo, size, clo = null, csize = 0) {
   let best = null;
   const probes = [[lo, 0], [lo + size, size]];
   if (size <= SNAP_MID_MAX) probes.splice(1, 0, [lo + size / 2, size / 2]);
-  for (const probe of probes) {
-    for (const line of lines) {
+  for (const l of lines) {
+    const line = typeof l === 'number' ? l : l.v;
+    // A line that belongs to a box (not the page, not a ruler guide) pulls
+    // only while the moving box is near it across the axis.
+    if (clo !== null && typeof l === 'object'
+        && (clo > l.b + SNAP_REACH_IN || clo + csize < l.a - SNAP_REACH_IN)) continue;
+    for (const probe of probes) {
       const d = Math.abs(probe[0] - line);
       if (d <= SNAP_IN && (!best || d < best.d)) best = { d, at: line - probe[1], line };
     }
@@ -20835,8 +20875,8 @@ function placer(d, el, page) {
   const put = (x, y, snap = true) => {
     let vx = null, hy = null, gaps = [];
     if (snap) {
-      const sx = snapAxis(lines().xs, x, box.w);
-      const sy = snapAxis(lines().ys, y, box.h);
+      const sx = snapAxis(lines().xs, x, box.w, y, box.h);
+      const sy = snapAxis(lines().ys, y, box.h, x, box.w);
       // An edge or centre line wins; equal spacing is tried on an axis that
       // found none, so the two never fight over one pixel.
       const gx = sx ? null : spaceSnap(lines().boxes, 'x', x, sy ? sy.at : y, box.w, box.h);
@@ -21163,8 +21203,8 @@ function startDrag(d, el, e0, drillIn = false) {
     let gx = group.x + dx, gy = group.y + dy, vx = null, hy = null;
     const gaps = [];
     const free = e.metaKey || e.ctrlKey;      // hold ⌘/Ctrl to move without snapping
-    const sx = free ? null : snapAxis(glines.xs, gx, group.w);
-    const sy = free ? null : snapAxis(glines.ys, gy, group.h);
+    const sx = free ? null : snapAxis(glines.xs, gx, group.w, gy, group.h);
+    const sy = free ? null : snapAxis(glines.ys, gy, group.h, gx, group.w);
     const ex = free || sx ? null : spaceSnap(glines.boxes, 'x', gx, sy ? sy.at : gy, group.w, group.h);
     const ey = free || sy ? null : spaceSnap(glines.boxes, 'y', sx ? sx.at : gx, gy, group.w, group.h);
     if (sx) { gx = +sx.at.toFixed(3); vx = sx.line; }
