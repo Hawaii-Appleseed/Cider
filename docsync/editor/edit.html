@@ -19846,6 +19846,9 @@ const DPI = 96;                        // CSS px per inch — the one real const
 let PAGE_W_IN = 8.5, PAGE_H_IN = 11;
 let MARGIN_IN = 0.62, TOP_IN = 0.75;
 const SNAP_IN = 0.04;                  // how close before it pulls into line (~4px)
+const SNAP_DENSE_WIN_IN = 0.5;         // a probe with more than SNAP_DENSE_N lines this close is in a dense list
+const SNAP_DENSE_N = 2;
+const SNAP_DENSE_IN = 0.02;            // ...and there it pulls from this far, to a line of its own kind only
 const SNAP_REACH_IN = 1;               // a neighbour's line only counts within this of the box, across
 const NUDGE_IN = 0.05, NUDGE_BIG_IN = 0.25;
 
@@ -19888,8 +19891,9 @@ function snapLines(d, page, moving) {
   // by lines of things it is actually beside (snapAxis checks the reach).
   const addLines = b => {
     for (const k of [0, 0.5, 1]) {
-      xs.push({ v: b.x + b.w * k, a: b.y, b: b.y + b.h });
-      ys.push({ v: b.y + b.h * k, a: b.x, b: b.x + b.w });
+      const kind = k === 0 ? 1 : k === 1 ? 4 : 2;
+      xs.push({ v: b.x + b.w * k, a: b.y, b: b.y + b.h, k: kind });
+      ys.push({ v: b.y + b.h * k, a: b.x, b: b.x + b.w, k: kind });
     }
   };
   const level = skip[0] ? holder(skip[0]) : null;
@@ -19925,7 +19929,7 @@ function snapLines(d, page, moving) {
       const k = Math.round((l.v ?? l) * 100), o = m.get(k);
       if (!o) m.set(k, l);
       else if (typeof o === 'object' && typeof l === 'object')
-        m.set(k, { v: o.v, a: Math.min(o.a, l.a), b: Math.max(o.b, l.b) });
+        m.set(k, { v: o.v, a: Math.min(o.a, l.a), b: Math.max(o.b, l.b), k: o.k | l.k });
       else m.set(k, typeof o === 'object' ? l : o);   // a page line has no span: always counts
     }
     return [...m.values()];
@@ -19996,17 +20000,26 @@ function spaceSnap(boxes, axis, x, y, w, h) {
 const SNAP_MID_MAX = 3;                // inches
 function snapAxis(lines, lo, size, clo = null, csize = 0) {
   let best = null;
-  const probes = [[lo, 0], [lo + size, size]];
-  if (size <= SNAP_MID_MAX) probes.splice(1, 0, [lo + size / 2, size / 2]);
-  for (const l of lines) {
-    const line = typeof l === 'number' ? l : l.v;
-    // A line that belongs to a box (not the page, not a ruler guide) pulls
-    // only while the moving box is near it across the axis.
-    if (clo !== null && typeof l === 'object'
-        && (clo > l.b + SNAP_REACH_IN || clo + csize < l.a - SNAP_REACH_IN)) continue;
-    for (const probe of probes) {
+  const probes = [[lo, 0, 1], [lo + size, size, 4]];     // [position, offset, kind]
+  if (size <= SNAP_MID_MAX) probes.splice(1, 0, [lo + size / 2, size / 2, 2]);
+  // Lines a box can be pulled by from where it is: the page's own and ruler
+  // guides always; a neighbour's only while the box is beside it.
+  const near = clo === null ? lines : lines.filter(l => typeof l === 'number'
+    || !(clo > l.b + SNAP_REACH_IN || clo + csize < l.a - SNAP_REACH_IN));
+  for (const probe of probes) {
+    // In a dense list (tally rows, stacked bullets) a box is within reach of
+    // some edge at nearly every position, so it snapped everywhere. There a
+    // probe only takes an exact-ish line of its own kind: top to top, bottom
+    // to bottom, centre to centre - or butted against, bottom to a top.
+    let crowd = 0;
+    for (const l of near) if (typeof l === 'object' && Math.abs(l.v - probe[0]) <= SNAP_DENSE_WIN_IN) crowd++;
+    const dense = crowd > SNAP_DENSE_N, tol = dense ? SNAP_DENSE_IN : SNAP_IN;
+    for (const l of near) {
+      const line = typeof l === 'number' ? l : l.v;
+      if (dense && typeof l === 'object'
+          && !(l.k & probe[2]) && !(probe[2] === 4 && l.k & 1) && !(probe[2] === 1 && l.k & 4)) continue;
       const d = Math.abs(probe[0] - line);
-      if (d <= SNAP_IN && (!best || d < best.d)) best = { d, at: line - probe[1], line };
+      if (d <= tol && (!best || d < best.d)) best = { d, at: line - probe[1], line };
     }
   }
   return best;
