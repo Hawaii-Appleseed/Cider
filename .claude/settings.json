@@ -32,6 +32,19 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-report-templates.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking this is not report template code..."
+          }
+        ]
+      }
     ]
   }
 }
