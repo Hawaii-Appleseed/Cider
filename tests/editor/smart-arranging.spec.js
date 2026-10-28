@@ -183,4 +183,25 @@ test.describe('smarter arranging', () => {
     expect(near(r.short.at, 4.75, 0.001)).toBe(true);
     expect(near(r.tallEdge.at, 3.5, 0.001)).toBe(true);
   });
+
+  test('in a dense list a box only snaps close to a line of its own kind', async ({ page }) => {
+    await gotoEditor(page, '?project=demo-report');
+    const r = await page.evaluate(() => {
+      // Rows 0.5in apart, 0.3 tall: a top line and a bottom line each, 4 rows.
+      const ln = (v, k) => ({ v, a: 0, b: 5, k });
+      const dense = [];
+      for (let i = 0; i < 4; i++) dense.push(ln(2 + i * 0.5, 1), ln(2.3 + i * 0.5, 4));
+      const sparse = [ln(2, 1), ln(2.3, 4)];
+      return {
+        denseFar: snapAxis(dense, 3.03, 0.3, 0, 1),     // top 0.03 off a top line: too far here
+        denseNear: snapAxis(dense, 3.01, 0.3, 0, 1),    // 0.01 off: snaps
+        denseTopToBottom: snapAxis(dense, 2.81, 0.3, 0, 1), // top 0.01 below a bottom line (3.3-... butts)
+        sparseFar: snapAxis(sparse, 2.03, 0.3, 0, 1),   // the same 0.03 snaps in a sparse list
+      };
+    });
+    expect(r.denseFar, 'dense: 0.03 is too far').toBe(null);
+    expect(near(r.denseNear.at, 3, 0.001)).toBe(true);
+    expect(r.denseTopToBottom, 'bottom edge of a box butts a top line').not.toBe(null);
+    expect(near(r.sparseFar.at, 2, 0.001), 'sparse still pulls from 0.03').toBe(true);
+  });
 });
