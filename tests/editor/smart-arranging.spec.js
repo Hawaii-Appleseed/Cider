@@ -204,4 +204,39 @@ test.describe('smarter arranging', () => {
     expect(r.denseTopToBottom, 'bottom edge of a box butts a top line').not.toBe(null);
     expect(near(r.sparseFar.at, 2, 0.001), 'sparse still pulls from 0.03').toBe(true);
   });
+
+  test('a line a box was pulled off takes it back only on a deliberate return', async ({ page }) => {
+    await gotoEditor(page, '?project=demo-report');
+    const r = await page.evaluate(() => {
+      setSnapZoom(1);                          // 4px = 0.0417in, 2px = 0.0208in
+      const st = snapState(), L = [3];
+      const pos = y => { const s = axisSnap(st.y, L, y, 0.3, null, 0); return s ? s.at : null; };
+      return {
+        on: pos(3.03),        // within 4px: snaps to 3
+        off: pos(3.06),       // pulled off
+        twitch: pos(3.035),   // a twitch back, within 4px but not 2px: stays off
+        back: pos(3.015),     // a real return, within 2px: snaps
+        off2: pos(3.06), clear: pos(3.25), again: pos(3.03),   // 0.15 clear: an ordinary line again
+      };
+    });
+    expect(r.on).toBe(3);
+    expect(r.off).toBe(null);
+    expect(r.twitch, 'a twitch does not snap it home').toBe(null);
+    expect(r.back).toBe(3);
+    expect(r.off2).toBe(null);
+    expect(r.clear).toBe(null);
+    expect(r.again, 'clear of it, the line pulls from 4px again').toBe(3);
+  });
+
+  test('the snap distance is in screen pixels, so it is the same at every zoom', async ({ page }) => {
+    await gotoEditor(page, '?project=demo-report');
+    const r = await page.evaluate(() => {
+      const L = [3], f = z => { setSnapZoom(z); const s = snapAxis(L, 3.035, 0.3); return s ? s.at : null; };
+      const out = { z1: f(1), z15: f(1.5) };    // 0.035in is 3.4px at 100%, 5px at 150%
+      setSnapZoom(1);
+      return out;
+    });
+    expect(r.z1).toBe(3);
+    expect(r.z15, 'at 150% 0.035in is 5px: too far').toBe(null);
+  });
 });

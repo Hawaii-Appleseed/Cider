@@ -19845,10 +19845,18 @@ const DPI = 96;                        // CSS px per inch — the one real const
 // at boot; the defaults are only what a letter-portrait report happens to use.
 let PAGE_W_IN = 8.5, PAGE_H_IN = 11;
 let MARGIN_IN = 0.62, TOP_IN = 0.75;
-const SNAP_IN = 0.04;                  // how close before it pulls into line (~4px)
+// How close before it pulls into line, in SCREEN pixels: the same feel at
+// every zoom. setSnapZoom() turns them into inches when a drag picks up; the
+// defaults are the 100% values.
+const SNAP_PX = 4, SNAP_DENSE_PX = 2;
+let SNAP_IN = SNAP_PX / DPI;
 const SNAP_DENSE_WIN_IN = 0.5;         // a probe with more than SNAP_DENSE_N lines this close is in a dense list
 const SNAP_DENSE_N = 2;
-const SNAP_DENSE_IN = 0.02;            // ...and there it pulls from this far, to a line of its own kind only
+let SNAP_DENSE_IN = SNAP_DENSE_PX / DPI; // ...and there it pulls from this far, to a line of its own kind only
+const setSnapZoom = z => { SNAP_IN = SNAP_PX / (DPI * z); SNAP_DENSE_IN = SNAP_DENSE_PX / (DPI * z); };
+// A line you have just pulled a box off takes it back only from half the
+// usual distance until the box is this far clear of it (axisSnap).
+const SNAP_ESCAPE_IN = 0.15;
 const SNAP_REACH_IN = 1;               // a neighbour's line only counts within this of the box, across
 const NUDGE_IN = 0.05, NUDGE_BIG_IN = 0.25;
 
@@ -19998,7 +20006,7 @@ function spaceSnap(boxes, axis, x, y, w, h) {
  * it grabbed any stray line there and the box snapped to the wrong place.
  */
 const SNAP_MID_MAX = 3;                // inches
-function snapAxis(lines, lo, size, clo = null, csize = 0) {
+function snapAxis(lines, lo, size, clo = null, csize = 0, ignore = null) {
   let best = null;
   const probes = [[lo, 0, 1], [lo + size, size, 4]];     // [position, offset, kind]
   if (size <= SNAP_MID_MAX) probes.splice(1, 0, [lo + size / 2, size / 2, 2]);
@@ -20016,6 +20024,7 @@ function snapAxis(lines, lo, size, clo = null, csize = 0) {
     const dense = crowd > SNAP_DENSE_N, tol = dense ? SNAP_DENSE_IN : SNAP_IN;
     for (const l of near) {
       const line = typeof l === 'number' ? l : l.v;
+      if (ignore !== null && Math.abs(line - ignore) < 1e-6) continue;
       if (dense && typeof l === 'object'
           && !(l.k & probe[2]) && !(probe[2] === 4 && l.k & 1) && !(probe[2] === 1 && l.k & 4)) continue;
       const d = Math.abs(probe[0] - line);
@@ -20024,6 +20033,29 @@ function snapAxis(lines, lo, size, clo = null, csize = 0) {
   }
   return best;
 }
+
+/**
+ * snapAxis with intent, for one axis of one drag. Pull a box off a line and
+ * that line only takes it back from half the usual distance - a deliberate
+ * return - until the box is SNAP_ESCAPE_IN clear of it. Setting something
+ * just off an alignment used to fail on a hand's twitch: a pixel back toward
+ * the line and it snapped home again. `st` is the drag's own {held, esc}.
+ */
+function axisSnap(st, lines, lo, size, clo, csize) {
+  let ignore = null;
+  const e = st.esc;
+  if (e) {
+    const dist = Math.abs(lo - e.at);
+    if (dist > SNAP_ESCAPE_IN) st.esc = null;
+    else if (dist > SNAP_IN / 2) ignore = e.line;
+  }
+  const r = snapAxis(lines, lo, size, clo, csize, ignore);
+  if (r) st.esc = null;
+  else if (st.held) st.esc = { line: st.held.line, at: st.held.at };
+  st.held = r ? { line: r.line, at: r.at } : null;
+  return r;
+}
+const snapState = () => ({ x: { held: null, esc: null }, y: { held: null, esc: null } });
 
 function showGuides(d, page, vx, hy, gaps = [], measures = []) {
   d.querySelectorAll('.ds-guide').forEach(g => g.remove());
@@ -20869,7 +20901,8 @@ function placer(d, el, page) {
   // and nudges, Align and Distribute call put(..., false) and never consult
   // it. Built on the first put that snaps, not per placer.
   let linesMemo = null;
-  const lines = () => linesMemo || (linesMemo = snapLines(d, page, el));
+  const lines = () => linesMemo || (setSnapZoom(zoomOf(page)), linesMemo = snapLines(d, page, el));
+  const held = snapState();
 
   // One rule for the width, used by the drag AND by what gets saved — they had
   // two, and the drag's was "none". An absolutely positioned block with no
@@ -20888,8 +20921,8 @@ function placer(d, el, page) {
   const put = (x, y, snap = true) => {
     let vx = null, hy = null, gaps = [];
     if (snap) {
-      const sx = snapAxis(lines().xs, x, box.w, y, box.h);
-      const sy = snapAxis(lines().ys, y, box.h, x, box.w);
+      const sx = axisSnap(held.x, lines().xs, x, box.w, y, box.h);
+      const sy = axisSnap(held.y, lines().ys, y, box.h, x, box.w);
       // An edge or centre line wins; equal spacing is tried on an axis that
       // found none, so the two never fight over one pixel.
       const gx = sx ? null : spaceSnap(lines().boxes, 'x', x, sy ? sy.at : y, box.w, box.h);
@@ -21161,7 +21194,7 @@ function startDrag(d, el, e0, drillIn = false) {
   // nor jumps.
   const DEAD_PX = 4;
   let started = false, cloned = false;
-  let Ps, starts, group, glines, at;
+  let Ps, starts, group, glines, gheld, at;
   let lastPt = { x: e0.clientX, y: e0.clientY };   // where the drop landed
 
   const begin = () => {
@@ -21184,7 +21217,9 @@ function startDrag(d, el, e0, drillIn = false) {
               y: Math.min(...starts.map(s => s.y)) };
     group.w = Math.max(...Ps.map((P, i) => starts[i].x + P.box.w)) - group.x;
     group.h = Math.max(...Ps.map((P, i) => starts[i].y + P.box.h)) - group.y;
+    if (members.length > 1) setSnapZoom(zoomOf(page));
     glines = members.length > 1 ? snapLines(d, page, members) : null;
+    gheld = snapState();
     at = starts.map(s => ({ ...s }));
     members.forEach(m => m.classList.add('ds-lifted'));
     d.body.classList.add('ds-grabbing');
@@ -21216,8 +21251,8 @@ function startDrag(d, el, e0, drillIn = false) {
     let gx = group.x + dx, gy = group.y + dy, vx = null, hy = null;
     const gaps = [];
     const free = e.metaKey || e.ctrlKey;      // hold ⌘/Ctrl to move without snapping
-    const sx = free ? null : snapAxis(glines.xs, gx, group.w, gy, group.h);
-    const sy = free ? null : snapAxis(glines.ys, gy, group.h, gx, group.w);
+    const sx = free ? null : axisSnap(gheld.x, glines.xs, gx, group.w, gy, group.h);
+    const sy = free ? null : axisSnap(gheld.y, glines.ys, gy, group.h, gx, group.w);
     const ex = free || sx ? null : spaceSnap(glines.boxes, 'x', gx, sy ? sy.at : gy, group.w, group.h);
     const ey = free || sy ? null : spaceSnap(glines.boxes, 'y', sx ? sx.at : gx, gy, group.w, group.h);
     if (sx) { gx = +sx.at.toFixed(3); vx = sx.line; }
