@@ -19952,10 +19952,18 @@ function spaceSnap(boxes, axis, x, y, w, h) {
   return best;
 }
 
-/** Nearest line within the threshold, given the three edges we align on. */
+/**
+ * Nearest line within the threshold, given the three edges we align on. A box
+ * longer than SNAP_MID_MAX on this axis (a column of bullets, a tall card)
+ * has no centre probe: its middle sits wherever the text happens to fall, so
+ * it grabbed any stray line there and the box snapped to the wrong place.
+ */
+const SNAP_MID_MAX = 3;                // inches
 function snapAxis(lines, lo, size) {
   let best = null;
-  for (const probe of [[lo, 0], [lo + size / 2, size / 2], [lo + size, size]]) {
+  const probes = [[lo, 0], [lo + size, size]];
+  if (size <= SNAP_MID_MAX) probes.splice(1, 0, [lo + size / 2, size / 2]);
+  for (const probe of probes) {
     for (const line of lines) {
       const d = Math.abs(probe[0] - line);
       if (d <= SNAP_IN && (!best || d < best.d)) best = { d, at: line - probe[1], line };
@@ -21148,15 +21156,17 @@ function startDrag(d, el, e0, drillIn = false) {
     }
     const dx = (e.clientX - grab.x) / px, dy = (e.clientY - grab.y) / px;
     if (members.length === 1) {
-      at[0] = Ps[0].put(starts[0].x + dx, starts[0].y + dy);
+      at[0] = Ps[0].put(starts[0].x + dx, starts[0].y + dy, !(e.metaKey || e.ctrlKey));
       return;
     }
     // Group: snap and clamp the GROUP box, then place members by their offsets.
     let gx = group.x + dx, gy = group.y + dy, vx = null, hy = null;
     const gaps = [];
-    const sx = snapAxis(glines.xs, gx, group.w), sy = snapAxis(glines.ys, gy, group.h);
-    const ex = sx ? null : spaceSnap(glines.boxes, 'x', gx, sy ? sy.at : gy, group.w, group.h);
-    const ey = sy ? null : spaceSnap(glines.boxes, 'y', sx ? sx.at : gx, gy, group.w, group.h);
+    const free = e.metaKey || e.ctrlKey;      // hold ⌘/Ctrl to move without snapping
+    const sx = free ? null : snapAxis(glines.xs, gx, group.w);
+    const sy = free ? null : snapAxis(glines.ys, gy, group.h);
+    const ex = free || sx ? null : spaceSnap(glines.boxes, 'x', gx, sy ? sy.at : gy, group.w, group.h);
+    const ey = free || sy ? null : spaceSnap(glines.boxes, 'y', sx ? sx.at : gx, gy, group.w, group.h);
     if (sx) { gx = +sx.at.toFixed(3); vx = sx.line; }
     else if (ex) { gx = +ex.at.toFixed(3); gaps.push(...ex.gaps); }
     if (sy) { gy = +sy.at.toFixed(3); hy = sy.line; }

@@ -166,4 +166,21 @@ test.describe('smarter arranging', () => {
     expect(r.far, 'too far to snap').toBe(null);
     expect(r.offRow, 'not in the row').toBe(null);
   });
+
+  test('a tall box has no centre probe, so a stray line mid-box does not grab it', async ({ page }) => {
+    await gotoEditor(page, '?project=demo-report');
+    const r = await page.evaluate(() => {
+      const lines = [5.0];                      // a line near where the middle falls
+      return {
+        tall: snapAxis(lines, 3.52, 3.9),       // centre 5.47... edges 3.52 / 7.42: no line near
+        tallMid: snapAxis(lines, 3.07, 3.9),    // centre 5.02: would have snapped before
+        short: snapAxis(lines, 4.78, 0.5),      // centre 5.03: small boxes still centre-snap
+        tallEdge: snapAxis([3.5], 3.52, 3.9),   // edges still snap
+      };
+    });
+    expect(r.tall).toBe(null);
+    expect(r.tallMid, 'tall box centre must not snap').toBe(null);
+    expect(near(r.short.at, 4.75, 0.001)).toBe(true);
+    expect(near(r.tallEdge.at, 3.5, 0.001)).toBe(true);
+  });
 });
