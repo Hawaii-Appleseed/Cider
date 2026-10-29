@@ -112,6 +112,11 @@ and ask. `.claude/hooks/guard-report-templates.py` (a PreToolUse hook in
 a person who means to work on the code runs `.claude/hooks/allow-template`
 (a 2-hour window, per person). Claude never opens it.
 
+The editor's own UI, `docsync/editor/**`, is NOT guarded (2026-10-28): how
+dragging, selecting and typing work is tool work, done in a `tools/wt`
+worktree and landed by PR like any other Cider change. It is still never the
+way to change one report's look.
+
 When the user asks for a visual/content change — move, resize, restyle,
 retext, recolor an element, swap an image, adjust a chart — **drive
 `edit.html`** instead of editing `content.md` / `layout.json` / any file
