@@ -165,6 +165,11 @@ test.describe('the top bar', () => {
     // room connects.
     await page.evaluate(() => { collabInfo = { ...collabInfo, on: true, status: 'live' }; collabChip(); });
     expect(await look(page)).toMatchObject({ cls: true, size: '0px' });
+    // ...and says it once: the presence chip says who is here, so alone it
+    // has nothing to say (it read "● live" beside "● Live").
+    await expect(page.locator('#collab')).toBeHidden();
+    await page.evaluate(() => { collabInfo = { ...collabInfo, peers: 2 }; collabChip(); });
+    await expect(page.locator('#collab')).toHaveText('2 here');
     for (const said of await page.evaluate(() => [ROOM_IDLE_STAT, 'joined the live session — 1 other here'])) {
       await page.evaluate(t => { $('stat').textContent = t; }, said);
       expect(await look(page)).toMatchObject({ cls: true, tip: said, size: '0px' });
