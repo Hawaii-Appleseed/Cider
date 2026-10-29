@@ -21,7 +21,7 @@ staff-updates-internal* folder:
 Fires on:
   - Write / Edit / MultiEdit / NotebookEdit of a guarded file
   - Bash that writes to one (sed -i, cp/mv/tee/redirect, a script that names it
-    and writes), or runs python3 -m docsync.hub into the shared hub folder
+    and writes, git checkout/restore from another commit), or runs python3 -m docsync.hub into the shared hub folder
     (or with no --into)
 Reading code (grep with `=>` or `2>/dev/null` included) and running a renderer
 to preview stay allowed. Shipping, `docsync.hub --into <a hub worktree>`, is
@@ -64,8 +64,13 @@ CODE_PATH_CMDS = re.compile(r"-m\s+docsync\.hub\b(?![^;&|\n]*--dry-run)", re.I)
 HUB_INTO = re.compile(r"--into[\s=]+['\"]?([^\s'\";&|]+)")
 SHARED_HUB = os.path.realpath(os.path.join(HOME, "staff-updates-internal"))
 # A redirect that writes: not `=>`, `>=`, `->`, `2>&1`, or `> /dev/null`.
+# git checkout/restore writes only when it brings files from ANOTHER commit;
+# putting them back as HEAD has them (`git checkout [-q] [HEAD] -- primer`,
+# dropping what a ship rewrote) cannot introduce code (Devin, 2026-10-28).
 WRITES = re.compile(
-    r"\bsed\s+-i|\btee\b|\bcp\b|\bmv\b|\brsync\b|\bpatch\b|\bgit\s+(?:apply|checkout\s+\S+\s+--)"
+    r"\bsed\s+-i|\btee\b|\bcp\b|\bmv\b|\brsync\b|\bpatch\b|\bgit\s+apply\b"
+    r"|\bgit\s+checkout\s+(?:-\S+\s+)*(?!HEAD\b|--)[^\s-]\S*\s+(?:-\S+\s+)*--"
+    r"|\bgit\s+restore\b[^;&|\n]*--source[=\s]+(?!HEAD\b)\S"
     r"|(?<![=\d&>-])>>?(?![>=&])\s*(?!/dev/null\b)[^\s>&]|\.write\(|write_text\(|open\([^)]*['\"]w",
     re.I,
 )
