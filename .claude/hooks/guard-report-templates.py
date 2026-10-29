@@ -21,8 +21,11 @@ staff-updates-internal* folder:
 Fires on:
   - Write / Edit / MultiEdit / NotebookEdit of a guarded file
   - Bash that writes to one (sed -i, cp/mv/tee/redirect, a script that names it
-    and writes) or ships to the hub (python3 -m docsync.hub without --dry-run)
-Reading code and running a renderer to preview stay allowed.
+    and writes), or runs python3 -m docsync.hub into the shared hub folder
+    (or with no --into)
+Reading code (grep with `=>` or `2>/dev/null` included) and running a renderer
+to preview stay allowed. Shipping, `docsync.hub --into <a hub worktree>`, is
+open since 2026-10-28 (Devin): it carries only code that already landed.
 
 Not guarded (Devin, 2026-10-28): Cider's own editor UI, docsync/editor/** —
 how dragging, selecting and typing work is tool work, not one report's look,
@@ -55,11 +58,26 @@ IN_CMD = re.compile(r"(?:^|[\s'\"=/(])" + CODE, re.I)                 # a code p
 BARE = re.compile(r"(?<![\w./-])(?:render_report\.py|layout\.json)\b", re.I)
 
 CODE_PATH_CMDS = re.compile(r"-m\s+docsync\.hub\b(?![^;&|\n]*--dry-run)", re.I)
+# The ship itself (Devin, 2026-10-28): `docsync.hub --into <a hub worktree>`
+# only carries code that already passed this guard file by file and landed in
+# Cider, so it is open. Into the shared hub folder itself it stays refused.
+HUB_INTO = re.compile(r"--into[\s=]+['\"]?([^\s'\";&|]+)")
+SHARED_HUB = os.path.realpath(os.path.join(HOME, "staff-updates-internal"))
+# A redirect that writes: not `=>`, `>=`, `->`, `2>&1`, or `> /dev/null`.
 WRITES = re.compile(
     r"\bsed\s+-i|\btee\b|\bcp\b|\bmv\b|\brsync\b|\bpatch\b|\bgit\s+(?:apply|checkout\s+\S+\s+--)"
-    r"|>\s*\S|\.write\(|write_text\(|open\([^)]*['\"]w",
+    r"|(?<![=\d&>-])>>?(?![>=&])\s*(?!/dev/null\b)[^\s>&]|\.write\(|write_text\(|open\([^)]*['\"]w",
     re.I,
 )
+
+
+def hub_ship_ok(cmd: str, cwd: str) -> bool:
+    """`docsync.hub --into <dir>` where <dir> is a hub worktree, not the shared folder."""
+    m = HUB_INTO.search(cmd)
+    if not m:
+        return False
+    into = os.path.realpath(os.path.join(cwd, os.path.expanduser(m.group(1))))
+    return into != SHARED_HUB and os.path.isdir(into)
 PREVIEW = re.compile(r"^\s*(?:\S+=\S+\s+)*python3\s+\S*render_report\.py\s*(?:[;&|]|$)", re.I)
 
 
@@ -117,7 +135,7 @@ def main() -> None:
         if "allow-template" in cmd:
             deny("Claude may not open the template unlock window")
         m = CODE_PATH_CMDS.search(cmd)
-        if m:
+        if m and not hub_ship_ok(cmd, cwd):
             deny(f"`{m.group(0).strip()}` starts the template/engine code path")
         if PREVIEW.match(cmd):
             return
