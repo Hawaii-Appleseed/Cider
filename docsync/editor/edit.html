@@ -7325,6 +7325,17 @@ function showHandles(d, page, el) {
   // button it labels.
   if (!dirs.length) return;
   const b = shapeBox(el, page);
+  // On a shape under ~36 screen pixels across (a thin bar, a rule), the
+  // corner squares and the edge handle between them overlap, and a press
+  // took whichever happened to win: hit-or-miss. Drop the corners there —
+  // the edges still resize each axis, and the lone rotate stem stands in.
+  // Shapes only: a one-line heading is as short, and its words open on a
+  // press where a corner used to be.
+  const pxIn = DPI * zoomOf(page);
+  if (el.dataset.shape && (b.w * pxIn < 36 || b.h * pxIn < 36)) {
+    const narrow = dirs.filter(dir => dir.length === 1);
+    if (narrow.length) dirs.splice(0, dirs.length, ...narrow);
+  }
   const ov = d.createElement('div');
   ov.className = 'ds-handles';
   ov.style.cssText = `left:${b.x}in;top:${b.y}in;width:${b.w}in;height:${b.h}in`;

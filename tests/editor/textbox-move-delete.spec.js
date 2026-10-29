@@ -162,4 +162,23 @@ test.describe('a thin thing resized stays thin', () => {
     expect(after).toBeLessThanOrEqual(before + 1);
     expect(await page.evaluate(() => (layout.positions['rec.h'] || {}).h ?? null)).toBeNull();
   });
+
+  test('a very narrow bar has no corner handles, so its bottom handle is the one pressed', async ({ page }) => {
+    // At 0.08in the corner squares sat on the edge handle and a press got
+    // whichever won. Corners are dropped under ~36 screen pixels.
+    await gotoEditor(page);
+    const r = await page.evaluate(() => docsync.api.addShape({ page: visiblePageId(), kind: 'rect',
+      x: 2, y: 1, w: 0.08, h: 1.5, fill: '#1E6194' }));
+    expect(r.ok).toBe(true);
+    await settled(page);
+    await page.evaluate(id => { const d = document.getElementById('out').contentDocument;
+      setSel(d, [id]); paintSel(d); }, r.id);
+    await expect(frameOf(page).locator('.ds-h-se, .ds-h-sw, .ds-h-ne, .ds-h-nw')).toHaveCount(0);
+    await frameOf(page).locator('.ds-h-s').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);   // the scroll's own settle, not a render
+    await dragHandle(page, 's', 0, -60);
+    const sh = await page.evaluate(id => layout.shapes.find(s => s.id === id), r.id);
+    expect(sh.w).toBeCloseTo(0.08, 2);
+    expect(sh.h).toBeLessThan(1.5);
+  });
 });
