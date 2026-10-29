@@ -23253,13 +23253,23 @@ function peerBox(d, page, p, id, b, label) {
 // compared with the value this editor started from: if somebody changed it
 // meanwhile, the person is told whose words are on the other side and
 // chooses. Nothing is lost without a person choosing to lose it.
-let collabFieldFrom = null;   // {read, value} — what this inline editor opened on
+let collabFieldFrom = null;   // {read, value, room} — what this inline editor opened on
 
 /** An inline editor on a layout-backed field is opening. `read(layout)` pulls
  *  that one field out of a layout object, so the same function can ask this
- *  editor's copy and the room's. */
+ *  editor's copy and the room's.
+ *
+ *  Both are recorded. "Somebody changed it" means the ROOM moved while this
+ *  editor was open — not that the room differs from this editor's copy. The
+ *  two can differ before anyone opens anything: an edit made while
+ *  Suggesting stays here as a proposal and never reaches the room, so the
+ *  next edit to that box was asked about the person's own older words, and
+ *  named "somebody" because nobody else was there. */
 function collabFieldOpen(read) {
-  collabFieldFrom = collab ? { read, value: read(layout) } : null;
+  if (!collab) { collabFieldFrom = null; return; }
+  let room;
+  try { room = read(collab.netFiles().layout); } catch (e) { room = undefined; }
+  collabFieldFrom = { read, value: read(layout), room };
 }
 
 /**
@@ -23277,8 +23287,11 @@ async function collabFieldSettle(mine, what) {
   try { theirs = from.read(collab.netFiles().layout); }
   catch (e) { return 'mine'; }               // unreadable: behave as before
   // Nobody touched it, or they arrived at the same words, or they removed the
-  // thing entirely (then this editor's own value is all there is).
+  // thing entirely (then this editor's own value is all there is). The room
+  // is compared with what the ROOM held at the open: a room that has not
+  // moved since is nobody's change, whatever this editor's copy said.
   if (theirs === undefined || theirs === from.value || theirs === mine) return 'mine';
+  if (from.room !== undefined && theirs === from.room) return 'mine';
   const who = collabPeers.filter(p => !p.idle).map(p => p.name || fmtWho(p.login) || 'someone');
   const named = who.length ? who.join(' and ') : 'somebody';
   const keep = await dsConfirm(
