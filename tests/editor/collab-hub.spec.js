@@ -212,8 +212,8 @@ test('both editors are live in one room, as the people Access says they are', as
   expect(sb.login).toBe(GRACE);
   expect(sa.here).toContain(GRACE);
   expect(sb.here).toContain(ADA);
-  await expect(a.locator('#collab')).toHaveText(/live · 2/);
-  await expect(b.locator('#collab')).toHaveText(/live · 2/);
+  await expect(a.locator('#collab')).toHaveText(/2 here/);
+  await expect(b.locator('#collab')).toHaveText(/2 here/);
   expect(await a.evaluate('source')).toBe(await b.evaluate('source'));
 });
 
@@ -292,10 +292,10 @@ test('prerendered from the list, an editor fetches and paints but joins nobody a
   expect(await page.evaluate(k => localStorage.getItem(k), 'primer-seen:' + room)).toBeNull();
   // Shown: it joins, and the document counts as seen.
   await page.evaluate(() => { Object.defineProperty(document, 'prerendering', { value: false, configurable: true }); document.dispatchEvent(new Event('prerenderingchange')); });
-  await expect(page.locator('#collab')).toHaveText(/live · 3/, { timeout: 20_000 });
+  await expect(page.locator('#collab')).toHaveText(/3 here/, { timeout: 20_000 });
   await expect.poll(() => page.evaluate(k => localStorage.getItem(k), 'primer-seen:' + room)).not.toBeNull();
   await page.close();
-  await expect(a.locator('#collab')).toHaveText(/live · 2/, { timeout: 20_000 });
+  await expect(a.locator('#collab')).toHaveText(/2 here/, { timeout: 20_000 });
 });
 
 test('an image uploads to the store and is served at the project path', async () => {

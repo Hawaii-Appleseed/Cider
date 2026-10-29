@@ -88,8 +88,10 @@ test('both editors are live in one room and see each other', async () => {
   expect(sa.on).toBe(true);
   expect(sa.peers).toBe(2);
   expect(sb.peers).toBe(2);
-  await expect(a.locator('#collab')).toHaveText(/live · 2/);
-  await expect(b.locator('#collab')).toHaveText(/live · 2/);
+  await expect(a.locator('#collab')).toHaveText(/2 here/);
+  await expect(b.locator('#collab')).toHaveText(/2 here/);
+  // "Live" is the status line's to say; the chip says who is here.
+  await expect(a.locator('#collab')).not.toHaveText(/live/i);
   // The first one in seeded from its files; the second adopted the room and
   // holds the same bytes — including the prose it did not type.
   expect(await slot(a)).toBe(await slot(b));
@@ -198,7 +200,7 @@ test('a third editor arriving late adopts the room, not its own files', async ({
   try {
     expect(await slot(c)).toBe(await slot(a));
     expect(await c.evaluate('layout.positions["cover.logo"].x')).toBeCloseTo(1.25, 1);
-    await expect(c.locator('#collab')).toHaveText(/live · 3/);
+    await expect(c.locator('#collab')).toHaveText(/3 here/);
     expect((await status(c)).peers).toBe(3);
     // Presence: a newcomer sees who is here and in what colour, immediately.
     const s = await status(c);
@@ -424,14 +426,14 @@ test('presence: a tab nobody has touched goes away - dimmed, named as idle, and 
   await a.evaluate(`setSel(document.getElementById('out').contentDocument, ['cover.logo'])`);
   const av = b.locator('#collab i[title^="ada"]');
   await expect(av).toHaveCount(1, { timeout: 10_000 });
-  await expect(b.locator('#collab')).toHaveText(/● live · 2/, { timeout: 10_000 });
+  await expect(b.locator('#collab')).toHaveText(/2 here/, { timeout: 10_000 });
   // Five minutes without a key, a pointer or a wheel. Reached by moving the
   // clock this editor keeps, which is what those events set.
   await a.evaluate('collabActiveAt = Date.now() - COLLAB_IDLE_MS - 1000');
   await expect(av).toHaveClass(/idle/, { timeout: 10_000 });
   await expect(av).toHaveAttribute('title', /^ada · away/);
   // The count is of people who are AT it; the title still says the tab is open.
-  await expect(b.locator('#collab')).toHaveText(/● live · 1/);
+  await expect(b.locator('#collab')).toHaveText(/1 here/);
   await expect(b.locator('#collab')).toHaveAttribute('title', /ada has it open, with no input for five minutes/);
   // Their ring is still there - "ada has this open" is worth knowing - and dimmed.
   await expect(b.frameLocator('#out').locator('[data-el="cover.logo"].ds-peer.ds-peer-idle')).toHaveCount(1);
@@ -439,7 +441,7 @@ test('presence: a tab nobody has touched goes away - dimmed, named as idle, and 
   // A keystroke brings them back.
   await a.evaluate("window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))");
   await expect(av).not.toHaveClass(/idle/, { timeout: 10_000 });
-  await expect(b.locator('#collab')).toHaveText(/● live · 2/);
+  await expect(b.locator('#collab')).toHaveText(/2 here/);
   await a.evaluate(`clearSel(document.getElementById('out').contentDocument)`);
 });
 
