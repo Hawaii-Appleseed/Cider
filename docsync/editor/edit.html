@@ -413,19 +413,23 @@
   #upd[disabled] { opacity:.6; cursor:default; }
   /* The chips whose text is written at runtime, and which therefore have no
      width of their own to budget for: an update headline, newer report
-     content. Each is a SUMMARY with its detail on title= and its action on
-     click, so an ellipsis costs nothing — where being pushed off the end of
-     an unwrapping row cost the whole control. (The cut-in-print warning was
-     the third; it is a row of Check ▾ now.) */
+     content, the two amber notices (#s2, #immov). Each is a SUMMARY with its
+     detail on title= and its action on click, so an ellipsis costs nothing —
+     where being pushed off the end of an unwrapping row cost the whole
+     control. They give way first when the row is short: "⚠ 23 text boxes
+     can't move yet" was 195px of a 1100px window, and pushed the zoom button
+     off the end on a machine whose fonts run wider (2026-10-28). (The
+     cut-in-print warning was one of these; it is a row of Check ▾ now.) */
   /* display:inline-block, not the row's inline-flex: an ellipsis belongs to
      an inline box, and a flex container's anonymous text item never gets
      one. line-height replaces the centring flex was doing. */
-  #bar > #upd, #bar > #cupd {
+  #bar > #upd, #bar > #cupd, #bar > #s2, #bar > #immov {
         max-width:14rem; overflow:hidden; text-overflow:ellipsis;
-        white-space:nowrap; display:inline-block; line-height:16px; }
+        white-space:nowrap; display:inline-block; line-height:16px;
+        flex:0 1 auto; min-width:5.5rem; }
   /* …and a display of any kind beats the hidden attribute's own display:none.
      The same trap as #bar > button[hidden] below. */
-  #bar > #upd[hidden], #bar > #cupd[hidden] { display:none; }
+  #bar > #upd[hidden], #bar > #cupd[hidden], #bar > #s2[hidden], #bar > #immov[hidden] { display:none; }
   /* A caution, not an offer — amber rather than #upd/#cupd's inviting sage/
      blue, since clicking it does not fix anything, only dismisses the notice
      (checkStage2()). */
@@ -2026,16 +2030,6 @@
        page size, take a copy out, check the token — as against the bar's
        remaining controls, which act on what is selected right now. -->
   <button id="file" aria-label="File — open, resize, download">File ▾</button>
-  <!-- View ▾ and Check ▾ (Devin, 2026-10-28) hold the tools you open now and
-       then — ten unlabelled icons at the far end of the bar until then. On the
-       hub that row ran 80px past a 1280px window and 260px past 1100px, so
-       seven of them were simply off-screen, with no scrollbar to say so. View
-       is how you look at the page; Check is what is in it and what is wrong
-       with it, and its badge carries Preflight's count so a problem never goes
-       quiet. Every tool kept its id and its handler; only its button moved,
-       and togglePop() opens its panel under the menu it came from. -->
-  <button id="view" aria-label="View — rulers, hidden characters, layers, undo history, present">View ▾</button>
-  <button id="check" aria-label="Check — preflight, hyperlinks, picture links, colours and notes">Check ▾<span id="check-count" hidden></span></button>
   <!-- .menu: the popovers that are MENUS — a list of things to do, each a row
        with an icon — as against the popovers that are panels (colour, type,
        icon grid) or galleries (shapes). Only the menus get the row treatment,
@@ -2223,6 +2217,18 @@
     <p class="pop-h">Doc size</p>
     <div class="sizegrid" id="size-list"></div>
   </div>
+  <!-- View ▾ and Check ▾ (Devin, 2026-10-28) hold the tools you open now and
+       then — ten unlabelled icons at the far end of the bar until then. On the
+       hub that row ran 80px past a 1280px window and 260px past 1100px, so
+       seven of them were simply off-screen, with no scrollbar to say so. View
+       is how you look at the page; Check is what is in it and what is wrong
+       with it, and its badge carries Preflight's count so a problem never goes
+       quiet. Every tool kept its id and its handler; only its button moved,
+       and togglePop() opens its panel under the menu it came from.
+       Each button sits right before its own menu, after File's: the menus are
+       out of the row's flow, so the bar looks the same, and Tab from an open
+       menu's button goes INTO that menu rather than on to the next button. -->
+  <button id="view" aria-label="View — rulers, hidden characters, layers, undo history, present">View ▾</button>
   <!-- data-owner: the bar button a menu hangs from. A row's own panel opens
        there (togglePop), since the row is hidden along with its menu. -->
   <div class="pop menu" id="viewpop" hidden data-owner="view">
@@ -2255,6 +2261,7 @@
       ><path d="M12 7a5 5 0 1 1-1.6-3.7"/><path d="M12.2 1.6v2.9H9.3"/></svg
       ><span class="shp-t">Reload editor</span><span class="shp-k">⌘R</span></button>
   </div>
+  <button id="check" aria-label="Check — preflight, hyperlinks, picture links, colours and notes">Check ▾<span id="check-count" hidden></span></button>
   <div class="pop menu" id="checkpop" hidden data-owner="check">
     <p class="pop-h">Problems</p>
     <!-- The print warning, which used to take 175px of the bar to say what
@@ -2284,27 +2291,6 @@
     <button class="shp" id="notes"><svg class="shp-i" viewBox="0 0 14 14"
       ><path d="M2.5 2h9v6.5L8.5 11.5h-6z"/><path d="M8.5 11.5V8.5h3"/></svg
       ><span class="shp-t">Notes</span><span id="notes-count" hidden></span></button>
-  </div>
-  <!-- Zoom, one click away instead of 156px of the bar: the same − / slider /
-       + (#zoombar: same ids, same handlers), then the sizes people pick. The
-       button on the bar shows the scale in effect (syncZoomBar). -->
-  <div class="pop menu" id="zoompop" hidden data-owner="zoombtn">
-    <p class="pop-h">Zoom</p>
-    <span id="zoombar">
-      <button id="zb-out" class="zb-step" aria-label="Zoom out (⌘−)">−</button>
-      <input id="zb-range" type="range" min="25" max="200" step="1" value="100"
-             aria-label="Zoom" title="Zoom — ⌘+ / ⌘- to step, ⌘0 to fit">
-      <button id="zb-in" class="zb-step" aria-label="Zoom in (⌘+)">+</button>
-      <output id="zb-val" for="zb-range">100%</output>
-    </span>
-    <button class="shp" data-zset=""><span class="shp-t">Fit to width</span><span class="shp-k">⌘0</span></button>
-    <p class="pop-h">Size</p>
-    <button class="shp" data-zset="0.5"><span class="shp-t">50%</span></button>
-    <button class="shp" data-zset="0.75"><span class="shp-t">75%</span></button>
-    <button class="shp" data-zset="1"><span class="shp-t">100%</span></button>
-    <button class="shp" data-zset="1.25"><span class="shp-t">125%</span></button>
-    <button class="shp" data-zset="1.5"><span class="shp-t">150%</span></button>
-    <button class="shp" data-zset="2"><span class="shp-t">200%</span></button>
   </div>
   <span class="bar-sep"></span>
   <button id="undo" disabled aria-label="Undo (⌘Z) — the last 200 steps are kept" title="Undo (⌘Z) — the last 200 steps are kept">↶</button>
@@ -2400,6 +2386,28 @@
   <!-- The zoom control proper lives in #zoompop; this is what opens it, and
        it always reads the scale in effect. -->
   <button id="zoombtn" aria-label="Zoom — fit, step in or out, or pick a size"><span class="zb-pct">100%</span> ▾</button>
+  <!-- Zoom, one click away instead of 156px of the bar: the same − / slider /
+       + (#zoombar: same ids, same handlers), then the sizes people pick. The
+       button on the bar shows the scale in effect (syncZoomBar). Right after
+       its button, so Tab goes into it. -->
+  <div class="pop menu" id="zoompop" hidden data-owner="zoombtn">
+    <p class="pop-h">Zoom</p>
+    <span id="zoombar">
+      <button id="zb-out" class="zb-step" aria-label="Zoom out (⌘−)">−</button>
+      <input id="zb-range" type="range" min="25" max="200" step="1" value="100"
+             aria-label="Zoom" title="Zoom — ⌘+ / ⌘- to step, ⌘0 to fit">
+      <button id="zb-in" class="zb-step" aria-label="Zoom in (⌘+)">+</button>
+      <output id="zb-val" for="zb-range">100%</output>
+    </span>
+    <button class="shp" data-zset=""><span class="shp-t">Fit to width</span><span class="shp-k">⌘0</span></button>
+    <p class="pop-h">Size</p>
+    <button class="shp" data-zset="0.5"><span class="shp-t">50%</span></button>
+    <button class="shp" data-zset="0.75"><span class="shp-t">75%</span></button>
+    <button class="shp" data-zset="1"><span class="shp-t">100%</span></button>
+    <button class="shp" data-zset="1.25"><span class="shp-t">125%</span></button>
+    <button class="shp" data-zset="1.5"><span class="shp-t">150%</span></button>
+    <button class="shp" data-zset="2"><span class="shp-t">200%</span></button>
+  </div>
   <div class="pop" id="histpop" hidden>
     <p class="pop-h">History — click a step to go back to it</p>
     <div id="hist-list"></div>

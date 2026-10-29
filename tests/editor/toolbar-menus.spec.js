@@ -36,6 +36,12 @@ test.describe('the top bar', () => {
     await asHub(page);
     expect(await offScreen(page)).toEqual([]);
     expect(await page.evaluate(() => $('bar').scrollWidth <= $('bar').clientWidth)).toBe(true);
+    // Fonts run wider on some machines than on a Mac (CI's Linux: the zoom
+    // button went off the end while the fixture's amber "can't move yet" chip
+    // held 195px). Wide on purpose — Verdana, or DejaVu where it is missing —
+    // and the notices give way, not the controls.
+    await page.addStyleTag({ content: '#bar, #bar > button { font-family: Verdana, "DejaVu Sans", sans-serif !important; }' });
+    expect(await offScreen(page)).toEqual([]);
     await expect(page.locator('#history')).toHaveText('Versions');
     // Share is a bar button again, not a File menu row.
     await expect(page.locator('#bar > #share')).toBeVisible();
@@ -69,6 +75,21 @@ test.describe('the top bar', () => {
     g = await under('preflightpop', 'check');
     expect(g.dx).toBeLessThan(2);
     expect(g.dy).toBeLessThan(2);
+  });
+
+  test('from the keyboard, Tab goes into an open menu and Escape comes back', async ({ page }) => {
+    await gotoEditor(page);
+    // Each menu sits right after its own button, so it is the next stop.
+    for (const [btn, menu] of [['view', 'viewpop'], ['check', 'checkpop'], ['zoombtn', 'zoompop']]) {
+      await page.focus('#' + btn);
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#' + menu)).toBeVisible();
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(m => document.activeElement.closest('#' + m) !== null, menu), menu).toBe(true);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#' + menu)).toBeHidden();
+      expect(await page.evaluate(() => document.activeElement.id)).toBe(btn);
+    }
   });
 
   test('a switch in View ticks and closes the menu', async ({ page }) => {
