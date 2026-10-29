@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 61 (notes), 66 (change case, placeholder, plain paste),
 // 68 (rotate and flip) and 70 (hidden characters and text threads).
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -25,7 +25,7 @@ test.describe('61 notes', () => {
                count: $('notes-count').textContent }; }, key);
     expect(g.mark).toBeGreaterThan(0);
     expect(g.text).toBe(false);
-    await page.click('#notes');
+    await clickTool(page, 'notes');
     expect(await page.locator('#notes-list .nt-row').count()).toBeGreaterThanOrEqual(2);
     await page.evaluate(k => docsync.api.setNotes(k, ['Ask Genevieve']), key);
     expect((await api(page, 'notes()')).notes.filter(x => x.key === key).length).toBe(1);

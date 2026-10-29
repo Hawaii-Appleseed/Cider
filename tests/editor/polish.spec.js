@@ -1,5 +1,5 @@
 // The small polish items (INDESIGN_PARITY.md 65, 67, 69, 71, 72).
-const { warmTest: test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, openFileMenu, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -90,7 +90,7 @@ test.describe('69 undo history', () => {
     expect(rows[1].label).toContain(`added text box ${b.slice(5)}`);
     expect(rows[2].label).toContain(`shape ${a}`);
     expect(rows[3].label).toContain(`added shape ${a}`);
-    await page.click('#steps');
+    await clickTool(page, 'steps');
     await expect(page.locator('#histpop .hrow')).toHaveCount(rows.length);
     // Back three steps — before the shape — then forward one.
     await page.locator('#histpop .hrow').nth(3).click();

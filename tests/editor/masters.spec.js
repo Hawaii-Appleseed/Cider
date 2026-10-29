@@ -6,7 +6,7 @@
 // half (expansion, {page}, validation) is in docsync/test_docsync.py; this is
 // the editor's promise: made from a page, given to another, edited once,
 // detached back into copies.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -69,7 +69,7 @@ test('a master is made from a page, given to a second page, and edited once for 
     await expect(frame(page).locator(`[data-shape="${st.master.shapes[0].id}@${ids.b}"]`)).toHaveAttribute('y', '2.5');
     // The Layers panel is back, and lists this page's objects.
     await page.evaluate(id => docsync.api.select(id), ruleA);
-    await page.click('#layers');
+    await clickTool(page, 'layers');
     await expect(page.locator('#layerspop')).toBeVisible();
     expect(await page.locator('#layerspop [data-id], #layerspop .ly-item, #layerspop button, #layerspop li').count()).toBeGreaterThan(0);
     await page.keyboard.press('Escape');

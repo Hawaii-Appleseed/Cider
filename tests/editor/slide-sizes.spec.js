@@ -2,7 +2,7 @@
 // PowerPoint's own numbers) and Slide 4:3 (10x7.5) in both File > Resize and
 // the start page's "+ New report". These write real files, so everything is
 // snapshotted and restored — same discipline as local-scaffold.spec.js.
-const { test, expect, gotoEditor, openFileMenu, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, openFileMenu, settled, clickTool } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -77,7 +77,7 @@ test.describe('slide sizes', () => {
 
       // A 16:9 page in presentation mode on a 16:9-ish window fills it almost
       // edge to edge — the whole reason a deck author picks this size.
-      await page.click('#present');
+      await clickTool(page, 'present');
       await page.waitForTimeout(700);
       const fit = await page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;

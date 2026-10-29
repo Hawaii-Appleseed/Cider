@@ -223,15 +223,38 @@ async function openFileMenu(page) {
   await page.locator('#filepop').waitFor({ state: 'visible' });
 }
 
-/** Sources and Share live in the File menu now, not on the bar — so reaching
- *  either one is two clicks, the way it is for a person. */
+/** Sources lives in the File menu, not on the bar — so reaching it is two
+ *  clicks, the way it is for a person. Share went back to the bar once View ▾
+ *  and Check ▾ made the room (2026-10-28). */
 async function openSources(page) {
   await openFileMenu(page);
   await page.click('#sources');
 }
 async function openShare(page) {
-  await openFileMenu(page);
   await page.click('#share');
+}
+
+/** The tools that were icons at the far end of the bar — Rulers, Hidden
+ *  characters, Layers, Undo history, Present, Reload in View ▾; the print
+ *  warning, Preflight, Hyperlinks, Picture links, Colours, Notes in Check ▾ —
+ *  kept their ids. Pressing one is its menu, then its row: the menu is
+ *  whichever .pop.menu holds the row (data-owner names its button). */
+async function clickTool(page, id) {
+  const owner = await page.evaluate(i => {
+    const m = document.getElementById(i).closest('.pop.menu');
+    return m && m.hidden ? m.dataset.owner : null;
+  }, id);
+  if (owner) {
+    await page.click('#' + owner);
+    await page.locator('#' + id).waitFor({ state: 'visible' });
+  }
+  await page.click('#' + id);
+}
+/** Open the menu that holds a tool without pressing it (to look at the row). */
+async function openToolMenu(page, id) {
+  const owner = await page.evaluate(i => document.getElementById(i).closest('.pop.menu').dataset.owner, id);
+  if (await page.locator('#' + id).isHidden()) await page.click('#' + owner);
+  await page.locator('#' + id).waitFor({ state: 'visible' });
 }
 
 /** +Section is hidden from the toolbar for now (#add { display:none }), but
@@ -281,7 +304,7 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 
 module.exports = {
   settled, afterRender,
-  test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickAddSection,
+  test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent, selectWithoutTyping,
 };

@@ -1,5 +1,5 @@
 // INDESIGN_PARITY.md 47 and 52: the Preflight panel and the Hyperlinks panel.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -25,9 +25,12 @@ test.describe('47 preflight', () => {
     expect(contrast).not.toContain(fine);
     expect(contrast).not.toContain(onShape);
     expect(r.issues.some(i => i.kind === 'missing-image' && i.severity === 'error')).toBe(true);
-    // The badge and the panel.
-    await expect(page.locator('#pf-count')).toBeVisible({ timeout: 5000 });
-    await page.click('#preflight');
+    // The badge and the panel. The count is on Preflight's row in Check ▾,
+    // and Check itself wears it on the bar.
+    await expect(page.locator('#check-count')).toBeVisible({ timeout: 5000 });
+    await expect.poll(() => page.evaluate(() => !$('pf-count').hidden
+      && $('check-count').textContent === $('pf-count').textContent)).toBe(true);
+    await clickTool(page, 'preflight');
     expect(await page.locator('#pf-list .pf-row[data-kind="low-contrast"]').count()).toBeGreaterThan(0);
     await page.locator('#pf-list .pf-row[data-kind="missing-image"]').first().click();
     expect(await page.evaluate(() => [...selIds].length)).toBe(1);
@@ -47,7 +50,7 @@ test.describe('52 hyperlinks', () => {
     expect(c.ok).toBe(true);
     expect(c.links.find(l => l.url === 'https://example.org/broken-page').state).toBe('broken');
     expect(c.links.find(l => l.url === 'https://example.org/ok').state).toBe('ok');
-    await page.click('#hyperlinks');
+    await clickTool(page, 'hyperlinks');
     expect(await page.locator('#hl-list .hl-row.broken').count()).toBe(1);
     const r = await page.evaluate(() => docsync.api.changeLink('https://example.org/broken-page', 'https://example.org/fixed'));
     expect(r.ok).toBe(true);

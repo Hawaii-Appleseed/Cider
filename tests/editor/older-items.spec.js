@@ -2,7 +2,7 @@
 // bleed for every report, skew, named layers, the baseline grid, tables on
 // shared layouts and as anchors, per-item overrides on a shared layout, and
 // pen paths with Pathfinder. One spec, one describe per item. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
@@ -112,7 +112,7 @@ test.describe('named layers', () => {
   test('the Layers panel lists document layers with show and lock', async ({ page }) => {
     await gotoEditor(page);
     await api(page, `defineLayer('Photos')`);
-    await page.click('#layers');
+    await clickTool(page, 'layers');
     await expect(page.locator('#doclayers .dl-row')).toHaveCount(1);
     await page.locator('#doclayers .dl-row .dl-btn').nth(1).click();          // lock
     await expect.poll(() => page.evaluate(() => layout.layers[0].locked)).toBe(true);

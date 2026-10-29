@@ -14,9 +14,18 @@ const centreY = (page) => page.evaluate(() => {
   return sc.scrollTop + (stage.clientHeight / curScale) / 2;
 });
 
+/** − and + are in the zoom menu (the bar's "100% ▾"), which stays open while
+ *  they are pressed — so one click serves every step a test takes. A test
+ *  that opens another report has a fresh editor, and opens it again. */
+async function openZoom(page) {
+  await page.click('#zoombtn');
+  await page.locator('#zb-out').waitFor({ state: 'visible' });
+}
+
 test.describe('zoom keeps its place', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
+    await openZoom(page);
   });
 
   test('stepping out and back in returns to the same part of the report',
@@ -50,6 +59,7 @@ test.describe('zoom keeps its place', () => {
   test('a report that fits when zoomed out still comes back to where you were',
     async ({ page }) => {
       await gotoEditor(page, '?project=demo-report');
+      await openZoom(page);
       await page.frameLocator('#out').locator('section.page').last()
         .scrollIntoViewIfNeeded();
       await page.waitForTimeout(700);
@@ -109,6 +119,7 @@ test.describe('zoom keeps its place', () => {
   test('zooming out from the TOP and back returns to the top, not further in',
     async ({ page }) => {
       await gotoEditor(page, '?project=tax-testimony');
+      await openZoom(page);
       await page.waitForTimeout(800);
       await page.evaluate(() => {
         document.getElementById('out').contentDocument.scrollingElement.scrollTop = 0;

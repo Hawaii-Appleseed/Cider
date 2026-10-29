@@ -2,7 +2,7 @@
 // Local mode; /__export is mocked by the fixture (STANDALONE.md §C), so the
 // PDF test checks what the editor asks for — the server's own page pruning is
 // covered in report2027/tools/test_render.py, and was checked with real Chrome.
-const { test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, openFileMenu, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
@@ -89,7 +89,7 @@ test.describe('85 layer housekeeping', () => {
 
   test('the Layers panel offers select, merge and delete unused', async ({ page }) => {
     const { a, b } = await setup(page);
-    await page.click('#layers');
+    await clickTool(page, 'layers');
     await expect(page.locator('#layers-dropunused')).toHaveText('Delete 1 unused layer');
     // Rows read front first: Spare, Notes, Back. Select on Notes.
     await page.locator('#doclayers .dl-row').nth(1).locator('.dl-btn[title^="Select everything"]').click();

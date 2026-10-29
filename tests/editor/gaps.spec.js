@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 32–46: the gap list read from InDesign itself. One
 // describe per item. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -197,7 +197,7 @@ test.describe('44 links panel', () => {
     expect(good).toBeTruthy();
     expect(good.ppi).toBeGreaterThan(0);
     // The panel draws a row per file, the missing one marked.
-    await page.click('#links');
+    await clickTool(page, 'links');
     expect(await page.locator('#links-list .lk-row.missing').count()).toBe(1);
     const r = await page.evaluate(([a, b]) => docsync.api.relink(a, b), ['assets/no-such-file.png', good.src]);
     expect(r.ok).toBe(true);

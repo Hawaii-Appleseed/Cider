@@ -245,7 +245,9 @@ test('Save goes to the hub, not to git, and the room learns the version', async 
   await expect(b.locator('#save')).toBeDisabled();
   expect(await b.evaluate('docVersion')).toBe(meta.version);
   // No draft branch. Share is the share LIST here, Publish the export to git.
-  await expect(a.locator('#share')).toHaveText('Share…');
+  // On the bar again since 2026-10-28, where a button takes no ellipsis.
+  await expect(a.locator('#share')).toHaveText('Share');
+  await expect(a.locator('#share')).toBeVisible();
   await expect(a.locator('#publish')).toBeVisible();
   expect(await a.evaluate('draftBranch')).toBeNull();
 });

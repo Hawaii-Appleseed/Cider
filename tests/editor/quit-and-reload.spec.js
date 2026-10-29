@@ -11,17 +11,18 @@
 // its entry survives in CLIENTS and only the 2-hour CLIENT_TTL sweep clears it.
 // File ▸ Force quit is the deliberate stop for that, and for a server that has
 // gone wrong. Local mode.
-const { test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, openFileMenu, clickTool, openToolMenu } = require('./fixtures/editor-test');
 
 test.describe('refresh', () => {
-  test('the bar has it, and it reloads the window', async ({ page }) => {
+  test('View ▾ has it, and it reloads the window', async ({ page }) => {
     await gotoEditor(page);
+    await openToolMenu(page, 'reload');
     await expect(page.locator('#reload')).toBeVisible();
 
     // A reload is observable without depending on navigation events: stamp the
     // window, press it, and the stamp is gone only if the document really went.
     await page.evaluate(() => { window.__beforeReload = true; });
-    await page.click('#reload');
+    await clickTool(page, 'reload');
     await expect.poll(() => page.evaluate(() => window.__beforeReload === undefined),
                       { timeout: 20_000 }).toBe(true);
     // And it comes back as a working editor, not a blank frame.
@@ -37,7 +38,7 @@ test.describe('refresh', () => {
       await expect.poll(() => page.evaluate(() => dirty)).toBe(true);
 
       await page.evaluate(() => { window.__beforeReload = true; });
-      await page.click('#reload');
+      await clickTool(page, 'reload');
       const dlg = page.locator('dialog[open]');
       await expect(dlg).toContainText('Unsaved edits');
       await dlg.getByRole('button', { name: 'Cancel' }).click();
