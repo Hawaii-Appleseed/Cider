@@ -51,6 +51,9 @@ test.describe('struts and edges', () => {
     const mine = await page.evaluate(id => lastFit.filter(b => b.who === id && b.side === 'right'), id);
     expect(mine).toHaveLength(1);
     expect(mine[0].over).toBeGreaterThan(0.3);
+    // The warning is the first row of Check ▾, whose badge counts it.
+    await expect(page.locator('#check-count')).toBeVisible();
+    await page.click('#check');
     await expect(page.locator('#fit')).toBeVisible();
     await expect(page.locator('#fit')).toHaveAttribute('title', /toc\.logo is .* past the right edge/);
     await expect(frame.locator('.ds-cut.ds-cut-r')).toHaveCount(1);

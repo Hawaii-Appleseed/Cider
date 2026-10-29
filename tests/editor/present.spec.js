@@ -2,7 +2,7 @@
 // one page at a time with every toolbar gone; arrows or click advance, the
 // left edge or ← goes back, Esc exits. Runs on the editor's own iframe and
 // zoom pipeline — nothing re-renders on entry. Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
 
 const state = (page) => page.evaluate(() => {
   const d = document.getElementById('out').contentDocument;
@@ -22,7 +22,7 @@ test.describe('presentation mode', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page);
     await page.waitForTimeout(800);
-    await page.click('#present');
+    await clickTool(page, 'present');
     await page.waitForTimeout(500);
   });
 
@@ -88,7 +88,8 @@ test.describe('presentation mode', () => {
     expect(s.overlay).toBe(false);
     // every page back in the document flow
     expect(s.shown.length).toBeGreaterThan(1);
-    await expect(page.locator('#present')).toBeVisible();
+    // The bar is back — Present itself is a row of View ▾ now.
+    await expect(page.locator('#view')).toBeVisible();
   });
 
   test('a live re-render mid-presentation keeps the deck up', async ({ page }) => {

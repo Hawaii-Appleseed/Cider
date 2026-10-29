@@ -3,7 +3,7 @@
 // plays immediately, presentation mode replays a slide's entrances on entry.
 // Published: observer-triggered, script-applied hiding, reduced-motion and
 // print always show content. Engine faces pinned in test_docsync.py. Local.
-const { warmTest: test, expect, gotoEditor, settled: pageSettled } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled: pageSettled, clickTool } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -312,7 +312,7 @@ test.describe('entrance animations', () => {
       await pageSettled(page);
       await armListener(page);
 
-      await page.click('#present');
+      await clickTool(page, 'present');
       await page.waitForTimeout(900);
       const onEntry = await animCount(page);
       expect(onEntry).toBeGreaterThanOrEqual(1);

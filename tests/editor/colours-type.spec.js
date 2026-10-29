@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 80 (colours in use), 77 (type from the keyboard) and
 // 75 (load styles from another report).
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -30,7 +30,7 @@ test.describe('80 colours in use', () => {
     expect(await page.evaluate(i => [boxOf(i).fill, boxOf(i).style.color], a)).toEqual(['@1E6194', '@1E6194']);
     expect(await page.evaluate(i => getComputedStyle($('out').contentDocument.querySelector(`[data-el="${i}"]`)).backgroundColor, a))
       .toBe('rgb(30, 97, 148)');
-    await page.click('#colours');
+    await clickTool(page, 'colours');
     expect(await page.locator('#cl-list .cl-row').count()).toBeGreaterThan(1);
   });
 });

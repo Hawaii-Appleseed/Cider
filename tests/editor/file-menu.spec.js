@@ -6,15 +6,17 @@
 // is the menu itself: that it holds what it should, that the two new entries
 // (Open, Resize) work, and that the window title names the report rather than
 // the tool.
-const { test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, openFileMenu, clickTool } = require('./fixtures/editor-test');
 
 test.describe('File menu', () => {
   test('Escape closes it, and the bar\'s other menus and panels, and keeps the selection', async ({ page }) => {
     await gotoEditor(page);
     const sel = await page.evaluate(() => { const id = docsync.api.inventory().pages.flatMap(p => p.elements || [])[0];
       return id ? (docsync.api.select(id.id || id), [...selIds]) : []; });
+    // Colours and Layers are rows of Check ▾ and View ▾ now (clickTool opens
+    // the menu first); their panels close on Escape all the same.
     for (const [btn, pop] of [['file', 'filepop'], ['colours', 'colourspop'], ['layers', 'layerspop']]) {
-      await page.click('#' + btn);
+      await clickTool(page, btn);
       await expect(page.locator('#' + pop)).toBeVisible();
       await page.locator(`#${pop} button`).first().focus().catch(() => {});   // a row has focus, as after a click
       await page.keyboard.press('Escape');
@@ -24,7 +26,7 @@ test.describe('File menu', () => {
     expect(await page.evaluate(() => [...selIds])).toEqual(sel);
   });
 
-  test('collects Open, New window, Connect GitHub, Repo, Resize, Sources, Share, Google Doc, Download, Restore and Token', async ({ page }) => {
+  test('collects Open, New window, Connect GitHub, Repo, Resize, Sources, Google Doc, Download, Restore and Token', async ({ page }) => {
     await gotoEditor(page);
     // Closed until asked for — it is a menu, not a panel.
     await expect(page.locator('#filepop')).toBeHidden();
@@ -46,11 +48,12 @@ test.describe('File menu', () => {
     // The Story editor (63) and the Library (50) sit with it.
     // Publish as a website (docsync/website.py) sits with Resize; its Stop row
     // shows only once the page IS a website (see website-menu.spec.js).
+    // Share went back to the bar once View ▾ and Check ▾ made the room.
     await expect(page.locator('#filepop button')).toHaveText(
       ['Find & Change…',
        'Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
        'Publish as a website…', 'Stop publishing as a website…',
-       'Sources…', 'Share…',
+       'Sources…',
        /^Google Doc/, 'Import text from the Doc…', 'Story editor', 'Library…',
        'Load styles from another report…', 'Download…',
        'Restore deleted…', 'Token…', 'Force quit']);
