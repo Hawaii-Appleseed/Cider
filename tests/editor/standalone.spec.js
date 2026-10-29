@@ -49,7 +49,12 @@ test.describe('installable shell', () => {
     // The whole point of excluding it (per STANDALONE.md): a reader who never
     // opened the editor must never be affected by this cache, and one who did
     // must never see a stale copy of the report they came to read.
-    expect(swSource).toMatch(/index\.html/);
+    // This only says the rule exists, and an earlier form of it passed the
+    // whole time the hub's report pages (/primer/<id>/) came from the cache:
+    // that rule named one path. sw-report-pages.spec.js serves a report the
+    // way Pages does and checks what the browser actually gets (2026-10-28).
+    expect(swSource).toMatch(/isPublishedPage/);
+    expect(swSource).not.toMatch(/primer-shell-v8'/);
   });
 
   test('the editor page itself is network-first, never served one build stale', async ({ page }) => {

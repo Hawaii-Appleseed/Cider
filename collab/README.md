@@ -653,6 +653,17 @@ What differs for an editor served there, and nothing else does:
   resolved a moment ago came back open from the stale copy until the poll
   after cleared it again. The hub's own pages had been evicting the entry by
   hand before each `hubFetch` GET; the editor never did.
+  **A report's built page is never answered by the worker at all** (since
+  2026-10-28, `primer-shell-v9`): a navigation to anything but the editor's
+  own pages, and a script's fetch of a directory's index, go to the network
+  as if no worker were installed (`isPublishedPage` in `sw.js`). The rule
+  before named `/primer/index.html` only, so `/primer/<id>/` was served
+  cache-first and showed the pre-ship page after a deploy, and the door's
+  preview fetches left a REDIRECTED response under each `<id>/index.html`
+  (Pages answers it with a 308 to `<id>/`), which Chrome refuses for a
+  navigation: a tab opened on that URL was an error page.
+  `tests/editor/sw-report-pages.spec.js` serves a report the way Pages does
+  and checks both.
 - Its registry entry says `"collab": {"path": "/api/collab", "me": "/api/me"}`
   instead of `"url"`. `collabDoor()` in `edit.html` returns the one or the
   other; on a path the editor mints no ticket and asks for no token — the
