@@ -527,6 +527,30 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
     a.close();
   });
 
+  // #reconnectNow hands the provider a new socket while the old one can still
+  // deliver a message, so an answer can be due before the new one is OPEN.
+  // ws.send() on a CONNECTING socket throws InvalidStateError, which the hub's
+  // error log caught on 2026-10-27: the answer has to wait for the open.
+  test('an answer due while the socket is still connecting waits for it', async () => {
+    const room = uniqueRoom('connecting');
+    const a = open(room, 'ada', p);
+    await a.ready;
+    const real = a.provider.ws;
+    const sent = [];
+    const send = a.provider.sendMessage.bind(a.provider);
+    a.provider.sendMessage = m => { sent.push(JSON.parse(m)); send(m); };
+    a.provider.ws = { readyState: 0, send() { throw new Error('Still in CONNECTING state'); }, close() {} };
+    // No onPilot, so the refusal is answered at once.
+    a.provider.emit('custom-message', [JSON.stringify({ t: 'pilot', id: 'p1', ops: [] })]);
+    assert.deepEqual(sent, [], 'nothing went to a socket that is not open');
+    a.provider.ws = real;
+    a.provider.emit('status', [{ status: 'connected' }]);
+    assert.equal(sent.length, 1, 'the answer went once the socket opened');
+    assert.equal(sent[0].t, 'pilot-result');
+    assert.equal(sent[0].id, 'p1');
+    a.close();
+  });
+
   // An open socket bills the room's Durable Object for wall-clock time whether
   // anyone is typing or not, so a session that nobody is using lets go of it
   // (client/session.mjs, "sleeping an idle tab"). The deadlines are in

@@ -4,7 +4,10 @@
 // the words are never cut off. Charts and tables keep their own handle sets.
 const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
-const ID = 'para.groc.lead';
+// A plain body paragraph. (It was para.groc.lead until 2026-10-28, when that
+// one moved inside the grocery callout panel and its stored y stopped being
+// measured from the page.)
+const ID = 'para.groc.pay.p';
 const ALL = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
 /** Wait until nothing is re-rendering and the page's web fonts are in. Every

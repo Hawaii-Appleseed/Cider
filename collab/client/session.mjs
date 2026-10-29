@@ -285,6 +285,7 @@ export class CollabSession {
       // While asleep the socket is closed BECAUSE we closed it: the provider
       // says 'disconnected' and it is not offline, so the deliberate status
       // stands until something wakes us.
+      if (status === 'connected') this.#flushOutbox();
       if (this.#asleep) return;
       if (status === 'connected') this.#set({ status: this.state.phase === 'ready' ? 'live' : 'connecting' });
       else if (status === 'disconnected') this.#set({ status: 'offline' });
@@ -712,7 +713,26 @@ export class CollabSession {
 
   /* ---------------------------------------------------------- handshake */
 
-  #send(obj) { this.provider.sendMessage(JSON.stringify(obj)); }
+  /* A message for a socket that is not OPEN waits here for the next one.
+   *  #reconnectNow and wake() hand the provider a fresh socket while the old
+   *  one can still deliver a 'synced' or a pilot request, so the answer used
+   *  to go to a socket still CONNECTING and throw InvalidStateError (seen on
+   *  the hub, 2026-10-27). 'hello' is said again on every sync, so a waiting
+   *  one is dropped rather than said twice. */
+  #outbox = [];
+
+  #send(obj) {
+    const ws = this.provider.ws;
+    if (ws && ws.readyState === 1) { this.provider.sendMessage(JSON.stringify(obj)); return; }
+    if (obj.t !== 'hello') this.#outbox.push(obj);
+  }
+
+  #flushOutbox() {
+    const ws = this.provider.ws;
+    while (this.#outbox.length && ws && ws.readyState === 1) {
+      this.provider.sendMessage(JSON.stringify(this.#outbox.shift()));
+    }
+  }
 
   #onSynced() {
     // `pilot` tells the room this client can take pilot ops. A client that
