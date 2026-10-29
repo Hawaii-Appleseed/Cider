@@ -7306,6 +7306,23 @@ function showHandles(d, page, el) {
       startDrag(d, el, e);
     });
     ov.appendChild(g);
+    // The grip alone was too easy to miss: a person reaches for the box's
+    // EDGE, as in PowerPoint or Keynote, and got the caret or a selection of
+    // words instead. So a thin band just outside each side moves it too. Put
+    // first in the overlay, so every resize handle (later, same stacking
+    // context) keeps the pixels they share; outside the box, so no letter
+    // loses a click to it.
+    ['n', 's', 'e', 'w'].forEach(side => {
+      const band = d.createElement('div');
+      band.className = 'ds-moveedge ds-moveedge-' + side;
+      band.title = 'Drag to move — the words stay open';
+      band.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        startDrag(d, el, e);
+      });
+      ov.insertBefore(band, ov.firstChild);
+    });
   }
   // Typing: the box is a text field now, so the chrome steps back from the
   // words (see .ds-typing). Escape closes the words and brings it all back.
@@ -20376,8 +20393,11 @@ function shownUnder(d, e) {
  *  So: commit the words, wait out that render, then replay the press as a
  *  click on the same spot in whatever document is current — the ordinary
  *  path from there, so it selects, opens a panel, or types where it landed.
- *  A press held into a drag across the switch is taken as a click; the next
- *  press drags.
+ *  A press still held when the render is done is replayed as a press alone,
+ *  so the drag it turns into moves the object: it used to count as a click,
+ *  and the first drag of a box after typing in another moved nothing. The
+ *  replay is marked (dsReplay) so startDrag ends it on the first move with
+ *  no button down — a release that fell inside the swap was never heard.
  *
  *  The replay goes to the same spot IN the object, not the same spot on the
  *  screen: the page can settle a few pixels differently after a render (on
@@ -20388,9 +20408,17 @@ async function pressPastEditor(d, el, e, active) {
   const id = idOf(el);
   const r0 = el.getBoundingClientRect();
   const dx = e.clientX - r0.left, dy = e.clientY - r0.top;
+  // Heard from the old document and the window above; a release inside a
+  // document the render swapped in is caught by startDrag instead.
+  let held = true;
+  const release = () => { held = false; };
+  d.addEventListener('mouseup', release, { once: true });
+  window.addEventListener('mouseup', release, { once: true });
   active.blur();                          // commits: finish() ends `editing` at once
   await new Promise(r => setTimeout(r, 0));
   await renderIdle();
+  d.removeEventListener('mouseup', release);
+  window.removeEventListener('mouseup', release);
   if (editing) return;                    // a dialog kept the words open
   const d2 = $('out').contentDocument;
   if (!d2) return;
@@ -20406,8 +20434,10 @@ async function pressPastEditor(d, el, e, active) {
   const target = hit && el2.contains(hit) ? hit : (el2.querySelector('[data-slot]') || el2);
   const ev = type => new MouseEvent(type, { bubbles: true, cancelable: true, composed: true,
     view: d2.defaultView, button: 0, buttons: type === 'mousedown' ? 1 : 0, detail: 1, ...at });
-  target.dispatchEvent(ev('mousedown'));
-  target.dispatchEvent(ev('mouseup'));
+  const down = ev('mousedown');
+  down.dsReplay = held;
+  target.dispatchEvent(down);
+  if (!held) target.dispatchEvent(ev('mouseup'));
 }
 
 function dragify(d, roots) {
@@ -20479,6 +20509,7 @@ function dragify(d, roots) {
           e.preventDefault(); e.stopPropagation();
           const ev = new MouseEvent('mousedown', e);
           ev.dsRedirected = true;
+          ev.dsReplay = e.dsReplay;
           under.dispatchEvent(ev);
           return;
         }
@@ -21232,6 +21263,11 @@ function startDrag(d, el, e0, drillIn = false) {
   // buy nothing and cost a frame of lag. It also stops firing in a hidden
   // document, which turns a drag into a silent no-op.
   const move = e => {
+    // A press replayed past an open editor (pressPastEditor) may have been
+    // let go while the render swapped documents, unheard: no button down
+    // means it is over. Only there — a synthetic drag elsewhere sends no
+    // buttons at all.
+    if (e0.dsReplay && e.buttons === 0) { up(); return; }
     lastPt = { x: e.clientX, y: e.clientY };
     if (!started) {
       if (refused) return;
@@ -26043,6 +26079,15 @@ function wire(roots) {
     .ds-movegrip.ds-movegrip-r { left:auto; right:-33px; }
     .ds-movegrip:hover { color:#fff; }
     .ds-movegrip svg { display:block; pointer-events:none; }
+    /* The edge bands beside the grip, also only while typing: invisible until
+       the pointer is on one, then a tint and the move cursor say "this moves
+       the box". 7px, flush outside each side; the resize handles sit on top. */
+    .ds-moveedge { position:absolute; pointer-events:auto; cursor:move; }
+    .ds-moveedge:hover { background:rgba(107,158,120,.22); }
+    .ds-moveedge-n { left:-7px; right:-7px; top:-7px; height:7px; }
+    .ds-moveedge-s { left:-7px; right:-7px; bottom:-7px; height:7px; }
+    .ds-moveedge-w { top:0; bottom:0; left:-7px; width:7px; }
+    .ds-moveedge-e { top:0; bottom:0; right:-7px; width:7px; }
     /* the rotate grip hangs above the box on a short stem — only for elements
        with no corner to rotate from (a width-only prose slot, a table) */
     .ds-rot { top:-20px; left:50%; width:11px; height:11px; margin-left:-6px;
