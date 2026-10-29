@@ -15,14 +15,20 @@ The same file ships in three places, so it works with nothing to install:
 Guarded, relative to the repo (any clone name) or under a primer-editor* /
 staff-updates-internal* folder:
   - a report's template:   projects/<id>/render_report.py, projects/<id>/layout.json
-  - the engine:            docsync/**, primer/<id>/engine/**
-  - the hub's editor:      primer/edit.html, primer/collab-client.js
+  - the engine:            docsync/** except docsync/editor/**, primer/<id>/engine/**
+  - the hub's editor copy: primer/edit.html, primer/collab-client.js (vendored
+    from Cider by docsync.hub; edit the source in docsync/editor/ instead)
 Fires on:
   - Write / Edit / MultiEdit / NotebookEdit of a guarded file
   - Bash that writes to one (sed -i, cp/mv/tee/redirect, a script that names it
-    and writes) or starts the code path (cider-wt / tools/wt new|land,
-    python3 -m docsync.hub without --dry-run)
+    and writes) or ships to the hub (python3 -m docsync.hub without --dry-run)
 Reading code and running a renderer to preview stay allowed.
+
+Not guarded (Devin, 2026-10-28): Cider's own editor UI, docsync/editor/** —
+how dragging, selecting and typing work is tool work, not one report's look,
+and it needed an unlock for every fix. So `cider-wt new|land` is open too: a
+worktree touches nothing by itself, and a template edit inside one is still
+caught file by file.
 
 Unlock: .claude/hooks/allow-template [minutes|off|status] in either repo
 (default 120 minutes; one window per person, in ~/.cache). Only the person
@@ -40,19 +46,15 @@ WINDOW = os.environ.get("GUARD_TEMPLATE_WINDOW") or os.path.expanduser("~/.cache
 HOME = os.path.expanduser("~")
 
 CODE = (r"(?:projects/[^/\s'\"]+/(?:render_report\.py|layout\.json)"
-        r"|docsync/[^\s'\"]*"
+        r"|docsync/(?!editor/)[^\s'\"]*"
         r"|primer/[^/\s'\"]+/engine/[^\s'\"]*"
         r"|primer/(?:edit\.html|collab-client\.js))")
 REL = re.compile(r"^" + CODE, re.I)                                   # a repo-relative path
 NAMED = re.compile(r"(?:primer-editor|staff-updates-internal)[^/\s'\"]*/(?:.*/)?" + CODE, re.I)
 IN_CMD = re.compile(r"(?:^|[\s'\"=/(])" + CODE, re.I)                 # a code path inside a command
-BARE = re.compile(r"(?<![\w./-])(?:render_report\.py|layout\.json|edit\.html)\b", re.I)
+BARE = re.compile(r"(?<![\w./-])(?:render_report\.py|layout\.json)\b", re.I)
 
-CODE_PATH_CMDS = re.compile(
-    r"(?:cider-wt|tools/wt)\s+(?:new|land)\b"
-    r"|-m\s+docsync\.hub\b(?![^;&|\n]*--dry-run)",
-    re.I,
-)
+CODE_PATH_CMDS = re.compile(r"-m\s+docsync\.hub\b(?![^;&|\n]*--dry-run)", re.I)
 WRITES = re.compile(
     r"\bsed\s+-i|\btee\b|\bcp\b|\bmv\b|\brsync\b|\bpatch\b|\bgit\s+(?:apply|checkout\s+\S+\s+--)"
     r"|>\s*\S|\.write\(|write_text\(|open\([^)]*['\"]w",
