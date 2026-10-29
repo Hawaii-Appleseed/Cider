@@ -20,6 +20,14 @@ const asHub = page => page.evaluate(() => {
               + '<i style="background:#2E7D4F">MN</i>';
 });
 
+/** How the status line is showing: as "● Live" (the class, its sentence on
+ *  data-tip, its own glyphs at size 0) or in words. */
+const look = page => page.evaluate(() => {
+  const s = $('stat');
+  return { cls: s.classList.contains('live-idle'), tip: s.dataset.tip || null,
+           size: getComputedStyle(s).fontSize, after: getComputedStyle(s, '::after').content };
+});
+
 /** Bar controls whose right edge is past the window — off-screen, unreachable. */
 const offScreen = page => page.evaluate(() => {
   const bar = $('bar'), w = bar.clientWidth;
@@ -128,18 +136,44 @@ test.describe('the top bar', () => {
     await gotoEditor(page);
     const idle = await page.evaluate(() => IDLE_STAT);
     await expect(page.locator('#stat')).toHaveText(idle);
-    const look = () => page.evaluate(() => {
-      const s = $('stat');
-      return { cls: s.classList.contains('live-idle'), tip: s.dataset.tip || null,
-               size: getComputedStyle(s).fontSize, after: getComputedStyle(s, '::after').content };
-    });
-    expect(await look()).toEqual({ cls: true, tip: idle, size: '0px', after: '"Live"' });
+    expect(await look(page)).toEqual({ cls: true, tip: idle, size: '0px', after: '"Live"' });
+    // Every render ends on its hint, and that is just as much at rest.
+    await page.evaluate(() => render());
+    const hint = await page.locator('#stat').textContent();
+    expect(hint).toMatch(/^click text to type/);
+    expect(await look(page)).toMatchObject({ cls: true, tip: hint, size: '0px' });
     // Any other message is said in full.
     await page.evaluate(() => { $('stat').textContent = 'page 3 copied'; });
-    const busy = await look();
+    const busy = await look(page);
     expect(busy.cls).toBe(false);
     expect(busy.tip).toBe(null);
     expect(busy.size).not.toBe('0px');
+  });
+
+  test('on the hub, "Live" is the room\'s resting line, and only while the room is connected', async ({ page }) => {
+    // Found on the live hub (2026-10-28): a hub tab never says IDLE_STAT, so
+    // its row held the room's sentence and then the render hint, and the dot
+    // never showed there at all.
+    await gotoEditor(page);
+    // A draft editor with neither a server nor a room is not live, and says
+    // the render hint in words.
+    await page.evaluate(() => { local = false; collabChip(); });
+    await page.evaluate(() => render());
+    await expect(page.locator('#stat')).toHaveText(/^click text to type/);
+    expect((await look(page)).cls).toBe(false);
+    // A hub tab is that and a room: the line it holds turns "Live" as the
+    // room connects.
+    await page.evaluate(() => { collabInfo = { ...collabInfo, on: true, status: 'live' }; collabChip(); });
+    expect(await look(page)).toMatchObject({ cls: true, size: '0px' });
+    for (const said of await page.evaluate(() => [ROOM_IDLE_STAT, 'joined the live session — 1 other here'])) {
+      await page.evaluate(t => { $('stat').textContent = t; }, said);
+      expect(await look(page)).toMatchObject({ cls: true, tip: said, size: '0px' });
+    }
+    // The room drops: the same line, and no longer "Live".
+    await page.evaluate(() => { collabInfo = { ...collabInfo, status: 'offline' }; collabChip(); });
+    const dropped = await look(page);
+    expect(dropped).toMatchObject({ cls: false, tip: null });
+    expect(dropped.size).not.toBe('0px');
   });
 
   test('zoom: the bar shows the scale, a size sets it, and − / + keep the menu open', async ({ page }) => {
