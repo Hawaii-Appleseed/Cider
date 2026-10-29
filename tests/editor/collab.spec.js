@@ -520,6 +520,22 @@ test('a text box two people edited at once is settled by a person, not by whoeve
   await expect.poll(() => boxOf(b), { timeout: 10_000 }).toBe('Nobody else was here');
   await expect(b.locator('.dsdlg-msg')).toHaveCount(0);
 
+  // ...nor when this editor's copy already differed from the room before it
+  // opened — an edit made while Suggesting stays here and never reaches the
+  // room. Nobody moved the room while the box was open, so there is nothing
+  // to ask; it used to ask about B's own older words, from "somebody".
+  await b.evaluate(`(layout.boxes || []).find(x => x.id === ${JSON.stringify(id)}).md = 'Kept here, never sent'`);
+  expect(await b.evaluate(`(collab.netFiles().layout.boxes.find(x => x.id === ${JSON.stringify(id)}) || {}).md`))
+    .toBe('Nobody else was here');
+  await b.evaluate(`(() => { const d = document.getElementById('out').contentDocument;
+    editBox(d, d.querySelector('[data-el="text.${id}"]')); })()`);
+  await expect.poll(() => b.evaluate('editing'), { timeout: 10_000 }).toBe(true);
+  await b.keyboard.press('ControlOrMeta+a');
+  await b.keyboard.type('Still only me');
+  await b.evaluate("document.getElementById('out').contentDocument.querySelector('.ds-edit').blur()");
+  await expect.poll(() => boxOf(a), { timeout: 10_000 }).toBe('Still only me');
+  await expect(b.locator('.dsdlg-msg')).toHaveCount(0);
+
   await a.evaluate(`(async () => { layout.boxes = (layout.boxes || []).filter(x => x.id !== ${JSON.stringify(id)});
     markDirty(); await render(); })()`);
   // ...and wait for B to have DRAWN the deletion, not just adopted it. The
