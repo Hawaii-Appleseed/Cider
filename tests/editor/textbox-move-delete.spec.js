@@ -115,3 +115,51 @@ test.describe('deleting an open text box', () => {
     await expect(frameOf(page).locator('.ds-delgrip')).toHaveCount(0);
   });
 });
+
+test.describe('a thin thing resized stays thin', () => {
+  // The resize floor was 0.4in on BOTH axes, whichever handle moved: a thin
+  // vertical bar dragged by its top or bottom went 0.4in wide, and a
+  // one-line heading grew to 0.4in tall over the paragraph under it.
+  async function dragHandle(page, handle, dx, dy) {
+    const hb = await frameOf(page).locator(`.ds-h-${handle}`).boundingBox();
+    const x = hb.x + hb.width / 2, y = hb.y + hb.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x + dx * i / 6, y + dy * i / 6);
+    await page.mouse.up();
+    await settled(page);
+  }
+
+  test('a thin vertical bar shortened from its bottom keeps its width', async ({ page }) => {
+    await gotoEditor(page);
+    const r = await page.evaluate(() => docsync.api.addShape({ page: visiblePageId(), kind: 'rect',
+      x: 2, y: 1, w: 0.3, h: 1.5, fill: '#1E6194' }));
+    expect(r.ok).toBe(true);
+    await settled(page);
+    await frameOf(page).locator(`[data-shape="${r.id}"]`).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);   // the scroll's own settle, not a render
+    await page.evaluate(id => { const d = document.getElementById('out').contentDocument;
+      setSel(d, [id]); paintSel(d); }, r.id);
+    await frameOf(page).locator('.ds-h-s').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);   // the scroll's own settle, not a render
+    await dragHandle(page, 's', 0, -60);
+    const sh = await page.evaluate(id => layout.shapes.find(s => s.id === id), r.id);
+    expect(sh.w).toBeCloseTo(0.3, 2);
+    expect(sh.h).toBeLessThan(1.5);
+  });
+
+  test('a one-line heading dragged shorter does not grow', async ({ page }) => {
+    await gotoEditor(page, '?project=uhero-trc-summary');
+    const h = frameOf(page).locator('[data-el="rec.h"]');
+    await h.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);   // the scroll's own settle, not a render
+    await page.evaluate(() => { const d = document.getElementById('out').contentDocument;
+      setSel(d, ['rec.h']); paintSel(d); });
+    await settled(page);
+    const before = (await h.boundingBox()).height;
+    await dragHandle(page, 's', 0, -30);
+    const after = (await frameOf(page).locator('[data-el="rec.h"]').boundingBox()).height;
+    expect(after).toBeLessThanOrEqual(before + 1);
+    expect(await page.evaluate(() => (layout.positions['rec.h'] || {}).h ?? null)).toBeNull();
+  });
+});
