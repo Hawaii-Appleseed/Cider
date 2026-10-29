@@ -192,6 +192,48 @@ test.describe('a click types, a drag moves (tfc-2027-priorities)', () => {
     expect(await page.evaluate(() => layout.positions['field.sheet.h1-1'])).toBeTruthy();
   });
 
+  test('while the words are open, the box edge moves it too and they stay open', async ({ page }) => {
+    // People reach for a box's edge, as in a slide tool; the grip alone was
+    // missed and the press selected words instead.
+    const at = await pointAt(page, '[data-slot="sheet.h1-1"]', 'Priorities');
+    await page.mouse.click(at.x, at.y);
+    expect((await caret(page)).editing).toBe(true);
+    const edges = page.frameLocator('#out').locator('.ds-handles .ds-moveedge');
+    await expect(edges).toHaveCount(4);
+    const nb = await page.frameLocator('#out').locator('.ds-handles .ds-moveedge-n').boundingBox();
+    // Near the band's left end: clear of a north handle in the middle.
+    await drag(page, { x: nb.x + 14, y: nb.y + nb.height / 2 }, 30, 120);
+    expect(await page.evaluate(() => layout.positions['field.sheet.h1-1']), 'moved').toBeTruthy();
+    const c = await caret(page);
+    expect(c.editing, 'the words are still open').toBe(true);
+    expect(c.selected, 'no words were selected on the way').toBe('');
+  });
+
+  test('a drag on another field while words are open moves that field at once', async ({ page }) => {
+    // The press past an open editor used to count as a click whatever it
+    // did: the first drag after typing in another box moved nothing.
+    const at = await pointAt(page, '[data-slot="standfirst.p-1"]', 'legislative', 1);
+    await page.mouse.click(at.x, at.y);
+    expect((await caret(page)).editing).toBe(true);
+    const from = await pointAt(page, '[data-slot="sheet.h1-1"]', 'Coalition');
+    await drag(page, from, 40, 160);
+    await settled(page);
+    expect(await page.evaluate(() => layout.positions['field.sheet.h1-1']), 'moved').toBeTruthy();
+    expect(await page.evaluate(() => [...selIds])).toEqual(['field.sheet.h1-1']);
+    // Nothing is left lifted, following the pointer with no button down.
+    expect(await page.evaluate(() =>
+      !!document.getElementById('out').contentDocument.querySelector('.ds-lifted'))).toBe(false);
+  });
+
+  test('a click on another field while words are open still types there', async ({ page }) => {
+    const at = await pointAt(page, '[data-slot="standfirst.p-1"]', 'legislative', 1);
+    await page.mouse.click(at.x, at.y);
+    const to = await pointAt(page, '[data-slot="sheet.h1-1"]', 'Priorities');
+    await page.mouse.click(to.x, to.y);
+    await expect.poll(async () => (await caret(page)).slot).toBe('sheet.h1-1');
+    expect(await page.evaluate(() => layout.positions['field.sheet.h1-1'])).toBeFalsy();
+  });
+
   test('a stat card moves as one, its figure and label together', async ({ page }) => {
     // The voted card: its figure is computed from the turnout bar and its
     // label is a slot, and the card still moves as one.
