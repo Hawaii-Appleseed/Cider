@@ -178,8 +178,9 @@ test.describe('a click types, a drag moves (tfc-2027-priorities)', () => {
     expect((await caret(page)).editing).toBe(true);
     const grip = page.frameLocator('#out').locator('.ds-handles .ds-movegrip');
     await expect(grip).toHaveCount(1);
-    // The floating strip goes while typing; the handles stay.
-    await expect(page.frameLocator('#out').locator('.ds-mini')).toHaveCount(0);
+    // The floating strip shows on the click that opened the words, and goes
+    // once they are typed in; the handles stay throughout.
+    await expect(page.frameLocator('#out').locator('.ds-mini')).toHaveCount(1);
     const gb = await grip.boundingBox();
     await drag(page, { x: gb.x + gb.width / 2, y: gb.y + gb.height / 2 }, 30, 120);
     expect(await page.evaluate(() => layout.positions['field.sheet.h1-1']), 'moved').toBeTruthy();
@@ -297,6 +298,69 @@ test.describe('a click types on every kind of text', () => {
     expect(c.editing).toBe(true);
     expect(c.selected).toBe('');
     expect(c.before).toMatch(/beta $/);
+  });
+
+  test('one click on a text box brings its mini toolbar, which goes when you type', async ({ page }) => {
+    // Reported on the Top Three fact sheet: "for the numbers above the
+    // columns, 01, 02, 03, I have to click on the box, then click outside
+    // of it for the mini toolbar to pop up". The click opened the words, and
+    // the strip drew nothing while they were open.
+    await gotoEditor(page);
+    // On a page of its own: a strip that would land on other words waits
+    // (the next test), and this one is about a box with room around it.
+    const id = await page.evaluate(async () => {
+      const pg = await docsync.api.addPage();
+      return (await docsync.api.addTextBox({ page: pg.id, x: 1, y: 2, w: 2.2, md: '01' })).id;
+    });
+    await page.evaluate(() => docsync.api.select(null));
+    const mini = page.frameLocator('#out').locator('.ds-mini');
+    await expect(mini).toHaveCount(0);
+    const at = await pointAt(page, `[data-el="${id}"]`, '01');
+    await page.mouse.click(at.x, at.y);
+    expect((await caret(page)).editing).toBe(true);
+    await expect(mini, 'the strip is up on the first click').toHaveCount(1);
+    await page.keyboard.type('X');
+    await expect(mini, 'and steps back once the words are typed in').toHaveCount(0);
+  });
+
+  test('with words just above and below, the strip waits for the words to close', async ({ page }) => {
+    // It would lie over the neighbour's words and take the click meant for
+    // them, so the box gets its strip on Escape, as before.
+    await gotoEditor(page);
+    const id = await page.evaluate(async () => {
+      const pg = await docsync.api.addPage();
+      await docsync.api.addTextBox({ page: pg.id, x: 1, y: 1.6, w: 3, md: 'Above above above' });
+      await docsync.api.addTextBox({ page: pg.id, x: 1, y: 2.6, w: 3, md: 'Below below below' });
+      return (await docsync.api.addTextBox({ page: pg.id, x: 1, y: 2.1, w: 3, md: 'Middle' })).id;
+    });
+    await page.evaluate(() => docsync.api.select(null));
+    const mini = page.frameLocator('#out').locator('.ds-mini');
+    const at = await pointAt(page, `[data-el="${id}"]`, 'Middle');
+    await page.mouse.click(at.x, at.y);
+    expect((await caret(page)).editing).toBe(true);
+    await expect(mini).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(mini).toHaveCount(1);
+  });
+
+  test('a mini toolbar button pressed with the words open acts on the box', async ({ page }) => {
+    await gotoEditor(page);
+    // On a page of its own: a strip that would land on other words waits
+    // (the next test), and this one is about a box with room around it.
+    const id = await page.evaluate(async () => {
+      const pg = await docsync.api.addPage();
+      return (await docsync.api.addTextBox({ page: pg.id, x: 1, y: 2, w: 2.2, md: '02' })).id;
+    });
+    await page.evaluate(() => docsync.api.select(null));
+    const at = await pointAt(page, `[data-el="${id}"]`, '02');
+    await page.mouse.click(at.x, at.y);
+    expect((await caret(page)).editing).toBe(true);
+    const bid = id.replace(/^text\./, '');
+    const before = await page.evaluate(() => layout.boxes.length);
+    await page.frameLocator('#out').locator('.ds-mini button[aria-label^="Duplicate"]').click();
+    await expect.poll(() => page.evaluate(() => layout.boxes.length)).toBe(before + 1);
+    expect(await page.evaluate(() => editing), 'the words closed first').toBe(false);
+    expect(await page.evaluate(b => layout.boxes.find(x => x.id === b).md, bid)).toBe('02');
   });
 
   test('a label inside a chart keeps its double-click: a click selects the drawing', async ({ page }) => {
