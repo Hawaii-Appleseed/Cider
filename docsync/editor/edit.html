@@ -22625,6 +22625,7 @@ async function boot() {
     py.FS.writeFile(path, files[i]);
   });
   py.FS.mkdirTree('/repo/' + M.out.slice(0, M.out.lastIndexOf('/')));
+  await pycRestore();           // compiled engine from the last open, before the first import
   source = original = files[urls.indexOf('engine/' + M.content)];
   if (M.layout) {
     layoutOrig = files[urls.indexOf('engine/' + M.layout)];
@@ -22677,6 +22678,7 @@ async function boot() {
   $('guides').classList.toggle('on', guidesOn);
   await restoreCachedDraft();   // adopt this browser's unsaved edits before the first paint
   await render();
+  pycKeepSoon();                // what Python just compiled, for the next open
   // Only now, with the files settled and painted: if this project has a
   // collaboration relay, join its room (seeding it from what is on screen if
   // nobody has yet). Not awaited — the editor is usable while it connects.
@@ -24623,6 +24625,100 @@ window.__fileSig = fileSig;   // test hook, like window.__liveIsLeader
 // Seeded at boot from the very bytes the FS was built from, so the FIRST bump
 // already has a true baseline to compare against.
 const engineSig = new Map();
+
+// --- the compiled-engine cache ---------------------------------------------
+// Pyodide compiles every .py it imports, from source, on every open: layout.py
+// alone is about 300 ms in the browser (measured 2026-10-30; a phone is
+// slower), against 1.4 ms to load the same module from bytecode. Python's
+// filesystem here is memory, so nothing it writes survives a reload. The first
+// open therefore keeps what Python compiled in Cache Storage, and later opens
+// put it back before the first import.
+//
+// What is kept is a HASH-BASED pyc, the checked kind: on load Python hashes
+// the source and compares, so a stale or tampered entry is refused and
+// recompiled rather than trusted. The cache can only make a boot faster, never
+// wrong. A pyc from another Python build is refused by its magic number the
+// same way. Keys carry the Python version and the file's own fingerprint.
+const PYC_CACHE = 'ds-pyc-v1';
+let pycMissed = [];                       // [{src, pyc, key}] compiled this boot, not yet kept
+window.__dsPyc = { restored: 0, missed: 0, kept: 0 };
+
+/** The engine's .py files as written into the filesystem, with where Python
+ *  looks for each one's bytecode. */
+function pycTargets() {
+  const srcs = [...engineSig.keys()].filter(p => p.endsWith('.py'));
+  if (!srcs.length) return [];
+  const pycs = JSON.parse(py.runPython(
+    'import importlib.util, json\n'
+    + 'json.dumps([importlib.util.cache_from_source(p) for p in json.loads('
+    + JSON.stringify(JSON.stringify(srcs)) + ')])'));
+  const ver = py.runPython('import sys\nsys.version.split()[0]');
+  return srcs.map((src, i) => ({ src, pyc: pycs[i], key: `/__pyc/${ver}${src}/${engineSig.get(src)}` }));
+}
+
+/** Put kept bytecode back, before anything is imported. A miss is remembered
+ *  so the compile this boot is about to do can be kept once the page is up. */
+async function pycRestore() {
+  let cache;
+  try { cache = await caches.open(PYC_CACHE); } catch (e) { return; }   // file: URL, storage denied
+  let targets;
+  try { targets = pycTargets(); } catch (e) { swallowed('compiled-engine cache: targets', e); return; }
+  const hits = await Promise.all(targets.map(t => cache.match(t.key).catch(() => null)));
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (!hits[i]) { pycMissed.push(t); continue; }
+    try {
+      const bytes = new Uint8Array(await hits[i].arrayBuffer());
+      py.FS.mkdirTree(t.pyc.slice(0, t.pyc.lastIndexOf('/')));
+      py.FS.writeFile(t.pyc, bytes);
+      window.__dsPyc.restored++;
+    } catch (e) { swallowed('compiled-engine cache: restore', e); pycMissed.push(t); }
+  }
+  window.__dsPyc.missed = pycMissed.length;
+}
+
+/** Keep what this boot compiled. Python has usually written a timestamp pyc
+ *  for each module it imported: re-head it as hash-based (no second compile).
+ *  A module it never imported is compiled here, once. */
+async function pycKeepNow() {
+  const todo = pycMissed; pycMissed = [];
+  if (!todo.length) return 0;
+  let cache;
+  try { cache = await caches.open(PYC_CACHE); } catch (e) { return 0; }
+  py.runPython(
+    'import importlib.util, os, py_compile, json\n'
+    + 'for src, pyc in json.loads(' + JSON.stringify(JSON.stringify(todo.map(t => [t.src, t.pyc]))) + '):\n'
+    + '    done = False\n'
+    + '    if os.path.exists(pyc):\n'
+    + '        data = open(pyc, "rb").read()\n'
+    + '        if data[:4] == importlib.util.MAGIC_NUMBER and not int.from_bytes(data[4:8], "little") & 1:\n'
+    + '            h = importlib.util.source_hash(open(src, "rb").read())\n'
+    + '            open(pyc, "wb").write(data[:4] + (3).to_bytes(4, "little") + h + data[16:])\n'
+    + '            done = True\n'
+    + '        elif data[:4] == importlib.util.MAGIC_NUMBER:\n'
+    + '            done = True\n'
+    + '    if not done:\n'
+    + '        py_compile.compile(src, cfile=pyc, doraise=True,\n'
+    + '                           invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)\n');
+  let n = 0;
+  for (const t of todo) {
+    try {
+      await cache.put(t.key, new Response(py.FS.readFile(t.pyc), { headers: { 'Content-Type': 'application/octet-stream' } }));
+      n++;
+    } catch (e) { swallowed('compiled-engine cache: keep', e); }
+  }
+  window.__dsPyc.kept += n;
+  return n;
+}
+window.__dsPycKeepNow = pycKeepNow;       // test hook
+/** After the first paint, when the thread is idle. A browser without
+ *  requestIdleCallback gets a few seconds' grace instead. */
+function pycKeepSoon() {
+  if (!pycMissed.length) return;
+  const go = () => pycKeepNow().catch(e => swallowed('compiled-engine cache', e));
+  if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 10000 });
+  else setTimeout(go, 4000);
+}
 // True whenever engine .py files were rewritten in Pyodide's FS since the
 // last successful render: the next render purges sys.modules so the new code
 // is what imports. Starts true so the very first render never trusts a cache.
