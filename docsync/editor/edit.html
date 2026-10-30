@@ -1727,6 +1727,9 @@
   #hpanel[hidden] { display:none; }
   #hpanel.gutter { right:0; bottom:0; width:var(--cmt-gutter, 384px); border-radius:var(--r-edge) 0 0 0; border-right:0; border-bottom:0; box-shadow:none; background:#EEF2EF; }
   #hpanel-named { border:1px solid #C9D6CD; background:#fff; font:600 11px system-ui; color:#5B6E66; padding:3px 9px; border-radius:999px; cursor:pointer; margin-left:auto; margin-right:8px; }
+  .hub-history-older { display:block; margin:10px auto 14px; border:1px solid #C9D6CD; background:#fff; font:600 12px system-ui; color:#2F3E46; padding:6px 14px; border-radius:999px; cursor:pointer; }
+  .hub-history-older:hover:not(:disabled) { background:#E8EDE6; }
+  .hub-history-older:disabled { opacity:.6; cursor:default; }
   #hpanel-named:hover { background:#E8EDE6; color:var(--ink); }
   #hpanel-named.on { background:#2D5A3D; border-color:#2D5A3D; color:#fff; }
   .hpanel-show { display:flex; align-items:center; gap:6px; font:12px system-ui; color:#5B6E66; padding:4px 14px 8px; border-bottom:1px solid #E1E8E3; cursor:pointer; }
@@ -28193,6 +28196,12 @@ let hubHistoryVersions = [];
 let hubHistorySel = null;        // the version in hand, with its differences once loaded
 let hubHistoryNamedOnly = false;
 let hubHistoryLoading = 0;
+// The store answers the newest 100 versions at a time (and says, in
+// x-history-more, whether it holds older ones). With autosave every pause is
+// a version, so 100 is a sitting, not a document's life: without paging the
+// older ones were kept and could never be reached from here.
+let hubHistoryMore = false;
+let hubHistoryOlderBusy = false;
 const HIST_CSS = `
 @media screen {
   .ds-hist-changed { outline: 2px solid #C2703A !important; outline-offset: 3px; background: rgba(245,197,66,.16); }
@@ -28229,12 +28238,33 @@ function hubGutterSync() {
 async function hubHistoryLoad() {
   const seq = ++hubHistoryLoading;
   try {
-    const r = await fetch(`${docStore()}/history`, { cache: 'no-store' });
+    // A reload while older pages are on screen keeps them (the store allows
+    // 500 at a time): a collaborator's Save must not fold the list back to
+    // the newest hundred under someone reading it.
+    const want = Math.min(500, Math.max(100, hubHistoryVersions.length + 1));
+    const r = await fetch(`${docStore()}/history?limit=${want}`, { cache: 'no-store' });
     const j = await hubJson(r);
     if (!r.ok) throw new Error(j.error || `the hub answered ${r.status}`);
     if (seq !== hubHistoryLoading) return;   // a later load answered first
     hubHistoryVersions = j;
-  } catch (e) { hubHistoryVersions = []; $('stat').textContent = 'history not loaded: ' + e.message; }
+    hubHistoryMore = r.headers.get('x-history-more') === '1';
+  } catch (e) { hubHistoryVersions = []; hubHistoryMore = false; $('stat').textContent = 'history not loaded: ' + e.message; }
+  hubHistoryRender();
+}
+/** The next page back from the oldest version on screen. */
+async function hubHistoryLoadOlder() {
+  const oldest = hubHistoryVersions[hubHistoryVersions.length - 1];
+  if (!oldest || hubHistoryOlderBusy) return;
+  hubHistoryOlderBusy = true; hubHistoryRender();
+  try {
+    const r = await fetch(`${docStore()}/history?before=${encodeURIComponent(oldest.version)}`, { cache: 'no-store' });
+    const j = await hubJson(r);
+    if (!r.ok) throw new Error(j.error || `the hub answered ${r.status}`);
+    const have = new Set(hubHistoryVersions.map(v => v.version));
+    hubHistoryVersions = hubHistoryVersions.concat(j.filter(v => !have.has(v.version)));
+    hubHistoryMore = r.headers.get('x-history-more') === '1';
+  } catch (e) { $('stat').textContent = 'older versions not loaded: ' + e.message; }
+  hubHistoryOlderBusy = false;
   hubHistoryRender();
 }
 /** "Today", "Yesterday", else "Sep 3" this year, else the date. */
@@ -28265,15 +28295,23 @@ function hubHistoryRender() {
   const shown = hubHistoryNamedOnly ? hubHistoryVersions.filter(v => v.label) : hubHistoryVersions;
   if (!shown.length) {
     const p = document.createElement('p'); p.className = 'hub-history-empty';
-    p.textContent = hubHistoryVersions.length ? 'Nobody has named a version yet — the name box on a row does it.' : 'Nothing saved to the hub yet.';
+    p.textContent = hubHistoryVersions.length
+      ? 'Nobody has named a version yet' + (hubHistoryMore ? ' among these' : '') + ' — the name box on a row does it.'
+      : 'Nothing saved to the hub yet.';
     list.appendChild(p);
-    return;
   }
   let day = null;
   for (const v of shown) {
     const d = fmtDay(v.updated_at);
     if (d !== day) { day = d; const h = document.createElement('p'); h.className = 'hub-history-day'; h.textContent = d; list.appendChild(h); }
     list.appendChild(hubHistoryRow(v, canChange));
+  }
+  if (hubHistoryMore) {
+    const more = document.createElement('button'); more.type = 'button'; more.id = 'hpanel-older'; more.className = 'hub-history-older';
+    more.textContent = hubHistoryOlderBusy ? 'Loading older versions…' : 'Show older versions';
+    more.disabled = hubHistoryOlderBusy;
+    more.onclick = () => hubHistoryLoadOlder();
+    list.appendChild(more);
   }
 }
 function hubHistoryRow(v, canChange) {

@@ -1976,3 +1976,27 @@ test('restore: the confirm names a paragraph a colleague added since the saved v
   expect(await a.evaluate(`source.includes('[[${key}]]')`)).toBe(false);
   await expect.poll(() => b.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(false);
 });
+
+// With autosave every pause is a version, so a document outgrows the 100 the
+// store answers at a time within a sitting. The older ones were kept but the
+// panel never asked for them: no way back past the newest hundred.
+// Last in the file on purpose: it leaves 100+ more versions in the store.
+test('history: past the newest hundred the panel offers older versions, and they can be reached', async () => {
+  const before = (await (await a.request.get(`${DOC_URL()}/history?limit=500`)).json()).length;
+  for (let i = 0; i < 105; i++) {
+    const r = await a.request.put(DOC_URL(), { data: { content: `Version ${i} of many.`, force: true } });
+    expect(r.ok()).toBe(true);
+  }
+  const total = before + 105;
+  if (await a.locator('#hpanel').isHidden()) await a.locator('#history').click();
+  else { await closeHistory(a); await a.locator('#history').click(); }
+  await expect(historyRows(a)).toHaveCount(100, { timeout: 20_000 });
+  const older = a.locator('#hpanel-older');
+  await expect(older).toBeVisible();
+  await older.click();
+  await expect(historyRows(a)).toHaveCount(total, { timeout: 20_000 });
+  await expect(older).toHaveCount(0);          // nothing further back: the button goes
+  // The oldest one on the list is the oldest the store holds.
+  const all = await (await a.request.get(`${DOC_URL()}/history?limit=500`)).json();
+  await expect(historyRows(a).last()).toHaveAttribute('data-version', all[all.length - 1].version);
+});
