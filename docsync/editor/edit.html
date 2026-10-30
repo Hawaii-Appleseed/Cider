@@ -26369,14 +26369,17 @@ function wire(roots) {
     .ds-handles.ds-typing { outline:none; }
     .ds-typing .ds-rot { display:none; }
     .ds-h-ne, .ds-h-nw, .ds-h-se, .ds-h-sw { border-radius:50%; }
-    .ds-h-e { right:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
-    .ds-h-w { left:-7px; top:50%; width:7px; height:18px; margin-top:-9px; cursor:ew-resize; }
-    .ds-h-s { bottom:-7px; left:50%; width:18px; height:7px; margin-left:-9px; cursor:ns-resize; }
-    .ds-h-n { top:-7px; left:50%; width:18px; height:7px; margin-left:-9px; cursor:ns-resize; }
-    .ds-h-se { right:-9px; bottom:-9px; width:9px; height:9px; cursor:nwse-resize; }
-    .ds-h-nw { left:-9px; top:-9px; width:9px; height:9px; cursor:nwse-resize; }
-    .ds-h-ne { right:-9px; top:-9px; width:9px; height:9px; cursor:nesw-resize; }
-    .ds-h-sw { left:-9px; bottom:-9px; width:9px; height:9px; cursor:nesw-resize; }
+    /* Small on purpose: at 9px corners and 7x18 sides the grips hid the
+       first and last letters of a text box's lines. Each offset is still
+       minus the grip's own size, so it stays flush outside the box. */
+    .ds-h-e { right:-5px; top:50%; width:5px; height:12px; margin-top:-6px; cursor:ew-resize; }
+    .ds-h-w { left:-5px; top:50%; width:5px; height:12px; margin-top:-6px; cursor:ew-resize; }
+    .ds-h-s { bottom:-5px; left:50%; width:12px; height:5px; margin-left:-6px; cursor:ns-resize; }
+    .ds-h-n { top:-5px; left:50%; width:12px; height:5px; margin-left:-6px; cursor:ns-resize; }
+    .ds-h-se { right:-6px; bottom:-6px; width:6px; height:6px; cursor:nwse-resize; }
+    .ds-h-nw { left:-6px; top:-6px; width:6px; height:6px; cursor:nwse-resize; }
+    .ds-h-ne { right:-6px; top:-6px; width:6px; height:6px; cursor:nesw-resize; }
+    .ds-h-sw { left:-6px; bottom:-6px; width:6px; height:6px; cursor:nesw-resize; }
     /* The move grip, only while the box's words are open (showHandles): a
        round four-arrow button, the one place a press moves the box instead
        of the caret. It hangs off the SIDE, level with the middle, clear of
@@ -26419,28 +26422,28 @@ function wire(roots) {
        centred on the same point, so the square (painted after, same stacking
        context) claims the shared centre and only the ring outside it rotates —
        exactly the affordance Canva's own corner handles give. The square's
-       centre is no longer the box corner but 4.5px diagonally outside it
-       (half of the 9px square, which now sits flush outside), so each ring's
-       offset is 4.5px further out than half its own 22px width — keep the two
+       centre is no longer the box corner but 3px diagonally outside it
+       (half of the 6px square, which now sits flush outside), so each ring's
+       offset is 3px further out than half its own 22px width — keep the two
        in step or the ring stops surrounding the square. */
     .ds-rot-corner { width:22px; height:22px; background:transparent; border:0; box-shadow:none; }
     .ds-rot-corner:hover { background:transparent; }   /* stays invisible — the cursor is the affordance */
-    .ds-rot-se { right:-15.5px; bottom:-15.5px; cursor:url('data:image/svg+xml;utf8,\
+    .ds-rot-se { right:-14px; bottom:-14px; cursor:url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
 <path d="M4 10a6 6 0 1 1 1.8 4.3" fill="none" stroke="%232F3E46" stroke-width="2" \
 stroke-linecap="round"/><path d="M4 10 2 7.3M4 10 1 11" fill="none" stroke="%232F3E46" \
 stroke-width="2" stroke-linecap="round"/></svg>') 10 10, grab; }
-    .ds-rot-sw { left:-15.5px; bottom:-15.5px; cursor:url('data:image/svg+xml;utf8,\
+    .ds-rot-sw { left:-14px; bottom:-14px; cursor:url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
 <path d="M4 10a6 6 0 1 1 1.8 4.3" fill="none" stroke="%232F3E46" stroke-width="2" \
 stroke-linecap="round"/><path d="M4 10 2 7.3M4 10 1 11" fill="none" stroke="%232F3E46" \
 stroke-width="2" stroke-linecap="round"/></svg>') 10 10, grab; }
-    .ds-rot-ne { right:-15.5px; top:-15.5px; cursor:url('data:image/svg+xml;utf8,\
+    .ds-rot-ne { right:-14px; top:-14px; cursor:url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
 <path d="M4 10a6 6 0 1 1 1.8 4.3" fill="none" stroke="%232F3E46" stroke-width="2" \
 stroke-linecap="round"/><path d="M4 10 2 7.3M4 10 1 11" fill="none" stroke="%232F3E46" \
 stroke-width="2" stroke-linecap="round"/></svg>') 10 10, grab; }
-    .ds-rot-nw { left:-15.5px; top:-15.5px; cursor:url('data:image/svg+xml;utf8,\
+    .ds-rot-nw { left:-14px; top:-14px; cursor:url('data:image/svg+xml;utf8,\
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
 <path d="M4 10a6 6 0 1 1 1.8 4.3" fill="none" stroke="%232F3E46" stroke-width="2" \
 stroke-linecap="round"/><path d="M4 10 2 7.3M4 10 1 11" fill="none" stroke="%232F3E46" \
