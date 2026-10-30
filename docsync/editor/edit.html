@@ -30582,7 +30582,7 @@ async function collabSavedByPeer(j) {
     await new Promise(r => setTimeout(r, 100));
   }
 }
-async function docStoreSave(layoutText, force = false, auto = false) {
+async function docStoreSave(layoutText, force = false, auto = false, leaving = false) {
   $('save').disabled = true;
   hubSaveBusy = true;
   $('stat').textContent = 'saving…';
@@ -30602,8 +30602,13 @@ async function docStoreSave(layoutText, force = false, auto = false) {
     if (body.content == null && body.layout == null) { markDirty(); return true; }
     const why = pendingSaveWhy;
     if (why) body.label = why;
+    const payload = JSON.stringify(body);
+    // A tab on its way out: keepalive lets the request outlive the page, but
+    // the browser caps those at 64KB in all, so a bigger document goes the
+    // ordinary way (a hidden tab usually stays long enough; a closing one may not).
     const r = await fetch(docStore(), {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+      method: 'PUT', headers: { 'content-type': 'application/json' }, body: payload,
+      keepalive: leaving && payload.length < 60000,
     });
     const j = await hubJson(r);
     if (r.status === 409) {
@@ -30743,6 +30748,23 @@ async function hubAutosaveTick() {
   if (editing || modalOpen || hubSaveBusy || collabPointerAt) { hubAutosaveSchedule(); return; }
   await docStoreSave(JSON.stringify(layout, null, 2) + '\n', false, true);
 }
+/** Leaving: the tab is hidden or going away. The quiet period and the
+ *  "not while a box is open" wait are both for someone still here; a tab
+ *  that is leaving has no later, and whatever the room holds that the store
+ *  does not would be in no version at all (a document read by someone's
+ *  Claude hours on showed edits "ahead of the store" with nobody connected).
+ *  So the pending edits are saved now. What it must still respect: autosave
+ *  turned off, a viewer, a hold after a 409 or a failure (a question only a
+ *  press of Save answers), and a Save already in flight (its finish re-arms
+ *  the normal autosave for anything newer). */
+function hubAutosaveOnLeave() {
+  if (!hubAutosaveOn() || !dirty || hubViewOnly() || hubAutosaveHold || hubSaveBusy) return;
+  clearTimeout(hubAutosaveTimer); hubAutosaveTimer = 0;
+  docStoreSave(JSON.stringify(layout, null, 2) + '\n', false, true, true);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) hubAutosaveOnLeave(); });
+window.addEventListener('pagehide', hubAutosaveOnLeave);
+
 /** The Save button's face on the store path — and whether it is on the bar at
  *  all.
  *

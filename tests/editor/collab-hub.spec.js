@@ -1977,6 +1977,34 @@ test('restore: the confirm names a paragraph a colleague added since the saved v
   await expect.poll(() => b.evaluate(`source.includes('[[${key}]]')`), { timeout: 20_000 }).toBe(false);
 });
 
+// A tab that is hidden or closing has no "later" for autosave to wait for:
+// whatever the room held that the store did not was in no version at all.
+// The ordinary autosave is switched off here so the edit WOULD stay unsaved,
+// as it does while a box editor is open; hiding the tab must save it.
+test('autosave: hiding the tab saves what is pending, without waiting for the quiet', async () => {
+  const count = async () => (await (await a.request.get(`${DOC_URL()}/history?limit=500`)).json()).length;
+  if (await a.locator('#hpanel').isVisible()) await closeHistory(a);
+  const intro = 'page1.intro';
+  // The suite runs with autosave off (see the init script above); on is the point here.
+  await a.evaluate(() => { localStorage.setItem('primer-autosave', 'on'); window.__sched = window.hubAutosaveSchedule; window.hubAutosaveSchedule = () => {}; });
+  try {
+    const before = await count();
+    await a.evaluate(`docsync.api.setSlot(${JSON.stringify(intro)}, "Typed just before the tab went away.")`);
+    await a.waitForTimeout(1500);                       // longer than the quiet period: nothing saves by itself
+    expect(await count()).toBe(before);
+    await a.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await expect.poll(count, { timeout: 20_000 }).toBe(before + 1);
+    const hist = await (await a.request.get(`${DOC_URL()}/history?limit=1`)).json();
+    const body = await (await a.request.get(`${DOC_URL()}/history/${hist[0].version}/content`)).text();
+    expect(body).toContain('Typed just before the tab went away.');
+  } finally {
+    await a.evaluate(() => { delete document.hidden; window.hubAutosaveSchedule = window.__sched; localStorage.setItem('primer-autosave', 'off'); });
+  }
+});
+
 // With autosave every pause is a version, so a document outgrows the 100 the
 // store answers at a time within a sitting. The older ones were kept but the
 // panel never asked for them: no way back past the newest hundred.
