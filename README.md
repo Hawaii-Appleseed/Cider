@@ -173,7 +173,7 @@ the browser, so an edit shows in ~1s. **Save** writes the files and commits
 npm ci
 npx playwright install chromium   # the browser itself — npm ci does not fetch it
 npm run test:affected             # the specs and checks YOUR change needs
-npm run test:ci                   # the whole suite, on GitHub's twelve machines
+npm run test:ci                   # the whole suite, on GitHub's ten machines
 npm run test:full                 # the whole suite here (~20 min), recording the impact map
 python3 docsync/test_docsync.py       # the engine's own self-test
 python3 report2027/tools/test_render.py   # render tolerances + edit.html syntax
@@ -218,9 +218,13 @@ prints how many commits old it is.
 **The whole suite runs on GitHub: `npm run test:ci`.** Here it is ~20 minutes
 with the machine flat out (measured: 0% idle, load average 51 — every test
 boots the editor, and the tests got ~4 of 10 cores beside a video call), so
-neither more workers nor shorter sleeps move it. `editor-tests.yml` runs as 20
-shards of ~39 tests each; the repo is public, so the minutes are free, and the
-org's plan runs 20 jobs at once. `tools/ci-test.mjs` builds a commit of the
+neither more workers nor shorter sleeps move it. `editor-tests.yml` runs as 10
+shards of about 19 spec files each, handed out by `tools/ci-shard.mjs` by
+measured weight (`tests/editor/shard-weights.json`; refresh it with
+`node tools/shard-weights.mjs` when a run's shard times drift apart), so they
+finish within a few percent of each other. The repo is public, so the minutes
+are free, and the org's plan runs 20 jobs at once: ten shards plus the sweeps,
+the hub job and three short ones is 19, so nothing queues. `tools/ci-test.mjs` builds a commit of the
 working tree in a throwaway index — HEAD, every tracked file as it is on disk,
 what is staged, and untracked files under `docsync/`, `tests/`, `tools/`,
 `report2027/`, `collab/`, `projects/` and `.github/` (anything else untracked is
