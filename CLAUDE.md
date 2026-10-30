@@ -50,9 +50,9 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   person's session lands when its own person says so. A merge to main reaches
   every installed editor (`tools/selfupdate.py` pulls `origin/main` within
   about 20 minutes).
-  **`tests/editor/collab-hub.spec.js` never runs on GitHub**: there is no
-  `staff-updates-internal` checkout there, so it skips itself and reports green;
-  a CI skip is not a pass. `tools/wt land` runs it locally (one retry) before
+  **`tests/editor/collab-hub.spec.js` runs on GitHub as the `hub` job**
+  (since 2026-10-30; before that there was no `staff-updates-internal`
+  checkout there and it skipped itself green). `tools/wt land` still runs it locally (one retry) before
   pushing when the branch touches `docsync/editor/`, `collab/`,
   `report2027/tools/serve.py` or `tests/editor/collab*.spec.js` and the hub is
   beside the clone (or at `PRIMER_HUB_DIR`); a failure refuses the landing
@@ -449,8 +449,20 @@ Rules that bite:
   `collab/client/session.mjs` or `collab/serialize.mjs`, run `cd collab &&
   npm run build:client` — `docsync/editor/collab-client.js` is a committed
   bundle the editor `import()`s, and only `collab.spec.js` notices it being
-  stale; and `?collab=` / `?collabroom=` are honoured by a LOCAL editor only,
-  because the page POSTs the GitHub token to whatever `collab` names.
+  stale; and `?collab=` / `?collabroom=` are honoured by a LOCAL editor only
+  (a dev room on a loopback relay; the hub's door is a path, never a URL
+  from a link).
+- **Two runtimes only (2026-10-30): local (`serve.py`) and the hub.** The
+  hosted GitHub-Pages mode — `gh()` against api.github.com from the browser,
+  draft branches, `?draft=` Share links, Publish by pull request, the OAuth
+  device flow and its relay, File ▸ Connect GitHub, `/__oauth/*` and
+  `/__connect` on the server — was removed. Do not reintroduce a GitHub
+  token in the browser. An editor that is neither local nor on the hub is a
+  static viewer: renders, edits in memory, Download works, Save is disabled.
+  Local Push uses the machine's own git credentials. The hub spec
+  (`collab-hub.spec.js`) now runs on GitHub too (the `hub` job in
+  editor-tests.yml clones the hub with the org's publishing App token), so
+  a CI skip there is no longer silent.
 - A report is bound in **`docsync.yml`** (id, content, build command, editor
   block); `python3 -m docsync.stage --id <id>` stages the editor + engine next
   to that report's published dir.

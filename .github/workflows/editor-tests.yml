@@ -4,9 +4,9 @@ name: Editor tests
 # step and, until now, no tests in-tree — every change was verified by hand
 # in an ad-hoc /tmp Playwright harness (see docs/primer/LIBRARIES.md's #1
 # recommendation). This formalizes that harness: tests/editor/ runs against
-# the real local dev server (report2027/tools/serve.py) with GitHub itself
-# fully mocked (tests/editor/fixtures/fake-github.js) — no real network, no
-# real git push, ever.
+# the real local dev server (report2027/tools/serve.py) — no real network, no
+# real git push, ever. The `hub` job below runs the one spec that needs the
+# staff hub's own code beside it.
 
 on:
   # Every push to main and every pull request, with NO path filter here: main
@@ -274,6 +274,72 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # The editor as staff actually use it: served from the staff hub, joining
+  # its room through the hub's own /api/collab door, two people in one
+  # document (tests/editor/collab-hub.spec.js). Until 2026-10-30 this spec
+  # skipped itself on GitHub — there was no hub checkout there — and reported
+  # green, so the one runtime that matters was the one CI never saw. The hub
+  # is a private repository, so the job borrows the organisation's publishing
+  # GitHub App (the PUBLISH_APP_* secrets publish-sites.yml already uses;
+  # Contents: read on every repository in the org) for a one-hour token that
+  # can clone it. The spec then vendors THIS tree's editor into that checkout
+  # (python3 -m docsync.hub --into …) and boots `wrangler dev` holding the
+  # room class and `wrangler pages dev` over the hub with it bound. On a
+  # runner there is no Cloudflare login, so the spec passes --no-live-check
+  # to the vendoring when CI is set: the R2 checks are a shipping gate, not a
+  # test of the editor.
+  hub:
+    needs: changes
+    if: needs.changes.outputs.editor == 'true'
+    name: Served from the staff hub
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: A token that can read the hub
+        id: hub-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISH_APP_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+          owner: Hawaii-Appleseed
+          repositories: staff-updates-internal
+
+      - name: Check out the hub beside the editor
+        uses: actions/checkout@v4
+        with:
+          repository: Hawaii-Appleseed/staff-updates-internal
+          token: ${{ steps.hub-token.outputs.token }}
+          path: hub
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            collab/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix collab
+      - uses: ./.github/actions/playwright-chromium
+
+      - name: Two staff members in one document, through the hub
+        run: PRIMER_HUB_DIR="$GITHUB_WORKSPACE/hub" npx playwright test collab-hub.spec.js --workers=1
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-hub
+          path: playwright-report/
+          retention-days: 14
+
   # Every report's output and edit-mode draft (docsync.check): citations,
   # legibility, and editability — strict bindings fail on any finding, the
   # rest on any finding past docsync/editability-baseline.json. It ran in its
@@ -332,15 +398,16 @@ jobs:
   # cancelled — so a docs-only PR merges, and a broken editor cannot.
   gate:
     name: Editor tests gate
-    needs: [changes, test, sweep, reports, parity]
+    needs: [changes, test, hub, sweep, reports, parity]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - run: |
-          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}, parity: ${{ needs.parity.result }}"
+          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, hub: ${{ needs.hub.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}, parity: ${{ needs.parity.result }}"
           [ "${{ needs.changes.result }}" = success ] || exit 1
           case "${{ needs.test.result }}" in success|skipped) ;; *) exit 1 ;; esac
+          case "${{ needs.hub.result }}" in success|skipped) ;; *) echo "the editor failed when served from the staff hub"; exit 1 ;; esac
           [ "${{ needs.reports.result }}" = success ] || { echo "docsync.check failed"; exit 1; }
           case "${{ needs.parity.result }}" in success|skipped) ;; *) echo "engine parity failed: a chart or a page moved and nothing says why"; exit 1 ;; esac
           case "${{ needs.sweep.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac

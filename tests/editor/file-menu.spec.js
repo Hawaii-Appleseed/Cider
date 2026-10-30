@@ -1,8 +1,7 @@
 // The File menu: report-level actions collected where a document app puts them.
 //
-// Download and Token MOVED here from the top bar, keeping their ids and their
-// handlers — the flows themselves are covered by download.spec.js and
-// oauth.spec.js, which now reach them through this menu. What is asserted here
+// Download MOVED here from the top bar, keeping its id and handler — the flow
+// itself is covered by download.spec.js, which reaches it through this menu. What is asserted here
 // is the menu itself: that it holds what it should, that the two new entries
 // (Open, Resize) work, and that the window title names the report rather than
 // the tool.
@@ -26,7 +25,7 @@ test.describe('File menu', () => {
     expect(await page.evaluate(() => [...selIds])).toEqual(sel);
   });
 
-  test('collects Open, New window, Connect GitHub, Repo, Resize, Sources, Google Doc, Download, Restore and Token', async ({ page }) => {
+  test('collects Open, New window, Repo, Resize, Sources, Google Doc, Download and Restore', async ({ page }) => {
     await gotoEditor(page);
     // Closed until asked for — it is a menu, not a panel.
     await expect(page.locator('#filepop')).toBeHidden();
@@ -51,12 +50,12 @@ test.describe('File menu', () => {
     // Share went back to the bar once View ▾ and Check ▾ made the room.
     await expect(page.locator('#filepop button')).toHaveText(
       ['Find & Change…',
-       'Open…', 'Autosave on the hub: on', 'New window', 'Connect GitHub…', /^Repo: /, 'Resize…',
+       'Open…', 'Autosave on the hub: on', 'New window', /^Repo: /, 'Resize…',
        'Publish as a website…', 'Stop publishing as a website…',
        'Sources…',
        /^Google Doc/, 'Import text from the Doc…', 'Story editor', 'Library…',
        'Load styles from another report…', 'Download…',
-       'Restore deleted…', 'Token…', 'Force quit']);
+       'Restore deleted…', 'Force quit']);
   });
 
   test('the Repo row names the repo, and says so plainly when there is none',
@@ -78,15 +77,10 @@ test.describe('File menu', () => {
       $('file').click();
     });
     await expect(page.locator('#file-repo')).toHaveText('Repo: not connected');
-
-    // And the guard fires instead of a bogus GitHub call.
-    expect(await page.evaluate(() => requireRepo())).toBe(false);
-    await expect(page.locator('#stat')).toContainText('not connected to a GitHub repo');
-    expect(await page.evaluate(() => ensureAuth())).toBe(null);
   });
 
   // Every row is an icon plus a label span, and three of the labels are
-  // rewritten at runtime (the repo slug, the deleted count, the GitHub login).
+  // rewritten at runtime (the repo slug, the deleted count).
   // Written as textContent — which is what they used to be — that rewrite takes
   // the icon with it, and the row is left as the only bare one in the menu.
   test('every row keeps its icon, including the ones whose label is rewritten',
@@ -110,16 +104,14 @@ test.describe('File menu', () => {
     await expect(page.locator('#file-repo svg.shp-i')).toHaveCount(1);
   });
 
-  test('Download and Token are no longer loose in the toolbar', async ({ page }) => {
+  test('Download is no longer loose in the toolbar', async ({ page }) => {
     await gotoEditor(page);
-    // Moved, not duplicated: exactly one of each, and neither is a direct
-    // child of the bar any more.
+    // Moved, not duplicated: exactly one, and not a direct child of the bar.
+    // (The Token row that sat beside it went with the hosted mode, 2026-10-30.)
     await expect(page.locator('#download')).toHaveCount(1);
-    await expect(page.locator('#tok')).toHaveCount(1);
     await expect(page.locator('#bar > #download')).toHaveCount(0);
-    await expect(page.locator('#bar > #tok')).toHaveCount(0);
     await expect(page.locator('#filepop #download')).toHaveCount(1);
-    await expect(page.locator('#filepop #tok')).toHaveCount(1);
+    await expect(page.locator('#tok')).toHaveCount(0);
   });
 
   test('+ Section is hidden, but still wired', async ({ page }) => {

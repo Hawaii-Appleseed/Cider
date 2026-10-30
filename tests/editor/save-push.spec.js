@@ -13,7 +13,7 @@
 // the call and the next assertion. Mocking makes the poll agree with the
 // scenario instead of fighting it. These tests are about the CLIENT'S state
 // machine, not serve.py's actual git plumbing.
-const { test, hostedTest, expect, gotoEditor, submitDialogIfPresent, PING, openFileMenu } = require('./fixtures/editor-test');
+const { test, staticTest, expect, gotoEditor, submitDialogIfPresent, PING, openFileMenu } = require('./fixtures/editor-test');
 
 /** Navigate with /__ping pinned to an `ahead`, registered before the page ever
  *  loads — detectLocal()'s first ping (which decides `local` and the button's
@@ -149,21 +149,20 @@ test.describe('local Save vs Push', () => {
   });
 });
 
-hostedTest.describe('hosted mode: local-only controls truly hidden, not just marked', () => {
+staticTest.describe('static mode: local-only controls truly hidden, not just marked', () => {
   // Regression: [hidden] alone does not hide a #bar button — #bar button's
   // own display:inline-flex rule outranks the attribute's (non-!important)
   // display:none, so a button relying on ONLY the attribute rendered anyway.
   // toBeHidden() (not a `.hidden` DOM-property read) is what actually catches
-  // this, since it checks the rendered box the same way the bug hid in it —
-  // Share/Publish had this exact bug for a long time with no test to catch
-  // it, since nothing asserted their LOCAL-mode hidden state; Push inherited
-  // it on arrival, which is what surfaced it.
-  hostedTest('Push stays hidden in hosted mode (no local dev server)', async ({ page }) => {
+  // this, since it checks the rendered box the same way the bug hid in it.
+  // With neither the local server nor the staff hub there is nowhere to save
+  // to or share from, so Save is disabled and Push/Share/Publish are hidden.
+  staticTest('static viewer: Save disabled, Push/Share/Publish hidden', async ({ page }) => {
     await gotoEditor(page);
     await expect(page.locator('#push')).toBeHidden();
-    await openFileMenu(page);
-    await expect(page.locator('#share')).toBeVisible();     // the hosted-only controls
-    await page.click('#file');
-    await expect(page.locator('#publish')).toBeVisible();
+    await expect(page.locator('#share')).toBeHidden();
+    await expect(page.locator('#publish')).toBeHidden();
+    await expect(page.locator('#save')).toBeDisabled();
+    await expect(page.locator('#save')).toHaveAttribute('title', 'Save needs the local server or the staff hub');
   });
 });

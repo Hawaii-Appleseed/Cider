@@ -76,8 +76,8 @@ Ranked by value / effort.
    publish, oauth device-flow, multi-project registry, standalone install
    lifecycle, download/export) and wired into CI
    (`.github/workflows/editor-tests.yml`), alongside `docsync/test_docsync.py`.
-   GitHub itself is fully mocked in-memory (`tests/editor/fixtures/
-   fake-github.js`) so the suite never touches the real API or pushes a real
+   GitHub itself was mocked in-memory (`fake-github.js`, gone with the hosted
+   mode in 2026-10) so the suite never touched the real API or pushed a real
    commit. Building it surfaced two real bugs, both fixed: (a) the Cite
    toolbar button's `sel.focus()` blurred the paragraph being edited and tore
    down the citation panel before it could be used; (b) the local dev

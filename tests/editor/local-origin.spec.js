@@ -1,7 +1,7 @@
 // The local server answers only its own pages (2026-10-22). It binds to
 // loopback, but every web page open in the browser is on this Mac too, and
 // a POST from any of them used to be read as JSON and acted on — /__push
-// publishes, /__quit stops the server, /__oauth/save stores a token. A POST
+// publishes, /__quit stops the server. A POST
 // that names a page (Origin) must name one of this server's; the Host must
 // be this server (DNS rebinding forges it); a request with no Origin — curl,
 // the MCP server, the pilot loop — is not a browser's and still works.
@@ -16,7 +16,7 @@ const post = (request, headers, path = '/__hello') =>
   request.post(`${OWN}${path}`, { headers, data: 'probe' });
 
 test('a page on another site is refused, on every endpoint', async ({ request }) => {
-  for (const path of ['/__hello', '/__save', '/__push', '/__quit', '/__pilot', '/__oauth/save']) {
+  for (const path of ['/__hello', '/__save', '/__push', '/__quit', '/__pilot']) {
     const r = await post(request, { Origin: 'https://evil.example', 'Content-Type': 'text/plain' }, path);
     expect(r.status(), path).toBe(403);
     const j = await r.json();

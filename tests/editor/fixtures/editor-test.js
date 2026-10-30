@@ -23,7 +23,6 @@
 // request can slip through unmocked. Context-level routes are attached before
 // any page or navigation exists, so nothing can outrace them.
 const base = require('@playwright/test');
-const { FakeGitHub } = require('./fake-github');
 const { impactFixtures } = require('./impact');
 
 // Match /__ping WITH OR WITHOUT its query string. The editor appends
@@ -178,25 +177,16 @@ const warm = base.test.extend({
 });
 const warmTest = process.env.DS_IMPACT ? test : warm;
 
-// Hosted editor test: forces local=false (blocks /__ping, exactly what
-// detectLocal() treats as "no local server") and installs a fully in-memory
-// fake GitHub so Save draft / Share / Publish / sign-in exercise the REAL
-// gh()-based code path with zero network egress. Seeds a fake PAT so
-// ensureAuth() resolves without a sign-in prompt, unless a test clears it.
-const hostedTest = base.test.extend({
-  github: async ({}, use) => {
-    await use(new FakeGitHub());
-  },
-  context: async ({ context, github }, use) => {
+// Static-viewer test: forces local=false (blocks /__ping, which detectLocal()
+// treats as "no local server") and refuses the SSE stream too. Neither a local
+// server nor the staff hub is present, so the editor boots as a static viewer:
+// it renders and edits in memory, but Save is disabled and Share/Publish/Push
+// are hidden. No network is faked; there is nothing for it to talk to.
+const staticTest = base.test.extend({
+  context: async ({ context }, use) => {
     await blockDangerousLocalEndpoints(context);
     await context.route(PING, route => route.fulfill({ status: 404, body: 'no local server' }));
-    // Hosted mode means NO local server: the SSE stream must be refused too,
-    // or the editor keeps a live connection open to one that is right there.
     await context.route(EVENTS, route => route.fulfill({ status: 404, body: 'no local server' }));
-    await github.install(context);
-    await context.addInitScript(() => {
-      window.localStorage.setItem('docsync-pat', 'fake-test-token');
-    });
     await use(context);
   },
   ...impactFixtures,
@@ -304,7 +294,7 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 
 module.exports = {
   settled, afterRender,
-  test, hostedTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
+  test, staticTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent, selectWithoutTyping,
 };
