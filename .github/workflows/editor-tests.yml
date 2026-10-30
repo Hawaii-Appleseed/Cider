@@ -97,7 +97,7 @@ jobs:
           if [ "${{ github.event_name }}" = workflow_dispatch ] || [ "${{ github.event_name }}" = schedule ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
-          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/)'; then
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|tools/ci-shard\.mjs$|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/)'; then
             echo editor=true >> "$GITHUB_OUTPUT"
           else
             echo editor=false >> "$GITHUB_OUTPUT"
@@ -121,7 +121,7 @@ jobs:
           fi
 
       # Which shards run. A pull request, a manual dispatch and the nightly run
-      # run all twelve. A push to main runs shard 1 only: the pull request that
+      # run all ten. A push to main runs shard 1 only: the pull request that
       # produced it already passed every shard on the same tree (the ruleset
       # keeps main to merged PRs), so a second full run per merge only queued
       # the next PR behind it — the org runs 20 jobs at once across every repo.
@@ -134,23 +134,30 @@ jobs:
           if [ "${{ github.event_name }}" = push ]; then
             echo 'shards=[1]' >> "$GITHUB_OUTPUT"
           else
-            echo 'shards=[1,2,3,4,5,6,7,8,9,10,11,12]' >> "$GITHUB_OUTPUT"
+            echo 'shards=[1,2,3,4,5,6,7,8,9,10]' >> "$GITHUB_OUTPUT"
           fi
 
   test:
     needs: changes
     if: needs.changes.outputs.editor == 'true'
     runs-on: ubuntu-latest
-    # Twelve machines, a twelfth of the suite each (it was twenty: with the
-    # sweep's jobs beside them the run outgrew the org's 20 slots and most
-    # jobs queued for 3–4 minutes). Each shard costs ~50s of setup before its
-    # first test, and the rest is ~85 tests on two workers, about six minutes.
-    # fullyParallel splits by test, not by file, so the shares come out even.
+    # Ten machines. Ten, not more: with the six sweep jobs, the hub job and the
+    # three short ones that is 19 at once, under the org's 20 slots, so nothing
+    # queues (at twelve shards the run had 23 jobs, and two sat queued for over
+    # three minutes). Each shard costs ~40s of setup before its first test.
+    #
+    # Which files a shard runs comes from tools/ci-shard.mjs, NOT Playwright's
+    # --shard. That cuts the alphabetical list into equal COUNTS of tests, and
+    # tests are not equal: charts.spec.js is 37 tests of ~11 s side by side, so
+    # twelve shards finished anywhere from 209 s to 541 s apart and the slowest
+    # set the wall clock (2026-10-30). The planner hands out whole files by
+    # measured weight (tests/editor/shard-weights.json, refreshed with
+    # tools/shard-weights.mjs), within a fraction of a percent of even.
     strategy:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.changes.outputs.shards) }}
-    name: test (${{ matrix.shard }}/12)
+    name: test (${{ matrix.shard }}/10)
     # A wedged shard holds one of the org's 20 slots until it is killed — but
     # the browser install step alone took 10–13 minutes on four runners at
     # once (2026-10-22, a slow cache restore), which cut off shards with every
@@ -219,7 +226,12 @@ jobs:
         run: python3 report2027/tools/test_export_chrome.py
 
       - name: Run the editor test suite
-        run: npx playwright test --shard=${{ matrix.shard }}/12
+        run: |
+          files=$(node tools/ci-shard.mjs ${{ matrix.shard }} 10)
+          # An empty list would make Playwright run EVERYTHING on this shard.
+          [ -n "$files" ] || { echo "::error::no spec files planned for shard ${{ matrix.shard }}/10"; exit 1; }
+          echo "$files"
+          npx playwright test $files
 
       # Only a failing shard's: twenty green reports a run say nothing.
       - name: Upload Playwright report
@@ -354,6 +366,9 @@ jobs:
           python-version: "3.12"
       - run: pip install --quiet pyyaml
       - run: python3 -m docsync.check
+      # The shard planner: every spec file on exactly one shard, and even.
+      - name: Shard planner
+        run: node --test tools/ci-shard.test.mjs
 
   # The engine grew and no published report moved — or the change says which
   # did, and why. Two sweeps against `base`, the commit this push or pull
