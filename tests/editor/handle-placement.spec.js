@@ -5,11 +5,16 @@
 const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
 
 /** Open the heading's words, retrying: under four parallel workers a click
- *  that lands while the sheet is still settling does not always open them. */
+ *  that lands while the sheet is still settling does not always open them.
+ *  On the FIRST LINE's first letters, not the box's centre: the heading
+ *  wraps, and where its second line ends depends on whether the web font
+ *  has arrived — at the centre the press could land on the box beside the
+ *  words (target H1, no [data-slot]) and click-to-type rightly refused, so
+ *  the words never opened and the grip never showed (CI, 2026-10-30). */
 async function openWords(page) {
   const h1 = page.frameLocator('#out').locator('[data-el="basics.h1"]');
   for (let i = 0; i < 4; i++) {
-    await h1.dblclick();
+    await h1.dblclick({ position: { x: 24, y: 24 } });
     try { await page.waitForFunction(() => editing === true, null, { timeout: 2500 }); return; }
     catch (e) { await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
   }
