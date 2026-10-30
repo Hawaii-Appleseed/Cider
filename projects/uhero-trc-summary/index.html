@@ -73,16 +73,20 @@
   .klabel { font-family:Barlow, sans-serif; font-size:13.5px; font-weight:700;
              letter-spacing:.1em; text-transform:uppercase; color:#354F52;
              margin:0.2in 0 0; }
-  .figs { display:grid; grid-template-columns:repeat(3, 1fr); margin:8px 0 0;
-           border-top:2px solid #354F52; }
-  .fig { padding:12px 18px 0 0; }
-  /* by class, not .fig + .fig: the editor's strut beside a moved fact would
-     break the sibling chain and take the rule off its neighbour */
-  .fig-b, .fig-c { border-left:1px solid #DCE3DC; padding-left:18px; }
-  .fig-n { font-family:Barlow, sans-serif; font-size:32px; font-weight:800;
-            line-height:1; color:#354F52; }
+  /* Key facts: three tinted cards, each with an accent bar on top (rust for
+     the warning figure, teal for the rest). Styled per card rather than by
+     sibling selectors, so a fact moved in the editor keeps its look. */
+  .figs { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;
+           margin:8px 0 0; }
+  .fig { background:#F2F5F1; border-top:4px solid #84A98C; border-radius:0 0 6px 6px;
+          padding:14px 16px 15px; box-sizing:border-box; }
+  .fig-warn { background:#F8F0EB; border-top-color:#A8603F; }
+  .fig-n { font-family:Barlow, sans-serif; font-size:38px; font-weight:800;
+            line-height:1; letter-spacing:-.01em; color:#354F52; }
   .fig-warn .fig-n { color:#A8603F; }
-  .fig-l { font-size:13.5px; color:#3F5256; margin-top:8px; line-height:1.4; }
+  .fig-l { font-size:12.5px; letter-spacing:.02em; color:#3F5256; margin-top:9px;
+            padding-top:9px; border-top:1px solid rgba(53,79,82,.14); line-height:1.4; }
+  .fig-warn .fig-l { border-top-color:rgba(168,96,63,.22); }
   .datebox { display:grid; grid-template-columns:1.6in 1fr; }
   .datebox { margin:0.2in 0 0; padding:9px 0 0; border-top:1px solid #DCE3DC; }
   .datebox .box-h { margin:2px 16px 0 0; }
@@ -139,6 +143,12 @@
   table.ds-flow td:first-child { color:#2F3E46; font-weight:600; }
   .page table.ds-flow td { padding-top:3px; padding-bottom:3px; }
 
+  /* The grocery estimate's headline numbers, set apart as a callout: a sage
+     panel with a teal bar on the left, the figures in slate. */
+  .callout { background:#F2F5F1; border-left:4px solid #84A98C; border-radius:0 6px 6px 0;
+              padding:10px 16px 11px; margin:6px 0 4px; }
+  .callout .body { margin:0; }
+  .callout .body b { color:#354F52; font-weight:800; }
   .split { display:flex; gap:26px; align-items:flex-start; margin-top:6px; }
   .splitl { flex:0 0 3.9in; }
   .pcts { flex:1; padding-top:2px; }
@@ -194,9 +204,7 @@
     .cfwrap, .pfwrap { position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:26px; }
     h1 { font-size:27px; }
-    .figs { grid-template-columns:1fr; }
-    .fig { padding:12px 0; }
-    .fig-b, .fig-c { border-left:0; padding-left:0; border-top:1px solid #DCE3DC; }
+    .figs { grid-template-columns:1fr; gap:10px; }
     .datebox { grid-template-columns:1fr; }
     .datebox .box-h { margin:0 0 4px; }
     .split { flex-direction:column; gap:10px; }
@@ -208,9 +216,7 @@
     .cfwrap, .pfwrap { position:static !important; left:auto; right:auto;
                         bottom:auto; margin-top:26px; }
     h1 { font-size:27px; }
-    .figs { grid-template-columns:1fr; }
-    .fig { padding:12px 0; }
-    .fig-b, .fig-c { border-left:0; padding-left:0; border-top:1px solid #DCE3DC; }
+    .figs { grid-template-columns:1fr; gap:10px; }
     .datebox { grid-template-columns:1fr; }
     .datebox .box-h { margin:0 0 4px; }
     .split { flex-direction:column; gap:10px; }
@@ -265,7 +271,7 @@
     <div class="cfoot-l">This summary was prepared for the Tax Fairness Coalition from UHERO's draft report, and page numbers (p. N) refer to the draft's printed pages. The meeting dates, the comment address and the background on the Commission come from the Coalition and not from the draft.</div>
     <div class="cfoot-l">UHERO and the Tax Review Commission have not reviewed or endorsed this summary, and the figures in the draft are preliminary and may change in the final report.</div>
   </div></div>
- <style>@media screen and (max-width:8.5in){[data-placed],.page [style*="position:absolute"]:not(.shape-layer){position:static !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;width:auto !important;max-width:100% !important;transform:none !important;rotate:none !important;margin:0 0 12px !important}.ds-spacer{display:none !important}.page img{max-width:100% !important;height:auto}.page table{display:block;max-width:100%;overflow-x:auto}}</style>
+ <style>@media print{*,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}</style><style>@media screen and (max-width:8.5in){[data-placed],.page [style*="position:absolute"]:not(.shape-layer){position:static !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;width:auto !important;max-width:100% !important;transform:none !important;rotate:none !important;margin:0 0 12px !important}.ds-spacer{display:none !important}.page img{max-width:100% !important;height:auto}.page table{display:block;max-width:100%;overflow-x:auto}}</style>
 </section>
 
 <section class="page">
@@ -275,7 +281,7 @@
   <style>table.ds-flow{border-collapse:collapse;table-layout:fixed}table.ds-flow td,table.ds-flow th{text-align:left;vertical-align:middle;padding:5px 8px}@media (max-width:640px){table.ds-flow,table.ds-flow tbody,table.ds-flow tr,table.ds-flow td{display:block;width:100%;box-sizing:border-box}table.ds-flow colgroup,table.ds-flow tr.ds-hdr{display:none}table.ds-flow td[data-label]:not(:first-child)::before{content:attr(data-label) ": ";font-weight:700;opacity:.7}}</style><table class="ds-table ds-flow" style="box-sizing:border-box;width:100%"><colgroup><col style="width:46.0000%"><col style="width:54.0000%"></colgroup><tr class="ds-hdr"><th style="background:#354F52;color:#FFFFFF">In plain English</th><th style="background:#354F52;color:#FFFFFF">Precise wording</th></tr><tr><td data-label="In plain English"><b>Cut the grocery tax; raise income taxes</b></td><td data-label="Precise wording">No GET on groceries; raise all income-tax rates by the same percentage</td></tr><tr><td data-label="In plain English" style="background:#F4F6F4"><b>Cut the grocery tax; trim a low-income credit</b></td><td data-label="Precise wording" style="background:#F4F6F4">No GET on groceries; cut the food/excise tax credit</td></tr><tr><td data-label="In plain English"><b>Tax profit from selling assets like regular income; cut top rates</b></td><td data-label="Precise wording">Tax long-term capital gains like regular income; lower the top three income-tax rates</td></tr><tr><td data-label="In plain English" style="background:#F4F6F4"><b>Raise the top rate to cut low rates or boost a credit</b></td><td data-label="Precise wording" style="background:#F4F6F4">Raise the top income-tax rate by 1 point; lower the bottom three rates, or enlarge the food/excise credit</td></tr><tr><td data-label="In plain English"><b>Stop taxing profit from selling assets; raise top rates</b></td><td data-label="Precise wording">Exempt long-term capital gains from tax; raise the top three income-tax rates</td></tr><tr><td data-label="In plain English" style="background:#F4F6F4"><b>Raise the sales tax (GET) a little; cut income taxes</b></td><td data-label="Precise wording" style="background:#F4F6F4">Raise the GET rate by half a point; lower all income-tax rates by the same percentage</td></tr></table>
   <div class="swnote"><p class="cap">Capital gains are profit from selling assets, and the food/excise credit is a refund for low-income households.</p></div>
   <h2 class="figt">Exempting groceries from the GET</h2>
-  <p class="body">UHERO's one estimate asks what would happen if Hawaiʻi exempted groceries from the <b>general excise tax (GET)</b>, which is a 4 percent state tax on most business sales plus a 0.5 percent county surcharge (p. 56). The exemption would cost the state and counties <b>$267.4 million</b> a year, of which residents would receive $214.1 million in lower prices and visitors $53.3 million (pp. 65, 158), which means that the average household would save about <b>$419 a year</b> (p. 159). UHERO assumes that stores pass the full tax cut on to shoppers, and the evidence from Germany and Spain supports that only in part (p. 66).<sup><a class="fn" href="#en3">3</a></sup></p>
+  <div class="callout" style="position:relative"><p class="body">UHERO's one estimate asks what would happen if Hawaiʻi exempted groceries from the <b>general excise tax (GET)</b>, which is a 4 percent state tax on most business sales plus a 0.5 percent county surcharge (p. 56). The exemption would cost the state and counties <b>$267.4 million</b> a year, of which residents would receive $214.1 million in lower prices and visitors $53.3 million (pp. 65, 158), which means that the average household would save about <b>$419 a year</b> (p. 159). UHERO assumes that stores pass the full tax cut on to shoppers, and the evidence from Germany and Spain supports that only in part (p. 66).<sup><a class="fn" href="#en3">3</a></sup></p></div>
   <h2 class="figt">What a household would save each year, by income group</h2>
   <div class="split" style="position:relative"><div class="splitl">
   <span class="ds-graphic ds-chart" style="display:block;line-height:0;width:100%"><div class="ds-chart-scroll" style="--ds-chart-min:328px"><svg viewBox="0 0 3.9 0.9" class="chart" role="img" aria-label="Bar chart of the yearly savings per household from exempting groceries, for ten income groups from lowest to highest, rising from 156 dollars to 729 dollars." style="display:block;width:100%;height:auto"><rect class="ds-cbar" x="0.3994" y="0.5603" width="0.2337" height="0.1175" fill="#52796F" rx="0.0200"/><text x="0.5163" y="0.5297" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$156</text><text x="0.5353" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">Lowest</text><rect class="ds-cbar" x="0.7478" y="0.5347" width="0.2337" height="0.1431" fill="#52796F" rx="0.0200"/><text x="0.8646" y="0.5041" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$190</text><text x="0.8836" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">2</text><rect class="ds-cbar" x="1.0961" y="0.4797" width="0.2337" height="0.1981" fill="#52796F" rx="0.0200"/><text x="1.2129" y="0.4492" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$263</text><text x="1.2319" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">3</text><rect class="ds-cbar" x="1.4444" y="0.4157" width="0.2337" height="0.2621" fill="#52796F" rx="0.0200"/><text x="1.5613" y="0.3851" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$348</text><text x="1.5803" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">4</text><rect class="ds-cbar" x="1.7928" y="0.3660" width="0.2337" height="0.3118" fill="#52796F" rx="0.0200"/><text x="1.9096" y="0.3354" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$414</text><text x="1.9286" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">5</text><rect class="ds-cbar" x="2.1411" y="0.3306" width="0.2337" height="0.3472" fill="#52796F" rx="0.0200"/><text x="2.2579" y="0.3000" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$461</text><text x="2.2769" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">6</text><rect class="ds-cbar" x="2.4894" y="0.3005" width="0.2337" height="0.3773" fill="#52796F" rx="0.0200"/><text x="2.6063" y="0.2699" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$501</text><text x="2.6253" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">7</text><rect class="ds-cbar" x="2.8378" y="0.2560" width="0.2337" height="0.4217" fill="#52796F" rx="0.0200"/><text x="2.9546" y="0.2255" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$560</text><text x="2.9736" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">8</text><rect class="ds-cbar" x="3.1861" y="0.2335" width="0.2337" height="0.4443" fill="#52796F" rx="0.0200"/><text x="3.3029" y="0.2029" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$590</text><text x="3.3219" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">9</text><rect class="ds-cbar" x="3.5344" y="0.1288" width="0.2337" height="0.5490" fill="#52796F" rx="0.0200"/><text x="3.6513" y="0.0982" text-anchor="middle" font-size="0.1250" fill="#2F3E46">$729</text><text x="3.6703" y="0.8167" text-anchor="middle" font-size="0.1250" fill="#2F3E46">Highest</text><line x1="0.3611" y1="0.6778" x2="3.8444" y2="0.6778" stroke="#7A8E92" stroke-width="0.008"/></svg></div></span>
