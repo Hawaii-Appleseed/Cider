@@ -1,10 +1,10 @@
 // Offline draft cache (docsync/editor/edit.html): unsaved edits are autosaved
-// to IndexedDB via idb-keyval (debounced, hosted mode only) and auto-restored
-// on the next boot, so a closed tab or a refresh before a network Save does not
-// lose work. Hosted mode — page.reload() keeps the same origin, so the same
-// IndexedDB and the fake-GitHub context routes survive the reload.
-const { hostedTest: test, expect, gotoEditor, waitForFirstRender,
-        fillDialog, submitDialog, submitDialogIfPresent, PING, clickAddSection } = require('./fixtures/editor-test');
+// to IndexedDB via idb-keyval (debounced, only when there is no local server)
+// and auto-restored on the next boot, so a closed tab or a refresh does not
+// lose work. Static mode — page.reload() keeps the same origin, so the same
+// IndexedDB survives the reload.
+const { staticTest: test, expect, gotoEditor, waitForFirstRender,
+        fillDialog, submitDialog, PING, clickAddSection } = require('./fixtures/editor-test');
 
 async function addSection(page, slug) {
   await clickAddSection(page);
@@ -26,33 +26,15 @@ test.describe('offline draft cache', () => {
     await page.reload();
     await waitForFirstRender(page);
 
-    // The unsaved section is back — restored from IndexedDB, not from GitHub
-    // (nothing was ever saved to the branch).
+    // The unsaved section is back — restored from IndexedDB (a static
+    // viewer has nowhere to save it).
     await expect(page.frameLocator('#out').locator(`[data-slot="${key}"]`)).toHaveCount(1);
     await expect(page.locator('#stat')).toContainText('restored unsaved edits');
   });
 
-  test('after Save the cache is cleared, so a reload does NOT re-restore', async ({ page }) => {
-    await gotoEditor(page);
-    await addSection(page, 'saved-then-gone');
-    // Saving a section that overflows the page raises a print-fit <dialog>
-    // confirm — accept it so the Save actually goes through.
-    await page.click('#save');
-    await submitDialogIfPresent(page);
-    await expect(page.locator('#stat')).toContainText('draft saved', { timeout: 15000 });
-
-    await page.waitForTimeout(1200);   // outlast any pending autosave debounce
-    await page.reload();
-    await waitForFirstRender(page);
-
-    // The section is on the draft branch (fetched normally), but the "restored
-    // unsaved edits" notice must NOT appear — the cache was cleared on Save.
-    await expect(page.locator('#stat')).not.toContainText('restored unsaved edits');
-  });
-
   test('the cache does not fire in local mode (files on disk are the truth)', async ({ page, context }) => {
-    // Undo the hosted fixture's /__ping block for this one test so the app runs
-    // in local mode, then confirm nothing was written to the draft cache.
+    // Undo the static fixture's /__ping block for this one test so the app runs
+    // in local mode, then confirm nothing was written to the cache.
     await context.unroute(PING);
     await gotoEditor(page);
     await addSection(page, 'local-no-cache');

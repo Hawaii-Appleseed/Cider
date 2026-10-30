@@ -1,8 +1,7 @@
 // Real-time collaboration, end to end through the editor (Phases 2–4 of
 // collab/README.md): two browser contexts open the same project against a
 // real `wrangler dev` relay and edit at once — including the same paragraph,
-// in two open inline editors. The branch side of Phase 4 (the shared draft
-// branch, a commit landing outside the session) is collab-drafts.spec.js.
+// in two open inline editors. The hub side is collab-hub.spec.js.
 //
 // The relay is booted HERE, per spec file, rather than as a second entry in
 // playwright.config's webServer: only this spec needs it, and a ~10s Worker

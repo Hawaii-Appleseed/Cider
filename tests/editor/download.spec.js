@@ -3,7 +3,7 @@
 // (mocked by the shared fixture — see STANDALONE.md §C, this never spawns the
 // real headless-Chrome PDF/PNG renderer in tests) or falls back to the
 // browser's own print() for PDF-only when there's no local server.
-const { test, expect, gotoEditor, PING, openFileMenu } = require('./fixtures/editor-test');
+const { test, staticTest, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
 
 /** The exported file is named after the report as a PERSON knows it, which
  *  comes from the registry — and projects.json is per-machine, so a test that
@@ -79,13 +79,12 @@ test.describe('download: source zip (fflate, client-side)', () => {
   });
 });
 
-test.describe('download: hosted mode (no local server)', () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.route(PING, route => route.fulfill({ status: 404, body: 'no local server' }));
+staticTest.describe('download: static mode (no local server)', () => {
+  staticTest.beforeEach(async ({ page }) => {
     await gotoEditor(page);
   });
 
-  test('PNG and bleed marks are disabled, with a tooltip explaining why', async ({ page }) => {
+  staticTest('PNG and bleed marks are disabled, with a tooltip explaining why', async ({ page }) => {
     await openFileMenu(page);
     await page.click('#download');
     await expect(page.locator('#dl-png')).toBeDisabled();
@@ -93,7 +92,7 @@ test.describe('download: hosted mode (no local server)', () => {
     await expect(page.locator('#dl-marks')).toBeDisabled();
   });
 
-  test('PDF falls back to the browser\'s own print(), never calling /__export', async ({ page }) => {
+  staticTest('PDF falls back to the browser\'s own print(), never calling /__export', async ({ page }) => {
     let exportCalled = false;
     await page.route('**/__export', route => { exportCalled = true; route.continue(); });
 

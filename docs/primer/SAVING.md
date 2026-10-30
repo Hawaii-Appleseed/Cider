@@ -1,3 +1,5 @@
+> **2026-10-30:** the hosted GitHub-API mode (draft branches, Share links, Publish via PR, device-flow sign-in) described below was removed; the staff hub is the only shared runtime and the local server is the dev loop.
+
 # Saving & collaboration — scope
 
 How the draft editor should save and share work when it's used across **many

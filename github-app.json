@@ -1,6 +1,0 @@
-{
-  "_comment": "Public client id of the GitHub App that File > Connect GitHub signs in through. Not a secret; tracked so every install has it.",
-  "client_id": "Iv23liDd654V9GGPt8bC",
-  "name": "Primer Editor",
-  "html_url": "https://github.com/apps/primer-editor"
-}

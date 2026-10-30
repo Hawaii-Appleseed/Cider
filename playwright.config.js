@@ -70,11 +70,6 @@ module.exports = defineConfig({
            // No network from the suite: the push-health probe asks GitHub
            // whether a push would work, and a real answer for a real
            // checkout would bleed into specs that mock everything else.
-           PRIMER_PUSH_PROBE: '0',
-           // The connect-github spec stands in for GitHub on this port; the
-           // fake client id keeps the device flow ON without a real App.
-           PRIMER_GH_BASE: 'http://localhost:8390',
-           PRIMER_GH_API: 'http://localhost:8390',
-           PRIMER_GH_CLIENT: 'Iv23TESTCLIENT' },
+           PRIMER_PUSH_PROBE: '0' },
   },
 });

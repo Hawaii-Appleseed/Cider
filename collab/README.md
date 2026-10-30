@@ -39,12 +39,10 @@ clients — and, in `client.test.mjs`, two `CollabSession`s through the exact
 API the editor calls. Nothing touches GitHub: tickets are minted locally with
 the development signing secret.
 
-The editor itself is exercised by `npx playwright test collab.spec.js
-collab-drafts.spec.js` from the repo root: two browser contexts on one
-project against a relay each spec boots for itself (so the other ~120 spec
-files never pay for a Worker boot). `collab.spec.js` runs a local editor;
-`collab-drafts.spec.js` runs a hosted one against the in-memory fake GitHub,
-for the branch side of Phase 4.
+The editor itself is exercised by `npx playwright test collab.spec.js`
+from the repo root: two browser contexts on one project against a relay the
+spec boots for itself (so the other spec files never pay for a Worker boot),
+and by `collab-hub.spec.js`, the editor served from the hub (below).
 
 The Phase 0 gate runs from the repo root and stays dependency-free:
 
@@ -283,8 +281,8 @@ arriving editor rather than adopted as blank.
 
 A chip in the bar (`#collab`) says `● live · N`, `○ offline` (edits are kept
 and sent when the relay is back — Yjs queues them), `⚠ not shared` with the
-reason on hover, or `Sign in to collaborate` when the project is shared but
-this browser holds no token. `docsync.api.status().collab` carries the same
+reason on hover (a relay URL with no dev identity, since 2026-10-30, is an
+error: outside the hub there is nothing to sign in with). `docsync.api.status().collab` carries the same
 for a pilot or a test.
 
 Save is unchanged: it commits what is on screen — which is now what everyone
@@ -296,8 +294,8 @@ sees — to the saver's own draft branch, and records the new commit as
 A local editor (served by `serve.py`) accepts two URL parameters, **local
 mode only**: `?collab=http://127.0.0.1:8787` points it at a loopback relay,
 and `?collabroom=<tag>` suffixes the room name so runs do not share a room.
-A hosted editor ignores both — the page POSTs its GitHub token to whatever
-`collab` names, so it must never come from a link. `?collab=0` opens a
+Only a local editor honours them: a relay URL must never come from a link,
+and the hub's door is a same-origin path, not a URL. `?collab=0` opens a
 shared project alone.
 
 Such an editor has no GitHub token and needs none: the Worker accepts a
@@ -379,6 +377,12 @@ B's bar and a click goes there; the words A selects are a band in B, and a
 caret alone when she collapses it.
 
 ## Phase 4 — the branch underneath, carets, and typing together
+
+> **2026-10-30:** the draft-branch half of this phase (one `draft/<project>`
+> branch for the room, `draftBranchFor()`, `resolveDraft()`, `onBaseSha`
+> tracking a git sha) was removed with the hosted GitHub-API mode. On the hub
+> the store's version stamp plays that part (see "Served from the staff hub");
+> locally Save commits to the checkout. Carets and typing together stand.
 
 Three things, each answering one of Phase 3's known gaps.
 
@@ -523,7 +527,7 @@ caret drawn at their end, and Escape takes them back; both editors type in
 the same paragraph at once, each sees the other's words land around its own
 caret, and both keep theirs; a remote edit to another slot lands in B's
 source under an open editor and paints when it closes.
-`collab-drafts.spec.js` — the room knows the commit it was built from; a Save
+`collab-drafts.spec.js` (deleted 2026-10-30 with the draft branches) — the room knew the commit it was built from; a Save
 goes to the shared branch and disables everyone's Save; a commit landing
 outside the session is named in a confirm, cancel leaves the branch alone,
 and *Save over it* commits on top of it.

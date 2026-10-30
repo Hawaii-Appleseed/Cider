@@ -45,8 +45,8 @@ let HUB_DIR = HUB_GIVEN;
 // Its own ports, claimed in beforeAll (fixtures/ports.js): the relay from
 // 8794 (PRIMER_HUB_RELAY_PORT), the hub from 8798 (PRIMER_HUB_PORT) and each
 // person's door from 8799 and 8800 (PRIMER_HUB_ADA_PORT, PRIMER_HUB_GRACE_PORT)
-// — clear of collab/'s relays on 8788/8789, collab.spec from 8792,
-// collab-drafts from 8793 and hub-check on 8796/8797.
+// — clear of collab/'s relays on 8788/8789, collab.spec from 8792
+// and hub-check on 8796/8797.
 let RELAY_PORT = 0;
 let HUB_PORT = 0;
 const PROJECT = 'demo-report';
@@ -154,7 +154,11 @@ test.beforeAll(async ({ browser: b_ }) => {
   ADA_PORT = await claimPort('hub-ada', 8799);
   GRACE_PORT = await claimPort('hub-grace', 8800);
   if (!HUB_GIVEN) HUB_DIR = copyHub(HUB_SRC);
-  execFileSync('python3', ['-m', 'docsync.hub', '--into', HUB_DIR], { cwd: REPO, stdio: 'inherit' });
+  // On a runner (CI) there is no Cloudflare login: the R2 live checks are a
+  // shipping gate, not a test of the editor, so they are skipped there.
+  execFileSync('python3', ['-m', 'docsync.hub', '--into', HUB_DIR,
+                            ...(process.env.CI ? ['--no-live-check'] : [])],
+               { cwd: REPO, stdio: 'inherit' });
   const { startDev } = await import('../../collab/devserver.mjs');
   const { startPages } = await import('../../collab/hub-check.mjs');
   // A name of its own: the hub finds the relay through wrangler's local dev
@@ -249,7 +253,6 @@ test('Save goes to the hub, not to git, and the room learns the version', async 
   await expect(a.locator('#share')).toHaveText('Share');
   await expect(a.locator('#share')).toBeVisible();
   await expect(a.locator('#publish')).toBeVisible();
-  expect(await a.evaluate('draftBranch')).toBeNull();
 });
 
 test('a fresh editor loads the stored document, not the vendored copy', async () => {
@@ -1936,11 +1939,10 @@ test('save: an expired sign-in cannot pass for a Save, and nothing is marked sav
   expect(await a.evaluate('docVersion')).not.toBe(version);
 });
 
-test('no GitHub token was asked for or stored', async () => {
+test('no token was asked for or stored', async () => {
   for (const page of [a, b]) {
     expect(await page.evaluate("localStorage.getItem('docsync-pat')")).toBeNull();
-    // A hosted editor with no token normally sits at "Sign in to collaborate";
-    // through the hub's door that state cannot occur.
+    // Through the hub's door there is no sign-in step to sit at.
     expect((await status(page)).status).toBe('live');
   }
 });

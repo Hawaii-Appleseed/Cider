@@ -83,11 +83,9 @@ scaffolds a blank project straight onto disk (no repo, no token, no GitHub —
 `--text report.md` lays it out on a template's pages at the same time, see
 `docsync/compose.py`), and **“Adopt existing…”**
 registers any docsync repo already cloned on this computer by its folder
-path (`/__adopt`). Inside the editor, **File ▸ Connect GitHub** signs the
-computer in with a one-time code (the local server proxies the device flow,
-so no relay worker is needed — just the one GitHub App client id via
-`PRIMER_GH_CLIENT` or the manifest's `oauth` block), after which Push works
-over https with no keychain setup.
+path (`/__adopt`). Push uses whatever credentials git on this computer
+already has (`gh auth login`, an SSH key or the keychain); the editor holds
+no GitHub token of its own.
 
 ## Onboarding a colleague
 
@@ -162,9 +160,8 @@ Optional, macOS only — a double-clickable launcher:
 | `docs/primer/projects.json` | which reports your start page lists, and where their files live on **this** machine. Untracked — copy `projects.example.json` if you want to customise it. Without it, every report in `docsync.yml` is still served. |
 | `vendor.local.yml` | other repos on this machine that vendor this engine, synced by the post-commit hook. Untracked; `vendor.yml` ships empty so a clone never writes into a checkout it does not have. |
 
-Where a report's **Save/Push** goes is recorded per project in its staged
-`engine/manifest.json`. It defaults to your own checkout's `origin`, and the
-editor asks the first time if there is none.
+Where a report's **Push** goes is the checkout's own `origin`; its staged
+`engine/manifest.json` records the repo and deploy branch.
 
 `make live` starts `serve.py`: it rebuilds the report on any change and reloads
 the browser, so an edit shows in ~1s. **Save** writes the files and commits
@@ -244,8 +241,7 @@ for whatever is selected; a bottom strip shows every page as a thumbnail and
 can be collapsed when you don't need it (remembered per project). The
 top-left **File** menu is where report-level actions live: Open (switch
 between reports this server knows about), Resize (six standard doc sizes —
-changing one re-renders the report at it, live), Google Doc, Download, and the
-GitHub token.
+changing one re-renders the report at it, live), Google Doc and Download.
 
 **Google Doc** records which doc a report was drafted in, and **Import text
 from the Doc** brings that text in: the server reads the doc and proposes where
@@ -286,9 +282,21 @@ The editor knows nothing about any particular report. Everything specific — th
 renderer, what it reads, the page size, the palette — comes from
 `engine/manifest.json`, staged beside the editor from `docsync.yml` by
 `python3 -m docsync.stage`. A second report is a second registry entry, not a
-second editor. The editor's landing page (`start.html`) can **connect** a new
-repo or **adopt** an existing project, and each project records its own repo and
-deploy branch.
+second editor. The editor's landing page (`start.html`) creates a report on
+disk or adopts a folder already on this computer; each project records its own
+repo and deploy branch for Push.
+
+**Two runtimes, and only two (2026-10-30).** Locally the editor is the dev
+loop: `serve.py` serves it, Save commits to the checkout, Push is `git push`
+with this machine's own credentials. Shared editing happens on the staff hub,
+where the document lives in the hub's store behind the sign-in staff already
+have. There is no longer a hosted GitHub-Pages mode — the editor used to be
+able to write to GitHub straight from the browser with a token (draft
+branches, `?draft=` Share links, Publish by pull request, device-flow sign-in);
+staff have no GitHub accounts and nothing published from Pages, so that whole
+path, its OAuth relay and its GitHub App registration are gone. A copy of the
+editor opened from a plain static host or `file://` still renders and edits in
+memory, and Download still works, but Save is disabled and says why.
 
 ### The shared engine
 

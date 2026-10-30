@@ -42,10 +42,6 @@ docs/*/assets/
 # artifact you rebuild, never a source you track.
 /dist/
 
-# The GitHub token File > Connect GitHub stores for the server's own pushes.
-# A person, not a project — and never, ever committed.
-.primer-github-token
-
 # Written by tools/selfupdate.py before it moves the checkout: the way back
 # from a bad update. Per-machine state, never committed.
 .primer-previous-version

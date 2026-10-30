@@ -23,8 +23,10 @@
   "triggers": { "crons": ["0 14 * * *"] },
 
   "vars": {
-    // Browsers allowed to open a collaborative session. Mirrors the ALLOW list
-    // in docs/primer/oauth-relay.js — the hosted editor and local dev.
+    // Browsers allowed to open a collaborative session through the ticket
+    // door: local dev. (The github.io origin is a leftover of the hosted
+    // editor, removed 2026-10-30; the hub reaches the room through its own
+    // door, not this list.)
     "ALLOWED_ORIGINS": "https://hawaii-appleseed.github.io,http://localhost:8777,http://localhost:8010,http://127.0.0.1:8777,http://127.0.0.1:8010",
     // Repositories whose collaborators may open a room here. A room names its
     // repo, so without this anyone with push access to ANY repo could mint a

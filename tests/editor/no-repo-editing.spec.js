@@ -1,14 +1,9 @@
 // A freshly scaffolded project — "+ New report", never touched by hand —
 // must stay fully usable with zero GitHub interaction: edit, add elements,
-// Save to disk. Only an action that actually needs GitHub (Push, Publish, a
-// hosted draft) may talk to it or ask for a token.
-//
-// This is the invariant requireRepo()/ensureAuth() (edit.html, the
-// "connecting a report to GitHub" commit) are supposed to preserve — they
-// front the GITHUB-specific call sites, not the editor generally. Local
-// Save posts straight to /__save and was never routed through either.
-// Pinned here because requireRepo() is new and it would be an easy mistake
-// to tighten its net too far in a later change.
+// Save to disk. Only Push and Publish touch git, and they use the machine's
+// own git credentials through the local server, never the browser. The editor
+// has no GitHub API client at all; local Save posts straight to /__save.
+// Pinned here so a later change cannot route local editing through a remote.
 const { test, expect } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
@@ -34,8 +29,7 @@ test.describe('a freshly scaffolded project, before anyone touches GitHub', () =
   test('scaffolds, edits, adds an element, and Saves — with no GitHub call ever made',
     async ({ page }) => {
       // Any request to the GitHub API during this test is the bug: it means
-      // some local-mode action got routed through ensureAuth()/requireRepo()
-      // when it should have gone straight to the local server.
+      // some local-mode action went to GitHub instead of the local server.
       const ghCalls = [];
       await page.route('https://api.github.com/**', route => {
         ghCalls.push(route.request().url());
