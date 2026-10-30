@@ -3389,12 +3389,6 @@ def _tool_path() -> str:
     return os.pathsep.join(seen + [p for p in extra if p and p not in seen])
 
 
-def _slug_of(url: str) -> str:
-    """'owner/name' from either git URL form, or '' when it is neither."""
-    m = re.search(r"[:/]([\w.-]+/[\w.-]+?)(?:\.git)?$", (url or "").strip())
-    return m.group(1) if m else ""
-
-
 def _write_atomic(path: Path, text: str) -> None:
     """Replace a file's contents in one step, or not at all.
 

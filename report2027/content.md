@@ -1,7 +1,7 @@
 # Budget Primer FY2026–27 — Content
 
 <!--
-  PROSE SOURCE OF TRUTH — kept in sync with the Google Doc via `make pull-doc`.
+  PROSE SOURCE OF TRUTH — drafted in a Google Doc, imported from the editor.
 
   [[key]] marks the slot that follows. Keep every [[key]] line exactly as-is;
   the build fails loudly if one goes missing. In the Doc these render small and

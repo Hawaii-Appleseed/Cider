@@ -183,16 +183,6 @@ bindings:
       page: [8.5, 11]
       margins: [0.62, 0.75]
 
-  # Example — a simple page whose prose lives entirely in a doc. Binding one
-  # takes minutes: add <!-- docsync:start --> / <!-- docsync:end --> where the
-  # content belongs, then add an entry like this.
-  #
-  # - id: snap-timeline
-  #   doc: <doc-id>
-  #   mode: fragment
-  #   content: snap-timeline/content.md
-  #   target: snap-timeline/index.html
-
   # Our Mission — Hawaiʻi Appleseed. STAGE TWO wiring done 2026-08-25: every
   # step ordinal, focus-area card, phase tab, CTA button and eyebrow propose
   # left unwired is now a slot. page height is a generous no-clip default for

@@ -33,7 +33,7 @@ _OUT = Path(os.environ.get("DOCSYNC_OUT") or (HERE / "web" / "index.html"))
 # Built BEFORE C because C consumes it — and because some slots are rendered at
 # import time, so a later hand-off would work only by luck of line order.
 L = Layout(_LAYOUT)
-# Authored prose + sources. Synced from the Google Doc via `make pull-doc`.
+# Authored prose + sources (drafted in a Google Doc, imported from the editor).
 C = Content(_CONTENT, styles=L)
 DATA = json.loads((HERE / "data" / "report_data.json").read_text())
 BUD = DATA["budget"]

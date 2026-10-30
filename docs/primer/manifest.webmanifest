@@ -39,25 +39,6 @@
       "purpose": "maskable"
     }
   ],
-  "file_handlers": [
-    {
-      "action": "./start.html",
-      "accept": {
-        "text/html": [
-          ".html",
-          ".htm"
-        ]
-      },
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ],
-      "launch_type": "single-client"
-    }
-  ],
   "launch_handler": {
     "client_mode": "focus-existing"
   }
