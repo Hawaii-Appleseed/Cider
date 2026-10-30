@@ -289,6 +289,65 @@ test.describe('pilot verbs', () => {
         && i.ids.includes(boxId))).toHaveLength(0);
     });
 
+    test('a box too narrow for its words is cramped; a roomy one is not', async ({ page }) => {
+      // The squeeze a width typed in inches makes: words stacked one or two
+      // to a line. On a blank page, so nothing else on it is judged.
+      const pg = (await api(page, 'addPage()')).id;
+      const narrow = await addBox(page, { page: pg, x: 1, y: 1, w: 0.5,
+        md: 'Fix the conveyance tax on the largest property sales' });
+      const roomy = await addBox(page, { page: pg, x: 1, y: 4, w: 5,
+        md: 'Fix the conveyance tax on the largest property sales' });
+      const r = await api(page, 'audit()');
+      const cramped = r.issues.filter(i => i.kind === 'cramped');
+      expect(cramped.map(i => i.ids[0])).toContain(narrow);
+      expect(cramped.map(i => i.ids[0])).not.toContain(roomy);
+    });
+
+    test('the untouched fixture has no cramped text', async ({ page }) => {
+      const r = await api(page, 'audit()');
+      expect(r.issues.filter(i => i.kind === 'cramped')).toEqual([]);
+    });
+
+    test('a hub pilot op answers with the layout problems it made, and only those', async ({ page }) => {
+      // What the hub's arrange_report hands back to a person's Claude: it
+      // places by inches and cannot see the page.
+      const pg = (await api(page, 'addPage()')).id;
+      const a = await addBox(page, { page: pg, x: 1, y: 1, w: 2.5, md: 'Already here' });
+      const b = await addBox(page, { page: pg, x: 1, y: 3, w: 2.5, md: 'Moved onto it' });
+      const r = await page.evaluate(b => hubPilot({ ops: [{ verb: 'place', args: [b, { x: 1.1, y: 1.05 }] }] }), b);
+      expect(r.ok).toBe(true);
+      const hit = r.layout.new.find(i => i.kind === 'overlap');
+      expect(hit, JSON.stringify(r.layout)).toBeTruthy();
+      expect([...hit.ids].sort()).toEqual([a, b].sort());
+      // A second edit that leaves the overlap alone does not report it again.
+      const r2 = await page.evaluate(a => hubPilot({ ops: [{ verb: 'recolor', args: [a, '#C4602F'] }] }), a);
+      expect(r2.ok).toBe(true);
+      expect(r2.layout.new.filter(i => i.kind === 'overlap')).toEqual([]);
+      expect(r2.layout.standing).toBeGreaterThan(0);
+    });
+
+    test('a rectangle behind a box is not an overlap the hub is told about', async ({ page }) => {
+      const pg = (await api(page, 'addPage()')).id;
+      await addBox(page, { page: pg, x: 1, y: 1, w: 2.5, md: 'On a card' });
+      const r = await page.evaluate(pg => hubPilot({ ops: [{ verb: 'addShape',
+        args: [{ page: pg, kind: 'rect', x: 0.9, y: 0.9, w: 3, h: 1, fill: '#E8F0FA', z: 1 }] }] }), pg);
+      expect(r.ok, r.error).toBe(true);
+      expect(r.layout.new.filter(i => i.kind === 'overlap')).toEqual([]);
+    });
+
+    test('align and distribute run through a hub pilot op', async ({ page }) => {
+      const pg = (await api(page, 'addPage()')).id;
+      const a = await addBox(page, { page: pg, x: 1, y: 1, w: 1.5, md: 'One' });
+      const b = await addBox(page, { page: pg, x: 1.6, y: 2, w: 1.5, md: 'Two' });
+      const r = await page.evaluate(ids => hubPilot({ ops: [{ verb: 'align', args: [ids, 'left', { to: 'selection' }] }] }), [a, b]);
+      expect(r.ok, r.error).toBe(true);
+      const xs = await page.evaluate(ids => ids.map(id => _pilotMeasure(id).x), [a, b]);
+      expect(Math.abs(xs[0] - xs[1])).toBeLessThan(0.02);
+      const c = await addBox(page, { page: pg, x: 1, y: 5, w: 1.5, md: 'Three' });
+      const r2 = await page.evaluate(ids => hubPilot({ ops: [{ verb: 'distribute', args: [ids, 'v'] }] }), [a, b, c]);
+      expect(r2.ok, r2.error).toBe(true);
+    });
+
     test('uncited sources are reported by id', async ({ page }) => {
       await api(page, `addSource('aud-uncited', 'Never referenced', 'https://example.com/x')`);
       const r = await api(page, 'audit()');
