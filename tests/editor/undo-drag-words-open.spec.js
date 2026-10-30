@@ -57,4 +57,57 @@ test.describe('⌘Z after a move with the words open', () => {
     await page.waitForTimeout(300);   // a native text undo has no render to wait on
     expect(await at(page, id)).toEqual(moved);
   });
+
+  test('undoes a resize made with the words open', async ({ page }) => {
+    const id = await openBox(page);
+    const w0 = await page.evaluate(id => boxOf(id).w, id);
+    const h = await page.frameLocator('#out').locator('.ds-h-e').boundingBox();
+    const x = h.x + h.width / 2, y = h.y + h.height / 2;
+    await page.mouse.move(x, y); await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x - 12 * i, y);
+    await page.mouse.up(); await settled(page);
+    expect(await page.evaluate(id => boxOf(id).w, id)).toBeLessThan(w0);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => page.evaluate(id => boxOf(id).w, id), { timeout: 10_000 }).toBeCloseTo(w0, 2);
+  });
+});
+
+test.describe('⌘Z with the words open, on a designed field in a section', () => {
+  test.beforeEach(async ({ page }) => { await gotoEditor(page, '?project=uhero-trc-summary'); });
+  const place = (page, id) => page.evaluate(id => JSON.stringify(layout.positions[id] || null), id);
+  async function openField(page, id) {
+    await page.evaluate(id => { const d = document.getElementById('out').contentDocument;
+      const el = d.querySelector(`[data-el="${id}"]`); el.scrollIntoView({ block: 'center' });
+      const slot = el.matches('[data-slot]') ? el : el.querySelector('[data-slot]');
+      setSel(d, [id]); edit(d, slot.dataset.slot, slot); paintSel(d); }, id);
+    await expect.poll(() => page.evaluate(() => editing), { timeout: 10_000 }).toBe(true);
+  }
+  async function dragAt(page, x, y, dx, dy) {
+    await page.mouse.move(x, y); await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x + dx * i / 6, y + dy * i / 6);
+    await page.mouse.up(); await settled(page);
+  }
+
+  test('a move by the edge band is undone', async ({ page }) => {
+    const id = 'para.rec.p';
+    await openField(page, id);
+    const p0 = await place(page, id);
+    // The band's left end: clear of the north resize handle in the middle.
+    const b = await page.frameLocator('#out').locator('.ds-moveedge-n').boundingBox();
+    await dragAt(page, b.x + 30, b.y + b.height / 2, 60, 40);
+    expect(await place(page, id)).not.toBe(p0);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => place(page, id), { timeout: 10_000 }).toBe(p0);
+  });
+
+  test('a resize by a handle is undone', async ({ page }) => {
+    const id = 'para.rec.p';
+    await openField(page, id);
+    const p0 = await place(page, id);
+    const h = await page.frameLocator('#out').locator('.ds-h-e').boundingBox();
+    await dragAt(page, h.x + h.width / 2, h.y + h.height / 2, -80, 0);
+    expect(await place(page, id)).not.toBe(p0);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => place(page, id), { timeout: 10_000 }).toBe(p0);
+  });
 });
