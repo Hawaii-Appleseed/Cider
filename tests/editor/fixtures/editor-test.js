@@ -166,10 +166,22 @@ const warm = base.test.extend({
   page: async ({ _warmContext, baseURL }, use) => {
     const page = await _warmContext.newPage();
     const cdp = await _warmContext.newCDPSession(page);
+    const origin = new URL(baseURL).origin;
     await cdp.send('Storage.clearDataForOrigin', {
-      origin: new URL(baseURL).origin,
-      storageTypes: 'local_storage,cache_storage,indexeddb,service_workers',
+      origin, storageTypes: 'local_storage,indexeddb,service_workers',
     });
+    // Cache Storage too, EXCEPT the compiled-engine cache (edit.html,
+    // pycRestore): every test would otherwise recompile layout.py from source
+    // (~300 ms, plus the rest of the engine, ~650 ms a boot in all). That cache
+    // is safe to keep, since Python re-hashes the source on load and refuses a
+    // stale entry. What a COLD boot does is pinned by boot-perf and
+    // pyc-cache.spec.js, which do not use this fixture.
+    // (CDP will only list an origin's caches from a frame on that origin.)
+    await page.goto(origin + '/__ping');
+    const { caches } = await cdp.send('CacheStorage.requestCacheNames', { securityOrigin: origin });
+    for (const c of caches) {
+      if (c.cacheName !== 'ds-pyc-v1') await cdp.send('CacheStorage.deleteCache', { cacheId: c.cacheId });
+    }
     await cdp.detach();
     await use(page);
     await page.close();
