@@ -43,9 +43,14 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   (docsync/, tests/, the editor shell, serve.py, package.json — the `changes`
   job in editor-tests.yml); otherwise they are skipped and the gate passes
   in about a minute, so a docs-only PR is never stuck waiting on a check
-  that will not come. Rebase onto `origin/main` first if it moved. Once it has merged:
-  `git pull --ff-only` in the main clone, then `python3 -m docsync.vendor`
-  there on a machine whose vendor.local.yml names consumers. Devin's own
+  that will not come. Rebase onto `origin/main` first if it moved. Once it has merged,
+  **`tools/wt ship <name>`** does the rest (or `tools/wt land <name> --ship` waits for
+  the merge and then does it): vendors into this machine's consumers, vendors the
+  editor into a clean copy of the hub's origin/main, commits only what the editor
+  change owns, pushes it (a deploy), and removes the worktree. It works from clean
+  scratch copies, so the main clone, which the Editor app keeps dirty, is never
+  needed. The hub step reads R2, so it is Devin's; `tools/test-ship.sh` tests it
+  with stubs. Devin's own
   sessions land without asking once the tests pass (2026-10-21); another
   person's session lands when its own person says so. A merge to main reaches
   every installed editor (`tools/selfupdate.py` pulls `origin/main` within
