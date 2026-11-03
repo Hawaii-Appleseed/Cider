@@ -33,7 +33,10 @@ echo new > "$into/primer/edit.html"; echo v2 > "$into/primer/editor-version.txt"
 echo new > "$into/primer/rep/engine/docsync/x.py"; echo new > "$into/primer/rep/index.html"
 EOF
 chmod +x "$T/hubcmd"
+echo staged > "$T/stagedmark"
 export CIDER_DIR="$T/cider" CIDER_HUB_DIR="$T/hub" WT_VENDOR_CMD=true WT_HUB_CMD="$T/hubcmd"
+# the stage step runs in the clean Cider copy, before the hub step
+export WT_STAGE_CMD="cp $T/stagedmark ./STAGED"
 hubhead() { git -C "$T/hub.git" rev-parse main; }
 show()    { git -C "$T/hub.git" show "main:$1" 2>/dev/null; }
 
@@ -53,6 +56,8 @@ out=$("$wt" ship 2>&1); rc=$?
 git -C "$T/hub.git" log -1 --format=%B main | grep -q "vendored from Cider" \
   && git -C "$T/hub.git" log -1 --format=%B main | grep -q "the change under test" \
   && ok "the commit names the Cider sha and the merged changes" || fail "the commit message"
+
+[ -f "$T/cider-shipcopy/STAGED" ] && ok "every report is staged in the clean copy before the hub step" || fail "stage step ran in the clean copy"
 
 head2=$(hubhead)
 out=$("$wt" ship 2>&1); rc=$?

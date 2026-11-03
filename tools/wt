@@ -454,6 +454,17 @@ cmd_ship() {
   echo "2. vendor into this machine's consumers (local commits there, never pushed)"
   (cd "$scopy" && ${WT_VENDOR_CMD:-python3 -m docsync.vendor}) \
     || die "the vendor step failed (a consumer with dirty engine paths refuses it): cd $(short "$scopy") && python3 -m docsync.vendor"
+  # docsync.hub vendors what is STAGED (docs/<report>/), which the Editor app does in
+  # the main clone and a clean copy never has: without this every report of Cider's
+  # own is skipped ("nothing staged") and keeps its old engine on the hub.
+  echo "2b. stage every report in the clean copy"
+  if [ -n "${WT_STAGE_CMD:-}" ]; then
+    (cd "$scopy" && $WT_STAGE_CMD) || die "the stage step failed"
+  else
+    (cd "$scopy" && for id in $(python3 -c 'from docsync.registry import load_registry; print(" ".join(b.id for b in load_registry() if b.editor))'); do
+       python3 -m docsync.stage --id "$id" >/dev/null 2>&1 || echo "   (could not stage $id: it keeps its old copy on the hub)"
+     done)
+  fi
   echo "3. hub origin/main @ $(git -C "$HUB" rev-parse --short origin/main) -> $(short "$hcopy")"
   fresh_copy "$HUB" "$hcopy" origin/main
   echo "4. the editor into the hub copy"
