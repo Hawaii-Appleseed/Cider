@@ -21502,7 +21502,10 @@ function startDrag(d, el, e0, drillIn = false, clickTo = null) {
       // It travelled, so it was a drag — and this one cannot move. Say why,
       // once, and let the release do nothing (it is not a click either).
       if (refusal) { refused = true; $('stat').textContent = refusal; return; }
-      begin();
+      // begin() sets `started` first, so one that throws partway (a page
+      // swapped out under the press) leaves `at` unset and every later move
+      // died on at[0]: once per mouse move. Give up on the drag instead.
+      try { begin(); } catch (err) { started = false; refused = true; throw err; }
     }
     const dx = (e.clientX - grab.x) / px, dy = (e.clientY - grab.y) / px;
     if (members.length === 1) {
