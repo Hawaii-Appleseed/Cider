@@ -6,9 +6,11 @@
 #   tools/wt ls                        every worktree of both repos, with status
 #   tools/wt port [<name>]             the test port assigned to a Cider worktree
 #   tools/wt rm <name> [--hub] [--force]   remove a finished worktree and its branch
-#   tools/wt land <name> [--check-only|--run-hub-spec|--skip-hub-spec]
+#   tools/wt land <name> [--ship] [--check-only|--run-hub-spec|--skip-hub-spec]
 #                                      Cider: push it, open its pull request, merge when the gate passes
 #                                      (first runs collab-hub.spec.js locally if the branch touches the relay/sync code)
+#                                      --ship: then wait for the merge, ship it to the staff hub, remove the worktree
+#   tools/wt ship [<name>] [--dry-run] put Cider's origin/main on the staff hub (a deploy) and remove worktree <name>
 #   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
 #   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
 #
@@ -167,7 +169,7 @@ cmd_new() {
     echo "  - Land it through a pull request: tools/wt land $name (Cider's main refuses a"
     echo "    direct push; the PR merges itself once its 'Editor tests gate' check passes)."
     echo "  - It has no vendor.local.yml on purpose: nothing here vendors into the hub."
-    echo "    After it merges: 'git pull --ff-only' in the main folder, then 'python3 -m docsync.vendor' there."
+    echo "    After it merges: tools/wt ship $name (hub + cleanup), or land with --ship to do it all."
   fi
   echo "  - Done? tools/wt rm $name$([ "$kind" = hub ] && echo ' --hub')"
 }
@@ -333,13 +335,14 @@ hub_gate() {  # hub_gate <dir> <name> <mode: auto|force|skip>
 }
 
 cmd_land() {
-  local name="" hubmode=auto checkonly=0
+  local name="" hubmode=auto checkonly=0 ship=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --hub) die "the hub ships by 'git push origin <name>:main' from its worktree, not by pull request (see its CLAUDE.md)" ;;
       --skip-hub-spec) hubmode=skip ;;
       --run-hub-spec) hubmode=force ;;
       --check-only) checkonly=1 ;;
+      --ship) ship=1 ;;
       -*) die "unknown option: $1" ;;
       *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
     esac
@@ -377,8 +380,123 @@ cmd_land() {
   else
     die "the pull request is open, but auto-merge could not be set: gh pr merge $name --auto --merge"
   fi
-  echo "Then, in $(short "$CIDER"): git pull --ff-only, python3 -m docsync.vendor (where vendor.local.yml"
-  echo "names consumers), and tools/wt rm $name."
+  if [ "$ship" = 1 ]; then
+    local i=0 state max=$(( ${WT_SHIP_WAIT_MIN:-45} * 3 ))
+    echo "Waiting for the gate and the merge (up to ${WT_SHIP_WAIT_MIN:-45} min), then shipping to the hub..."
+    while :; do
+      state=$(cd "$dir" && gh pr view "$name" --json state --jq .state 2>/dev/null || echo UNKNOWN)
+      [ "$state" = MERGED ] && break
+      [ "$state" = CLOSED ] && die "the pull request was closed without merging"
+      i=$((i+1))
+      [ "$i" -le "$max" ] || die "not merged in time (the gate may have failed: gh pr checks $name). When it has merged: tools/wt ship $name"
+      sleep 20
+    done
+    cmd_ship "$name"
+    return 0
+  fi
+  echo "Then: tools/wt ship $name   (puts it on the staff hub and removes the worktree)."
+  echo "Or land with --ship to do all of that in one go."
+}
+
+# ---- ship ------------------------------------------------------------------
+# A merged Cider PR is not on the staff hub: the hub gets the editor only when
+# it is vendored into a clean checkout of the hub's origin/main and PUSHED (a
+# push there is a deploy). That was six hand steps; this is all of them, and it
+# leaves both main folders' working trees alone (the Cider main clone is the
+# Editor app's own tree and is usually dirty, so `git pull --ff-only` there is
+# not something it can depend on):
+#   1. a clean detached copy of Cider's origin/main  ($CIDER-shipcopy)
+#   2. docsync.vendor there -> BudgetPrimerFinal's LOCAL commit only (never pushed)
+#   3. a clean detached copy of the hub's origin/main ($HUB-shipcopy)
+#   4. docsync.hub --into that copy (it REFUSES a ship that would hide live words)
+#   5. commit ONLY what the editor change owns (edit.html, collab-client.js, sw.js,
+#      editor-version.txt, each report's engine/docsync/*.py): never a report's own files
+#   6. rebase on origin/main and push it to main
+# Step 4 reads the hub's R2 store, which is Devin's Cloudflare access: for anyone
+# else it stops there. WT_VENDOR_CMD / WT_HUB_CMD replace steps 2 and 4 (the test does).
+SHIP_OWNED='^primer/(edit\.html|collab-client\.js|editor-version\.txt|sw\.js)$|^primer/[^/]+/engine/docsync/[^/]+\.py$'
+
+fresh_copy() { # <repo> <path> <ref>: a detached checkout of <ref>, reset each time
+  local repo="$1" path="$2" ref="$3"
+  if [ ! -e "$path" ]; then
+    git -C "$repo" worktree add -q --detach "$path" "$ref"
+  else
+    if git -C "$path" symbolic-ref -q HEAD >/dev/null; then
+      die "$(short "$path") has a branch checked out: it is not this command's scratch any more; move it aside"
+    fi
+    git -C "$path" checkout -q -f --detach "$ref" && git -C "$path" clean -fdq
+  fi
+}
+
+cmd_ship() {
+  local name="" dry=0 dryflag=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --dry-run) dry=1; dryflag="--dry-run" ;;
+      -*) die "unknown option: $1" ;;
+      *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
+    esac
+    shift
+  done
+  local scopy="$CIDER-shipcopy" hcopy="$HUB-shipcopy" sha prev subjects files v n
+  is_git "$HUB" || die "no staff hub checkout beside Cider ($(short "$HUB")); set CIDER_HUB_DIR"
+  git -C "$CIDER" fetch -q origin main || die "could not fetch Cider's origin/main"
+  git -C "$HUB" fetch -q origin main || die "could not fetch the hub's origin/main"
+  sha=$(git -C "$CIDER" rev-parse --short origin/main)
+  if [ -n "$name" ] && is_git "$CIDER-$name" \
+     && [ "$(git -C "$CIDER" rev-list --count "origin/main..$name" 2>/dev/null || echo 1)" != 0 ]; then
+    die "'$name' is not in Cider's origin/main yet: it ships once its pull request has merged"
+  fi
+
+  echo "1. Cider origin/main @ $sha -> $(short "$scopy")"
+  fresh_copy "$CIDER" "$scopy" origin/main
+  if [ -f "$CIDER/vendor.local.yml" ]; then cp "$CIDER/vendor.local.yml" "$scopy/vendor.local.yml"; fi
+  echo "2. vendor into this machine's consumers (local commits there, never pushed)"
+  (cd "$scopy" && ${WT_VENDOR_CMD:-python3 -m docsync.vendor}) \
+    || die "the vendor step failed (a consumer with dirty engine paths refuses it): cd $(short "$scopy") && python3 -m docsync.vendor"
+  echo "3. hub origin/main @ $(git -C "$HUB" rev-parse --short origin/main) -> $(short "$hcopy")"
+  fresh_copy "$HUB" "$hcopy" origin/main
+  echo "4. the editor into the hub copy"
+  (cd "$scopy" && ${WT_HUB_CMD:-python3 -m docsync.hub} --into "$hcopy" $dryflag) \
+    || die "the hub vendor step refused or failed, so nothing was committed or pushed. Read what it said above;
+  a report whose words would vanish is that report's owner's call (docsync/hub.py: --allow-hidden)."
+  if [ "$dry" = 1 ]; then echo "--dry-run: nothing committed or pushed."; return 0; fi
+
+  echo "5. what the editor change owns"
+  files=$(git -C "$hcopy" status --porcelain -uall -- primer | cut -c4- | grep -E "$SHIP_OWNED" || true)
+  if [ -z "$files" ]; then
+    echo "   the hub already has this editor: nothing to ship."
+  else
+    # shellcheck disable=SC2086
+    (cd "$hcopy" && git add -- $files)
+    prev=$(git -C "$hcopy" log -1 --format=%s --grep='vendored from Cider' origin/main | sed -n 's/.*vendored from Cider \([0-9a-f]\{7,\}\).*/\1/p')
+    if [ -n "$prev" ] && git -C "$CIDER" cat-file -e "$prev^{commit}" 2>/dev/null; then
+      subjects=$(git -C "$CIDER" log --first-parent --format='- %s' "$prev..origin/main")
+    else
+      subjects=$(git -C "$CIDER" log --first-parent -5 --format='- %s' origin/main)
+    fi
+    n=$(printf '%s\n' "$subjects" | grep -c . || true)
+    git -C "$hcopy" commit -q -m "Cider editor: $n merged change(s) (vendored from Cider $sha)
+
+$subjects" || die "the hub commit failed"
+    # Everything else the run wrote (each report's own files) is not this change's:
+    # drop it from the scratch copy so the rebase has a clean tree.
+    git -C "$hcopy" checkout -q -f -- primer && git -C "$hcopy" clean -fdq -- primer
+    echo "6. push to the hub's main (a deploy)"
+    if ! { git -C "$hcopy" fetch -q origin main && git -C "$hcopy" rebase -q origin/main; }; then
+      die "the hub's main moved and the rebase did not apply cleanly: $(short "$hcopy")"
+    fi
+    git -C "$hcopy" push -q origin HEAD:main || die "the push to the hub's main was refused"
+    v=$(cat "$hcopy/primer/editor-version.txt" 2>/dev/null || true)
+    echo "   Pushed hub $(git -C "$hcopy" rev-parse --short HEAD). Pages deploys in about 80 s."
+    echo "   Live check (needs the Access session, so a browser): /primer/editor-version.txt reads ${v:-the new fingerprint}."
+  fi
+  # The main clone is the Editor app's tree: bring it up to date only if it has no local work.
+  git -C "$CIDER" pull -q --ff-only 2>/dev/null \
+    || echo "   (the main clone has local changes and was left as it is; the Editor app updates it itself)"
+  if [ -n "$name" ] && is_git "$CIDER-$name"; then
+    (cmd_rm "$name") || echo "   (worktree '$name' kept: wt rm $name --force to drop it)"
+  fi
 }
 
 # ---- allow-main ------------------------------------------------------------
@@ -516,6 +634,7 @@ case "$cmd" in
   allow-main) cmd_allow_main "$@" ;;
   stage) cmd_stage "$@" ;;
   land) cmd_land "$@" ;;
+  ship) cmd_ship "$@" ;;
   -h|--help|help) usage 0 ;;
   *) echo "wt: unknown command '$cmd'" >&2; usage 1 ;;
 esac
