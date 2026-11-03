@@ -414,7 +414,9 @@ cmd_land() {
 #   6. rebase on origin/main and push it to main
 # Step 4 reads the hub's R2 store, which is Devin's Cloudflare access: for anyone
 # else it stops there. WT_VENDOR_CMD / WT_HUB_CMD replace steps 2 and 4 (the test does).
-SHIP_OWNED='^primer/(edit\.html|collab-client\.js|editor-version\.txt|sw\.js)$|^primer/[^/]+/engine/docsync/[^/]+\.py$'
+# A report's engine/manifest.json lists its engine files, so it ships WITH them: a
+# deleted engine file (normalise.py) with the old manifest would 404 in every editor.
+SHIP_OWNED='^primer/(edit\.html|collab-client\.js|editor-version\.txt|sw\.js)$|^primer/[^/]+/engine/(docsync/[^/]+\.py|manifest\.json)$'
 
 fresh_copy() { # <repo> <path> <ref>: a detached checkout of <ref>, reset each time
   local repo="$1" path="$2" ref="$3"
@@ -475,6 +477,19 @@ cmd_ship() {
 
   echo "5. what the editor change owns"
   files=$(git -C "$hcopy" status --porcelain -uall -- primer | cut -c4- | grep -E "$SHIP_OWNED" || true)
+  # A report that is live on the hub but not bound in THIS clean copy (one bound only
+  # in the main clone's uncommitted docsync.yml, say) is deleted by the vendor run.
+  # That is not this change's to do: leave every one of its files exactly as it is.
+  local kept="" f id
+  for f in $files; do
+    id=${f#primer/}; id=${id%%/*}
+    case "$id" in
+      edit.html|collab-client.js|editor-version.txt|sw.js) kept="$kept $f" ;;
+      *) if [ -f "$hcopy/primer/$id/engine/manifest.json" ]; then kept="$kept $f"
+         else echo "   (left alone: '$id' is on the hub but not bound in this checkout)"; fi ;;
+    esac
+  done
+  files=${kept# }
   if [ -z "$files" ]; then
     echo "   the hub already has this editor: nothing to ship."
   else

@@ -22,6 +22,10 @@ g init -q --bare "$T/hub.git"; g clone -q "$T/hub.git" "$T/hub" 2>/dev/null
 mkdir -p "$T/hub/primer/rep/engine/docsync"
 echo old > "$T/hub/primer/edit.html"; echo v1 > "$T/hub/primer/editor-version.txt"
 echo old > "$T/hub/primer/rep/engine/docsync/x.py"; echo old > "$T/hub/primer/rep/index.html"
+echo old > "$T/hub/primer/rep/engine/manifest.json"
+# a report that is live on the hub but not bound in the clean Cider copy
+mkdir -p "$T/hub/primer/gone/engine/docsync"
+echo old > "$T/hub/primer/gone/engine/manifest.json"; echo old > "$T/hub/primer/gone/engine/docsync/x.py"
 g -C "$T/hub" add -A; g -C "$T/hub" commit -qm "start"; g -C "$T/hub" push -q origin HEAD:main; g -C "$T/hub" branch -M main
 
 # --- stub for docsync.hub: writes a new editor, a new engine file, AND a report's own page
@@ -31,6 +35,9 @@ cat > "$T/hubcmd" <<'EOF'
 while [ $# -gt 0 ]; do case "$1" in --into) into="$2"; shift ;; esac; shift; done
 echo new > "$into/primer/edit.html"; echo v2 > "$into/primer/editor-version.txt"
 echo new > "$into/primer/rep/engine/docsync/x.py"; echo new > "$into/primer/rep/index.html"
+echo new > "$into/primer/rep/engine/manifest.json"
+# the vendor run drops a report the clean copy does not know (as docsync.hub does)
+rm -rf "$into/primer/gone"
 EOF
 chmod +x "$T/hubcmd"
 echo staged > "$T/stagedmark"
@@ -53,6 +60,10 @@ out=$("$wt" ship 2>&1); rc=$?
 [ "$(show primer/edit.html)" = new ] && [ "$(show primer/editor-version.txt)" = v2 ] \
   && [ "$(show primer/rep/engine/docsync/x.py)" = new ] && ok "the editor files shipped" || fail "the editor files shipped"
 [ "$(show primer/rep/index.html)" = old ] && ok "a report's own page did NOT ride along" || fail "a report's own page did NOT ride along"
+[ "$(show primer/rep/engine/manifest.json)" = new ] && ok "a surviving report's manifest ships with its engine" || fail "a surviving report's manifest ships with its engine"
+[ "$(show primer/gone/engine/manifest.json)" = old ] && [ "$(show primer/gone/engine/docsync/x.py)" = old ] \
+  && ok "a report the clean copy does not know is left exactly as it is on the hub" || fail "a hub-only report was deleted"
+echo "$out" | grep -q "left alone: 'gone'" && ok "and it says so" || fail "and it says so"
 git -C "$T/hub.git" log -1 --format=%B main | grep -q "vendored from Cider" \
   && git -C "$T/hub.git" log -1 --format=%B main | grep -q "the change under test" \
   && ok "the commit names the Cider sha and the merged changes" || fail "the commit message"
