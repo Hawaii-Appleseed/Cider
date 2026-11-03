@@ -21,11 +21,11 @@ staff-updates-internal* folder:
 Fires on:
   - Write / Edit / MultiEdit / NotebookEdit of a guarded file
   - Bash that writes to one (sed -i, cp/mv/tee/redirect, a script that names it
-    and writes, git checkout/restore from another commit), or runs python3 -m docsync.hub into the shared hub folder
-    (or with no --into)
+    and writes, git checkout/restore from another commit), or runs python3 -m docsync.hub --into the shared hub folder
 Reading code (grep with `=>` or `2>/dev/null` included) and running a renderer
-to preview stay allowed. Shipping, `docsync.hub --into <a hub worktree>`, is
-open since 2026-10-28 (Devin): it carries only code that already landed.
+to preview stay allowed. python3 -m docsync.hub is open (2026-10-28 for a hub
+worktree, 2026-11-03 for every other form, --help and --dry-run included): it
+carries only code that already landed. Only `--into` the shared folder is refused.
 
 Not guarded (Devin, 2026-10-28): Cider's own editor UI, docsync/editor/** —
 how dragging, selecting and typing work is tool work, not one report's look,
@@ -74,6 +74,17 @@ WRITES = re.compile(
     r"|(?<![=\d&>-])>>?(?![>=&])\s*(?!/dev/null\b)[^\s>&]|\.write\(|write_text\(|open\([^)]*['\"]w",
     re.I,
 )
+
+
+HUB_MODULE = re.compile(r"-m\s+docsync\.hub\b", re.I)
+
+
+def hub_into_shared(cmd: str, cwd: str) -> bool:
+    """`--into` names the shared hub folder itself."""
+    m = HUB_INTO.search(cmd)
+    if not m:
+        return False
+    return os.path.realpath(os.path.join(cwd, os.path.expanduser(m.group(1)))) == SHARED_HUB
 
 
 def hub_ship_ok(cmd: str, cwd: str) -> bool:
@@ -139,9 +150,11 @@ def main() -> None:
         cmd = ti.get("command") or ""
         if "allow-template" in cmd:
             deny("Claude may not open the template unlock window")
-        m = CODE_PATH_CMDS.search(cmd)
-        if m and not hub_ship_ok(cmd, cwd):
-            deny(f"`{m.group(0).strip()}` starts the template/engine code path")
+        # docsync.hub is open (Devin, 2026-11-03): only a ship into the SHARED hub
+        # folder, which is usually on somebody's branch, stays refused.
+        m = HUB_MODULE.search(cmd)
+        if m and hub_into_shared(cmd, cwd):
+            deny("`docsync.hub --into` the shared staff-updates-internal folder (use a hub worktree)")
         if PREVIEW.match(cmd):
             return
         in_repo = repo_root(os.path.realpath(cwd)) or re.search(
