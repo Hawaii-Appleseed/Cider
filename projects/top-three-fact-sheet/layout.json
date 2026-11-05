@@ -1,0 +1,1169 @@
+{
+  "positions": {},
+  "fill": {},
+  "shapes": [
+    {
+      "id": "strip",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 0.16,
+      "fill": "#253551"
+    },
+    {
+      "id": "strip-acc",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 1.4,
+      "h": 0.16,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "foot",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 8.5,
+      "h": 0.9,
+      "fill": "#253551"
+    },
+    {
+      "id": "foot-acc",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 1.4,
+      "h": 0.05,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "top1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 2.85,
+      "w": 2.2,
+      "h": 0.045,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "rule1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 5.57,
+      "w": 2.2,
+      "h": 0.012,
+      "fill": "#D5DAE3"
+    },
+    {
+      "id": "sbox1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.15,
+      "w": 2.2,
+      "h": 1.5,
+      "fill": "#E8F0FA"
+    },
+    {
+      "id": "sbar1",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.15,
+      "w": 0.05,
+      "h": 1.5,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "top2",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.1500000000000004,
+      "y": 2.85,
+      "w": 2.2,
+      "h": 0.045,
+      "fill": "#253551"
+    },
+    {
+      "id": "rule2",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.1500000000000004,
+      "y": 5.57,
+      "w": 2.2,
+      "h": 0.012,
+      "fill": "#D5DAE3"
+    },
+    {
+      "id": "sbox2",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.1500000000000004,
+      "y": 8.15,
+      "w": 2.2,
+      "h": 1.5,
+      "fill": "#E7EAF0"
+    },
+    {
+      "id": "sbar2",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.1500000000000004,
+      "y": 8.15,
+      "w": 0.05,
+      "h": 1.5,
+      "fill": "#253551"
+    },
+    {
+      "id": "top3",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.6000000000000005,
+      "y": 2.85,
+      "w": 2.2,
+      "h": 0.045,
+      "fill": "#4A82C4"
+    },
+    {
+      "id": "rule3",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.6000000000000005,
+      "y": 5.57,
+      "w": 2.2,
+      "h": 0.012,
+      "fill": "#D5DAE3"
+    },
+    {
+      "id": "sbox3",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.6000000000000005,
+      "y": 8.15,
+      "w": 2.2,
+      "h": 1.5,
+      "fill": "#EEF4FB"
+    },
+    {
+      "id": "sbar3",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.6000000000000005,
+      "y": 8.15,
+      "w": 0.05,
+      "h": 1.5,
+      "fill": "#4A82C4"
+    },
+    {
+      "id": "strip2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 0.16,
+      "fill": "#253551"
+    },
+    {
+      "id": "strip-acc2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 1.4,
+      "h": 0.16,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "foot2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 8.5,
+      "h": 0.9,
+      "fill": "#253551"
+    },
+    {
+      "id": "foot-acc2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 1.4,
+      "h": 0.05,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "s2bar0",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 2.38,
+      "w": 0.05,
+      "h": 0.62,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "s2bar1",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.1500000000000004,
+      "y": 2.38,
+      "w": 0.05,
+      "h": 0.62,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "s2bar2",
+      "page": 2,
+      "kind": "rect",
+      "x": 5.6000000000000005,
+      "y": 2.38,
+      "w": 0.05,
+      "h": 0.62,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "h1rule",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 3.58,
+      "w": 7.1,
+      "h": 0.012,
+      "fill": "#D5DAE3"
+    },
+    {
+      "id": "ch1",
+      "page": 2,
+      "kind": "chart",
+      "x": 0.6,
+      "y": 3.98,
+      "w": 3.7,
+      "h": 2.1,
+      "chart": {
+        "type": "row",
+        "labels": [
+          "Under $15K",
+          "$15K–$30K",
+          "$30K–$45K",
+          "$45K–$55K",
+          "$55K+"
+        ],
+        "series": [
+          {
+            "name": "EITC $M",
+            "data": [
+              15.3,
+              32.8,
+              22.8,
+              5.2,
+              0.8
+            ],
+            "color": "#3C73B9"
+          }
+        ],
+        "values": true,
+        "legend": false,
+        "grid": false,
+        "labelColor": "#4A5568",
+        "titleColor": "#253551",
+        "format": {
+          "prefix": "$",
+          "suffix": "M",
+          "decimals": 1
+        }
+      }
+    },
+    {
+      "id": "h2rule",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 6.48,
+      "w": 7.1,
+      "h": 0.012,
+      "fill": "#D5DAE3"
+    },
+    {
+      "id": "ch2",
+      "page": 2,
+      "kind": "chart",
+      "x": 0.6,
+      "y": 6.88,
+      "w": 3.7,
+      "h": 1.95,
+      "chart": {
+        "type": "row",
+        "labels": [
+          "Single parent",
+          "Couple with children",
+          "Single, no children",
+          "Couple, no children"
+        ],
+        "series": [
+          {
+            "name": "Loss $M",
+            "data": [
+              33.5,
+              28.7,
+              8.4,
+              6.0
+            ],
+            "color": "#253551"
+          }
+        ],
+        "values": true,
+        "legend": false,
+        "grid": false,
+        "labelColor": "#4A5568",
+        "titleColor": "#253551",
+        "format": {
+          "prefix": "$",
+          "suffix": "M",
+          "decimals": 1
+        }
+      }
+    },
+    {
+      "id": "p2sbox",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.95,
+      "w": 7.1,
+      "h": 0.95,
+      "fill": "#E8F0FA"
+    },
+    {
+      "id": "p2sbar",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.95,
+      "w": 0.05,
+      "h": 0.95,
+      "fill": "#3C73B9"
+    }
+  ],
+  "boxes": [
+    {
+      "id": "kick",
+      "page": 1,
+      "x": 0.7,
+      "y": 0.62,
+      "w": 7.1,
+      "z": 3,
+      "md": "HAWAIʻI TAX FAIRNESS COALITION  ·  2027 SESSION",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 2
+      }
+    },
+    {
+      "id": "src",
+      "page": 1,
+      "x": 0.7,
+      "y": 10.5,
+      "w": 7.1,
+      "z": 3,
+      "md": "Sources: Hawaiʻi Appleseed Census-Forecaster tax model (credits, tax year 2028; capital gains, tax year 2027); UHERO Tax Review Commission analysis; Hawaiʻi Legislature, SB 3028 SD2 HD1 (2026); HB 2049 HD1 testimony.",
+      "style": {
+        "font": "Poppins",
+        "size": 10.5,
+        "color": "#9FB8DE",
+        "leading": 1.3
+      }
+    },
+    {
+      "id": "title",
+      "page": 1,
+      "x": 0.7,
+      "y": 0.92,
+      "w": 7.1,
+      "z": 3,
+      "md": "Tax Fairness Fact Sheet",
+      "style": {
+        "font": "Manrope",
+        "size": 42,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.05,
+        "tracking": -0.8
+      }
+    },
+    {
+      "id": "lede",
+      "page": 1,
+      "x": 0.7,
+      "y": 1.68,
+      "w": 6.6,
+      "z": 3,
+      "md": "Local families are leaving because they can’t afford to stay, while our tax code rewards those who profit most from our islands. Three changes ask the wealthiest to pay their fair share and keep money in working families’ pockets.",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#4A5568",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "ctat",
+      "page": 1,
+      "x": 0.7,
+      "y": 10.2,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Be ready for the 2027 session.**  Sign up for bill alerts and testimony at hitaxfairness.org",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "num1",
+      "page": 1,
+      "x": 0.7,
+      "y": 3.02,
+      "w": 2.2,
+      "z": 3,
+      "md": "01",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "ttl1",
+      "page": 1,
+      "x": 0.7,
+      "y": 3.27,
+      "w": 2.2,
+      "z": 3,
+      "md": "Fix the Conveyance Tax",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "stat1",
+      "page": 1,
+      "x": 0.7,
+      "y": 3.95,
+      "w": 2.2,
+      "z": 3,
+      "md": "$271M",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "lab1",
+      "page": 1,
+      "x": 0.7,
+      "y": 4.6,
+      "w": 2.2,
+      "z": 3,
+      "md": "first-year revenue under last session’s House bill, rising to $303M by FY2031. Up to $60M a year for Hawaiian Home Lands.",
+      "style": {
+        "font": "Poppins",
+        "size": 11.5,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "bul1",
+      "page": 1,
+      "x": 0.7,
+      "y": 5.73,
+      "w": 2.2,
+      "z": 3,
+      "md": "Rates **unchanged since 2009**, and none of the revenue reaches Hawaiian Home Lands.\n\nThe tax jumps at set prices: about **$2,000** just under $1M, **$3,000** at $1M.\n\n**~30,000** beneficiaries are waiting for homestead lots.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "suph1",
+      "page": 1,
+      "x": 0.8999999999999999,
+      "y": 8.290000000000001,
+      "w": 1.86,
+      "z": 3,
+      "md": "WHAT WE SUPPORT",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "sup1",
+      "page": 1,
+      "x": 0.8999999999999999,
+      "y": 8.57,
+      "w": 1.86,
+      "z": 3,
+      "md": "More from high-value and investment property sales, protection for families buying a home to live in, and new revenue for Hawaiian Home Lands.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "num2",
+      "page": 1,
+      "x": 3.1500000000000004,
+      "y": 3.02,
+      "w": 2.2,
+      "z": 3,
+      "md": "02",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#253551",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "ttl2",
+      "page": 1,
+      "x": 3.1500000000000004,
+      "y": 3.27,
+      "w": 2.2,
+      "z": 3,
+      "md": "Keep Working Families’ Tax Credits",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "stat2",
+      "page": 1,
+      "x": 3.1500000000000004,
+      "y": 3.95,
+      "w": 2.2,
+      "z": 3,
+      "md": "$76M",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "lab2",
+      "page": 1,
+      "x": 3.1500000000000004,
+      "y": 4.6,
+      "w": 2.2,
+      "z": 3,
+      "md": "less for working families in 2028 if the 2023 expansions expire. Renewing costs about $307M over 2028–2031.",
+      "style": {
+        "font": "Poppins",
+        "size": 11.5,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "bul2",
+      "page": 1,
+      "x": 3.1500000000000004,
+      "y": 5.73,
+      "w": 2.2,
+      "z": 3,
+      "md": "Act 163 doubled the **earned income** and **food/excise** credits; both end after 2027.\n\nAbout **180,000 households** would receive less. Single parents lose **$817** on average.\n\n**~2,100** more people, about 500 keiki, fall into poverty.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "suph2",
+      "page": 1,
+      "x": 3.3500000000000005,
+      "y": 8.290000000000001,
+      "w": 1.86,
+      "z": 3,
+      "md": "WHAT WE SUPPORT",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#253551",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "sup2",
+      "page": 1,
+      "x": 3.3500000000000005,
+      "y": 8.57,
+      "w": 1.86,
+      "z": 3,
+      "md": "Extend the earned income and food/excise tax credits before they expire. **Details on page 2.**",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "num3",
+      "page": 1,
+      "x": 5.6000000000000005,
+      "y": 3.02,
+      "w": 2.2,
+      "z": 3,
+      "md": "03",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#4A82C4",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "ttl3",
+      "page": 1,
+      "x": 5.6000000000000005,
+      "y": 3.27,
+      "w": 2.2,
+      "z": 3,
+      "md": "Tax Capital Gains Like Wages",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "stat3",
+      "page": 1,
+      "x": 5.6000000000000005,
+      "y": 3.95,
+      "w": 2.2,
+      "z": 3,
+      "md": "$110M+",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#4A82C4",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "lab3",
+      "page": 1,
+      "x": 5.6000000000000005,
+      "y": 4.6,
+      "w": 2.2,
+      "z": 3,
+      "md": "estimated new revenue each year. About 90% would come from the top 1% of households.",
+      "style": {
+        "font": "Poppins",
+        "size": 11.5,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "bul3",
+      "page": 1,
+      "x": 5.6000000000000005,
+      "y": 5.73,
+      "w": 2.2,
+      "z": 3,
+      "md": "Gains from selling stocks and land are **capped at 7.25%**; wages are taxed up to **13%**.\n\nAct 24 (2026) left gains alone, so the gap grew from 3.75 to **5.75 points**.\n\n**Most local families would pay nothing more.**",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "suph3",
+      "page": 1,
+      "x": 5.800000000000001,
+      "y": 8.290000000000001,
+      "w": 1.86,
+      "z": 3,
+      "md": "WHAT WE SUPPORT",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#4A82C4",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "sup3",
+      "page": 1,
+      "x": 5.800000000000001,
+      "y": 8.57,
+      "w": 1.86,
+      "z": 3,
+      "md": "Tax capital gains at the same rates as ordinary income, so investment income is not taxed lower than a paycheck.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "kick2",
+      "page": 2,
+      "x": 0.7,
+      "y": 0.62,
+      "w": 7.1,
+      "z": 3,
+      "md": "PRIORITY 2  ·  THE DETAILS",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 2
+      }
+    },
+    {
+      "id": "src2",
+      "page": 2,
+      "x": 0.7,
+      "y": 10.5,
+      "w": 7.1,
+      "z": 3,
+      "md": "Sources: Hawaiʻi Appleseed Census-Forecaster tax model, tax year 2028 (run Oct. 19, 2026); Hawaiʻi Department of Taxation, Earned Income Tax Credit Report, tax year 2024; Act 163 (2023). Model estimates carry sampling error; see the full report.",
+      "style": {
+        "font": "Poppins",
+        "size": 10.5,
+        "color": "#9FB8DE",
+        "leading": 1.3
+      }
+    },
+    {
+      "id": "ctat2",
+      "page": 2,
+      "x": 0.7,
+      "y": 10.2,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Be ready for the 2027 session.**  Sign up for bill alerts and testimony at hitaxfairness.org",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "title2",
+      "page": 2,
+      "x": 0.7,
+      "y": 0.92,
+      "w": 7.1,
+      "z": 3,
+      "md": "Keep Working Families’ Tax Credits",
+      "style": {
+        "font": "Manrope",
+        "size": 32,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.1,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "lede2",
+      "page": 2,
+      "x": 0.7,
+      "y": 1.5,
+      "w": 7.1,
+      "z": 3,
+      "md": "In 2023, Act 163 doubled the state earned income tax credit and the food/excise tax credit. Both expansions end after 2027, and a 2026 bill to extend them did not pass. Here is where the money goes today, and who loses if the expansions expire.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "s2n0",
+      "page": 2,
+      "x": 0.87,
+      "y": 2.34,
+      "w": 2.1,
+      "z": 3,
+      "md": "$76M",
+      "style": {
+        "font": "Manrope",
+        "size": 28,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "s2l0",
+      "page": 2,
+      "x": 0.87,
+      "y": 2.76,
+      "w": 2.1,
+      "z": 3,
+      "md": "less for working families in 2028",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "s2n1",
+      "page": 2,
+      "x": 3.3200000000000003,
+      "y": 2.34,
+      "w": 2.1,
+      "z": 3,
+      "md": "180,000",
+      "style": {
+        "font": "Manrope",
+        "size": 28,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "s2l1",
+      "page": 2,
+      "x": 3.3200000000000003,
+      "y": 2.76,
+      "w": 2.1,
+      "z": 3,
+      "md": "households would receive less",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "s2n2",
+      "page": 2,
+      "x": 5.7700000000000005,
+      "y": 2.34,
+      "w": 2.1,
+      "z": 3,
+      "md": "$307M",
+      "style": {
+        "font": "Manrope",
+        "size": 28,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1.0,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "s2l2",
+      "page": 2,
+      "x": 5.7700000000000005,
+      "y": 2.76,
+      "w": 2.1,
+      "z": 3,
+      "md": "to renew both, 2028–2031",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "h1",
+      "page": 2,
+      "x": 0.7,
+      "y": 3.3,
+      "w": 7.1,
+      "z": 3,
+      "md": "WHERE THE BENEFITS FLOW NOW",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.8
+      }
+    },
+    {
+      "id": "c1t",
+      "page": 2,
+      "x": 0.7,
+      "y": 3.72,
+      "w": 3.6,
+      "z": 3,
+      "md": "**State EITC dollars by income**, 2024 ($ millions)",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "n1",
+      "page": 2,
+      "x": 4.55,
+      "y": 5.2,
+      "w": 3.25,
+      "z": 3,
+      "md": "The expansion is **55%** of what these credits pay. **Head-of-household** filers receive 55% of EITC dollars, and 43% of all EITC dollars go to incomes of **$15K–$30K**.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "h2",
+      "page": 2,
+      "x": 0.7,
+      "y": 6.2,
+      "w": 7.1,
+      "z": 3,
+      "md": "WHO STANDS TO LOSE",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.8
+      }
+    },
+    {
+      "id": "c2t",
+      "page": 2,
+      "x": 0.7,
+      "y": 6.62,
+      "w": 3.6,
+      "z": 3,
+      "md": "**Total loss by family type**, 2028 ($ millions)",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "n2",
+      "page": 2,
+      "x": 4.55,
+      "y": 8.45,
+      "w": 3.25,
+      "z": 3,
+      "md": "**Single parents** are hit hardest: 64% lose part of a credit, averaging **$817**.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "p2suph",
+      "page": 2,
+      "x": 0.95,
+      "y": 9.05,
+      "w": 6.7,
+      "z": 3,
+      "md": "WHAT WE SUPPORT",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "p2sup",
+      "page": 2,
+      "x": 0.95,
+      "y": 9.3,
+      "w": 6.7,
+      "z": 3,
+      "md": "Extend the earned income and food/excise tax credits before they expire. Letting them lapse would push about **2,100 more people**, including about 500 keiki, below the poverty line.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "t1",
+      "page": 2,
+      "x": 4.55,
+      "y": 3.78,
+      "w": 3.25,
+      "header": true,
+      "headerFill": "#253551",
+      "headerColor": "#FFFFFF",
+      "band": "#F1F5FA",
+      "colw": [
+        40,
+        22,
+        19,
+        19
+      ],
+      "rows": [
+        [
+          "Credit, tax year 2028",
+          "With expansion",
+          "Without",
+          "Added"
+        ],
+        [
+          "State earned income",
+          "$85.6M",
+          "$42.8M",
+          "$42.8M"
+        ],
+        [
+          "Food/excise",
+          "$53.0M",
+          "$19.3M",
+          "$33.7M"
+        ],
+        [
+          "**Both credits**",
+          "**$138.6M**",
+          "**$62.1M**",
+          "**$76.5M**"
+        ]
+      ],
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t2",
+      "page": 2,
+      "x": 4.55,
+      "y": 6.68,
+      "w": 3.25,
+      "header": true,
+      "headerFill": "#253551",
+      "headerColor": "#FFFFFF",
+      "band": "#F1F5FA",
+      "colw": [
+        34,
+        20,
+        22,
+        24
+      ],
+      "rows": [
+        [
+          "Household income",
+          "Losing",
+          "Avg. loss",
+          "Total"
+        ],
+        [
+          "Lowest 20%",
+          "**75%**",
+          "$460",
+          "$34.2M"
+        ],
+        [
+          "Second 20%",
+          "36%",
+          "$533",
+          "$18.8M"
+        ],
+        [
+          "Middle 20%",
+          "25%",
+          "$356",
+          "$8.9M"
+        ],
+        [
+          "Fourth 20%",
+          "19%",
+          "$366",
+          "$6.9M"
+        ],
+        [
+          "Top 20%",
+          "26%",
+          "$292",
+          "$7.6M"
+        ]
+      ],
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    }
+  ],
+  "pages": {}
+}

@@ -640,3 +640,23 @@ bindings:
         # virtual filesystem won't have them ("draft does not build").
         - projects/wfc-credits/original.html
         - projects/wfc-credits/body.slotted.html
+
+  # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed one-pager" template.
+  - id: top-three-fact-sheet
+    name: "Tax Fairness Fact Sheet: Our Top Three 2027 Priorities"
+    content: projects/top-three-fact-sheet/content.md
+    # Editability findings (dead text / frozen prose) are build ERRORS for
+    # this project — see docsync.check. Name deliberate exceptions in an
+    # editability_ok list rather than downgrading to warn.
+    editability: strict
+    build: python3 projects/top-three-fact-sheet/render_report.py && python3 -m docsync.stage --id top-three-fact-sheet
+    outputs:
+      - projects/top-three-fact-sheet/web/index.html
+    editor:
+      dir: docs/top-three-fact-sheet
+      render: projects/top-three-fact-sheet/render_report.py
+      out: projects/top-three-fact-sheet/web/index.html
+      layout: projects/top-three-fact-sheet/layout.json
+      assets: projects/top-three-fact-sheet/assets
+      palette: ["#00907A", "#C4602F", "#2F3E46", "#354F52", "#52796F", "#84A98C", "#CAD2C5", "#EDF1EC", "#FFFFFF"]
+      page: [8.5, 11.0]
