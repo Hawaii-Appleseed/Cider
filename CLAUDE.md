@@ -55,7 +55,12 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   process that waits for the merge and then runs the ship, so nobody has to
   remember it (progress in `~/.cache/cider-wt/ship-<name>.log` and a macOS
   banner; `land <name> --no-ship` skips one landing, `--ship` waits in the
-  foreground). Ships take turns (a lock), and `wt ship` never takes a report
+  foreground). A merge made any other way (a colleague's PR, the GitHub
+  button) is caught by `tools/wt autoship`, which a launchd agent on Devin's
+  Mac (`com.dtomkatsu.cider-autoship`, every ten minutes) runs: once a merge
+  that touches what the hub carries has settled for ten minutes it ships,
+  while `ship-default` is on, and logs to `~/.cache/cider-wt/autoship.log`.
+  Ships take turns (a lock), and `wt ship` never takes a report
   that is NEW to the hub: its engine files alone would be half a report, so it
   waits for its own go-ahead and ships as a commit of its own (the report's
   whole `primer/<id>/` folder and its `projects.json` entry). Devin's own
