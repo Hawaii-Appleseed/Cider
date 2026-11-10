@@ -81,4 +81,24 @@ test.describe('editing prose that carries an endnote', () => {
     await page.waitForTimeout(900);
     expect(await page.evaluate(k => readSlot(k), key)).toBe(before);
   });
+
+  test('the chip is as wide as a bare superscript carrying the same number', async ({ page }) => {
+    await gotoEditor(page);
+    const key = await citedSlot(page);
+    await page.evaluate(k => edit($('out').contentDocument, k), key);
+    await page.waitForTimeout(600);
+    const m = await page.evaluate(() => {
+      const d = $('out').contentDocument;
+      const chip = d.querySelector('.ds-fnchip');
+      // The same label in a bare <sup>: what the reader's marker measures.
+      const probe = d.createElement('sup');
+      probe.textContent = chip.textContent;
+      chip.parentNode.appendChild(probe);
+      const out = { chip: chip.getBoundingClientRect().width, probe: probe.getBoundingClientRect().width };
+      probe.remove();
+      return out;
+    });
+    // Padding and an outline used to add 6px; a line near its edge rewrapped.
+    expect(Math.abs(m.chip - m.probe)).toBeLessThan(0.5);
+  });
 });
