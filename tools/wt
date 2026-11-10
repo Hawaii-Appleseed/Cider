@@ -13,6 +13,7 @@
 #                                      where `ship-default` is on, that happens by default, in the background
 #   tools/wt ship [<name>] [--dry-run] put Cider's origin/main on the staff hub (a deploy) and remove worktree <name>
 #   tools/wt ship-default [on|off|status]   Devin's Mac: make `land` ship to the staff hub by default
+#   tools/wt autoship                  Devin's Mac, run by launchd: ship merges that did not come through `land`
 #   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
 #   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
 #
@@ -58,7 +59,7 @@ PORT_HI=8299
 die() { echo "wt: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -547,11 +548,12 @@ cmd_ship() {
     esac
     shift
   done
-  local scopy="$CIDER-shipcopy" hcopy="$HUB-shipcopy" sha prev subjects files v n
+  local scopy="$CIDER-shipcopy" hcopy="$HUB-shipcopy" sha fullsha prev subjects files v n
   is_git "$HUB" || die "no staff hub checkout beside Cider ($(short "$HUB")); set CIDER_HUB_DIR"
   git -C "$CIDER" fetch -q origin main || die "could not fetch Cider's origin/main"
   git -C "$HUB" fetch -q origin main || die "could not fetch the hub's origin/main"
   sha=$(git -C "$CIDER" rev-parse --short origin/main)
+  fullsha=$(git -C "$CIDER" rev-parse origin/main)
   if [ -n "$name" ] && is_git "$CIDER-$name" \
      && [ "$(git -C "$CIDER" rev-list --count "origin/main..$name" 2>/dev/null || echo 1)" != 0 ]; then
     die "'$name' is not in Cider's origin/main yet: it ships once its pull request has merged"
@@ -635,6 +637,8 @@ $subjects" || die "the hub commit failed"
     echo "   Pushed hub $(git -C "$hcopy" rev-parse --short HEAD). Pages deploys in about 80 s."
     echo "   Live check (needs the Access session, so a browser): /primer/editor-version.txt reads ${v:-the new fingerprint}."
   fi
+  # The hub now carries what that commit has: `wt autoship` need not look at it again.
+  printf '%s\n' "$fullsha" > "$STATE/autoship-last"
   # The main clone is the Editor app's tree: bring it up to date only if it has no local work.
   git -C "$CIDER" pull -q --ff-only 2>/dev/null \
     || echo "   (the main clone has local changes and was left as it is; the Editor app updates it itself)"
@@ -667,6 +671,84 @@ cmd_ship_after_merge() {
   echo "$(date '+%F %T')  $line"
   notify "$name: $line"
   return "$rc"
+}
+
+# ---- autoship --------------------------------------------------------------
+# The safety net under ship-default. `land` queues a ship for what IT lands; a merge
+# made any other way (a colleague's pull request, the GitHub button) would wait for the
+# next landing. On Devin's Mac a launchd agent (com.dtomkatsu.cider-autoship) runs
+# `wt autoship` every ten minutes, and it ships when
+#   - ship-default is on (one switch for both),
+#   - Cider's origin/main has moved past the last commit it shipped or looked at (the
+#     first time: past the newest "vendored from Cider <sha>" commit the hub carries),
+#   - the move touches what the hub carries (AUTOSHIP_PATHS), and
+#   - it has settled: the newest merge is WT_AUTOSHIP_SETTLE seconds old (default 600),
+#     so a flurry of merges is one ship and a bad merge has minutes to be reverted;
+# and no other ship is running. `wt ship` does the shipping, with all its own checks;
+# this only decides when. A ship the live-words check REFUSED is not retried until main
+# moves again; any other failure is retried on the next runs, three times in all.
+# It is silent unless it ships or fails; that goes to $STATE/autoship.log and a banner.
+# Exit 0 unless a ship failed or was refused, so the machine's job audit sees that.
+AUTOSHIP_PATHS='^(docsync/(editor/(edit\.html|collab-client\.js|sw\.js)|(content|layout|blocks|okina|pagecopy|qr|stage|hub)\.py|__init__\.py)|docs/primer/icons/)'
+
+cmd_autoship() {
+  ship_by_default || return 0
+  is_git "$HUB" || return 0
+  local last="$STATE/autoship-last" fail="$STATE/autoship-fail" log="$STATE/autoship.log"
+  local sha base files now born out rc=0 tries=0 pid why
+  mkdir -p "$STATE"
+  if [ -d "$SHIP_LOCK" ]; then            # a ship is running: next time
+    pid=$(cat "$SHIP_LOCK/pid" 2>/dev/null || true)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then return 0; fi
+  fi
+  git -C "$CIDER" fetch -q origin main 2>/dev/null || return 0     # offline: next time
+  sha=$(git -C "$CIDER" rev-parse origin/main)
+  base=$(cat "$last" 2>/dev/null || true)
+  if [ -z "$base" ]; then
+    # the first run starts from what the hub carries, not from the beginning of time
+    git -C "$HUB" fetch -q origin main 2>/dev/null || return 0
+    base=$(git -C "$HUB" log -1 --format=%s --grep='vendored from Cider' origin/main | sed -n 's/.*vendored from Cider \([0-9a-f]\{7,\}\).*/\1/p')
+    base=$(git -C "$CIDER" rev-parse --verify --quiet "$base^{commit}" 2>/dev/null || true)
+    if [ -z "$base" ]; then printf '%s\n' "$sha" > "$last"; return 0; fi     # no baseline: start here
+  fi
+  [ "$sha" != "$base" ] || return 0                                  # nothing new since the last look
+  files=$(git -C "$CIDER" diff --name-only "$base" "$sha" 2>/dev/null || true)
+  if ! printf '%s\n' "$files" | grep -Eq "$AUTOSHIP_PATHS"; then
+    printf '%s\n' "$sha" > "$last"; return 0                         # nothing the hub carries
+  fi
+  now=$(date +%s); born=$(git -C "$CIDER" log -1 --format=%ct "$sha")
+  [ $((now - born)) -ge "${WT_AUTOSHIP_SETTLE:-600}" ] || return 0   # still settling: next time
+
+  # Something to ship: from here on it talks, into the log (cut down when it gets big).
+  if [ -f "$log" ] && [ "$(wc -c < "$log" | tr -d ' ')" -gt 1000000 ]; then
+    tail -n 400 "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+  fi
+  exec >> "$log" 2>&1
+  echo "$(date '+%F %T')  autoship: Cider origin/main is $(git -C "$CIDER" rev-parse --short "$sha"), the hub carries $(git -C "$CIDER" rev-parse --short "$base")"
+  if [ "$(cut -d' ' -f1 "$fail" 2>/dev/null)" = "$sha" ]; then tries=$(cut -d' ' -f2 "$fail"); fi
+  out=$("$SELF" ship 2>&1) || rc=$?
+  printf '%s\n' "$out"
+  if [ "$rc" = 0 ]; then                  # (the ship itself recorded what it shipped in $last)
+    rm -f "$fail"
+    if printf '%s' "$out" | grep -q "Pushed hub"; then
+      echo "$(date '+%F %T')  shipped"
+      notify "Cider updates shipped to the hub, $(printf '%s' "$out" | sed -n 's/.*Pushed hub \([0-9a-f]*\).*/hub \1/p' | head -1)"
+    else
+      echo "$(date '+%F %T')  nothing for the hub to take"
+    fi
+    return 0
+  fi
+  tries=$((tries + 1)); printf '%s %s\n' "$sha" "$tries" > "$fail"
+  if printf '%s' "$out" | grep -q "REFUSED"; then
+    printf '%s\n' "$sha" > "$last"; why="refused, its words would hide: read $(short "$log")"
+  elif [ "$tries" -ge 3 ]; then
+    printf '%s\n' "$sha" > "$last"; why="failed three times, so not until main moves again: read $(short "$log")"
+  else
+    why="failed, will retry: read $(short "$log")"
+  fi
+  echo "$(date '+%F %T')  NOT shipped: $why"
+  if [ "$tries" = 1 ] || [ "$(cat "$last" 2>/dev/null)" = "$sha" ]; then notify "Cider to hub NOT shipped: $why"; fi
+  return 1
 }
 
 # ---- allow-main ------------------------------------------------------------
@@ -807,6 +889,7 @@ case "$cmd" in
   ship) cmd_ship "$@" ;;
   ship-default) cmd_ship_default "$@" ;;
   ship-after-merge) cmd_ship_after_merge "$@" ;;
+  autoship) cmd_autoship "$@" ;;
   -h|--help|help) usage 0 ;;
   *) echo "wt: unknown command '$cmd'" >&2; usage 1 ;;
 esac

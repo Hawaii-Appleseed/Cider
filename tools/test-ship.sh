@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exercises `tools/wt ship` (and `land` shipping by default) against throwaway
+# Exercises `tools/wt ship` (and `land` shipping by default, and `autoship`) against throwaway
 # repos: a fake Cider and a fake hub, each with a bare origin, a stand-in `gh`, and
 # stubs for the two steps that need Cloudflare (WT_VENDOR_CMD, WT_HUB_CMD).
 # Nothing real is touched or pushed.
@@ -37,6 +37,7 @@ g -C "$T/hub" add -A; g -C "$T/hub" commit -qm "start"; g -C "$T/hub" push -q or
 # --- stub for docsync.hub: writes a new editor, a new engine file, AND a report's own page
 cat > "$T/hubcmd" <<'EOF'
 #!/usr/bin/env bash
+[ "${STUB_REFUSE:-0}" = 1 ] && { echo "REFUSED — these reports hold words the new renderer no longer draws"; exit 1; }
 [ "${STUB_FAIL:-0}" = 1 ] && { echo "refused: words would vanish"; exit 1; }
 while [ $# -gt 0 ]; do case "$1" in --into) into="$2"; shift ;; esac; shift; done
 echo new > "$into/primer/edit.html"; echo v2 > "$into/primer/editor-version.txt"
@@ -173,5 +174,82 @@ out=$(WT_SHIP_LOCK_TRIES=2 WT_SHIP_LOCK_POLL=0.2 "$wt" ship 2>&1); rc=$?
 { [ "$rc" = 0 ] && [ ! -d "$HOME/.cache/cider-wt/ship.lock" ] && [ "$(show primer/rep/engine/docsync/y.py)" = "$(cider_main)" ]; } \
   && ok "a dead holder's lock is taken over, the update the refused ship missed goes out, and the lock is released" \
   || fail "a stale lock" "rc=$rc" "$out"
+
+# --- autoship: the watcher that ships merges which did not come through `land`
+cmerge() { # <file> <content>: a merged change on Cider's main
+  g -C "$T/cider" pull -q --ff-only 2>/dev/null
+  mkdir -p "$(dirname "$T/cider/$1")"; echo "$2" > "$T/cider/$1"
+  g -C "$T/cider" add "$1"; g -C "$T/cider" commit -qm "change $1"; g -C "$T/cider" push -q origin HEAD:main
+}
+cider_head() { git -C "$T/cider.git" rev-parse main; }
+STATE_DIR="$HOME/.cache/cider-wt"
+alog() { cat "$STATE_DIR/autoship.log" 2>/dev/null; }
+
+[ "$(cat "$STATE_DIR/autoship-last" 2>/dev/null)" = "$(cider_head)" ] \
+  && ok "a ship records the Cider commit it carried, so autoship does not look at it again" \
+  || fail "a ship records what it carried" "$(cat "$STATE_DIR/autoship-last" 2>/dev/null) vs $(cider_head)"
+
+cmerge docsync/editor/edit.html "edit v1"
+before=$(hubhead)
+"$wt" ship-default off >/dev/null
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ -z "$out" ] && [ "$(hubhead)" = "$before" ]; } \
+  && ok "autoship does nothing while ship-default is off" || fail "autoship with ship-default off" "rc=$rc" "$out"
+"$wt" ship-default on >/dev/null
+
+out=$(WT_AUTOSHIP_SETTLE=3600 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ "$(hubhead)" = "$before" ] && [ "$(cat "$STATE_DIR/autoship-last")" != "$(cider_head)" ]; } \
+  && ok "a fresh merge settles first: nothing ships yet, and it is looked at again" || fail "autoship waits for a merge to settle" "rc=$rc" "$out"
+
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ "$(hubhead)" != "$before" ] && [ "$(show primer/rep/engine/docsync/y.py)" = "$(cider_main)" ] \
+  && alog | grep -q "shipped"; } \
+  && ok "a settled merge the hub lacks is shipped, with no landing at all" \
+  || fail "autoship ships a settled merge" "rc=$rc" "$out" "$(alog)"
+
+before=$(hubhead); log0=$(alog)
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ -z "$out" ] && [ "$(hubhead)" = "$before" ] && [ "$(alog)" = "$log0" ]; } \
+  && ok "and with nothing new it is silent" || fail "autoship is silent when nothing is new" "rc=$rc" "$out"
+
+cmerge tools/other "tooling only"
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ "$(hubhead)" = "$before" ] && [ "$(cat "$STATE_DIR/autoship-last")" = "$(cider_head)" ] && [ "$(alog)" = "$log0" ]; } \
+  && ok "a merge that touches nothing the hub carries is recorded, not shipped" || fail "autoship ignores a merge the hub does not carry" "rc=$rc" "$out"
+
+cmerge docsync/editor/edit.html "edit v2"
+before=$(hubhead)
+out=$(STUB_REFUSE=1 WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" != 0 ] && [ "$(hubhead)" = "$before" ] && alog | grep -q "NOT shipped: refused" \
+  && [ "$(cat "$STATE_DIR/autoship-last")" = "$(cider_head)" ]; } \
+  && ok "a refused ship is logged and pushes nothing" || fail "autoship refusal" "rc=$rc" "$(alog)"
+log0=$(alog)
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ -z "$out" ] && [ "$(alog)" = "$log0" ] && [ "$(hubhead)" = "$before" ]; } \
+  && ok "and it is not retried until main moves again" || fail "a refusal is retried" "rc=$rc" "$out"
+
+cmerge docsync/editor/edit.html "edit v3"
+before=$(hubhead)
+for _ in 1 2 3; do STUB_FAIL=1 WT_AUTOSHIP_SETTLE=0 "$wt" autoship >/dev/null 2>&1; done
+{ [ "$(hubhead)" = "$before" ] && alog | grep -q "failed, will retry" && alog | grep -q "failed three times" \
+  && [ "$(cat "$STATE_DIR/autoship-last")" = "$(cider_head)" ]; } \
+  && ok "any other failure is retried, three times, then left until main moves" || fail "autoship retries" "$(alog | tail -6)"
+
+# no memory yet (a fresh machine): start from what the hub carries, and ship what is newer
+rm -f "$STATE_DIR/autoship-last" "$STATE_DIR/autoship-fail"
+cmerge docsync/editor/edit.html "edit v4"
+before=$(hubhead)
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ "$(hubhead)" != "$before" ] && [ "$(show primer/rep/engine/docsync/y.py)" = "$(cider_main)" ]; } \
+  && ok "with no memory it starts from what the hub carries and ships what is newer" \
+  || fail "autoship's first run" "rc=$rc" "$out" "$(alog | tail -5)"
+
+cmerge docsync/editor/edit.html "edit v5"
+before=$(hubhead)
+mkdir -p "$STATE_DIR/ship.lock"; sleep 60 & holder=$!; echo "$holder" > "$STATE_DIR/ship.lock/pid"
+out=$(WT_AUTOSHIP_SETTLE=0 "$wt" autoship 2>&1); rc=$?
+{ kill "$holder"; wait "$holder"; } 2>/dev/null; rm -rf "$STATE_DIR/ship.lock"
+{ [ "$rc" = 0 ] && [ -z "$out" ] && [ "$(hubhead)" = "$before" ]; } \
+  && ok "while a ship is running, autoship leaves it for the next tick" || fail "autoship during a ship" "rc=$rc" "$out"
 
 [ "$fails" = 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
