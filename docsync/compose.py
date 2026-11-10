@@ -19,6 +19,9 @@ What the text can say
   # Title                       the report's title (the typed --name wins)
   Subtitle: …  Date: …  Author: …   optional lines right under the title
   paragraphs before the first ## the executive summary
+  ## Introduction (or Executive summary, Summary, Overview) as the FIRST
+                                section, with no words before it: the
+                                summary, under that heading
   ## Section                    a page of its own (the pattern page)
   ### Subheading                a second-level heading in the topic colour
   > a pull quote                the pull-quote pattern
@@ -35,6 +38,7 @@ audit() is the measurement, and it runs the moment the document opens.
 """
 from __future__ import annotations
 
+import datetime
 import math
 import re
 from dataclasses import dataclass, field
@@ -250,14 +254,17 @@ class Composer:
         self.boxes.append(b)
         return b
 
-    def _new_page(self, heading: str | None) -> None:
+    def _new_page(self, heading: str | None) -> str | None:
+        """Start a page; returns the headline box's id when it has one."""
         self.page += 1
         f = self.p["footer"]
-        self._box("foot", f["y"], f"{self.page} · YOUR REPORT", f["style"],
-                  f["w"], x=f["x"])
+        # {page}, filled after layout: a footer that follows its page when
+        # pages are added or reordered, where a typed number went stale.
+        self._box("foot", f["y"], FOOTER, f["style"], f["w"], x=f["x"])
+        hid = None
         if heading is not None:
             h = self.p["heading"]
-            self._box("h", h["y"], heading, h["style"], h["w"])
+            hid = self._box("h", h["y"], heading, h["style"], h["w"])["id"]
             # The pattern page holds a one-line headline; a longer one pushes
             # the hairline and the body down by the lines it adds.
             one = (float(h["style"].get("size", 44))
@@ -272,13 +279,14 @@ class Composer:
             self.y = self.p["body_top"] + shift
         else:
             self.y = self.p["cont_top"]
+        return hid
 
     def _fits(self, h: float) -> bool:
         return self.y + h <= self.p["bottom"] + 1e-6
 
     def section(self, title: str, blocks: list) -> None:
-        self._new_page(title)
-        self.toc.append((title, self.page))
+        hid = self._new_page(title)
+        self.toc.append((title, self.page, hid))
         w, bs = self.p["w"], self.p["body"]
         run: list = []
         run_h = 0.0
@@ -327,22 +335,45 @@ class Composer:
         return self.page
 
 
+# A text whose FIRST section has one of these titles, and no words before it,
+# opens with its summary: that section fills the template's summary page
+# (its heading and box) instead of a section page of its own.
+INTRO_TITLES = ("introduction", "executive summary", "summary", "overview")
+# Every footer of a report laid out from text, the template's own included:
+# {page} is filled after layout, so it follows its page when pages move.
+FOOTER = "{page} · YOUR REPORT"
+_TYPED_FOOTER = re.compile(r"\d+ · YOUR REPORT")
+
+
+def _year(doc: Doc) -> str:
+    """The text's year (its Date: line), else this one."""
+    m = re.search(r"\b(?:19|20)\d{2}\b", doc.meta.get("date", ""))
+    return m.group(0) if m else str(datetime.date.today().year)
+
+
 def lay_out(layout: dict, pattern: dict, doc: Doc, title: str) -> dict:
     """Mutate `layout` (a template's dict) so its pages carry `doc`. Returns
-    {"pages": n, "toc": [(title, page)…]}.
+    {"pages": n, "toc": [(title, page, heading box id)…]}.
 
     The template's placeholder section page is replaced by the first real
     one; the executive summary lands in the template's own summary box when
     it fits there (keeping the callout, pull-quote and chart devices around
-    it), and becomes a section page of its own when it does not.
+    it), and becomes a section page of its own when it does not. Words the
+    template holds only for an empty report go: the cover's how-to note, the
+    copyright's 20XX, typed page numbers in footers and contents.
     """
     drop = set(pattern["drop"])
+    if pattern.get("cover_note"):
+        drop.add(pattern["cover_note"])
     layout["boxes"] = [b for b in layout.get("boxes", []) if b["id"] not in drop]
     layout["shapes"] = [s for s in layout.get("shapes", []) if s["id"] not in drop]
     boxes = {b["id"]: b for b in layout["boxes"]}
 
     c = Composer(layout, pattern, title)
-    intro = doc.intro
+    intro, sections, intro_title = doc.intro, list(doc.sections), None
+    if not intro and sections and sections[0].title.strip().lower() in INTRO_TITLES:
+        intro, intro_title = sections[0].blocks, sections[0].title.strip()
+        sections = sections[1:]
     placed_intro = False
     ib = pattern.get("intro")
     if intro and ib and ib["id"] in boxes \
@@ -353,16 +384,30 @@ def lay_out(layout: dict, pattern: dict, doc: Doc, title: str) -> dict:
         if height_in(md, box["w"], box["style"]) <= ib["max_h"]:
             box["md"] = md
             placed_intro = True
-            c.toc.append((ib["title"], box["page"]))
+            head = ib.get("heading") if ib.get("heading") in boxes else None
+            if head:
+                boxes[head]["md"] = intro_title or ib["title"]
+            c.toc.append((intro_title or ib["title"], box["page"], head))
     if intro and not placed_intro:
-        c.section(pattern["intro_title"], intro)
-    for s in doc.sections:
+        c.section(intro_title or pattern["intro_title"], intro)
+    for s in sections:
         c.section(s.title, s.blocks)
     pages = max(c.finish(), pattern["first_page"] - 1)
 
     toc_id = pattern.get("toc")
     if toc_id and toc_id in boxes and c.toc:
-        boxes[toc_id]["md"] = "\n\n".join(f"{t} — {p}" for t, p in c.toc)
+        # Tokens, not typed numbers: {titleof:} is the heading's own words and
+        # {pageof:} the page it is on, so the contents follow a renamed
+        # heading or a moved page (the engine hooks each box they name).
+        boxes[toc_id]["md"] = "\n\n".join(
+            f"{{titleof:text.{hid}}} — {{pageof:text.{hid}}}" if hid else f"{t} — {p}"
+            for t, p, hid in c.toc)
+    for b in layout["boxes"]:
+        if _TYPED_FOOTER.fullmatch(str(b.get("md", ""))):
+            b["md"] = FOOTER
+    cid = pattern.get("copyright")
+    if cid and cid in boxes:
+        boxes[cid]["md"] = boxes[cid]["md"].replace("20XX", _year(doc))
     for key, bid in pattern.get("meta", {}).items():
         v = doc.meta.get(key)
         if v and bid in boxes:

@@ -594,10 +594,14 @@ _SECTION = {
         "quote": "tpl-pull3",
         "drop": ["tpl-h4", "tpl-rule4", "tpl-body4a", "tpl-sub4", "tpl-body4b",
                  "tpl-foot4"],
-        "intro": {"id": "tpl-body3", "max_h": 3.45, "title": "Executive summary"},
+        "intro": {"id": "tpl-body3", "max_h": 3.45, "title": "Executive summary",
+                  "heading": "tpl-h3"},
         "intro_title": "Executive summary",
         "toc": "tpl-toc2",
         "meta": {"subtitle": "tpl-sub", "date": "tpl-date", "author": "tpl-author2"},
+        # Template words a report laid out from text must not keep: the
+        # cover's how-to note, and the copyright's "20XX".
+        "cover_note": "tpl-covernote", "copyright": "tpl-copy2",
     },
     "appleseed-brief": {
         "first_page": 2, "heading": "tpl-h2", "rule": "tpl-rule2",
@@ -605,6 +609,7 @@ _SECTION = {
         "drop": ["tpl-h2", "tpl-rule2", "tpl-body2", "tpl-rec2", "tpl-foot"],
         "intro": None, "intro_title": "Summary", "toc": None,
         "meta": {"date": "tpl-date"},
+        "cover_note": "tpl-covernote", "copyright": None,
     },
 }
 
@@ -649,6 +654,8 @@ def section_pattern(template: str, color: str | None = None) -> dict | None:
         "intro_title": spec["intro_title"],
         "toc": spec["toc"],
         "meta": spec["meta"],
+        "cover_note": spec.get("cover_note"),
+        "copyright": spec.get("copyright"),
     }
 
 
