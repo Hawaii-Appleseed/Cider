@@ -402,14 +402,18 @@ queue_ship() { # <name>: wait for the merge, then ship, in a process of its own
     "$SELF" ship-after-merge "$name" >> "$log" 2>&1 || true
   else
     # A session of its own (the equivalent of setsid), so the shell that ran `land`
-    # can end, or be cut off by its caller's timeout, without ending the ship.
+    # can end, or be cut off by its caller's timeout, without ending the ship. And a
+    # working directory of its own: `land` is usually run from inside the worktree it
+    # lands, and a process left sitting there stops the ship from removing the folder.
     python3 - "$log" "$SELF" ship-after-merge "$name" <<'PY'
+import os
 import subprocess
 import sys
 
 log, *cmd = sys.argv[1:]
 with open(log, "ab") as f:
     subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=f, stderr=f,
+                     cwd=os.path.dirname(os.path.abspath(log)),
                      start_new_session=True, close_fds=True)
 PY
   fi
@@ -643,6 +647,9 @@ $subjects" || die "the hub commit failed"
   git -C "$CIDER" pull -q --ff-only 2>/dev/null \
     || echo "   (the main clone has local changes and was left as it is; the Editor app updates it itself)"
   if [ -n "$name" ] && is_git "$CIDER-$name"; then
+    # `wt rm` refuses while anything runs inside the folder, and this process may have been
+    # started from it (a `land --ship` run there): step out first.
+    cd "$STATE"
     (cmd_rm "$name") || echo "   (worktree '$name' kept: wt rm $name --force to drop it)"
   fi
 }
