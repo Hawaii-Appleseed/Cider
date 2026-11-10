@@ -5434,8 +5434,10 @@ for _tn, _first in (("appleseed-report", 4), ("appleseed-brief", 2)):
              [(s["page"], s["fill"]) for s in _rules],
              [(p, _pat["rule"]["fill"]) for p, _ in _heads])
     _foot = sorted((b["page"], b["md"]) for b in _lay["boxes"] if b["id"].startswith("txt-foot-"))
+    # {page}, not a typed number: a footer that follows its page when pages
+    # are added or reordered (B3, 2026-11-09).
     check_eq(f"{_tn}: every new page has a footer the title step rewrites",
-             [m for _, m in _foot], [f"{p} · YOUR REPORT" for p, _ in _foot])
+             [m for _, m in _foot], ["{page} · YOUR REPORT" for _ in _foot])
     check_eq(f"{_tn}: pages == the last page used", _res["pages"], max(p for p, _ in _foot))
     for b in _lay["boxes"]:
         if b["id"].startswith("txt-") and not b["id"].startswith("txt-foot-") \
@@ -5460,8 +5462,58 @@ _cp.lay_out(_lay, _pat, _cp.parse(_TXT), "T")
 _bx = {b["id"]: b for b in _lay["boxes"]}
 check("report: a short summary lands in the template's own summary box",
       _bx["tpl-body3"]["md"], "**HAWAIʻI HAS THE LONGEST LIFE EXPECTANCY** of any state")
-check_eq("report: the contents page lists the sections with their pages",
-         _bx["tpl-toc2"]["md"], "Executive summary — 3\n\nWho is caring — 4\n\nRecommendations — 5")
+_hd = [b["id"] for b in _lay["boxes"] if b["id"].startswith("txt-h-")]
+check_eq("report: the contents page names each heading, kept current by tokens",
+         _bx["tpl-toc2"]["md"].split("\n\n"),
+         [f"{{titleof:text.{h}}} — {{pageof:text.{h}}}" for h in ["tpl-h3"] + _hd])
+
+# --- what a report laid out from text keeps of the template (B3) --------------
+# The Wealth Tax report (2026-11-09) came out of the composer with the cover's
+# instruction note, "Copyright © 20XX", "Executive summary" over an
+# introduction, and footers and a contents page of typed numbers that went
+# stale the moment a page moved.
+check_eq("report from text: the cover's instruction note is gone",
+         "tpl-covernote" in _bx, False)
+check("report from text: the copyright takes the text's year",
+      _bx["tpl-copy2"]["md"], "Copyright © 2027 Hawaiʻi Appleseed")
+check_eq("report from text: every footer numbers itself, the template's own too",
+         sorted({b["md"] for b in _lay["boxes"] if b["md"].endswith(" · YOUR REPORT")}),
+         ["{page} · YOUR REPORT"])
+check_eq("report from text: with no heading of its own, the summary keeps the template's",
+         _bx["tpl-h3"]["md"], "Executive summary")
+_d2 = _cp.parse("# T\n\n## Introduction\n\nThe opening words of it all.[^a]\n\n"
+                "## Next\n\nMore words.\n\n[^a]: A source — https://example.org/a")
+_lay2 = TEMPLATES["appleseed-report"]["layout"]()
+_cp.lay_out(_lay2, _pat, _d2, "T")
+_b2 = {b["id"]: b for b in _lay2["boxes"]}
+check_eq("report from text: an opening ## Introduction is the summary page's heading",
+         _b2["tpl-h3"]["md"], "Introduction")
+check("report from text: and its words are the summary",
+      _b2["tpl-body3"]["md"], "**THE OPENING WORDS OF IT")
+check_eq("report from text: and it is not laid out again as a section",
+         [b["md"] for b in _lay2["boxes"] if b["id"].startswith("txt-h-")], ["Next"])
+import datetime as _dt                                       # noqa: E402
+check("report from text: with no date given, the copyright is this year's",
+      _b2["tpl-copy2"]["md"], f"Copyright © {_dt.date.today().year} ")
+
+# The contents' tokens resolve: {titleof:} to the heading's words at render,
+# {pageof:} in the page runtime, which needs the box hooked on the published
+# page as well as in the editor. Only the boxes some token or link names.
+_saved_edit = os.environ.pop("DOCSYNC_EDIT", None)
+try:
+    _toc = _layout({"positions": {}, "boxes": [
+        {"id": "h", "page": 1, "x": 1, "y": 1, "w": 3, "md": "The heading"},
+        {"id": "toc", "page": 1, "x": 1, "y": 3, "w": 3,
+         "md": "{titleof:text.h} — {pageof:text.h}"},
+        {"id": "other", "page": 1, "x": 1, "y": 5, "w": 3, "md": "Words"}]})
+    _th = _toc.text_boxes(1)
+    check("a box a {pageof:} names is hooked for the page runtime",
+          _th, 'data-anc-host="text.h"')
+    check_eq("and no other box is", _th.count("data-anc-host="), 1)
+    check("{titleof:text.N} is the heading's words", _th, "The heading — ")
+finally:
+    if _saved_edit is not None:
+        os.environ["DOCSYNC_EDIT"] = _saved_edit
 check_eq("report: the cover takes the text's subtitle and date",
          (_bx["tpl-sub"]["md"], _bx["tpl-date"]["md"]),
          ("What older adults pay for care", "MARCH 2027"))

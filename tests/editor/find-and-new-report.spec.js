@@ -100,8 +100,8 @@ test.describe('+ New report', () => {
         execSync(`rm -rf ${JSON.stringify(path.join(REPO, dir))}`);
       }
     });
-    // affected-by: docsync/compose.py docsync/new.py docsync/templates/__init__.py report2027/tools/serve.py
-    test('lays the sections out on the template and builds', async ({ request }) => {
+    // affected-by: docsync/compose.py docsync/new.py docsync/templates/__init__.py report2027/tools/serve.py docsync/layout.py
+    test('lays the sections out on the template and builds', async ({ request, page }) => {
       const text = '# Spec From Text\nDate: March 2027\n\nThe summary paragraph.\n\n'
         + '## First section\n\nBody of the first.[^src]\n\n### A subheading\n\n- one\n- two\n\n'
         + '## Second section\n\nBody of the second.\n\n[^src]: A source — https://example.org/';
@@ -117,6 +117,21 @@ test.describe('+ New report', () => {
       const content = fs.readFileSync(path.join(REPO, 'projects', SLUG, 'content.md'), 'utf8');
       expect(content).toContain('[src]: A source — https://example.org/');
       expect(fs.readFileSync(path.join(REPO, 'docsync.yml'), 'utf8')).toContain('name: "Spec From Text"');
+
+      // Nothing kept from the empty template (B3): the cover's how-to note is
+      // gone, and the contents and footers are filled in from the laid-out
+      // pages, not typed: every entry has its page, none prints "?".
+      expect(lay.boxes.find(b => b.id === 'tpl-covernote')).toBeUndefined();
+      expect(lay.boxes.find(b => b.id === 'tpl-copy2').md).toContain('© 2027 ');
+      await gotoEditor(page, `?project=${SLUG}`);
+      const frame = page.frameLocator('#out');
+      const toc = frame.locator('[data-el="text.tpl-toc2"]');
+      await expect(toc).toContainText('Executive summary — 3');
+      await expect(toc).toContainText('First section — 4');
+      await expect(toc).toContainText('Second section — 5');
+      await expect(toc).not.toContainText('?');
+      const foot = lay.boxes.find(b => b.page === 5 && b.id.startsWith('txt-foot-'));
+      await expect(frame.locator(`[data-el="text.${foot.id}"]`)).toHaveText('5 · SPEC FROM TEXT');
     });
   });
 });
