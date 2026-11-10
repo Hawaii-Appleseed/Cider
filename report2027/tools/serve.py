@@ -3201,6 +3201,17 @@ class Handler(SimpleHTTPRequestHandler):
         if not targets:
             return "nothing to save"
 
+        # A project's FIRST Save (its content.md unknown to git) also commits
+        # its docsync.yml binding, and only that (_own_binding_yml). Decided
+        # before anything is written: a binding that cannot be told apart from
+        # other uncommitted changes in the file refuses the Save outright.
+        first_save = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--", str(b.content.relative_to(root))],
+            capture_output=True, text=True).stdout.strip() == ""
+        yml_mode, yml_text = (_own_binding_yml(root, pid)
+                              if first_save and (root / "docsync.yml").is_file()
+                              else ("leave", None))
+
         # Remember what was on disk BEFORE touching it. The build runs against
         # the written files, so a draft that does not build has already
         # overwritten the author's work by the time we find out — and the error
@@ -3251,13 +3262,11 @@ class Handler(SimpleHTTPRequestHandler):
         # first Save answered "already up to date" and committed nothing,
         # forever. On that first save (its content.md unknown to git), stage
         # the project's own paths (directory adds skip gitignored content
-        # like docs/<id>/engine) plus the docsync.yml binding — a committed
+        # like docs/<id>/engine) plus its docsync.yml binding — a committed
         # project whose binding is not committed is not a project on a fresh
         # clone. Still scoped, so nothing unrelated rides along; saves on an
         # already-tracked project behave exactly as before.
-        if subprocess.run(
-                ["git", "-C", str(root), "ls-files", "--", paths[0]],
-                capture_output=True, text=True).stdout.strip() == "":
+        if first_save:
             # The scaffolded renderer is not among the save's own write
             # targets, but without it the committed project cannot build on
             # a fresh clone — it belongs to the same first commit.
@@ -3266,7 +3275,9 @@ class Handler(SimpleHTTPRequestHandler):
             for rel in paths:
                 if (root / rel).exists():
                     _git(root, "add", "--", rel)
-            if (root / "docsync.yml").is_file():
+            # "only": the binding goes in through _commit_with below, so the
+            # file's other uncommitted changes stay on disk, uncommitted.
+            if yml_mode == "as-is":
                 _git(root, "add", "--", "docsync.yml")
                 paths.append("docsync.yml")
         # A scaffolded project's editor dir (docs/<id>/) can be ENTIRELY
@@ -3280,10 +3291,12 @@ class Handler(SimpleHTTPRequestHandler):
                 ["git", "-C", str(root), "diff", "--quiet", "HEAD", "--",
                  *paths]).returncode == 0:
             return "already up to date"
+        msg = f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")"
         try:
-            _git(root, *_identity(root), "commit", "-m",
-                 f"{pid}: edit from the live editor (" + ", ".join(wrote) + ")",
-                 "--", *paths)
+            if yml_mode == "only":
+                _commit_with(root, paths, msg, {"docsync.yml": yml_text})
+            else:
+                _git(root, *_identity(root), "commit", "-m", msg, "--", *paths)
         except RuntimeError as e:
             # A hook said no (the ʻokina lint, most days). The files were
             # already written and built, so "save failed" was only half true:
@@ -3301,6 +3314,16 @@ class Handler(SimpleHTTPRequestHandler):
             raise RuntimeError(
                 "nothing was saved — your words are still here in the editor. "
                 + str(e)) from e
+        if yml_mode == "only":
+            # The commit went through its own index, so the real one still
+            # holds the old docsync.yml, which `git status` would show as a
+            # staged undo of this binding. Make that entry HEAD's: the other
+            # changes in the file then read as what they are, not committed.
+            try:
+                _git(root, "reset", "-q", "--", "docsync.yml")
+            except RuntimeError as e:
+                print(f"  {pid}: saved, but the index's docsync.yml was not "
+                      f"refreshed (git reset -- docsync.yml): {e}")
         return "saved locally — Push when you're ready to publish"
 
     def _push(self, pid: str, req_ok: bool = False) -> str:
@@ -3389,6 +3412,117 @@ def _publish_site(pid: str, trigger):
 
 def _publish_json(r) -> dict:
     return {"ok": r.ok, "changed": r.changed, "message": r.message, "sha": r.sha, "url": r.url}
+
+
+def _own_binding_yml(root: Path, pid: str) -> tuple[str, str | None]:
+    """What a project's FIRST Save commits of docsync.yml: what HEAD has, plus
+    this project's own binding, and nothing else.
+
+    The whole file used to go in. docsync.yml is shared, so another new
+    project's uncommitted binding (somebody's work in progress, its folder not
+    in git) rode along, and every branch cut from that commit carried a
+    binding whose files it did not have (2026-11-09). Returns one of
+      ("as-is", None)   commit the file as it stands: the binding is its only
+                        uncommitted change, or git does not know the file yet;
+      ("leave", None)   take none of it: HEAD already binds the project, or
+                        this file does not;
+      ("only", text)    commit `text` in its place: HEAD plus this binding,
+                        the file's other uncommitted changes left on disk.
+    Raises RuntimeError when the binding cannot be told apart from them."""
+    import yaml
+    disk = (root / "docsync.yml").read_text()
+    r = subprocess.run(["git", "-C", str(root), "show", "HEAD:docsync.yml"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return "as-is", None
+    head = r.stdout
+    if disk == head:
+        return "leave", None
+
+    def parse(text):
+        data = yaml.safe_load(text) or {}
+        binds = {x.get("id"): x for x in (data.get("bindings") or []) if isinstance(x, dict)}
+        return {k: v for k, v in data.items() if k != "bindings"}, binds
+    try:
+        head_rest, head_binds = parse(head)
+        disk_rest, disk_binds = parse(disk)
+    except yaml.YAMLError:
+        return "as-is", None          # a file that does not parse is not ours to cut
+    if pid in head_binds or pid not in disk_binds:
+        return "leave", None
+    if disk_rest == head_rest and disk_binds == {**head_binds, pid: disk_binds[pid]}:
+        return "as-is", None          # read as YAML, the binding is the only change
+
+    # This project's lines on disk: its "- id:" line, the comment and blank
+    # lines docsync/new.py writes above it, down to the next list item or
+    # top-level line; comments and blanks at its end belong to what follows.
+    lines = disk.splitlines(keepends=True)
+    own = re.compile(r"\s*-\s+id:\s*(['\"]?)" + re.escape(pid) + r"\1\s*(#.*)?$")
+    at = next((i for i, ln in enumerate(lines) if own.match(ln)), None)
+    refuse = RuntimeError(
+        f"docsync.yml has other changes nobody has committed yet, and {pid}'s "
+        "binding could not be told apart from them — so this first Save, which "
+        "commits that binding, was not made. Commit or undo the other changes "
+        "in docsync.yml, then Save again. Nothing was saved; your words are "
+        "still here in the editor.")
+    if at is None:
+        raise refuse
+    loose = lambda ln: not ln.strip() or ln.lstrip().startswith("#")  # noqa: E731
+    start = at
+    while start > 0 and loose(lines[start - 1]):
+        start -= 1
+    end = at + 1
+    while end < len(lines) and not re.match(r"\s*- id:\s", lines[end]) \
+            and not re.match(r"\S", lines[end]):
+        end += 1
+    while end > at + 1 and loose(lines[end - 1]):
+        end -= 1
+
+    # HEAD's lines, with only the inserted lines that fall in that block.
+    import difflib
+    old = head.splitlines(keepends=True)
+    want = []
+    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(
+            None, old, lines, autojunk=False).get_opcodes():
+        if op in ("equal", "replace", "delete"):
+            want += old[i1:i2]
+        if op in ("insert", "replace"):
+            want += lines[max(j1, start):min(j2, end)]
+    text = "".join(want)
+    try:
+        rest, binds = parse(text)
+    except yaml.YAMLError:
+        raise refuse from None
+    if rest != head_rest or binds != {**head_binds, pid: disk_binds[pid]}:
+        raise refuse
+    return ("as-is", None) if text == disk else ("only", text)
+
+
+def _commit_with(root: Path, paths: list, msg: str, files: dict) -> None:
+    """ONE commit of `paths` as the working tree has them, with each file in
+    `files` committed as the text given instead of what is on disk. Built in
+    a throwaway index, so nothing else staged rides along and the working
+    tree is never touched; `git commit -- <paths>` cannot do this, since it
+    takes the working tree's copy of every path it names. Hooks run as for
+    any commit (GIT_INDEX_FILE tells them which index)."""
+    fd, index = tempfile.mkstemp(prefix="cider-save-", suffix=".index")
+    os.close(fd)
+    os.unlink(index)                  # git writes it; an empty file is no index
+    env = {"GIT_INDEX_FILE": index}
+    try:
+        _git(root, "read-tree", "HEAD", env=env)
+        if paths:
+            _git(root, "add", "--", *paths, env=env)
+        for rel, text in files.items():
+            mode = (_git(root, "ls-tree", "HEAD", "--", rel).split() or ["100644"])[0]
+            blob = _git(root, "hash-object", "-w", "--stdin", f"--path={rel}",
+                        input=text).strip()
+            _git(root, "update-index", "--add", "--cacheinfo", f"{mode},{blob},{rel}",
+                 env=env)
+        _git(root, *_identity(root), "commit", "-m", msg, env=env)
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(index)
 
 
 # A [[sources]] line as docsync/content.py's parse_sources reads one: "[id]:
@@ -3584,20 +3718,21 @@ def _identity(root: Path) -> list:
     return ["-c", f"user.name={name}", "-c", f"user.email={email}"]
 
 
-def _git(root: Path, *args, timeout=45):
+def _git(root: Path, *args, timeout=45, env=None, input=None):
     # A detached dev server has no terminal and no GUI session to answer a
     # credential prompt, so a git that decides to ASK — a first push before the
     # keychain has cached anything, an unreachable remote — would hang the push
     # AND the editor's spinner forever. Force non-interactive and cap the wait:
     # a missing credential or dead network now fails in seconds with a message
     # you can act on. A credential already in the keychain is still used without
-    # a prompt, so a push that worked keeps working.
+    # a prompt, so a push that worked keeps working. `env` adds variables (a
+    # throwaway GIT_INDEX_FILE); `input` is fed to git's stdin.
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0",
            "GIT_SSH_COMMAND": "ssh -o BatchMode=yes -o ConnectTimeout=10",
-           "PATH": _tool_path()}
+           "PATH": _tool_path(), **(env or {})}
     try:
         r = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
-                           text=True, env=env, timeout=timeout)
+                           text=True, env=env, timeout=timeout, input=input)
     except subprocess.TimeoutExpired:
         raise RuntimeError(
             f"git {args[0]} timed out after {timeout}s — the remote didn't answer, "
