@@ -660,3 +660,22 @@ bindings:
       assets: projects/top-three-fact-sheet/assets
       palette: ["#00907A", "#C4602F", "#2F3E46", "#354F52", "#52796F", "#84A98C", "#CAD2C5", "#EDF1EC", "#FFFFFF"]
       page: [8.5, 11.0]
+
+  # Added by "+ New report" (docsync/new.py) — from the "Hawaiʻi Appleseed report" template, 4 section(s) laid out from text.
+  - id: wealth-tax-report
+    name: "Wealth Tax Report"
+    content: projects/wealth-tax-report/content.md
+    # Editability findings (dead text / frozen prose) are build ERRORS for
+    # this project — see docsync.check. Name deliberate exceptions in an
+    # editability_ok list rather than downgrading to warn.
+    editability: strict
+    build: python3 projects/wealth-tax-report/render_report.py && python3 -m docsync.stage --id wealth-tax-report
+    outputs:
+      - projects/wealth-tax-report/web/index.html
+    editor:
+      dir: docs/wealth-tax-report
+      render: projects/wealth-tax-report/render_report.py
+      out: projects/wealth-tax-report/web/index.html
+      layout: projects/wealth-tax-report/layout.json
+      palette: ["#354F52", "#1E6194", "#FDCF21", "#A5CCB4", "#4E9685", "#232322", "#464646", "#FFFFFF"]
+      page: [8.5, 11.0]

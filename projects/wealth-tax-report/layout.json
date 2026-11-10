@@ -1,0 +1,1220 @@
+{
+  "positions": {},
+  "fill": {
+    "page.1": "#354F52",
+    "page.2": "#354F52"
+  },
+  "shapes": [
+    {
+      "id": "tpl-rule3",
+      "page": 3,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.62,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52"
+    },
+    {
+      "id": "tpl-tocrule2",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.65,
+      "y": 6.22,
+      "w": 1.2,
+      "h": 0.035,
+      "fill": "#FDCF21"
+    },
+    {
+      "id": "txt-rule-3",
+      "page": 4,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.62,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52"
+    },
+    {
+      "id": "txt-rule-17",
+      "page": 7,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.62,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52"
+    },
+    {
+      "id": "txt-rule-21",
+      "page": 8,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 2.101,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52"
+    },
+    {
+      "id": "txt-rule-33",
+      "page": 10,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 4.12,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52"
+    },
+    {
+      "id": "s9-rect",
+      "page": 3,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 6.95,
+      "w": 2.25,
+      "h": 1.95,
+      "fill": "#354F52",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1,
+      "r": 0.06
+    },
+    {
+      "id": "s10-rect",
+      "page": 3,
+      "kind": "rect",
+      "x": 3.125,
+      "y": 6.95,
+      "w": 2.25,
+      "h": 1.95,
+      "fill": "#354F52",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1,
+      "r": 0.06
+    },
+    {
+      "id": "s11-rect",
+      "page": 3,
+      "kind": "rect",
+      "x": 5.55,
+      "y": 6.95,
+      "w": 2.25,
+      "h": 1.95,
+      "fill": "#FDCF21",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1,
+      "r": 0.06
+    },
+    {
+      "id": "s12-rect",
+      "page": 11,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 1.46,
+      "w": 7.1,
+      "h": 0.02,
+      "fill": "#354F52",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1
+    }
+  ],
+  "boxes": [
+    {
+      "id": "tpl-photo",
+      "page": 1,
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "z": 1,
+      "md": "![Cover photo placeholder](assets/cover-photo-placeholder.svg)"
+    },
+    {
+      "id": "tpl-logo",
+      "page": 1,
+      "x": 6.35,
+      "y": 0.6,
+      "w": 1.55,
+      "z": 3,
+      "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+    },
+    {
+      "id": "tpl-title",
+      "page": 1,
+      "x": 0.7,
+      "y": 1.05,
+      "w": 5.9,
+      "z": 3,
+      "md": "Wealth Tax Report",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 58,
+        "color": "#FFFFFF",
+        "case": "upper",
+        "leading": 1.08
+      }
+    },
+    {
+      "id": "tpl-sub",
+      "page": 1,
+      "x": 0.7,
+      "y": 4.7,
+      "w": 3.9,
+      "z": 3,
+      "md": "A tax on the wealthiest millionaires",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 19,
+        "color": "#FFFFFF",
+        "case": "upper",
+        "tracking": 1.2,
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "tpl-date",
+      "page": 1,
+      "x": 0.7,
+      "y": 6.6,
+      "w": 2.6,
+      "z": 3,
+      "md": "NOVEMBER 2026",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 700,
+        "size": 14,
+        "color": "#FDCF21",
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "tpl-logo2",
+      "page": 2,
+      "x": 2.9,
+      "y": 0.85,
+      "w": 2.7,
+      "z": 2,
+      "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+    },
+    {
+      "id": "tpl-url2",
+      "page": 2,
+      "x": 0.7,
+      "y": 1.75,
+      "w": 7.1,
+      "z": 2,
+      "md": "www.hiappleseed.org",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#FDCF21",
+        "align": "center"
+      }
+    },
+    {
+      "id": "tpl-author2",
+      "page": 2,
+      "x": 0.7,
+      "y": 2.12,
+      "w": 7.1,
+      "z": 2,
+      "md": "Author: Devin Thomas",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 14,
+        "color": "#FFFFFF",
+        "align": "center"
+      }
+    },
+    {
+      "id": "tpl-mission2",
+      "page": 2,
+      "x": 0.85,
+      "y": 2.85,
+      "w": 6.8,
+      "z": 2,
+      "md": "Hawaiʻi Appleseed is committed to a more socially and economically just Hawaiʻi, where everyone has genuine opportunities to achieve economic security and fulfill their potential. We change systems to address inequity and foster greater opportunity by conducting data analysis and research to address income inequality, educating policymakers and the public, engaging in collaborative problem solving and coalition building, and advocating for policy and systems change.\n\nThe work of Hawaiʻi Appleseed is about people. The issues we work on—housing, food, wages, mobility, the state budget and taxation, and racial and indigenous equity—are important because they ensure people have access to shelter, sustenance, and the means to survive and thrive individually and collectively.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 14.5,
+        "color": "#FFFFFF",
+        "align": "center",
+        "leading": 1.55
+      }
+    },
+    {
+      "id": "tpl-tochead2",
+      "page": 2,
+      "x": 0.7,
+      "y": 5.6,
+      "w": 7.1,
+      "z": 2,
+      "md": "TABLE OF CONTENTS",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 30,
+        "color": "#A5CCB4",
+        "align": "center"
+      }
+    },
+    {
+      "id": "tpl-toc2",
+      "page": 2,
+      "x": 1.5,
+      "y": 6.5,
+      "w": 5.5,
+      "z": 2,
+      "md": "Introduction — 3\n\nWho is really struggling? — 4\n\nHistory of wealth taxes — 7\n\nSolution: A tax on the wealthiest millionaires — 8\n\nConclusion — 10\n\nEndnotes — 11",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 16,
+        "color": "#A5CCB4",
+        "align": "center",
+        "leading": 1.55
+      }
+    },
+    {
+      "id": "tpl-copy2",
+      "page": 2,
+      "x": 0.7,
+      "y": 9.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Copyright © 2026 Hawaiʻi Appleseed Center for Law & Economic Justice. All rights reserved.\n\n733 Bishop Street, Suite 1180, Honolulu, HI 96813",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 12,
+        "color": "#FFFFFF",
+        "align": "center",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "tpl-foot2",
+      "page": 2,
+      "x": 0.55,
+      "y": 10.55,
+      "w": 3.4,
+      "z": 2,
+      "md": "2 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#FFFFFF",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "tpl-h3",
+      "page": 3,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Introduction",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#232322",
+        "case": "upper",
+        "leading": 1.05
+      }
+    },
+    {
+      "id": "tpl-body3",
+      "page": 3,
+      "x": 0.7,
+      "y": 1.95,
+      "w": 4.35,
+      "z": 2,
+      "md": "**THE STATE OF HAWAIʻI** has an economy that works well for the wealthy few, yet leaves low- and middle-income households behind. Across the state, there are 1,245 individuals who hold at least $20 million in wealth.[^altrata-market-sizing] Altogether, this small group holds over $95.6 billion in real estate, stocks, and other highly profitable investments. Since Hawaiʻi does not tax the net worth of individuals, these ultra-wealthy residents continue to build on their fortunes while paying little in taxes. In order for Hawaiʻi to keep funding programs and services for working families, we must raise taxes on the ultra-wealthy—who are not struggling by any stretch of the imagination.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "tpl-callout3",
+      "page": 3,
+      "x": 5.3,
+      "y": 1.95,
+      "w": 2.5,
+      "z": 2,
+      "fill": "#303030",
+      "md": "- **Wealth,** or net worth, is the total value of everything a person owns—homes and land, stocks and bonds, ownership stakes in businesses—minus what they owe.\n- **Income** is the money a person takes in over the course of a year, such as wages, interest, dividends, and the profits from selling an asset.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 13,
+        "color": "#FFFFFF",
+        "leading": 1.45
+      }
+    },
+    {
+      "id": "tpl-pull3",
+      "page": 3,
+      "x": 0.7,
+      "y": 5.6,
+      "w": 7.1,
+      "z": 2,
+      "md": "A 2 PERCENT TAX ON THE WEALTH ABOVE **$50 MILLION** HELD BY THE ULTRA‑WEALTHY WOULD RAISE ROUGHLY **$1 BILLION A YEAR**.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 21,
+        "color": "#354F52",
+        "leading": 1.35
+      }
+    },
+    {
+      "id": "tpl-foot3",
+      "page": 3,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "3 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-foot-1",
+      "page": 4,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "4 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-2",
+      "page": 4,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Who is really struggling?",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#232322",
+        "case": "upper",
+        "leading": 1.05
+      }
+    },
+    {
+      "id": "txt-body-4",
+      "page": 4,
+      "x": 0.7,
+      "y": 1.95,
+      "w": 7.1,
+      "z": 2,
+      "md": "**MUCH HAS BEEN SAID ABOUT HAWAIʻI’S HIGH COST OF LIVING,** and it is true that many low- and middle-income residents can no longer afford to live here. About 44 percent of Hawaiʻi households live below the ALICE Threshold, which means they cannot consistently cover their basic living expenses. Many are working households—our family, friends, and neighbors.[^united-for-alice]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-6",
+      "page": 5,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "5 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-body-7",
+      "page": 5,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "On the other hand, Hawaiʻi’s wealthier residents are faring better than ever. The number of millionaires living in Hawaiʻi has increased rapidly, especially after the pandemic. There are now 81,814 millionaires statewide—nearly triple the number in 2010—holding a combined $292.7 billion in wealth. Many of these households are millionaires mostly on paper, since a paid-off home in Hawaiʻi can be worth $1 million on its own, which is why the tax proposed in this report would apply only to wealth above $50 million.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-body-10",
+      "page": 5,
+      "x": 0.7,
+      "y": 8.967,
+      "w": 7.1,
+      "z": 2,
+      "md": "For every $100 they earn, Hawaiʻi’s lowest-income households pay $14.10 in state and local taxes. In comparison, the top 1 percent pays only $10.10. The General Excise Tax (GET), drives that difference: since it applies to nearly every purchase, a family earning $30,000 and a household earning $250,000 pay the same tax rate on groceries.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-11",
+      "page": 6,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "6 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-body-12",
+      "page": 6,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "In addition, Hawaiʻi’s tax code carves out generous breaks and exemptions for the wealthy. Capital gains are an excellent example: the state taxes the profits from selling assets (such as stocks, bonds, and real estate) at just 7.25 percent, compared to a (now) 13 percent top rate on income from regular work. About 77 percent of that capital gains income in Hawaiʻi goes to filers earning more than $400,000 a year, so the discount benefits people who are already wealthy.[^dotax-income-tax-stats-2023] Taxing investment income at the same rate as a regular paycheck would generate an estimated $128 million for the state, without affecting working families.[^census-forecaster-cap-gains]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-body-14",
+      "page": 6,
+      "x": 0.7,
+      "y": 2.46,
+      "w": 7.1,
+      "z": 2,
+      "md": "[Hawaiʻi’s estate tax]{.Callout head}\n\nThe estate tax is assessed on the money, property, and investments left behind by an individual after their death—but only if they have assets worth more than $5.49 million.[^dotax-annual-report] In that sense, the estate tax is aimed at the wealthy, since it applies only to the largest estates—though its $5.49 million threshold reaches households far below the $20 million and $50 million levels discussed in this report.\n\nHowever, there are some key drawbacks to the estate tax. Unlike an annual wealth tax, the estate tax is only collected once, from whatever is left after decades of trusts, gifting, and estate planning designed to shrink it.\n\nOne of the loopholes wealthy families exploit is the grantor retained annuity trust (GRAT). The GRAT allows a family to transfer an asset’s future growth to their heirs without paying any gift or estate tax. A ProPublica investigation found that over half of America’s 100 richest people have used a GRAT or similar trust to shrink their taxable estate.[^propublica-grat] Hawaiʻi’s own numbers show how little the estate tax collects: a 2 percent annual tax on wealth above $50 million would raise roughly $1.02 billion a year, about 18 times the $55.8 million that estate and gift taxes combined raised in fiscal year 2024—half of one percent of total state tax collections.[^dbedt-data-book-2024]\n\nIf the state is committed to solving wealth inequality, it cannot let the estate tax sit on the books while a handful of families quietly structure their way around it. A 2 percent annual wealth tax would not replace the estate tax—it supplements it, taxing fortunes while they are still growing.\n\nHowever, there have been attempts to pull back the estate tax. In 2024, the Legislature considered HB2653, which would have raised the exemption threshold for the estate tax.[^ha-hb2653-release]",
+      "use": "Callout panel"
+    },
+    {
+      "id": "txt-foot-15",
+      "page": 7,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "7 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-16",
+      "page": 7,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "History of wealth taxes",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#232322",
+        "case": "upper",
+        "leading": 1.05
+      }
+    },
+    {
+      "id": "txt-body-18",
+      "page": 7,
+      "x": 0.7,
+      "y": 1.95,
+      "w": 7.1,
+      "z": 2,
+      "md": "**ON PAPER,** the United States is home to one of the most progressive tax systems in the world. The U.S. federal income tax follows the principle that the more income an individual or household earns, the more they pay in federal taxes. The same logic applies to the 26 states in the country—plus Washington, D.C.—that levy their own progressive tax regimes on residents who live in their respective jurisdictions. This progressive tax system grants both state and federal governments the ability to pull together the resources necessary to fund the basic functions and policy objectives of an administration.[^fraser-progressivity]\n\nHowever, for more than 50 years, corporations and the wealthiest Americans have lobbied to wear down the progressivity of the U.S. tax system, and they have largely succeeded. The top marginal tax rate has fallen sharply, and progressivity tapers off at the very top of the wealth distribution. The ultra-wealthy manage to pay a lower effective tax rate than the average wage earner, and some miraculously avoid the income tax altogether, thereby exposing the hidden regressivity of the U.S. tax code.[^lord-madoff]\n\nThis is made possible by the fact that wealth is concentrated in the hands of a small minority. The rapid expansion in asset values in recent decades, and their continued appreciation, has allowed the ultra-wealthy to exploit the U.S. federal tax system to decrease their tax liabilities. The unearned income the ultra-wealthy receive from qualified dividends or long-term capital gains is taxed at a rate lower than ordinary earned income. Others avoid salaries and income taxes altogether by borrowing against the value of their assets. And when they eventually pass those assets to their heirs, the tax bill can disappear entirely: the cost basis resets to the asset’s value on the date of death, wiping out every dollar of gain that was built up over a lifetime. The Joint Committee on Taxation estimates this “stepped-up basis” rule alone will cost the federal government $72.5 billion in 2026.[^jct-stepped-up-basis]\n\nHawaiʻi’s tax code tells a similar story. The income tax cuts in Act 46 were projected to cost about $1.45 billion a year by 2031.[^dotax-itep-methods-note] Lawmakers recovered part of that cost with Act 24, which created a new 13 percent income tax bracket for millionaires, reduced tax credits for businesses, and boosted income tax rates on the top four brackets. However, even after that rollback, the remaining tax cuts are still expected to drain over $1 billion a year from Hawaiʻi’s budget by 2031.[^karacaovali-slides] A wealth tax could raise more revenue to offset this loss by directly taxing the assets of multi-millionaires.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-19",
+      "page": 8,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "8 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-20",
+      "page": 8,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "Solution: A tax on the wealthiest millionaires",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#232322",
+        "case": "upper",
+        "leading": 1.05
+      }
+    },
+    {
+      "id": "txt-body-22",
+      "page": 8,
+      "x": 0.7,
+      "y": 2.431,
+      "w": 7.1,
+      "z": 2,
+      "md": "**HAWAIʻI IS HOME TO MASSIVE AMOUNTS OF WEALTH,** and the state should take measures to tax it appropriately. A 2 percent tax on the wealth above $50 million held by the ultra-wealthy would raise roughly $1 billion a year—roughly what the state is giving away with its recent tax cuts. In 2024, there were only 1,245 individuals in Hawaiʻi with $20 million or more in wealth.\n\nA wealth tax works differently from an income tax. Income is the money a person takes in over the course of a year, such as wages, interest, dividends, and the profits from selling an asset. Wealth, or net worth, is the total value of everything a person owns—homes and land, stocks and bonds, ownership stakes in businesses—minus what they owe. Hawaiʻi taxes income and purchases, and the counties tax real property, but no level of government in Hawaiʻi taxes a person’s total net worth. In effect, a large stock portfolio or a stake in a private company can grow in value for decades without ever being taxed, as long as the owner does not sell it.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-body-24",
+      "page": 8,
+      "x": 0.7,
+      "y": 7.748,
+      "w": 7.1,
+      "z": 2,
+      "md": "At the $20 million mark, we are no longer talking about “normal” millionaires. These individuals account for less than 0.1 percent of the state’s population, and they own far more than even the highest-paid doctors, lawyers, and other white-collar professionals could hope to earn in a lifetime. In other words, the doctor or lawyer is an earner, whose wealth comes mostly from a paycheck that is taxed every year, while those at the top are owners, whose fortunes sit in stocks, real estate, and businesses that can grow for decades without being taxed.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-25",
+      "page": 9,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "9 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-body-27",
+      "page": 9,
+      "x": 0.7,
+      "y": 5.65,
+      "w": 7.1,
+      "z": 2,
+      "md": "As shown above, significant revenue could be gained through taxing the ultra-wealthy at just 1 percent. By casting a wide net—on anyone worth over $20 million—the State could bring in upwards of $2 billion with a 3 percent tax rate.\n\nThis is not a fringe idea. In fact, California just put one to its voters. Proposition 40 would have imposed a one-time, 5 percent tax on the roughly 200 Californians with a net worth over $1 billion, raising an estimated $100 billion over five years, with 90 percent of the funds dedicated to health care. On November 3, 2026, voters rejected it, with early returns showing more than 55 percent opposed. The defeat followed a lopsided money fight: opponents and allied business interests raised $316.7 million, including $102 million from Google co-founder Sergey Brin, and outraised supporters roughly four to one. (The $316.7 million includes money for competing measures on the same ballot.)[^prop-40] California’s measure failed, but it is part of a national push to make the wealthy pay their fair share. Other states are continuing to increase their income tax rates on the wealthy: Maine has adopted a millionaire surcharge on income and Washington now taxes capital gains.[^ha-billionaire-tax-blog]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-28",
+      "page": 10,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "10 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-sub-29",
+      "page": 10,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "md": "How the wealth tax would work",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 22,
+        "color": "#354F52"
+      }
+    },
+    {
+      "id": "txt-body-30",
+      "page": 10,
+      "x": 0.7,
+      "y": 1.121,
+      "w": 7.1,
+      "z": 2,
+      "md": "A wealth tax for Hawaiʻi would probably work in a similar way to California’s proposal. Residents above a certain threshold (e.g. $20 million) would report their net worth—the value of everything they own minus what they owe—and pay the corresponding tax to the state. If they do not have enough money immediately available to pay the wealth tax—most wealthy people have their wealth stashed away in investments—they would be required to liquidate their assets as needed to cover the amount.[^hb1235-wealth-asset-tax]",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "txt-foot-31",
+      "page": 11,
+      "x": 4.9,
+      "y": 10.55,
+      "w": 2.9,
+      "z": 2,
+      "md": "11 · WEALTH TAX REPORT",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 12,
+        "color": "#464646",
+        "align": "right",
+        "tracking": 0.8
+      }
+    },
+    {
+      "id": "txt-h-32",
+      "page": 10,
+      "x": 0.7,
+      "y": 3.2,
+      "w": 7.1,
+      "z": 2,
+      "md": "Conclusion",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 44,
+        "color": "#232322",
+        "case": "upper",
+        "leading": 1.05
+      }
+    },
+    {
+      "id": "txt-body-34",
+      "page": 10,
+      "x": 0.7,
+      "y": 4.45,
+      "w": 7.1,
+      "z": 2,
+      "md": "**HAWAIʻI’S WEALTHIEST RESIDENTS HAVE PROSPERED** while many working families have fallen behind. The wealth tax is a way to balance that scale—it would simply require those with the most to help fund the schools, healthcare, and housing that enable all of Hawaiʻi’s families to thrive. This is necessary if we want to build the kind of economy that works for everyone.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 15,
+        "color": "#1F1F1F",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "t1",
+      "page": 5,
+      "x": 0.7,
+      "y": 2.56,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Figure 2.** Share of Hawaiʻi’s millionaires and of their wealth, by tier (2024)",
+      "style": {
+        "font": "Barlow",
+        "size": 15,
+        "weight": 400,
+        "color": "#464646",
+        "leading": 1.25
+      }
+    },
+    {
+      "id": "t2",
+      "page": 5,
+      "x": 0.7,
+      "y": 2.85,
+      "w": 7.1,
+      "z": 3,
+      "md": "![Two stacked bars. People: of 81,814 millionaires, 365 (0.4 percent) hold $50 million or more. Wealth: of $292.7 billion, 67 percent is held by those with $1 million to $20 million, 9 percent by those with $20 million to $50 million, and 24 percent by those with $50 million or more.](assets/figure-2-tier-shares.png)",
+      "h": 2.21
+    },
+    {
+      "id": "t3",
+      "page": 5,
+      "x": 0.7,
+      "y": 5.15,
+      "w": 7.1,
+      "z": 3,
+      "md": "Source: Hawaiʻi Appleseed analysis of Wealth-X/Altrata market-sizing data for Hawaiʻi (Nov. 9, 2025). Tiers are non-overlapping wealth bands covering all 81,814 millionaires in the data.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 11,
+        "weight": 400,
+        "italic": true,
+        "color": "#464646",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t4",
+      "page": 4,
+      "x": 0.7,
+      "y": 3.25,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Figure 1.** Wealth held by Hawaiʻi’s 81,814 millionaires, measured against the annual state budget (2024)",
+      "style": {
+        "font": "Barlow",
+        "size": 15,
+        "weight": 400,
+        "color": "#464646",
+        "leading": 1.25
+      }
+    },
+    {
+      "id": "t5",
+      "page": 4,
+      "x": 0.7,
+      "y": 3.54,
+      "w": 7.1,
+      "z": 3,
+      "md": "![$292.7 billion held by Hawaiʻi’s 81,814 millionaires in 2024, equal to 12.4 times the state’s $23.7 billion annual budget; each block stands for one year of the state budget.](assets/figure-1-state-budget.png)",
+      "h": 4.2
+    },
+    {
+      "id": "t6",
+      "page": 4,
+      "x": 0.7,
+      "y": 7.83,
+      "w": 7.1,
+      "z": 3,
+      "md": "Sources: Altrata (Wealth-X) market-sizing data for Hawaiʻi (Nov. 9, 2025); State of Hawaiʻi annual operating budget, 2026 ($23.7 billion). Wealth is a total held and the budget is a yearly flow, so the comparison is one of scale. The full 2010–2024 series is on the Hawaiʻi Appleseed [millionaire-report dashboard](https://hawaii-appleseed.github.io/Hawaii-Appleseed-website/millionaire-report/).",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 11,
+        "weight": 400,
+        "italic": true,
+        "color": "#464646",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t7",
+      "page": 5,
+      "x": 0.7,
+      "y": 5.81,
+      "w": 7.1,
+      "z": 4,
+      "md": "**Figure 3.** State and local taxes paid out of every $100 of income: bottom 20 percent versus top 1 percent of households (2024)",
+      "style": {
+        "font": "Barlow",
+        "size": 15,
+        "weight": 400,
+        "color": "#464646",
+        "leading": 1.25
+      }
+    },
+    {
+      "id": "t8",
+      "page": 5,
+      "x": 0.7,
+      "y": 6.29,
+      "w": 7.1,
+      "z": 4,
+      "md": "![Bar chart of state and local taxes paid per $100 of income. The bottom 20 percent of households (under $21,900 a year) pay $14.10: $8.80 in sales and excise taxes and $5.30 in other taxes. The top 1 percent (over $594,900 a year) pay $10.10: $1.50 in sales and excise taxes and $8.60 in other taxes.](assets/figure-3-taxes-per-100.png)",
+      "h": 1.84
+    },
+    {
+      "id": "t9",
+      "page": 5,
+      "x": 0.7,
+      "y": 8.22,
+      "w": 7.1,
+      "z": 4,
+      "md": "Source: Institute on Taxation and Economic Policy, “Hawaiʻi: Who Pays? 7th Edition,” 2024 (2024 tax law at 2023 income levels; senior taxpayers excluded). Households in the middle three-fifths pay about 13 to 14 percent.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 11,
+        "weight": 400,
+        "italic": true,
+        "color": "#464646",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t10",
+      "page": 9,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Figure 4.** Estimated annual revenue from a wealth tax on wealth above $20 million or $50 million, by tax rate (2024)",
+      "style": {
+        "font": "Barlow",
+        "size": 15,
+        "weight": 400,
+        "color": "#464646",
+        "leading": 1.25
+      }
+    },
+    {
+      "id": "t11",
+      "page": 9,
+      "x": 0.7,
+      "y": 1.18,
+      "w": 7.1,
+      "z": 3,
+      "md": "![Grouped bar chart of estimated annual revenue from a wealth tax on wealth above $20 million (1,245 people) or $50 million (365 people). At 1 percent: $0.71 billion and $0.51 billion. At 2 percent: $1.41 billion and $1.02 billion. At 3 percent: $2.12 billion and $1.53 billion.](assets/figure-4-revenue-by-rate.png)",
+      "h": 3.75
+    },
+    {
+      "id": "t12",
+      "page": 9,
+      "x": 0.7,
+      "y": 5.03,
+      "w": 7.1,
+      "z": 3,
+      "md": "Source: Institute for Policy Studies and Hawaiʻi Appleseed analysis of Wealth-X/Altrata market-sizing data for Hawaiʻi (Nov. 9, 2025). Each rate applies only to wealth above the threshold (see Table 1). Estimates are static: they do not allow for avoidance, valuation disputes, or residents leaving the state.",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 11,
+        "weight": 400,
+        "italic": true,
+        "color": "#464646",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t13",
+      "page": 8,
+      "x": 0.7,
+      "y": 5.48,
+      "w": 7.1,
+      "z": 3,
+      "md": "**Table 1.** Wealth held by Hawaiʻi’s wealthiest residents (2024)",
+      "style": {
+        "font": "Barlow",
+        "size": 15,
+        "weight": 400,
+        "color": "#464646",
+        "leading": 1.25
+      }
+    },
+    {
+      "id": "t15",
+      "page": 3,
+      "x": 0.7,
+      "y": 6.53,
+      "w": 4,
+      "z": 3,
+      "md": "BY THE NUMBERS",
+      "style": {
+        "font": "Barlow",
+        "weight": 700,
+        "size": 13,
+        "color": "#354F52",
+        "tracking": 1.4,
+        "leading": 1.2
+      }
+    },
+    {
+      "id": "t16",
+      "page": 3,
+      "x": 0.95,
+      "y": 7.25,
+      "w": 1.75,
+      "z": 3,
+      "md": "1,245",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 40,
+        "leading": 1,
+        "color": "#FDCF21"
+      }
+    },
+    {
+      "id": "t17",
+      "page": 3,
+      "x": 0.95,
+      "y": 7.93,
+      "w": 1.75,
+      "z": 3,
+      "md": "individuals in Hawaiʻi hold at least $20 million in wealth",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 400,
+        "size": 14,
+        "leading": 1.4,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "t18",
+      "page": 3,
+      "x": 3.375,
+      "y": 7.25,
+      "w": 1.75,
+      "z": 3,
+      "md": "$95.6B",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 40,
+        "leading": 1,
+        "color": "#FDCF21"
+      }
+    },
+    {
+      "id": "t19",
+      "page": 3,
+      "x": 3.375,
+      "y": 7.93,
+      "w": 1.75,
+      "z": 3,
+      "md": "held altogether by that small group",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 400,
+        "size": 14,
+        "leading": 1.4,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "t20",
+      "page": 3,
+      "x": 5.8,
+      "y": 7.25,
+      "w": 1.75,
+      "z": 3,
+      "md": "$1.02B",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 40,
+        "leading": 1,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "t21",
+      "page": 3,
+      "x": 5.8,
+      "y": 7.93,
+      "w": 1.75,
+      "z": 3,
+      "md": "estimated a year from a 2 percent tax on wealth above $50 million",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 400,
+        "size": 14,
+        "leading": 1.4,
+        "color": "#232322"
+      }
+    },
+    {
+      "id": "t22",
+      "page": 11,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 2,
+      "act": "endnotes",
+      "md": "## [Endnotes]{.Section head}",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 10.5,
+        "color": "#1F1F1F",
+        "leading": 1.22
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "t14",
+      "page": 8,
+      "x": 0.7,
+      "y": 5.78,
+      "w": 7.1,
+      "z": 2,
+      "header": true,
+      "rows": [
+        [
+          "Hawaiʻi, 2024",
+          "$20 million or more",
+          "$50 million or more"
+        ],
+        [
+          "Individuals",
+          "1,245",
+          "365"
+        ],
+        [
+          "Total wealth",
+          "$95.6 billion",
+          "$69.3 billion"
+        ],
+        [
+          "Wealth above the threshold",
+          "$70.7 billion",
+          "$51.1 billion"
+        ]
+      ],
+      "headerRows": 1,
+      "band": "#EEF2F0",
+      "headerFill": "#354F52",
+      "headerColor": "#FFFFFF",
+      "colw": [
+        3.3,
+        1.9,
+        1.9
+      ],
+      "colAlign": [
+        "left",
+        "right",
+        "right"
+      ]
+    }
+  ],
+  "sections": {},
+  "groups": [
+    [
+      "text.t1",
+      "text.t2",
+      "text.t3"
+    ],
+    [
+      "text.t4",
+      "text.t5",
+      "text.t6"
+    ],
+    [
+      "text.t7",
+      "text.t8",
+      "text.t9"
+    ],
+    [
+      "text.t10",
+      "text.t11",
+      "text.t12"
+    ],
+    [
+      "text.t13",
+      "table.t14"
+    ],
+    [
+      "s9-rect",
+      "text.t16",
+      "text.t17"
+    ],
+    [
+      "s10-rect",
+      "text.t18",
+      "text.t19"
+    ],
+    [
+      "s11-rect",
+      "text.t20",
+      "text.t21"
+    ],
+    [
+      "s12-rect",
+      "text.t22"
+    ]
+  ],
+  "textStyles": {
+    "Section head": {
+      "font": "Barlow",
+      "weight": 800,
+      "size": 44,
+      "color": "#232322",
+      "case": "upper",
+      "leading": 1.05
+    },
+    "Callout head": {
+      "font": "Barlow",
+      "weight": 700,
+      "size": 22,
+      "color": "#354F52",
+      "leading": 1.1
+    }
+  },
+  "masters": {},
+  "objectStyles": {
+    "Callout panel": {
+      "kind": "box",
+      "fill": "#EEF2F0",
+      "pad": 0.3,
+      "border": {
+        "sides": "left",
+        "w": 5,
+        "color": "#354F52",
+        "style": "solid"
+      },
+      "style": {
+        "font": "Source Sans 3",
+        "size": 13.5,
+        "color": "#1F1F1F",
+        "leading": 1.45
+      }
+    }
+  }
+}

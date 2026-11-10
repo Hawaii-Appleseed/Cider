@@ -1824,15 +1824,20 @@ class Handler(SimpleHTTPRequestHandler):
 
         # Sources, with how many times each is actually cited — an uncited
         # source blocks publishing, so "which are unused" is exactly the
-        # question a CI check wants to ask and it is one regex away here.
+        # question a CI check wants to ask. Counted wherever a citation can
+        # sit (_cite_texts), and every line listed, a source with no link too.
+        texts = _cite_texts(source, layout)
         sources = []
         for line in sources_block.splitlines():
-            m = re.match(r"^\[([^\]]+)\]:\s*(.*?)\s+—\s+(\S+)\s*$", line.strip())
-            if m:
-                sid = m.group(1)
-                sources.append({"id": sid, "text": m.group(2), "url": m.group(3),
-                                "cites": len(re.findall(
-                                    r"\[\^" + re.escape(sid) + r"\]", source))})
+            m = _SOURCE_LINE_RE.match(line.strip())
+            if not m:
+                continue
+            sid, rest = m.group(1), m.group(2).strip()
+            u = _SOURCE_URL_RE.match(rest)
+            ref = re.compile(r"\[\^" + re.escape(sid) + r"\]")
+            sources.append({"id": sid, "text": u.group(1).strip() if u else rest,
+                            "url": u.group(2) if u else "",
+                            "cites": sum(len(ref.findall(t)) for t in texts)})
 
         # The sheet the report is actually on. layout.json carries a `page`
         # only once File ▸ Resize has written one, so an untouched report has
@@ -2422,6 +2427,21 @@ class Handler(SimpleHTTPRequestHandler):
             h = float(size.get("h", 11.0))
         except (TypeError, ValueError):
             return self._json(200, {"ok": False, "error": "page size must be numbers"})
+        # The pictures the text's ![…](…) lines name, {file name: base64}:
+        # written into the project and sized from their own files, so each
+        # figure is placed at the height it draws (docsync.compose).
+        assets = None
+        if req.get("assets"):
+            if not isinstance(req["assets"], dict):
+                return self._json(200, {"ok": False, "error":
+                                        "assets: expected {file name: base64 data}"})
+            assets = {}
+            for n, b64 in req["assets"].items():
+                try:
+                    assets[str(n)] = base64.b64decode(b64 or "", validate=True)
+                except Exception as e:           # noqa: BLE001 — say which
+                    return self._json(200, {"ok": False, "error":
+                                            f"assets: {n} is not base64 data ({e})"})
         sys.path.insert(0, str(SELF_ROOT))
         yml = SELF_ROOT / "docsync.yml"
         try:
@@ -2432,7 +2452,7 @@ class Handler(SimpleHTTPRequestHandler):
             with _host_lock():
                 yml_before = yml.read_text() if yml.is_file() else ""
                 create(slug, name, w, h, root=SELF_ROOT, template=template,
-                       scheme=scheme, text=text, meta=meta)
+                       scheme=scheme, text=text, meta=meta, assets=assets)
         except NewProjectError as e:
             return self._json(200, {"ok": False, "error": str(e)})
         except Exception as e:                   # noqa: BLE001 — report it
@@ -3503,6 +3523,33 @@ def _commit_with(root: Path, paths: list, msg: str, files: dict) -> None:
     finally:
         with contextlib.suppress(OSError):
             os.unlink(index)
+
+
+# A [[sources]] line as docsync/content.py's parse_sources reads one: "[id]:
+# text", with an OPTIONAL " — https://…" tail, since a book or an interview has
+# no link. /__inventory used to require the tail, so a source with no link was
+# missing from it altogether.
+_SOURCE_LINE_RE = re.compile(r"^\[([^\]]+)\]:\s*(\S.*?)\s*$")
+_SOURCE_URL_RE = re.compile(r"^(.*?)\s+—\s+(https?://\S+)$", re.S)
+
+
+def _cite_texts(source: str, layout: dict) -> list[str]:
+    """Every authored text a [^id] citation can sit in, as the engine numbers
+    them: content.md, a text box's md and a table's cells, on the pages and in
+    a shared layout (layout.masters) alike. The editor's citeSites() walks the
+    same places. Counting content.md alone called every citation a composed
+    report has (they are all in text boxes) "never cited"."""
+    out = [source]
+    for host in [layout, *(layout.get("masters") or {}).values()]:
+        if not isinstance(host, dict):
+            continue
+        for b in host.get("boxes") or []:
+            if isinstance(b, dict):
+                out.append(str(b.get("md") or ""))
+        for t in host.get("tables") or []:
+            for row in (t.get("rows") or []) if isinstance(t, dict) else []:
+                out.extend("" if c is None else str(c) for c in row)
+    return out
 
 
 def _assets_dir(b) -> Path:
