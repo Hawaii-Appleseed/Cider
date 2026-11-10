@@ -11,6 +11,11 @@
 //
 // The Budget Primer's own page 12 stays the case that must still refuse
 // (pilot-api.spec.js, endnotes-section.spec.js).
+//
+// Since 2026-11-09 the composer places an endnotes page itself, so a report
+// made from text has no stand-in. The case stays for a template report cited
+// in afterwards (citations a pilot or a paste adds bring no section; only the
+// prose editor makes one) and for every report composed before then.
 // affected-by: docsync/new.py docsync/compose.py docsync/content.py
 const { test, expect, gotoEditor, openSources } = require('./fixtures/editor-test');
 const path = require('path');
@@ -19,10 +24,6 @@ const { removeYmlBindings } = require('./fixtures/host-state');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const SLUG = 'zz-spec-endnotes-standin';
-const TEXT = '# Spec Endnotes\n\nThe summary paragraph.[^first]\n\n'
-  + '## A section\n\nBody of the section.[^second]\n\n'
-  + '[^first]: First source — https://example.org/first\n'
-  + '[^second]: Second source — https://example.org/second';
 
 /** Endnote entries on the page: in a placed section, and anywhere else. */
 const notes = page => page.evaluate(() => {
@@ -42,9 +43,16 @@ test.describe("a composed report's stand-in endnotes", () => {
   test('do not stop an endnotes section being placed, and the section retires them',
     async ({ page, request }) => {
     const j = await (await request.post('/__scaffold', { data: {
-      slug: SLUG, template: 'appleseed-report', text: TEXT } })).json();
+      slug: SLUG, name: 'Spec Endnotes', template: 'appleseed-report' } })).json();
     expect(j.ok, j.error).toBe(true);
     await gotoEditor(page, `?project=${SLUG}`);
+    const cited = await page.evaluate(() => docsync.api.batch([
+      { verb: 'addSource', args: ['first', 'First source', 'https://example.org/first'] },
+      { verb: 'addSource', args: ['second', 'Second source', 'https://example.org/second'] },
+      { verb: 'addTextBox', args: { page: 4, x: 0.7, y: 8.2, w: 4,
+        md: 'Cited words.[^first] And more.[^second]' } },
+    ]));
+    expect(cited.ok, cited.error).toBe(true);
 
     // The stand-in: both notes, outside every sheet, and no section yet.
     expect(await notes(page)).toEqual({ placed: 0, elsewhere: 2 });
