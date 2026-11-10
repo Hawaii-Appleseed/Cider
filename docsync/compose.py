@@ -53,6 +53,11 @@ import math
 import re
 from dataclasses import dataclass, field
 
+try:
+    from .metrics import ADV as _ADV       # the house fonts' measured advances
+except ImportError:                        # a checkout from before the table
+    _ADV = {}
+
 # --- the text ------------------------------------------------------------------
 
 _SRC_LINE = re.compile(r"^\[\^?([A-Za-z0-9_.-]+)\]:\s*(\S.*?)\s*$")
@@ -314,14 +319,104 @@ _EM_ADVANCE = 0.54
 _EM_ADVANCE_CAPS = 0.64
 
 
+def _face(style: dict | None, bold: bool = False):
+    """The measured advances (docsync/metrics.py) for a style's font, its
+    weight (bold raises it to 700 at least) and slant; the nearest weight of
+    the family when that exact one was not measured; None for a font the
+    table does not have."""
+    if not style or not _ADV:
+        return None
+    fam = str(style.get("font") or "")
+    w = int(style.get("weight") or 400)
+    w = max(w, 700) if bold else w
+    slant = "italic" if style.get("italic") else "normal"
+    got = _ADV.get(f"{fam}|{w}|{slant}")
+    if got is None:
+        near = [k for k in _ADV if k.startswith(fam + "|") and k.endswith("|" + slant)]
+        got = _ADV[min(near, key=lambda k: abs(int(k.split("|")[1]) - w))] if near else None
+    return got
+
+
+# A sum of single-glyph advances runs about 1% over what a browser sets
+# (kerning tightens real text): the Wealth Tax report's lines fit Chrome's
+# 681.6px column at 684px by that sum. Measured against that report's own
+# line breaks, every paragraph and headline counts true from 1.005 to 1.02;
+# the low end keeps the count leaning toward a line too many (white space),
+# never a line too few (an overlap).
+_SLACK = 1.005
+# Where a browser may end a line with no space: after an em or en dash or a
+# hyphen ("…stakes in businesses—" / "minus what they owe").
+_BREAK_AFTER = "—–-"
+
+
+def _measured_lines(text: str, avail_px: float, size_px: float, style: dict,
+                    caps: bool):
+    """Lines a run of text takes, wrapped word by word against the font's
+    real advances (bold runs in the bold face). None when the font is not in
+    the table."""
+    if _face(style) is None:
+        return None
+    n = 0
+    for para in text.split("\n"):
+        words: list = []                  # (width px, width of the spaces before it)
+        word, gap, bold, i = 0.0, 0.0, False, 0
+        while i < len(para):
+            if para.startswith("**", i):
+                bold = not bold
+                i += 2
+                continue
+            ch = para[i]
+            i += 1
+            if ch in "*_`":
+                continue
+            face = _face(style, bold)
+            ch = ch.upper() if caps else ch
+            px = face.get(ch, face.get("n", 0.5)) * size_px
+            if ch in " \t":
+                if word:
+                    words.append((word, gap))
+                    word, gap = 0.0, 0.0
+                gap += px
+            else:
+                word += px
+                if ch in _BREAK_AFTER:            # a line may end after it
+                    words.append((word, gap))
+                    word, gap = 0.0, 0.0
+        if word:
+            words.append((word, gap))
+        lines, x = 1, 0.0
+        for w, before in words:
+            if x == 0.0:
+                x = w
+            elif x + before + w <= avail_px:
+                x += before + w
+            else:
+                lines += 1
+                x = w
+            while x > avail_px:               # a word longer than the line
+                lines += 1
+                x -= avail_px
+        n += lines
+    return n
+
+
 def lines_for(md: str, w_in: float, size_px: float, indent_chars: int = 0,
-              caps: bool = False) -> int:
+              caps: bool = False, style: dict | None = None) -> int:
     """How many lines a markdown block takes at this width and size, counting
-    the words only (emphasis marks are not glyphs on the page)."""
+    the words only (emphasis marks are not glyphs on the page). With the
+    block's `style` and its font measured (docsync/metrics.py), the words are
+    wrapped against the real advances; otherwise the old per-character
+    estimate stands."""
+    plain = _CITE.sub("", md)
+    plain = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", plain)     # a link's words
+    measured = _measured_lines(
+        plain, (w_in * PX_PER_IN - indent_chars * size_px * 0.5) * _SLACK,
+        size_px, style, caps) if style else None
+    if measured is not None:
+        return measured
     adv = _EM_ADVANCE_CAPS if caps else _EM_ADVANCE
     cpl = max(10, int(w_in * PX_PER_IN / (size_px * adv)) - indent_chars)
-    plain = re.sub(r"[*_`]+", "", md)
-    plain = _CITE.sub("", plain)
+    plain = re.sub(r"[*_`]+", "", plain)
     n = 0
     for ln in plain.split("\n"):
         n += max(1, math.ceil(len(ln.strip()) / cpl))
@@ -334,7 +429,7 @@ def height_in(md: str, w_in: float, style: dict, kind: str = "para") -> float:
     caps = str(style.get("case", "")) == "upper"
     # A list indents 40px and carries the browser's 1em above and below.
     indent = 6 if kind == "list" else 0
-    lines = lines_for(md, w_in, size, indent, caps)
+    lines = lines_for(md, w_in, size, indent, caps, style)
     paras = max(1, md.count("\n\n") + 1) if kind != "list" else 1
     gap = 0.5 * size / PX_PER_IN          # the renderer's p margin, .5em
     extra = 2 * size / PX_PER_IN if kind == "list" else 0
@@ -471,7 +566,8 @@ class Composer:
             one = (float(h["style"].get("size", 44))
                    * float(h["style"].get("leading", 1.1)) / PX_PER_IN)
             shift = (lines_for(heading, h["w"], float(h["style"].get("size", 44)),
-                               caps=str(h["style"].get("case", "")) == "upper")
+                               caps=str(h["style"].get("case", "")) == "upper",
+                               style=h["style"])
                      - 1) * one
             r = dict(self.p["rule"])
             r["y"] = round(r["y"] + shift, 3)
