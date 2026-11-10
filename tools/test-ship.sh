@@ -6,7 +6,9 @@
 #   tools/test-ship.sh
 set -u
 wt="$(cd "$(dirname "$0")" && pwd)/wt"
-T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+# (the physical path: macOS's mktemp gives /var/..., which is /private/var/... to lsof, and
+# `wt rm` finds the processes sitting in a folder by lsof, so a symlinked path hides them)
+T=$(cd "$(mktemp -d)" && pwd -P); trap 'rm -rf "$T"' EXIT
 # An isolated HOME: the ship lock and the ship-default switch live in
 # ~/.cache/cider-wt, and a test must neither take the real lock nor read the real switch.
 export HOME="$T/home"; mkdir -p "$HOME"
@@ -150,6 +152,22 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
 done
 { [ "$rc" = 0 ] && [ "$(hubhead)" != "$before" ] && [ "$(show primer/rep/engine/docsync/y.py)" = "$(cider_main)" ]; } \
   && ok "the background ship still lands the update on the hub" || fail "the background ship" "rc=$rc" "$out" "$(log feat3)"
+
+# `land` is usually run from inside the worktree it lands: the ship must still be able to remove it
+# (the process that runs it, or the one `land` queued, must not be sitting in the folder)
+newbranch feat6 f6
+out=$(cd "$T/cider-feat6" && exec env WT_SHIP_POLL=1 FAKE_MERGE_BRANCH=feat6 "$wt" land feat6 2>&1); rc=$?
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  log feat6 | grep -q -E "shipped|nothing for the hub|NOT shipped" && break; sleep 1
+done
+{ [ "$rc" = 0 ] && [ ! -d "$T/cider-feat6" ]; } \
+  && ok "a background ship queued from inside the worktree can still remove it" \
+  || fail "the worktree a background ship was queued from" "rc=$rc" "$(log feat6)"
+
+newbranch feat7 f7
+out=$(cd "$T/cider-feat7" && exec env WT_SHIP_POLL=1 FAKE_MERGE_BRANCH=feat7 "$wt" land feat7 --ship 2>&1); rc=$?
+{ [ "$rc" = 0 ] && [ ! -d "$T/cider-feat7" ]; } \
+  && ok "land --ship run from inside the worktree removes it too" || fail "the worktree land --ship ran in" "rc=$rc" "$out"
 
 newbranch feat4 f4
 before=$(hubhead)
