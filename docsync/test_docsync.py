@@ -5650,6 +5650,43 @@ _cp.lay_out(_plain, section_pattern("appleseed-report"),
 check_eq("endnotes: a text that cites nothing gets no endnotes page",
          [b for b in _plain["boxes"] if b.get("act") == "endnotes"], [])
 
+# --- pagination measured against the fonts (B2) --------------------------------
+# The composer guessed 0.54em a glyph (0.64 in capitals): "WHO IS REALLY
+# STRUGGLING?" counted two lines, so its hairline and body sat half an inch low,
+# and body text ran a line long in five. These are the Wealth Tax report's own
+# lines as Chrome sets them (7.1in column, Source Sans 3 15px, Barlow 800 44px
+# capitals), from docsync/metrics.py's measured advances.
+_mp = section_pattern("appleseed-report")
+_mh, _mb = _mp["heading"]["style"], _mp["body"]
+for _t, _want in (("Who is really struggling?", 1), ("History of wealth taxes", 1),
+                  ("Solution: A tax on the wealthiest millionaires", 2)):
+    check_eq(f"measured: the headline {_t!r} takes {_want} line(s)",
+             _cp.lines_for(_t, 7.1, 44, caps=True, style=_mh), _want)
+for _t, _want in (
+        (_cp._lead_in("Much has been said about Hawaiʻi’s high cost of living, and it is true "
+         "that many low- and middle-income residents can no longer afford to live here. "
+         "About 44 percent of Hawaiʻi households live below the ALICE Threshold, which means "
+         "they cannot consistently cover their basic living expenses. Many are working "
+         "households—our family, friends, and neighbors.[^united-for-alice]"), 4),
+        ("A wealth tax works differently from an income tax. Income is the money a person "
+         "takes in over the course of a year, such as wages, interest, dividends, and the "
+         "profits from selling an asset. Wealth, or net worth, is the total value of "
+         "everything a person owns—homes and land, stocks and bonds, ownership stakes in "
+         "businesses—minus what they owe. Hawaiʻi taxes income and purchases, and the "
+         "counties tax real property, but no level of government in Hawaiʻi taxes a "
+         "person’s total net worth. In effect, a large stock portfolio or a stake in a "
+         "private company can grow in value for decades without ever being taxed, as long "
+         "as the owner does not sell it.", 6)):
+    check_eq(f"measured: a paragraph sets in {_want} lines, as Chrome sets it",
+             _cp.lines_for(_t, 7.1, 15, style=_mb), _want)
+check_eq("measured: a font the table does not know keeps the old estimate",
+         _cp.lines_for("x " * 200, 7.1, 15, style={"font": "Comic Neue", "size": 15}),
+         _cp.lines_for("x " * 200, 7.1, 15))
+_ml = TEMPLATES["appleseed-report"]["layout"]()
+_cp.lay_out(_ml, _mp, _cp.parse("# T\n\nA summary.\n\n## Who is really struggling?\n\nBody."), "T")
+check_eq("measured: a one-line headline keeps the template's hairline",
+         [s["y"] for s in _ml["shapes"] if s["id"].startswith("txt-rule-")], [_mp["rule"]["y"]])
+
 # The summary page's demo devices hold the text's own words or go.
 _s0 = {b["id"]: b for b in _flay["boxes"]}
 check_eq("summary page: a text with no summary lays its first section out there",
@@ -5687,7 +5724,7 @@ check_eq("report: a wrapped headline pushes the hairline down", _rule["y"] > _pa
 check_eq("...and the body with it", _body["y"] > _pat["body_top"], True)
 # A long summary does not squeeze into the narrow summary column: it gets a page.
 _lay = TEMPLATES["appleseed-report"]["layout"]()
-_long = "# T\n\n" + ("A sentence of ordinary length that says something. " * 60) + "\n\n## S\n\nBody."
+_long = "# T\n\n" + ("A sentence of ordinary length that says something. " * 90) + "\n\n## S\n\nBody."
 _cp.lay_out(_lay, _pat, _cp.parse(_long), "T")
 _bx = {b["id"]: b for b in _lay["boxes"]}
 check("report: a long summary becomes a section page of its own",
