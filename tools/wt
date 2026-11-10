@@ -6,11 +6,13 @@
 #   tools/wt ls                        every worktree of both repos, with status
 #   tools/wt port [<name>]             the test port assigned to a Cider worktree
 #   tools/wt rm <name> [--hub] [--force]   remove a finished worktree and its branch
-#   tools/wt land <name> [--ship] [--check-only|--run-hub-spec|--skip-hub-spec]
+#   tools/wt land <name> [--ship|--no-ship] [--check-only|--run-hub-spec|--skip-hub-spec]
 #                                      Cider: push it, open its pull request, merge when the gate passes
 #                                      (first runs collab-hub.spec.js locally if the branch touches the relay/sync code)
 #                                      --ship: then wait for the merge, ship it to the staff hub, remove the worktree
+#                                      where `ship-default` is on, that happens by default, in the background
 #   tools/wt ship [<name>] [--dry-run] put Cider's origin/main on the staff hub (a deploy) and remove worktree <name>
+#   tools/wt ship-default [on|off|status]   Devin's Mac: make `land` ship to the staff hub by default
 #   tools/wt stage <name> [--hub|--with-hub <h>]   put a worktree on staging (staging.staff-updates-internal.pages.dev)
 #   tools/wt allow-main [min|off|status]   Devin's Mac: let Claude edit the MAIN folders for a while
 #
@@ -37,6 +39,7 @@ is_git() { [ -d "$1/.git" ] || [ -f "$1/.git" ]; }
 # Cider's MAIN folder: the clone this script lives in, wherever that is. Run
 # from a worktree's copy it still finds the main one, through the common git dir.
 self_dir=$(cd "$(dirname "$0")" && pwd -P)
+SELF="$self_dir/$(basename "$0")"
 common=$(git -C "$self_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
 CIDER="${CIDER_DIR:-${common%/.git}}"
 [ -n "$CIDER" ] || CIDER="$HOME/primer-editor"
@@ -55,7 +58,7 @@ PORT_HI=8299
 die() { echo "wt: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -334,21 +337,101 @@ hub_gate() {  # hub_gate <dir> <name> <mode: auto|force|skip>
   fi
 }
 
+# A merged Cider PR is not on the staff hub until it ships, and a step nobody
+# remembers is a step that gets skipped. On Devin's Mac `wt ship-default on`
+# makes `land` do it: once the pull request has merged, in the background, so the
+# call that landed it (often a Claude session whose shell is cut off long before
+# the gate finishes) does not have to wait. It is a per-machine switch, off
+# everywhere else, because the ship's live-words check reads the hub's R2, which
+# is Devin's Cloudflare access. State is a file in $STATE, as allow-main keeps its
+# window. WT_SHIP_DEFAULT=1|0 overrides it; WT_SHIP_FOREGROUND=1 runs the queued
+# ship in the calling process (the test does); WT_SHIP_POLL (seconds) and
+# WT_SHIP_WAIT_MIN set how long the wait for the merge lasts.
+
+ship_by_default() {
+  case "${WT_SHIP_DEFAULT:-}" in 1) return 0 ;; 0) return 1 ;; esac
+  [ -f "$STATE/ship-default" ]
+}
+
+cmd_ship_default() {
+  local arg="${1:-status}" f="$STATE/ship-default"
+  mkdir -p "$STATE"
+  case "$arg" in
+    on)
+      date +%s > "$f"
+      echo "On: 'wt land' now ships to the staff hub once its pull request has merged (in the background; --no-ship skips one landing)."
+      is_git "$HUB" || echo "  (no staff hub checkout beside Cider at $(short "$HUB"): set CIDER_HUB_DIR, or a queued ship will fail)" ;;
+    off) rm -f "$f"; echo "Off: 'wt land' only lands. Ship with 'wt ship <name>', or land with --ship." ;;
+    status) if ship_by_default; then echo on; else echo off; fi ;;
+    *) die "usage: wt ship-default [on|off|status]" ;;
+  esac
+}
+
+wait_for_merge() { # <dir> <name>: 0 once the pull request has merged; says why and returns 1 if it never will
+  local dir="$1" name="$2" i=0 state poll="${WT_SHIP_POLL:-20}"
+  local max=$(( ${WT_SHIP_WAIT_MIN:-45} * 60 / poll ))
+  while :; do
+    state=$(cd "$dir" && gh pr view "$name" --json state --jq .state 2>/dev/null || echo UNKNOWN)
+    [ "$state" = MERGED ] && return 0
+    if [ "$state" = CLOSED ]; then echo "wt: the pull request was closed without merging" >&2; return 1; fi
+    i=$((i+1))
+    if [ "$i" -gt "$max" ]; then
+      echo "wt: not merged in time (the gate may have failed: gh pr checks $name). When it has merged: tools/wt ship $name" >&2
+      return 1
+    fi
+    sleep "$poll"
+  done
+}
+
+notify() { # <text>: a macOS banner where there is one, so a background ship is not silent
+  command -v osascript >/dev/null 2>&1 || return 0
+  local t; t=$(printf '%s' "$1" | tr -d '"\\')
+  osascript -e "display notification \"$t\" with title \"Cider\"" >/dev/null 2>&1 || true
+}
+
+queue_ship() { # <name>: wait for the merge, then ship, in a process of its own
+  local name="$1" log="$STATE/ship-$name.log"
+  mkdir -p "$STATE"
+  if ! is_git "$HUB"; then
+    echo "Ship by default is on, but there is no staff hub checkout beside Cider ($(short "$HUB")): nothing queued. Set CIDER_HUB_DIR, or later: tools/wt ship $name"
+    return 0
+  fi
+  : > "$log"
+  if [ -n "${WT_SHIP_FOREGROUND:-}" ]; then
+    "$SELF" ship-after-merge "$name" >> "$log" 2>&1 || true
+  else
+    # A session of its own (the equivalent of setsid), so the shell that ran `land`
+    # can end, or be cut off by its caller's timeout, without ending the ship.
+    python3 - "$log" "$SELF" ship-after-merge "$name" <<'PY'
+import subprocess
+import sys
+
+log, *cmd = sys.argv[1:]
+with open(log, "ab") as f:
+    subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=f, stderr=f,
+                     start_new_session=True, close_fds=True)
+PY
+  fi
+  echo "Shipping to the staff hub is on by default here: it runs once the pull request has merged, in the background."
+  echo "  progress: $(short "$log")     skip it for this landing: tools/wt land $name --no-ship"
+}
+
 cmd_land() {
-  local name="" hubmode=auto checkonly=0 ship=0
+  local name="" hubmode=auto checkonly=0 shipmode=auto
   while [ $# -gt 0 ]; do
     case "$1" in
       --hub) die "the hub ships by 'git push origin <name>:main' from its worktree, not by pull request (see its CLAUDE.md)" ;;
       --skip-hub-spec) hubmode=skip ;;
       --run-hub-spec) hubmode=force ;;
       --check-only) checkonly=1 ;;
-      --ship) ship=1 ;;
+      --ship) shipmode=now ;;
+      --no-ship) shipmode=never ;;
       -*) die "unknown option: $1" ;;
       *) [ -z "$name" ] && name="$1" || die "give one name only" ;;
     esac
     shift
   done
-  [ -n "$name" ] || die "usage: wt land <name> [--check-only|--run-hub-spec|--skip-hub-spec]"
+  [ -n "$name" ] || die "usage: wt land <name> [--ship|--no-ship] [--check-only|--run-hub-spec|--skip-hub-spec]"
   local dir="$CIDER-$name" behind ahead url
   is_git "$dir" || die "no Cider worktree $(short "$dir")"
   [ "$(git -C "$dir" rev-parse --abbrev-ref HEAD)" = "$name" ] || die "$(short "$dir") is not on branch '$name'"
@@ -380,22 +463,24 @@ cmd_land() {
   else
     die "the pull request is open, but auto-merge could not be set: gh pr merge $name --auto --merge"
   fi
-  if [ "$ship" = 1 ]; then
-    local i=0 state max=$(( ${WT_SHIP_WAIT_MIN:-45} * 3 ))
-    echo "Waiting for the gate and the merge (up to ${WT_SHIP_WAIT_MIN:-45} min), then shipping to the hub..."
-    while :; do
-      state=$(cd "$dir" && gh pr view "$name" --json state --jq .state 2>/dev/null || echo UNKNOWN)
-      [ "$state" = MERGED ] && break
-      [ "$state" = CLOSED ] && die "the pull request was closed without merging"
-      i=$((i+1))
-      [ "$i" -le "$max" ] || die "not merged in time (the gate may have failed: gh pr checks $name). When it has merged: tools/wt ship $name"
-      sleep 20
-    done
-    cmd_ship "$name"
-    return 0
+  if [ "$shipmode" = auto ]; then
+    if ship_by_default; then shipmode=queue; else shipmode=hint; fi
   fi
+  case "$shipmode" in
+    now)
+      echo "Waiting for the gate and the merge (up to ${WT_SHIP_WAIT_MIN:-45} min), then shipping to the hub..."
+      wait_for_merge "$dir" "$name" || exit 1
+      cmd_ship "$name"
+      return 0 ;;
+    queue)
+      queue_ship "$name"
+      return 0 ;;
+    never)
+      echo "Not shipped (--no-ship). When you want it on the hub: tools/wt ship $name"
+      return 0 ;;
+  esac
   echo "Then: tools/wt ship $name   (puts it on the staff hub and removes the worktree)."
-  echo "Or land with --ship to do all of that in one go."
+  echo "Or land with --ship to do all of that in one go (on Devin's Mac, tools/wt ship-default on makes it the default)."
 }
 
 # ---- ship ------------------------------------------------------------------
@@ -410,7 +495,9 @@ cmd_land() {
 #   3. a clean detached copy of the hub's origin/main ($HUB-shipcopy)
 #   4. docsync.hub --into that copy (it REFUSES a ship that would hide live words)
 #   5. commit ONLY what the editor change owns (edit.html, collab-client.js, sw.js,
-#      editor-version.txt, each report's engine/docsync/*.py): never a report's own files
+#      editor-version.txt, each report's engine/docsync/*.py): never a report's own files,
+#      and nothing at all of a report that is NEW to the hub (its engine files alone would
+#      be a half-report: it ships on its own go-ahead, as a commit of its own)
 #   6. rebase on origin/main and push it to main
 # Step 4 reads the hub's R2 store, which is Devin's Cloudflare access: for anyone
 # else it stops there. WT_VENDOR_CMD / WT_HUB_CMD replace steps 2 and 4 (the test does).
@@ -428,6 +515,26 @@ fresh_copy() { # <repo> <path> <ref>: a detached checkout of <ref>, reset each t
     fi
     git -C "$path" checkout -q -f --detach "$ref" && git -C "$path" clean -fdq
   fi
+}
+
+# Two ships at once (a landing's background ship and a hand-run one, say) would reset
+# each other's scratch copies halfway, so they take turns: a lock folder holding the
+# holder's pid, which a holder that has died does not keep.
+SHIP_LOCK="$STATE/ship.lock"
+take_ship_lock() {
+  local tries=0 pid="" told=0
+  mkdir -p "$STATE"
+  while ! mkdir "$SHIP_LOCK" 2>/dev/null; do
+    pid=$(cat "$SHIP_LOCK/pid" 2>/dev/null || true)
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$SHIP_LOCK"; continue; fi
+    if [ "$told" = 0 ]; then echo "   another ship is running (pid ${pid:-?}); waiting for it..."; told=1; fi
+    tries=$((tries+1))
+    [ "$tries" -le "${WT_SHIP_LOCK_TRIES:-120}" ] \
+      || die "another ship still holds $(short "$SHIP_LOCK") (pid ${pid:-?}); if it is gone: rm -rf $(short "$SHIP_LOCK")"
+    sleep "${WT_SHIP_LOCK_POLL:-5}"
+  done
+  echo $$ > "$SHIP_LOCK/pid"
+  trap 'rm -rf "$SHIP_LOCK"' EXIT
 }
 
 cmd_ship() {
@@ -450,6 +557,7 @@ cmd_ship() {
     die "'$name' is not in Cider's origin/main yet: it ships once its pull request has merged"
   fi
 
+  take_ship_lock
   echo "1. Cider origin/main @ $sha -> $(short "$scopy")"
   fresh_copy "$CIDER" "$scopy" origin/main
   if [ -f "$CIDER/vendor.local.yml" ]; then cp "$CIDER/vendor.local.yml" "$scopy/vendor.local.yml"; fi
@@ -480,13 +588,23 @@ cmd_ship() {
   # A report that is live on the hub but not bound in THIS clean copy (one bound only
   # in the main clone's uncommitted docsync.yml, say) is deleted by the vendor run.
   # That is not this change's to do: leave every one of its files exactly as it is.
-  local kept="" f id
+  # And a report that is NEW to the hub (its manifest is not in the hub's origin/main, which
+  # is what the copy's HEAD still is) has an engine here but no page, assets or registry
+  # entry: committing its engine alone would push half a report. It waits for its own go-ahead.
+  local kept="" f id seen=" "
   for f in $files; do
     id=${f#primer/}; id=${id%%/*}
     case "$id" in
       edit.html|collab-client.js|editor-version.txt|sw.js) kept="$kept $f" ;;
-      *) if [ -f "$hcopy/primer/$id/engine/manifest.json" ]; then kept="$kept $f"
-         else echo "   (left alone: '$id' is on the hub but not bound in this checkout)"; fi ;;
+      *) if [ ! -f "$hcopy/primer/$id/engine/manifest.json" ]; then
+           echo "   (left alone: '$id' is on the hub but not bound in this checkout)"
+         elif ! git -C "$hcopy" cat-file -e "HEAD:primer/$id/engine/manifest.json" 2>/dev/null; then
+           case "$seen" in
+             *" $id "*) ;;
+             *) seen="$seen$id "
+                echo "   (left alone: '$id' is a new report, not on the hub yet. A new report ships on its own go-ahead, not with an editor update.)" ;;
+           esac
+         else kept="$kept $f"; fi ;;
     esac
   done
   files=${kept# }
@@ -523,6 +641,32 @@ $subjects" || die "the hub commit failed"
   if [ -n "$name" ] && is_git "$CIDER-$name"; then
     (cmd_rm "$name") || echo "   (worktree '$name' kept: wt rm $name --force to drop it)"
   fi
+}
+
+# What `land` starts in the background when ship-default is on: wait for the pull
+# request to merge, then ship, and say how it went where somebody will see it (the
+# log, and a macOS banner). The ship is its own process, so it runs with errexit
+# on, as a hand-run `wt ship` does.
+cmd_ship_after_merge() {
+  local name="${1:-}" rc=0 out="" line
+  [ -n "$name" ] || die "usage: wt ship-after-merge <name>"
+  echo "$(date '+%F %T')  waiting for '$name' to merge, then shipping to the hub"
+  if wait_for_merge "$CIDER-$name" "$name"; then
+    out=$("$SELF" ship "$name" 2>&1) || rc=$?
+    printf '%s\n' "$out"
+  else
+    rc=1
+  fi
+  if [ "$rc" != 0 ]; then
+    line="NOT shipped: read $(short "$STATE")/ship-$name.log, then: wt ship $name"
+  elif printf '%s' "$out" | grep -q "Pushed hub"; then
+    line="shipped, $(printf '%s' "$out" | sed -n 's/.*Pushed hub \([0-9a-f]*\).*/hub \1/p' | head -1)"
+  else
+    line="nothing for the hub to take"
+  fi
+  echo "$(date '+%F %T')  $line"
+  notify "$name: $line"
+  return "$rc"
 }
 
 # ---- allow-main ------------------------------------------------------------
@@ -661,6 +805,8 @@ case "$cmd" in
   stage) cmd_stage "$@" ;;
   land) cmd_land "$@" ;;
   ship) cmd_ship "$@" ;;
+  ship-default) cmd_ship_default "$@" ;;
+  ship-after-merge) cmd_ship_after_merge "$@" ;;
   -h|--help|help) usage 0 ;;
   *) echo "wt: unknown command '$cmd'" >&2; usage 1 ;;
 esac

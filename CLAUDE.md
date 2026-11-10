@@ -50,7 +50,15 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   change owns, pushes it (a deploy), and removes the worktree. It works from clean
   scratch copies, so the main clone, which the Editor app keeps dirty, is never
   needed. The hub step reads R2, so it is Devin's; `tools/test-ship.sh` tests it
-  with stubs. Devin's own
+  with stubs. **On Devin's Mac an update to Cider ships to the hub by default
+  (2026-11-10):** `tools/wt ship-default on` makes `land` queue a background
+  process that waits for the merge and then runs the ship, so nobody has to
+  remember it (progress in `~/.cache/cider-wt/ship-<name>.log` and a macOS
+  banner; `land <name> --no-ship` skips one landing, `--ship` waits in the
+  foreground). Ships take turns (a lock), and `wt ship` never takes a report
+  that is NEW to the hub: its engine files alone would be half a report, so it
+  waits for its own go-ahead and ships as a commit of its own (the report's
+  whole `primer/<id>/` folder and its `projects.json` entry). Devin's own
   sessions land without asking once the tests pass (2026-10-21); another
   person's session lands when its own person says so. A merge to main reaches
   every installed editor (`tools/selfupdate.py` pulls `origin/main` within
