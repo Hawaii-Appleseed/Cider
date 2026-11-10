@@ -2165,7 +2165,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(200, {"ok": True, "results": [
                     {"url": u, "status": 404 if "broken" in u else 403 if "blocked" in u else 200}
                     for u in _linkcheck_urls(req)]})
-            if path == "/__upload":
+            # X-Primer-Test-Upload lifts the mock for a project the spec
+            # scaffolded itself, as X-Primer-Test-Save does for /__save: the
+            # real write (and where it is served from) is otherwise untested.
+            if path == "/__upload" and self.headers.get("X-Primer-Test-Upload") != "1":
                 name = str(req.get("name") or "upload.png")
                 return self._json(200, {"ok": True, "src": f"assets/{name}",
                                         "path": f"report2027/web/assets/{name}"})
@@ -2838,6 +2841,17 @@ class Handler(SimpleHTTPRequestHandler):
         assets = _assets_dir(b)
         assets.mkdir(parents=True, exist_ok=True)
         (assets / name).write_bytes(data)
+        # Served at once. The editor's page resolves "assets/…" against its own
+        # staged dir (docs/<id>/assets), which only docsync.stage filled, on
+        # the next build. The file picker hid that behind a local preview, but
+        # a picture placed any other way (a pilot's addTextBox with
+        # ![…](assets/…)) drew broken, and fitFrame had nothing to measure,
+        # until somebody ran the stage step by hand. The same copy stage() makes.
+        if b.editor:
+            staged = b.editor.dir / "assets"
+            if staged.resolve() != assets.resolve():
+                staged.mkdir(parents=True, exist_ok=True)
+                (staged / name).write_bytes(data)
         # The prose/box path is relative to the project's built page.
         out_dir = (b.editor.out if b.editor else b.content).parent
         src = os.path.relpath(assets / name, out_dir)
