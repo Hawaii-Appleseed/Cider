@@ -51,3 +51,42 @@ test.describe('connector gaps', () => {
     expect(r.ok).toBe(true);
   });
 });
+
+// removePage: the connector could add and duplicate a page and not take one out,
+// so dropping a page meant a script in the editor's own page.
+test.describe('removePage', () => {
+  test('a blank page goes with what is on it, as one undo step', async ({ page }) => {
+    await gotoEditor(page);
+    const before = await page.evaluate(() => pageOrder().map(String));
+    const a = await page.evaluate(() => docsync.api.addPage());
+    expect(a.ok).toBe(true);
+    const s = await page.evaluate(id => docsync.api.addShape({ page: id, kind: 'rect', x: 1, y: 1, w: 1, h: 1 }), a.id);
+    expect(s.ok).toBe(true);
+    const r = await page.evaluate(id => docsync.api.removePage(id), a.id);
+    expect(r.ok).toBe(true);
+    expect(r.removed).toContain(s.id);
+    expect(r.pageOrder.map(String)).toEqual(before);
+    expect(await page.evaluate(i => !!shapeOf(i), s.id)).toBe(false);
+    await page.evaluate(() => docsync.api.undo());
+    expect(await page.evaluate(i => !!shapeOf(i), s.id)).toBe(true);
+    expect(await page.evaluate(() => pageOrder().map(String))).toContain(String(a.id));
+  });
+
+  test('a designed page is left out of the order, and the strip can show it again', async ({ page }) => {
+    await gotoEditor(page);
+    const before = await page.evaluate(() => pageOrder().map(String));
+    const r = await page.evaluate(() => docsync.api.removePage('2'));
+    expect(r.ok).toBe(true);
+    expect(r.hidden).toBe(true);
+    expect(r.pageOrder.map(String)).toEqual(before.filter(p => p !== '2'));
+    await page.evaluate(() => docsync.api.undo());
+    expect(await page.evaluate(() => pageOrder().map(String))).toEqual(before);
+  });
+
+  test('a page that is not there is refused, and so is the relay\'s single-verb list missing it', async ({ page }) => {
+    await gotoEditor(page);
+    const bad = await page.evaluate(() => docsync.api.removePage('nope'));
+    expect(bad.ok).toBe(false);
+    expect(await page.evaluate(() => PILOT_SINGLE_VERBS.has('removePage'))).toBe(true);
+  });
+});
