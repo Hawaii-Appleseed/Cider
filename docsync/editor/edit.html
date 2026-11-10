@@ -26208,7 +26208,12 @@ function wire(roots) {
        report's own superscript rule supplies both — including the line-height:0
        that keeps a cited line the same height being edited as it is rendered.
        Setting either here would put the reflow straight back. */
-    .ds-chip.ds-fnchip { color:#2F3E46; }
+    /* The chip must take exactly the width of the marker it stands in for, or a
+       line that ends near the edge rewraps the moment you click in. The generic
+       chip's 3px padding and 1px outline made a footnote chip 11.6px wide
+       against the rendered marker's 5.6px (Wealth Tax Report, 2026-11-10), so
+       the ring is drawn with box-shadow (takes no space) and padding is 0. */
+    .ds-chip.ds-fnchip { color:#2F3E46; padding:0; outline:0; box-shadow:0 0 0 1px #B9C9BE; }
     .ds-thread-arm [data-el^="text."] { cursor:copy !important; }
     .ds-pen-arm section.page, .ds-pen-arm section.page * { cursor:crosshair !important; }
     .ds-fitgrid { display:grid; grid-template-columns:repeat(3,18px); gap:3px; padding:4px 10px 8px; }
