@@ -334,7 +334,7 @@ ids it returns:
 | `masterOverride(id, on)` | change one page's copy of a shared-layout item (`'text.folio@3'`) without the others; `false` puts it back. Tables may be shared-layout items and anchors too |
 | `addPath({page, points, closed})` / `pathfinder(ids, op)` / `release(id)` | pen paths (points in page inches, handles as offsets) and Pathfinder (`union` / `subtract` / `intersect` / `exclude`; the lowest shape is the back) |
 | `fit(id, mode, align?)` / `fitFrame(id)` | how a picture sits in its frame, on a designed image or a box that is one picture: `cover` fills the frame, `contain` shows it all, `fill` stretches, `none` is actual size; `align` anchors it (`top left` … `bottom right`); `null` clears. The frame keeps its size. `fitFrame` makes the frame's height follow the picture |
-| `thread(a, b)` / `unthread(id)` | threaded frames: a's words continue in b when they run out of room (b's own words join the story's end; every frame keeps a fixed `h`). The FIRST frame holds the story, so `setBoxText` on it retexts the whole thread. `audit()` reports `overset` when the last frame overflows. `unthread` removes the empty frames after the break |
+| `thread(a, b)` / `unthread(id)` | threaded frames: a's words continue in b when they run out of room (b's own words join the story's end; every frame keeps a fixed `h`). The FIRST frame holds the story, so `setBoxText` on it retexts the whole thread. `audit()` reports `overset` when the last frame overflows. `unthread` removes the empty frames after the break. Nothing that acts may be in a thread except the endnotes section as its FIRST frame, which runs on only into empty frames (`continueEndnotes()` makes them) |
 | `describeImage(host, words, src?)` | an image's alt text, written into the markdown that holds it (a text box id or a slot key; `src` picks one of several; `''` = decoration). `audit()` lists every image still described by its file name as `alt-is-filename` — Insert image writes the file name, so describe each image you place |
 | `setStyle(key, patch)` | typography for a slot key or `'text.N'`: `{size, font, weight, color, tracking, leading, italic, underline, align, case}`, and the paragraph keys `wrap` (`balance`/`pretty`), `hyphenate`, `keep` (`together`/`next`), `figures` (`tabular`, `tabular-lining`, `lining`, `oldstyle`…), `smallCaps` (`small`/`all`), `ligatures: false`, `dropCap` (2–5 lines), `list: {marker, color, indent}`, automatic formatting `grep: [{pattern, style, case?}]` and `nested: [{style, through}]` (a named text style put on every match / on the start of each paragraph — the style must exist), paragraph rules `ruleAbove`/`ruleBelow` `{color, weight, offset, length}`, `shade`, `paraBorder`, `paraPad`, and `widows` / `orphans` (1–9 lines), `wordSpacing` (em), spacing in inches `spaceBefore`, `spaceAfter`, `indent`, `hang`, `indentLeft`, `indentRight` (they act on the paragraphs, never move a box), `tabs: [{at, align, leader}]` (tab stops: inches, `left`/`right`/`center`/`decimal`, leader `.`/`-`/`_`/`·`; a tab in the markdown is a real tab), and the character keys `strike`, `shift` (baseline shift, pt), `features` (OpenType tags: `frac`, `ordn`, `zero`, `ss01`…); `null` clears one. All of them can live in a named style (`defineStyle`) |
 | `splitCell(id, r, c, 'h'\|'v')` / `tableToText(id)` / `defineCellStyle(name, look\|null)` / `cellStyle(id, [[r,c],…], name\|null)` | split a cell (a merged one gives its grid back), turn a table into tab-separated text, and named cell styles (`fill`, `color`, `align`, `valign`, `bold`, `italic`, `inset`), worn by `use` |
@@ -382,7 +382,8 @@ ids it returns:
 | `applyScheme(idOrHex)` | retint the report to another house scheme ('slate' or a hex) — every use of the current topic colour swaps, one undo step; the Colors rail panel's Apply |
 | `addPage(at?)` | blank page; returns its id |
 | `duplicatePage(page)` | the strip's Duplicate page: a new page right after it, carrying the movable layer AND — for a designed page or a copy of one — the page's content as its own `copy.<id>.*` slots and elements (see `docsync/pagecopy.py`). Returns `{page, copied}`. Own history step; not a batch verb |
-| `addSource(id, text, url)` / `addEndnotesSection()` | declare a source (cite via `[^id]` in slot text) / the synced endnotes section |
+| `addSource(id, text, url)` / `addEndnotesSection()` | declare a source (cite via `[^id]` in slot text) / the synced endnotes section. The section's box words are only its heading: `setBoxText(id, '')` leaves the list with no heading (for one set as its own box), and spacing in its style goes under the heading, never under each note |
+| `continueEndnotes()` | a list longer than its page runs on onto a NEW page after it: a frame there at the same width threaded after the section's last frame, the page's footer copied, every frame sized to its page. Call again for a third page. `audit()`'s `print-overflow` on the section says when; the composer does this by itself for a long list. Own history step |
 | `batch(ops)` | `[{verb, args, as?}]` — one history entry, one render. See below |
 | `undo()` / `redo()` | the same history a human's ⌘Z walks |
 | `save()` | presses the real Save; refuses (with the pages named) while content overflows the print cut. Push stays with the human |
@@ -390,8 +391,8 @@ ids it returns:
 Mutators refuse while an inline text editor is open (`editing`) — close it
 first. Coordinates clamp to the sheet, so read the RETURNED box rather than
 assuming the request landed verbatim. `remove`/`duplicate`/`addPage`/
-`addEndnotesSection` push their own history internally and cannot join a
-batch; call them singly.
+`addEndnotesSection`/`continueEndnotes` push their own history internally and
+cannot join a batch; call them singly.
 
 **`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`, `describeImage`,
 `setStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
