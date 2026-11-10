@@ -2432,6 +2432,13 @@ class Handler(SimpleHTTPRequestHandler):
         st = _content_status(root)
         CONTENT[str(root)] = st
         if not st["behind"]:
+            # Nothing behind AND a reason means the check itself failed — no
+            # fetch, no upstream — and that is not "up to date". It used to be
+            # answered as one: ok, "already up to date", over a repo nobody
+            # had been able to look at.
+            if st["why"]:
+                return self._json(200, {"ok": False, "error":
+                                        f"could not check for newer content — {st['why']}"})
             return self._json(200, {"ok": True, "message": "already up to date"})
         if not st["can"]:
             return self._json(200, {"ok": False, "error": st["why"] or "cannot fast-forward"})

@@ -133,9 +133,13 @@ test.describe('a fake ʻokina becomes the real one as the words are committed', 
       contentType: 'application/json', body: JSON.stringify({ ok: false, error: msg }) }));
     await gotoEditor(page, PROJ);
     await page.evaluate(() => docsync.api.setSlot('groc.lead', 'changed'));
-    await page.waitForTimeout(500);
+    // Waits on what the test is about, not a clock: save() only presses the
+    // button, and under the suite's load a Save's answer took longer than the
+    // 1.2s this used to sleep (the status still said "saving…").
+    await expect.poll(() => page.evaluate(() => !$('save').disabled)).toBe(true);
     await page.evaluate(() => docsync.api.save());
-    await page.waitForTimeout(1200);
+    await expect.poll(() => page.evaluate(() => $('stat').textContent), { timeout: 15000 })
+      .toMatch(/^save failed:/);
     const st = await page.evaluate(() => ({ text: $('stat').textContent, title: $('stat').title, disabled: $('save').disabled }));
     expect(st.text).toMatch(/^save failed: git commit failed: okina: fake ʻokina found/);
     expect(st.text).not.toContain('\n');

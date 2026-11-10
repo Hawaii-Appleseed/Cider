@@ -253,13 +253,24 @@ def main():
         _p.write_text(pl)
         try:
             _pdf = _sv._warm_pdf(_p, 1200)
+            if _pdf is None:
+                # A warm Chrome that stalls is dropped, and the export it was
+                # printing takes a one-shot launch (serve._chrome_pdf) — so a
+                # stall costs a real export seconds, never the file. This
+                # checks the warm path itself, so it gets one fresh Chrome
+                # before a stall counts: CI's first launch of the run stalled
+                # past its deadline once (2026-11-10), with nothing wrong.
+                _pdf = _sv._warm_pdf(_p, 1200)
         finally:
             if _sv.WARM_CHROME[0] is not None:
                 _sv.WARM_CHROME[0].close()
                 _sv.WARM_CHROME[0] = None
         _n = len(_re2.findall(rb"/Type\s*/Page\b", _pdf or b""))
         _box = _re2.findall(rb"/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)", _pdf or b"")
-        if _n != 1 or not _box or abs(float(_box[0][0]) - 900) > 1 or not 2150 < float(_box[0][1]) < 2200:
+        if _pdf is None:
+            FAILS.append("a pageless export: the warm Chrome failed twice in a row, so its "
+                         "sizing was never checked (the reason is printed above)")
+        elif _n != 1 or not _box or abs(float(_box[0][0]) - 900) > 1 or not 2150 < float(_box[0][1]) < 2200:
             FAILS.append(f"a pageless export should be ONE 900pt-wide sheet as tall as its 30in content "
                          f"(~2160pt); got {_n} page(s), box {_box[:1]}")
     alone = _sv._page_alone(html, 3)
