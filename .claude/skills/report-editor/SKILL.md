@@ -305,9 +305,12 @@ relay failed (no editor tab holding the live stream, or it never answered).
 The same thing over MCP is `pilot(project, verb, args)` in
 `docsync/mcp_server.py`, which unwraps the envelope for you.
 
-Requires an editor tab open AND not backgrounded — a hidden tab stops leading
-the live stream, and the relay then answers "no editor is listening". Bring
-the tab forward rather than retrying.
+Requires an editor tab open on that project. A hidden one serves too (a
+background tab, a Chrome window behind another window, the app's folded
+browser pane) while no tab of the same report is in view. A refusal says
+which project it looked for, whether an editor of it is open at all, and
+which projects do have one: an op that names no `project` goes to the
+default, which is the usual reason for "no editor of … is listening".
 
 Only when neither is available (no server) do you fall back to a JS eval in
 the editor's top window. If you do eval, put SEVERAL `await docsync.api.*`
@@ -430,7 +433,12 @@ grouped pairs are skipped, being composition not collision),
 `immovable-text` (a slot with no `data-el` on or around it, per page). Reserve
 screenshots for taste — and when you want one, `POST /__export` with
 `{fmt:'png', page:N, scale:0.25}` returns a single ~50KB page instead of a
-full-resolution zip of the whole document.
+full-resolution zip of the whole document. With no `content`/`layout` in the
+request it builds the OPEN editor's draft, unsaved edits and all (it asks the
+editor through the relay; `tab` aims it), and `saved: true` builds the files
+on disk instead. `X-Primer-Draft` on the answer says which it built
+(`editor`, `saved` or `request`), and `docsync.api.draft()` hands over the
+same pair as JSON.
 
 **Headless (no browser): `GET /__inventory?project=<id>`.** The same document
 as data, from the FILES rather than the DOM — every slot's full markdown (not
