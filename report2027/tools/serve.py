@@ -2427,6 +2427,21 @@ class Handler(SimpleHTTPRequestHandler):
             h = float(size.get("h", 11.0))
         except (TypeError, ValueError):
             return self._json(200, {"ok": False, "error": "page size must be numbers"})
+        # The pictures the text's ![…](…) lines name, {file name: base64}:
+        # written into the project and sized from their own files, so each
+        # figure is placed at the height it draws (docsync.compose).
+        assets = None
+        if req.get("assets"):
+            if not isinstance(req["assets"], dict):
+                return self._json(200, {"ok": False, "error":
+                                        "assets: expected {file name: base64 data}"})
+            assets = {}
+            for n, b64 in req["assets"].items():
+                try:
+                    assets[str(n)] = base64.b64decode(b64 or "", validate=True)
+                except Exception as e:           # noqa: BLE001 — say which
+                    return self._json(200, {"ok": False, "error":
+                                            f"assets: {n} is not base64 data ({e})"})
         sys.path.insert(0, str(SELF_ROOT))
         yml = SELF_ROOT / "docsync.yml"
         try:
@@ -2437,7 +2452,7 @@ class Handler(SimpleHTTPRequestHandler):
             with _host_lock():
                 yml_before = yml.read_text() if yml.is_file() else ""
                 create(slug, name, w, h, root=SELF_ROOT, template=template,
-                       scheme=scheme, text=text, meta=meta)
+                       scheme=scheme, text=text, meta=meta, assets=assets)
         except NewProjectError as e:
             return self._json(200, {"ok": False, "error": str(e)})
         except Exception as e:                   # noqa: BLE001 — report it
