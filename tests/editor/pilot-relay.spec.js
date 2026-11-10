@@ -123,4 +123,108 @@ test.describe('pilot relay', () => {
       expect(r.ok).toBe(false);
       expect(r.error).toContain('tab-nobody-has-this');
     });
+
+  // "No editor is listening" was one sentence for every case, and an op that
+  // named no project silently went to the default report's editor. The
+  // refusal says where the op went.
+  test('an unclaimed op that named no project says which project it went to',
+    async ({ request }) => {
+      const r = await request.post(`http://localhost:${PORT}/__pilot`, {
+        data: { verb: 'status', args: [], timeout: 2, tab: 'tab-nobody-has-this' },
+      }).then(x => x.json());
+      expect(r.ok).toBe(false);
+      expect(r.error).toContain('tab-nobody-has-this');
+      expect(r.error).toContain('no project was named');
+    });
+
+  // 2026-11-09 (FINDINGS R9): the relay answered "no editor is listening"
+  // twice with the editor open, and a direct eval in that same tab worked.
+  // The browser calls a tab hidden for more than being in the background — a
+  // Chrome window another window covers (macOS), the app's folded browser
+  // pane — and a hidden tab never led, so nothing claimed the op.
+  const hide = p => p.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { get: () => true, configurable: true });
+    Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const show = p => p.evaluate(() => {
+    delete document.hidden; delete document.visibilityState;
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const leads = p => p.evaluate(() => !!(window.__liveIsLeader && window.__liveIsLeader()));
+
+  test('a hidden editor still runs relayed ops while no tab in view leads',
+    async ({ page, request }) => {
+      await gotoEditor(page);
+      await expect.poll(() => leads(page)).toBe(true);
+      const tab = await tabOf(page);
+      await hide(page);
+      // Two election beats: the old code had given the stream up by now.
+      await page.waitForTimeout(4500);
+      expect(await leads(page)).toBe(true);
+      const r = await pilot(request, { verb: 'getSlot', args: ['basics.h1'], tab, timeout: 8 });
+      expect(r.ok, r.error).toBe(true);
+      expect(r.result.ok).toBe(true);
+      await show(page);
+    });
+
+  test('a tab in view takes the stream over from a hidden one at once',
+    async ({ page, context }) => {
+      await gotoEditor(page);
+      const second = await context.newPage();
+      await gotoEditor(second);
+      await expect.poll(async () => (await leads(page)) !== (await leads(second))).toBe(true);
+      const leader = (await leads(page)) ? page : second;
+      const other = leader === page ? second : page;
+      await hide(leader);
+      // Inside one beat or two — not the six seconds a lock takes to go stale.
+      await expect.poll(() => leads(other), { timeout: 4500 }).toBe(true);
+      await expect.poll(() => leads(leader), { timeout: 4500 }).toBe(false);
+      await show(leader);
+      await second.close();
+    });
+
+  // FINDINGS R9 again: /__export needed content and layout in the body, so
+  // exporting the draft from outside took a one-shot receiver the page had to
+  // post its own source and layout to. With neither, the open editor is asked
+  // for its draft. (The suite's /__export answers a stand-in PDF, but which
+  // draft it would have built, and that draft's digest, are real.)
+  test('an export with neither content nor layout builds the open editor\'s unsaved draft',
+    async ({ page, request }) => {
+      await gotoEditor(page);
+      await expect.poll(() => leads(page)).toBe(true);
+      const tab = await tabOf(page);
+      await page.evaluate(() => docsync.api.setSlot('basics.h1', 'UNSAVED, FOR THE EXPORT'));
+      const want = await page.evaluate(async () => {
+        const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+        return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+      });
+      const r = await request.post(`http://localhost:${PORT}/__export`,
+        { data: { project: 'budget-primer', fmt: 'pdf', tab } });
+      expect(r.status()).toBe(200);
+      expect(r.headers()['content-type']).toContain('application/pdf');
+      expect(r.headers()['x-primer-draft']).toBe('editor');
+      expect(r.headers()['x-primer-draft-sha']).toBe(want);
+
+      // And the same pair as data, for a caller that wants the words.
+      const d = await pilot(request, { verb: 'draft', tab });
+      expect(d.result.ok).toBe(true);
+      expect(d.result.content).toContain('UNSAVED, FOR THE EXPORT');
+      expect(d.result.dirty).toBe(true);
+      expect(JSON.parse(d.result.layout)).toBeTruthy();
+
+      // saved: true is the files on disk, which do not have the words.
+      const s = await request.post(`http://localhost:${PORT}/__export`,
+        { data: { project: 'budget-primer', fmt: 'pdf', saved: true } });
+      expect(s.status()).toBe(200);
+      expect(s.headers()['x-primer-draft']).toBe('saved');
+      expect(s.headers()['x-primer-draft-sha']).not.toBe(want);
+
+      // One without the other is a mistake, said as one.
+      const half = await request.post(`http://localhost:${PORT}/__export`,
+        { data: { project: 'budget-primer', fmt: 'pdf', content: 'x' } });
+      expect(half.status()).toBe(400);
+      expect((await half.json()).error).toContain('together');
+      await page.evaluate(() => docsync.api.undo());
+    });
 });

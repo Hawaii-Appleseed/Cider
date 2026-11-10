@@ -174,7 +174,12 @@ curl -s localhost:8010/__pilot -H 'Content-Type: application/json' \
   -d '{"project":"budget-primer","verb":"audit"}'
 ```
 
-Needs an editor tab open and not backgrounded; it says so plainly otherwise.
+Needs an editor tab open on that project; a hidden one (a background tab, a
+covered window) serves while no tab of the report is in view. A refusal names
+the project it looked for and which ones have an editor open (an op with no
+`project` goes to the default). `POST /__export` with no `content`/`layout`
+builds that open editor's draft, unsaved edits included (`saved: true` builds
+the files on disk instead).
 
 **Without a browser at all** — a CI check, a shell script, an MCP client —
 read the document over HTTP: `GET /__inventory?project=<id>` returns every
