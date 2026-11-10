@@ -5650,6 +5650,112 @@ _cp.lay_out(_plain, section_pattern("appleseed-report"),
 check_eq("endnotes: a text that cites nothing gets no endnotes page",
          [b for b in _plain["boxes"] if b.get("act") == "endnotes"], [])
 
+# --- a Google Doc as the composer's text (docsync.gdoc, C) ---------------------
+from docsync import gdoc as _gd                                  # noqa: E402
+
+
+def _gpara(*runs, style="NORMAL_TEXT", bullet=None):
+    p = {"paragraphStyle": {"namedStyleType": style}, "elements": list(runs)}
+    if bullet:
+        p["bullet"] = {"listId": bullet}
+    return {"paragraph": p}
+
+
+def _grun(text, **ts):
+    return {"textRun": {"content": text, "textStyle": ts}}
+
+
+def _gcell(*paras):
+    return {"content": list(paras)}
+
+
+_GDOC = {
+    "title": "Spec Doc",
+    "body": {"content": [
+        {"sectionBreak": {}},
+        _gpara(_grun("Introduction\n"), style="HEADING_1"),
+        _gpara(_grun("The state "), _grun("works", bold=True), _grun(" well."),
+               {"footnoteReference": {"footnoteId": "kix.f1", "footnoteNumber": "1"}},
+               _grun("\n")),
+        _gpara(_grun("Who pays\n"), style="HEADING_1"),
+        _gpara(_grun("Figure 1. A chart (2024)\n")),
+        _gpara({"inlineObjectElement": {"inlineObjectId": "kix.img1"}}, _grun("\n")),
+        _gpara(_grun("Source: Somewhere.\n", italic=True)),
+        _gpara(_grun("First item\n"), bullet="l1"),
+        _gpara(_grun("Second item\n"), bullet="l1"),
+        {"table": {"rows": 2, "columns": 2, "tableRows": [
+            {"tableCells": [_gcell(_gpara(_grun("Tier\n", bold=True))),
+                            _gcell(_gpara(_grun("People\n", bold=True)))]},
+            {"tableCells": [_gcell(_gpara(_grun("Top\n"))), _gcell(_gpara(_grun("1,245\n")))]}]}},
+        {"table": {"rows": 1, "columns": 1, "tableRows": [{"tableCells": [_gcell(
+            _gpara(_grun("Estate tax\n", bold=True)),
+            _gpara(_grun("It is assessed once.\n")),
+            _gpara(_grun("And it is easy to avoid.\n")))]}]}},
+        _gpara(_grun("2", baselineOffset="SUPERSCRIPT"), _grun("\n")),
+    ]},
+    "footnotes": {"kix.f1": {"content": [_gpara(
+        _grun(" A source, "), _grun("https://example.org/a", link={"url": "https://example.org/a"}),
+        _grun(".\n"))]}},
+    "inlineObjects": {"kix.img1": {"inlineObjectProperties": {"embeddedObject": {
+        "description": "A bar chart", "imageProperties": {"contentUri": "https://lh.example/img1"}}}}},
+    "lists": {"l1": {"listProperties": {"nestingLevels": [{"glyphSymbol": "●"}]}}},
+}
+_gtext, _gpics = _gd.to_text(_GDOC)
+check_eq("gdoc: the Doc is the composer's markdown", _gtext,
+         "# Spec Doc\n\n## Introduction\n\nThe state **works** well.[^n1]\n\n"
+         "## Who pays\n\nFigure 1. A chart (2024)\n\n![A bar chart](gdoc:kix.img1)\n\n"
+         "*Source: Somewhere.*\n\n- First item\n- Second item\n\n"
+         "| Tier | People |\n|---|---|\n| Top | 1,245 |\n\n"
+         "> [!NOTE] Estate tax\n> It is assessed once.\n>\n> And it is easy to avoid.\n\n"
+         "[^n1]: A source — https://example.org/a\n")
+check_eq("gdoc: its pictures, with their description", _gpics,
+         {"kix.img1": {"uri": "https://lh.example/img1", "alt": "A bar chart"}})
+
+
+class _FakeResponse:
+    headers = {"Content-Type": "image/jpeg"}
+
+    def __init__(self, data):
+        self.data = data
+
+    def read(self):
+        return self.data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+_gfiles = _gd.fetch_pictures(_gpics, opener=lambda req, timeout: _FakeResponse(b"\xff\xd8jpg"))
+check_eq("gdoc: a fetched picture is named for its place and its type",
+         _gfiles, {"kix.img1": ("figure-1.jpg", b"\xff\xd8jpg")})
+check("gdoc: and the text names that file", _gd.with_files(_gtext, _gpics, _gfiles),
+      "![A bar chart](figure-1.jpg)")
+_gdoc_parsed = _cp.parse(_gd.with_files(_gtext, _gpics, {}))
+check_eq("gdoc: the composer reads it as figure, list, table and callout",
+         [b.kind for b in _gdoc_parsed.sections[1].blocks], ["figure", "list", "table", "callout"])
+check_eq("gdoc: the figure has the Doc's caption and source",
+         (_gdoc_parsed.sections[1].blocks[0].data["caption"],
+          _gdoc_parsed.sections[1].blocks[0].data["source"]),
+         ("Figure 1. A chart (2024)", "*Source: Somewhere.*"))
+_gl = TEMPLATES["appleseed-report"]["layout"]()
+_cp.lay_out(_gl, section_pattern("appleseed-report"), _gdoc_parsed, "Spec Doc")
+_new._apply_title(_gl, "Spec Doc")                 # as create() does next
+_gb = {b["id"]: b for b in _gl["boxes"]}
+check_eq("a text that names no date: the cover says this month, not MONTH 20XX",
+         _gb["tpl-date"]["md"], _dt.date.today().strftime("%B %Y").upper())
+check_eq("a text that names no subtitle or author: the template's stand-ins go",
+         ("tpl-sub" in _gb, "tpl-author2" in _gb), (False, False))
+check_eq("no template stand-in words survive anywhere",
+         [b["id"] for b in _gl["boxes"] if re.search(
+             r"20XX|Your Name|YOUR FIRST WORDS|HEADLINE FINDING|title here|spaced capitals",
+             b.get("md", ""))], [])
+check_eq("gdoc: an address is read for its id",
+         _gd.doc_id("https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789/edit"),
+         "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789")
+
 # --- pagination measured against the fonts (B2) --------------------------------
 # The composer guessed 0.54em a glyph (0.64 in capitals): "WHO IS REALLY
 # STRUGGLING?" counted two lines, so its hairline and body sat half an inch low,

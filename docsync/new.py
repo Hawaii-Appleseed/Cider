@@ -599,6 +599,13 @@ def main(argv=None) -> int:
                     help="a folder of the pictures the text's ![…](…) lines "
                          "name: copied into the project, each figure placed at "
                          "the height its file draws")
+    ap.add_argument("--from-gdoc", default=None, metavar="DOC",
+                    help="a Google Doc (its address or id, or the Docs API's "
+                         "saved JSON) laid out like --text: its headings, "
+                         "footnotes, pictures, tables and callouts come with it "
+                         "(docsync/gdoc.py says what each becomes). Needs "
+                         "--template; by address it needs GOOGLE_OAUTH_TOKEN or "
+                         "DOCSYNC_GOOGLE_SA.")
     ap.add_argument("--subtitle", default="", help="cover subtitle (with --text)")
     ap.add_argument("--date", default="", help='cover date, e.g. "March 2027"')
     ap.add_argument("--author", default="", help="inside-cover author line")
@@ -634,6 +641,26 @@ def main(argv=None) -> int:
             return 1
         assets = {p.name: p.read_bytes() for p in sorted(d.iterdir())
                   if p.is_file() and p.suffix.lower() in _IMAGE_EXTS}
+    if a.from_gdoc:
+        if text:
+            print("  new: pass --text or --from-gdoc, not both", file=sys.stderr)
+            return 1
+        from .gdoc import GdocError, fetch_pictures, load, to_text, with_files
+        try:
+            gd = load(a.from_gdoc)
+        except GdocError as e:
+            print(f"  new: {e}", file=sys.stderr)
+            return 1
+        text, pics = to_text(gd)
+        got = fetch_pictures(pics)
+        text = with_files(text, pics, got)
+        # --assets may hold what could not be fetched (figure-K.png).
+        assets = {**{n: b for n, b in got.values()}, **(assets or {})}
+        if len(got) < len(pics):
+            print(f"  {len(pics) - len(got)} of the Doc's {len(pics)} pictures could not "
+                  "be fetched (a saved Doc's picture links last about 30 minutes): "
+                  "their frames are placed; drop each in, or rerun with --assets "
+                  "<a folder of figure-K.png>")
     try:
         proj = create(a.slug, a.name, a.w, a.h, template=a.template,
                       scheme=a.scheme, data=a.data, text=text,

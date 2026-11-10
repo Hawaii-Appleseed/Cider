@@ -867,11 +867,22 @@ def lay_out(layout: dict, pattern: dict, doc: Doc, title: str,
     cid = pattern.get("copyright")
     if cid and cid in boxes:
         boxes[cid]["md"] = boxes[cid]["md"].replace("20XX", _year(doc))
+    unsaid = set()
     for key, bid in pattern.get("meta", {}).items():
         v = doc.meta.get(key)
-        if v and bid in boxes:
+        if bid not in boxes:
+            continue
+        if v:
             boxes[bid]["md"] = (v.upper() if key == "date" else
                                 f"Author: {v}" if key == "author" else v)
+        elif key == "date":
+            # "MONTH 20XX" on a report's cover: this month, until somebody says.
+            boxes[bid]["md"] = datetime.date.today().strftime("%B %Y").upper()
+        else:
+            # "Author: Your Name", "A subtitle in spaced capitals…": the
+            # template's stand-ins, which a text that names none must not keep.
+            unsaid.add(bid)
+    layout["boxes"][:] = [b for b in layout["boxes"] if b["id"] not in unsaid]
     return {"pages": pages, "toc": c.toc, "pictures": c.pictures}
 
 
