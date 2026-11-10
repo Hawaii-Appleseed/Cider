@@ -429,7 +429,10 @@ one batch: `addChart` + `addTextBox` + `group`.
 same truth `save()` refuses on), `off-sheet` (a placed element past the page
 edge — read from the layout store, because the page visually CLIPS exactly
 what you are looking for), `overlap` (>20% of the smaller element covered;
-grouped pairs are skipped, being composition not collision),
+grouped pairs are skipped, being composition not collision, and so is
+anything set on a page's BACKDROP — a picture or shape covering at least 90%
+of the page and standing behind it, like the report template's cover photo;
+brought to the front, or short of the page, it counts again),
 `orphaned-group-member`, `uncited-source` (blocks publish), and
 `immovable-text` (a slot with no `data-el` on or around it, per page). Reserve
 screenshots for taste — and when you want one, `POST /__export` with
