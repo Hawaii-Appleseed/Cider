@@ -181,6 +181,10 @@ jobs:
         if: matrix.shard == 1
         run: python3 docsync/test_docsync.py
 
+      - name: Self-test the template/engine guard hook
+        if: matrix.shard == 1
+        run: python3 .claude/hooks/test_guard_report_templates.py
+
       # Also guards edit.html's inline script: its stylesheet is a JS template
       # literal, so a stray backtick anywhere in it kills the whole editor with
       # no console error. Cheap, and catches a whole class of silent breakage.

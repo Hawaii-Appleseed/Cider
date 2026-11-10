@@ -127,8 +127,16 @@ not edit a report's `render_report.py` / `layout.json`, `docsync/`, or start
 `tools/wt new|land` / `docsync.hub` for it; if the editor cannot do it, say so
 and ask. `.claude/hooks/guard-report-templates.py` (a PreToolUse hook in
 `.claude/settings.json`) DENIES those edits for every session in this repo;
-a person who means to work on the code runs `.claude/hooks/allow-template`
-(a 2-hour window, per person). Claude never opens it.
+a person who means to work on the code either says so in their message
+("change the template", "fix the engine": the hook reads what they typed in
+the session, and it opens that session for 2 hours) or runs
+`.claude/hooks/allow-template` (a 2-hour window, per person, every session).
+Claude never opens it.
+
+The engine, `docsync/**`, is NOT guarded inside a `tools/wt` worktree
+(2026-11-10): engine work kept needing an unlock, and a worktree edit reaches
+nobody until its PR passes CI. A report's own template and anything in the
+main checkout stay locked.
 
 The editor's own UI, `docsync/editor/**`, is NOT guarded (2026-10-28): how
 dragging, selecting and typing work is tool work, done in a `tools/wt`
