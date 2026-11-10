@@ -85,9 +85,11 @@ test.describe('report content updates', () => {
 
   test('a clone that falls behind is offered the newer content, and takes it',
     async ({ page }) => {
-      // Adopt the CLONE, so the server is serving it.
+      // Adopt the CLONE, so the server is serving it. The form only writes
+      // through the server once the page has found it (start.html's
+      // detectLocal): wait for that, not for a clock that load outruns.
       await page.goto('start.html');
-      await page.waitForTimeout(600);
+      await page.waitForFunction(() => LOCAL === true);
       await page.click('#adopt');
       await page.fill('#np-root', clone);
       await page.click('#np-create');
@@ -113,14 +115,39 @@ test.describe('report content updates', () => {
         fetch('/__pull', { method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ project: M.id }) }).then(r => r.json()));
-      if (!pull.ok) console.log('PULL-REFUSED:', JSON.stringify(pull));
-      expect(pull.ok).toBe(true);
-      expect(pull.message).toMatch(/1 change/);
+      // This failed once (2026-11-09, a full affected run) on the message,
+      // with ok true: the answer was not "1 change", and nothing said what it
+      // was. It now says, with where both repos stood.
+      const where = () => `pull answered ${JSON.stringify(pull)}; clone: `
+        + git(clone, 'log --oneline -3').trim().replace(/\n/g, ' | ')
+        + '; origin: ' + git(origin, 'log --oneline -3').trim().replace(/\n/g, ' | ');
+      expect(pull.ok, where()).toBe(true);
+      expect(pull.message, where()).toMatch(/1 change/);
 
       // The clone really moved, and the rebuilt page carries the new words.
       expect(git(clone, 'log --format=%s -1').trim()).toBe('revise the title');
       expect(fs.readFileSync(path.join(clone, 'projects', SLUG, 'content.md'), 'utf8'))
         .toContain('REVISED');
+    });
+
+  // A check that could not be made is not "up to date". With the remote out
+  // of reach the fetch fails, and /__pull used to answer ok, "already up to
+  // date", over a repo nobody had looked at.
+  test('a remote out of reach is said, not answered as "already up to date"',
+    async ({ page }) => {
+      await page.goto('start.html');   // any page, so a relative fetch resolves
+      const away = origin + '-away';
+      fs.renameSync(origin, away);
+      try {
+        const out = await page.evaluate(s2 =>
+          fetch('/__pull', { method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project: s2 }) }).then(r => r.json()), SLUG);
+        expect(out.ok, JSON.stringify(out)).toBe(false);
+        expect(out.error).toMatch(/could not check for newer content/);
+      } finally {
+        fs.renameSync(away, origin);
+      }
     });
 
   test('unpushed work of your own blocks the update instead of being merged over',
