@@ -6007,6 +6007,23 @@ const zOf = id => {
   if (b) return b.z ?? 2;
   return layout.positions[id]?.z ?? 1;
 };
+/** Where an object really stands in its page's stack: its z, lifted by its
+ *  named layer the way the engine's Layout.layer_lift does (100 a layer). */
+function stackZ(id) {
+  const t = /^table\./.test(id) ? (layout.tables || []).find(x => 'table.' + x.id === id) : null;
+  const obj = t || shapeOf(id) || boxOf(id) || (layout.positions || {})[id] || {};
+  const z = t ? (t.z ?? 2) : zOf(id);
+  const li = (layout.layers || []).findIndex(L => L && L.name === obj.layer);
+  return (+z || 0) + (li >= 0 ? (li + 1) * 100 : 0);
+}
+/** True when a box (page inches) covers at least nine tenths of its page: a
+ *  backdrop, not a picture placed on the page. A pageless sheet has none. */
+function coversPage(b) {
+  if (!b || isPageless()) return false;
+  const w = Math.min(b.x + b.w, PAGE_W_IN) - Math.max(b.x, 0);
+  const h = Math.min(b.y + b.h, PAGE_H_IN) - Math.max(b.y, 0);
+  return w > 0 && h > 0 && (w * h) / (PAGE_W_IN * PAGE_H_IN) >= 0.9;
+}
 const setZ = (id, z) => {
   const sh = shapeOf(id);
   const b = boxOf(id);
@@ -34781,11 +34798,24 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     });
     const sameGroup = (a, c) =>
       (layout.groups || []).some(g => g.includes(a) && g.includes(c));
+    // A page's BACKDROP: a picture or a shape that covers the page and stands
+    // behind what it overlaps. A cover's title, logo and date set on its
+    // photo are the design, not a clash: the report template's own cover
+    // counted three or four overlaps on every report made from it, so the
+    // Check never came back clean, and an "Overlapping" warning was one to
+    // ignore — the real ones too. Anything over a backdrop is skipped here;
+    // a backdrop brought to the FRONT, or a picture short of the page, is
+    // still reported.
+    items.forEach(it => {
+      it.backdrop = (!!shapeOf(it.id) || !!boxPictureSrc(it.id)) && coversPage(it.b);
+    });
+    const over = (A, C) => A.backdrop && stackZ(A.id) < stackZ(C.id);
     for (let a = 0; a < items.length; a++)
       for (let c = a + 1; c < items.length; c++) {
         const A = items[a], C = items[c];
         if (String(A.page) !== String(C.page)) continue;
         if (sameGroup(A.id, C.id)) continue;
+        if (over(A, C) || over(C, A)) continue;
         const w = Math.min(A.b.x + A.b.w, C.b.x + C.b.w) - Math.max(A.b.x, C.b.x);
         const h = Math.min(A.b.y + A.b.h, C.b.y + C.b.h) - Math.max(A.b.y, C.b.y);
         if (w <= 0 || h <= 0) continue;
