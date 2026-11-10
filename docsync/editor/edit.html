@@ -26678,13 +26678,22 @@ const endnotesBox = () => boxes().find(b => b.act === 'endnotes');
  *  editor must not offer to add a second. The rendered page is the only
  *  honest source for this: the engine stamps ds-endnotes-sec on the box it
  *  draws, and everything else carrying endnote hooks (report2027's page 12,
- *  rxkids' sources section) is the renderer's own. */
+ *  rxkids' sources section) is the renderer's own — except the stand-in
+ *  below. */
 function rendererHasEndnotes() {
   const d = $('out').contentDocument;
   if (!d) return false;
   return [...d.querySelectorAll('[data-el^="endnote."]')]
-    .some(el => !el.closest('.ds-endnotes-sec'));
+    .some(el => !el.closest('.ds-endnotes-sec') && !isStandInEndnote(el));
 }
+/** The list a docsync.new report prints while it has no endnotes section:
+ *  its renderer puts the engine's own list (ol.ds-endnotes) after the last
+ *  page, outside every sheet, so that no citation dangles. That is a list
+ *  waiting for a section, not one the renderer designed, and placing the
+ *  section is what retires it. Counting it as the renderer's own refused
+ *  addEndnotesSection on every report the composer made (2026-11-09). */
+const isStandInEndnote = el =>
+  !el.closest('section.page') && !!el.closest('ol.ds-endnotes');
 
 /** Add the endnotes section at the END of the document, and return its box.
  *
