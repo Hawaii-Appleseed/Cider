@@ -139,38 +139,50 @@ jobs:
       # pick errs toward everything: top-level code, a fixture, the workflow,
       # no map or a map over two weeks old all run the ten shards as before.
       #
-      # A push to main, a manual dispatch and the nightly run run all ten, and
-      # record what each spec ran (DS_IMPACT, below). `impact` folds a green
-      # run on main into the map and caches it; that is the map restored here.
-      # What a pull request's pick missed shows up on main minutes after the
-      # merge, and `after-merge` opens an issue for it.
+      # A push to main asks the picker the same question about the merge it
+      # is. If the pull request ran a pick, main runs all ten: what the pick
+      # missed shows up minutes after the merge, and `after-merge` opens an
+      # issue for it. If the pull request ran all ten, main runs shard 1 only,
+      # the cheap canary, as it always did: a second full run per merge only
+      # queued the next pull request behind it (the org runs 20 jobs at once).
+      #
+      # The nightly run and a manual dispatch run all ten and record what each
+      # spec ran (DS_IMPACT, below; it costs half again the time and its own
+      # run of the suite, which is why a push does not). `impact` folds the
+      # run on main into the map and caches it: the map restored here.
       - uses: actions/setup-node@v4
-        if: github.event_name == 'pull_request' && steps.paths.outputs.editor == 'true'
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: package-lock.json
       - name: Install Node dependencies (the picker parses with acorn)
-        if: github.event_name == 'pull_request' && steps.paths.outputs.editor == 'true'
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
         run: npm ci --ignore-scripts
       - name: The impact map main last built
-        if: github.event_name == 'pull_request' && steps.paths.outputs.editor == 'true'
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
         uses: actions/cache/restore@v4
         with:
           path: .impact
-          key: impact-map-${{ github.event.pull_request.base.sha }}
+          key: impact-map-${{ github.sha }}
           restore-keys: impact-map-
       - id: shards
         run: |
           full() { echo "$1"; { echo 'shards=[1,2,3,4,5,6,7,8,9,10]'; echo of=10; echo specs=; } >> "$GITHUB_OUTPUT"; exit 0; }
-          [ "${{ github.event_name }}" = pull_request ] || full "not a pull request: the whole suite"
+          ev="${{ github.event_name }}"
+          [ "$ev" = pull_request ] || [ "$ev" = push ] || full "nightly or manual: the whole suite, recorded"
           [ "${{ steps.paths.outputs.editor }}" = true ] || full "nothing the suite covers changed"
-          base="${{ github.event.pull_request.base.sha }}"
-          node tools/affected.mjs --ci --list --why --since "$base" --plan "$RUNNER_TEMP/plan.json" || full "the picker failed: the whole suite"
+          canary() { echo "$1"; { echo 'shards=[1]'; echo of=10; echo specs=; } >> "$GITHUB_OUTPUT"; exit 0; }
+          # What the pull request ran in full, main runs the canary of.
+          whole() { [ "$ev" = push ] && canary "the pull request ran $1: shard 1 only"; full "the whole suite: $1"; }
+          if [ "$ev" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
+          git cat-file -e "$base^{commit}" 2>/dev/null || full "no known base: the whole suite"
+          node tools/affected.mjs --ci --list --why --since "$base" --plan "$RUNNER_TEMP/plan.json" || whole "everything (the picker failed)"
           all=$(node -p "require('$RUNNER_TEMP/plan.json').all || ''")
-          [ -z "$all" ] || full "the whole suite: $all"
+          [ -z "$all" ] || whole "everything ($all)"
           node -e "console.log(require('$RUNNER_TEMP/plan.json').specs.join('\n'))" > "$RUNNER_TEMP/only.txt"
-          [ -s "$RUNNER_TEMP/only.txt" ] || full "no spec picked: the whole suite"
+          [ -s "$RUNNER_TEMP/only.txt" ] || whole "everything (no spec picked)"
+          [ "$ev" = pull_request ] || full "the pull request ran a pick of $(wc -l < "$RUNNER_TEMP/only.txt") spec file(s): main runs the whole suite"
           n=$(node tools/ci-shard.mjs --count --only "$RUNNER_TEMP/only.txt")
           echo "$(wc -l < "$RUNNER_TEMP/only.txt") spec file(s) on $n shard(s)"
           { echo "shards=[$(seq -s, 1 "$n")]"; echo "of=$n"; echo "specs=$(tr '\n' ' ' < "$RUNNER_TEMP/only.txt")"; } >> "$GITHUB_OUTPUT"
@@ -272,8 +284,8 @@ jobs:
           # The specs a pull request's change needs (`changes`); empty: all.
           SPECS: ${{ needs.changes.outputs.specs }}
           OF: ${{ needs.changes.outputs.of }}
-          # Off a pull request, each test also records which functions it ran.
-          DS_IMPACT: ${{ github.event_name != 'pull_request' && 'record' || '' }}
+          # Nightly and on a manual run, each test also records which functions it ran.
+          DS_IMPACT: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'record' || '' }}
         run: |
           if [ -n "$SPECS" ]; then
             printf '%s\n' $SPECS > "$RUNNER_TEMP/only.txt"
@@ -288,7 +300,7 @@ jobs:
 
       # What each test ran, for `impact` to fold into the map.
       - name: Upload the impact records
-        if: always() && github.event_name != 'pull_request'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-artifact@v4
         with:
           name: impact-${{ matrix.shard }}
@@ -471,12 +483,14 @@ jobs:
         run: python3 -m docsync.build_parity --base "${{ steps.base.outputs.base }}" --show 10
 
   # The map a pull request picks its specs from (tools/affected.mjs): every
-  # shard's records of a green run on main, folded into .impact/ and cached
-  # under this commit. A red run keeps the last map: a spec that died early
-  # would be missing from a new one, and a missing spec is never picked.
+  # shard's records of the nightly run on main (or a manual one there), folded
+  # into .impact/ and cached under this commit. A failed test still leaves its
+  # record, so one red test does not cost the map; a shard that died before
+  # its tests does, and the count below keeps the last map then: a spec
+  # missing from the map is never picked.
   impact:
     needs: [changes, test]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.test.result == 'success'
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && (needs.test.result == 'success' || needs.test.result == 'failure')
     name: Impact map
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -496,14 +510,14 @@ jobs:
             const have = Object.keys(m.tests).length;
             const all = fs.readdirSync('tests/editor').filter(f => f.endsWith('.spec.js')).length;
             console.log(have + ' of ' + all + ' spec files in the map');
-            if (have < all * 0.9 || !m.js['docsync/editor/edit.html']) { console.error('too few: the last map stays'); process.exit(1); }"
+            if (have < all * 0.95 || !m.js['docsync/editor/edit.html']) { console.error('too few: the last map stays'); process.exit(1); }"
       - uses: actions/cache/save@v4
         with:
           path: .impact
           key: impact-map-${{ github.sha }}-${{ github.run_id }}
 
   # Main went red after a merge: a pull request's gate ran the specs its
-  # change needed and main ran the rest. One open issue says so, with the run.
+  # change needed and main ran everything. One open issue says so, with the run.
   # A run a newer merge cancelled is not a failure, and says nothing.
   after-merge:
     needs: [test, hub, sweep, reports, parity]

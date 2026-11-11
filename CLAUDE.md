@@ -361,10 +361,13 @@ Rules that bite:
   impact map main last built and cuts the pick into as few shards as it is
   worth (`tools/ci-shard.mjs --count --only`). Top-level editor code, a
   fixture, the workflow, the picker, no map or one over 14 days old still run
-  all ten. The push to main after the merge runs all ten plus the sweep of
-  every report, records what each spec ran, and (`impact`, green runs only)
-  caches that as the next map; a red run on main opens the issue "main: the
-  editor suite failed after a merge". So a merged change is NOT fully tested
+  all ten. The push to main after a picked merge runs all ten (after a
+  merge that already ran all ten, shard 1), plus the sweep of every report
+  for an editor or engine change; a red run on main opens the issue "main:
+  the editor suite failed after a merge". The map is rebuilt by the nightly
+  run on main, which records what each spec ran (`impact`; recording costs
+  half again the time, so pushes do not). `gh workflow run editor-tests.yml
+  --ref main` rebuilds it by hand. So a merged change is NOT fully tested
   until that run is green, and the hub ship does not wait for it: for a
   change the picker cannot see well (new top-level wiring, CSS nothing names),
   run `npm run test:ci` before landing.
