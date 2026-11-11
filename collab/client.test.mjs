@@ -621,6 +621,84 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
     a.close(); b.close();
   });
 
+  // 2026-11-09: a tab held for hours came back with an older copy of a report
+  // and that copy became the room's. A session back after a long time away,
+  // with nothing of its own to send, asks the editor first (onStale); an editor
+  // that is starting over is not merged at all.
+  test('a session back after too long away asks the editor, and one that starts over is not merged', async () => {
+    const room = uniqueRoom('stale');
+    const asked = [];
+    const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0, staleMs: 300, onStale: ms => { asked.push(ms); return true; } });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+    await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+
+    // A short absence is a merge, as before: nobody is asked.
+    assert.equal(a.sleep(), true);
+    assert.equal(a.wake(), true);
+    assert.equal(asked.length, 0, 'a short sleep asked the editor');
+    await waitFor(() => a.state.status === 'live', 10_000, 'A never came back from a short sleep');
+
+    assert.equal(a.sleep(), true);
+    const docB = parseContent(p.content);
+    const slotB = docB.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+    slotB.text = slotB.text + ' (B, long after A left)';
+    b.flush({ content: serializeContent(docB), layout: p.layout });
+    await sleep(450);
+
+    assert.equal(a.wake(), false, 'a stale session rejoined');
+    assert.equal(asked.length, 1);
+    assert.ok(asked[0] >= 300, `away for ${asked[0]}ms`);
+    assert.equal(a.stale, true);
+    await sleep(600);
+    assert.equal(a.provider.wsconnected, false, 'a stale session opened a socket');
+    assert.ok(!a.files().content.includes('long after A left'), 'a stale session merged');
+    assert.equal(a.wake(), false, 'and it stays closed');
+    assert.equal(asked.length, 1, 'asked once');
+    a.close(); b.close();
+  });
+
+  test('words typed while away still merge, however long it was', async () => {
+    const room = uniqueRoom('stale-typed');
+    const asked = [];
+    const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0, staleMs: 300, onStale: ms => { asked.push(ms); return true; } });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+    await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+    assert.equal(a.sleep(), true);
+    await sleep(450);
+    const docA = parseContent(a.files().content);
+    const slotA = docA.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+    slotA.text = 'A, typed while away: ' + slotA.text;
+    a.mark(); a.flush({ content: serializeContent(docA), layout: p.layout });
+    assert.equal(a.stale, false, 'a session with words of its own was called stale');
+    await waitFor(() => a.state.status === 'live' && b.files().content.includes('A, typed while away: '),
+      15_000, 'the words typed while away never reached the room');
+    a.close(); b.close();
+  });
+
+  test('an editor that says no is merged as before, and a frozen timer asks the same question', async () => {
+    const room = uniqueRoom('stale-no');
+    let answer = false; const asked = [];
+    const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0, staleMs: 300, onStale: ms => { asked.push(ms); return answer; } });
+    await a.ready;
+    assert.equal(a.sleep(), true);
+    await sleep(450);
+    assert.equal(a.wake(), true, 'an editor that is not starting over rejoins');
+    assert.equal(asked.length, 1);
+    await waitFor(() => a.state.status === 'live', 10_000, 'A never came back');
+    // The machine slept: the timer's next run is far later than its interval.
+    assert.equal(a.noteTick(Date.now()), false, 'an ordinary tick asked');
+    answer = true;
+    assert.equal(a.noteTick(Date.now() + 60 * 60 * 1000), true);
+    assert.equal(a.stale, true);
+    assert.ok(asked.at(-1) >= 60 * 60 * 1000 - 1000, `asked with ${asked.at(-1)}`);
+    await waitFor(() => !a.provider.wsconnected, 5000, 'the stale session kept its socket');
+    a.close();
+  });
+
   test('a collaborator typing keeps an otherwise idle session awake', async () => {
     const room = uniqueRoom('watch');
     // A is only READING — no local edits at all, and a deadline it would trip
