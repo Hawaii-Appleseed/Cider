@@ -157,6 +157,16 @@ const PRESENCE_POLL_MS = 250;
 const IDLE_SLEEP_MS = 10 * 60 * 1000;   // visible, no input and no peer edits
 const HIDDEN_SLEEP_MS = 2 * 60 * 1000;  // hidden: long enough to survive a tab switch
 const SLEEP_TICK_MS = 15 * 1000;        // one timer, not a reset per keystroke
+// A tab that comes back after this long with nothing of its own to send is not
+// merged, it is told it is stale (onStale) so the editor can start again from
+// what the room holds. Why (2026-11-09): a colleague's tab, held for hours,
+// came back with an older copy of a report whose layout had since been redone,
+// and that older copy became the room's. A merge is right for a blip or a tab
+// switch, where this side's documents are a moment behind. After half an hour
+// they are a different document, and the only thing this tab can add by
+// merging them is the past. Edits made while away still merge: they are words
+// somebody typed.
+const STALE_AWAY_MS = 30 * 60 * 1000;
 
 export class CollabSession {
   /**
@@ -183,6 +193,12 @@ export class CollabSession {
    * @param {number} [o.idleMs]        drop the socket after this long with no input and no
    *                                   peer edits (default 10 min; 0 never sleeps)
    * @param {number} [o.hiddenMs]      the same for a tab that is not on screen (default 2 min)
+   * @param {number} [o.staleMs]       back after this long away (asleep, or the machine
+   *                                   itself asleep) with no edits of its own: onStale is
+   *                                   asked first (default 30 min; 0 never asks)
+   * @param {(awayMs: number) => boolean} [o.onStale]  true = the editor is starting over
+   *                                   (a reload), so the session stays closed; anything
+   *                                   else and it rejoins and merges, as it always did
    * @param {Function} [o.WebSocketPolyfill]   for a Node client (see below); browsers never set it
    */
   constructor(o) {
@@ -196,6 +212,7 @@ export class CollabSession {
     this.onStatus = o.onStatus || (() => {});
     this.onHistory = o.onHistory || (() => {});
     this.onPeers = o.onPeers || (() => {});
+    this.onStale = o.onStale || null;
     // The room may hand THIS editor pilot ops to apply (the hub's /pilot, on
     // behalf of a person's own Claude): (msg) => {ok, error?, results?}. When
     // unset, such a message is answered as refused rather than left hanging.
@@ -241,6 +258,7 @@ export class CollabSession {
     // the network document, whose provider broadcasts it.
     this.shadow.on('update', (u, origin) => {
       if (origin === ORIGIN.REMOTE) return;
+      if (origin === ORIGIN.LOCAL && (this.#asleep || !this.provider?.wsconnected)) this.#wroteAway = true;
       Y.applyUpdate(this.net, u, ORIGIN.SHADOW);
     });
     // net -> shadow: a collaborator's update, held while the editor is busy.
@@ -292,7 +310,7 @@ export class CollabSession {
       else this.#set({ status: 'connecting' });
     });
     this.provider.on('connection-error', () => { if (!this.#asleep) this.#set({ status: 'offline' }); });
-    this.provider.on('synced', synced => { if (synced) this.#onSynced(); });
+    this.provider.on('synced', synced => { if (synced) { this.#wroteAway = false; this.#onSynced(); } });
     this.provider.on('custom-message', s => this.#onMessage(s));
     this.provider.awareness.on('change', () => this.#presence());
     this.provider.awareness.setLocalState({ login: this.login, name: this.name, color: this.color });
@@ -307,6 +325,7 @@ export class CollabSession {
 
     this.#idleMs = o.idleMs ?? IDLE_SLEEP_MS;
     this.#hiddenMs = o.hiddenMs ?? HIDDEN_SLEEP_MS;
+    this.#staleMs = o.staleMs ?? STALE_AWAY_MS;
     this.#watchIdle();
 
     if (o.connect !== false) this.connect();
@@ -323,6 +342,11 @@ export class CollabSession {
   #hiddenMs = HIDDEN_SLEEP_MS;
   #activeAt = Date.now();
   #hiddenAt = 0;             // when the tab went off screen; 0 while it is visible
+  #staleMs = STALE_AWAY_MS;
+  #sleptAt = 0;              // when sleep() let go of the socket
+  #wroteAway = false;        // the editor changed the document while the socket was gone
+  #tickAt = Date.now();      // the idle timer's last run; a long gap is the machine asleep
+  #stale = false;            // onStale said the editor is starting over: stay closed
   #asleep = false;
   #sleepTimer = 0;
   #deadWs = null;            // the socket sleep() killed; wake() takes it off the provider
@@ -393,6 +417,7 @@ export class CollabSession {
     // deliberate pause.
     if (this.#asleep || this.state.phase !== 'ready' || !this.provider.wsconnected) return false;
     this.#asleep = true;
+    this.#sleptAt = Date.now();
     this.#deadWs = this.provider.ws;
     try { this.provider.disconnect(); } catch (e) { /* already closed */ }
     this.#set({ status: 'asleep' });
@@ -456,7 +481,8 @@ export class CollabSession {
 
   /** Back to the room, and sync whatever was missed. */
   wake() {
-    if (!this.#asleep) return false;
+    if (!this.#asleep || this.#stale) return false;
+    if (this.#sleptAt && this.#tooLongAway(Date.now() - this.#sleptAt)) return false;
     // `disconnect()` closed that socket, but the provider only lets go of the
     // one it holds when a close EVENT arrives — and `connect()` will not open
     // a second one while it is still there. A close handshake that never
@@ -482,6 +508,50 @@ export class CollabSession {
     this.connect();
     return true;
   }
+
+  /**
+   * Away for `ms`: is this tab now stale, and is the editor starting over?
+   * Only with nothing of its own to send, and only if the editor says yes.
+   * True leaves the session closed for good (the page is on its way out).
+   */
+  #tooLongAway(ms) {
+    if (this.#stale) return true;
+    if (!this.onStale || !this.#staleMs || ms < this.#staleMs) return false;
+    if (this.state.phase !== 'ready' || this.#wroteAway) return false;
+    let over = false;
+    try { over = this.onStale(ms) === true; } catch { over = false; }
+    if (!over) return false;
+    this.#stale = true;
+    this.#asleep = true;
+    // Let go of the socket for good, a dead one included: a close that never
+    // completes (see wake()) would leave the provider holding it.
+    const ws = this.provider.ws;
+    try { this.provider.disconnect(); } catch (e) { /* already closed */ }
+    if (ws && this.provider.ws === ws) {
+      this.provider.ws = null;
+      this.provider.wsconnected = false;
+      this.provider.wsconnecting = false;
+      try { ws.close(); } catch (e) { /* already gone */ }
+    }
+    this.#deadWs = null;
+    this.#set({ status: 'asleep' });
+    return true;
+  }
+
+  /**
+   * The idle timer ran at `now`. A gap far longer than its interval means
+   * nothing ran in between: the machine was asleep (a closed laptop), and the
+   * socket it comes back to is dead. That return is the same question wake()
+   * asks. Public so a test can say what time it is.
+   */
+  noteTick(now = Date.now()) {
+    const gap = now - this.#tickAt;
+    this.#tickAt = now;
+    return this.#staleMs && gap >= this.#staleMs ? this.#tooLongAway(gap) : false;
+  }
+
+  /** True once onStale said the editor is starting over. */
+  get stale() { return this.#stale; }
 
   /**
    * One timer for both deadlines, rather than a reset on every keystroke:
@@ -519,8 +589,9 @@ export class CollabSession {
     const tick = Math.max(50, Math.min(SLEEP_TICK_MS, Math.floor(soonest / 4)));
 
     this.#sleepTimer = setInterval(() => {
-      if (this.#asleep || this.state.phase !== 'ready') return;
       const now = Date.now();
+      if (this.noteTick(now)) return;
+      if (this.#asleep || this.state.phase !== 'ready') return;
       const hiddenTooLong = this.#hiddenMs && this.#hiddenAt && now - this.#hiddenAt >= this.#hiddenMs;
       const idleTooLong = this.#idleMs && now - this.#activeAt >= this.#idleMs;
       if (hiddenTooLong || idleTooLong) this.sleep();
