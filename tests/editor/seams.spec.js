@@ -234,6 +234,23 @@ test.describe('the render state by name, a batch ref by name, a sheet with one i
     expect(await page.evaluate(() => typeof window.__dsSwallowed())).toBe('object');
   });
 
+  // The hub check's restore test pressed Save within four seconds of a
+  // collaborator's restore; the render after the Save then put the restore
+  // notice back over "saved — …", and the test waited twenty seconds for words
+  // that had come and gone.
+  test('a message held for the next render gives way to one said after it', async ({ page }) => {
+    await gotoEditor(page);
+    const after = say => page.evaluate(async say => {
+      sayNowAndAfterRender('held for the render');
+      if (say) document.getElementById('stat').textContent = say;
+      await render();
+      return document.getElementById('stat').textContent;
+    }, say);
+    expect(await after('')).toBe('held for the render');          // nobody spoke: it outlives the render
+    expect(await after('saved — on purpose')).not.toBe('held for the render');   // the render's own hint, not old news
+    expect(await after('')).toBe('held for the render');          // and the dropped one did not linger
+  });
+
   test('a batch ref is a name an op gives itself; any other @ is a value', async ({ page }) => {
     await gotoEditor(page, PROJ);
     const r = await page.evaluate(async () => {
