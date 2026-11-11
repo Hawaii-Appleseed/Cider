@@ -27,8 +27,11 @@ on:
 
 # A newer push to the same branch supersedes a run still going: the org's free
 # plan runs 20 jobs at once across every repo, and this workflow is 20 jobs.
+# Per event as well as per branch: the nightly run and a manual one on main
+# are their own group, so neither cancels the run of a merge still going (a
+# manual run did, 2026-11-10), and a merge does not cancel the nightly.
 concurrency:
-  group: editor-tests-${{ github.ref }}
+  group: editor-tests-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
