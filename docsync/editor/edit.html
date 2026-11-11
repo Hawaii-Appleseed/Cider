@@ -24954,7 +24954,7 @@ const STALE_MSG_HUB = 'a newer editor is out — click to reload when you reach 
  *  open, or a dialog is up: those merge, as they always did. */
 function collabStale(awayMs) {
   if (dirty || editing || document.querySelector('dialog[open]')) return false;
-  const mins = Math.max(1, Math.round(awayMs / 60000));
+  const mins = Math.max(1,  Math.round(awayMs / 60000));
   $('stat').textContent = `this tab was away ${mins} minutes — opening the current version`;
   Promise.resolve().then(() => clearDraftCache())
     .catch(e => swallowed('collabStale: draft cache', e))
