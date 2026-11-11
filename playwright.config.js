@@ -25,7 +25,12 @@ module.exports = defineConfig({
   // And fewer of them at once: a matrix run stacks WASM compiles, and it was
   // the CONTENTION, not the engine, that pushed heavy boots past any budget —
   // the same specs pass with room to spare when four run instead of ten.
-  workers: process.env.ALL_BROWSERS ? 4 : undefined,
+  // On CI, 4: GitHub's runners for a public repository have 4 cores, and
+  // Playwright's default (half the cores) left two idle on every shard — the
+  // shards are the gate's whole wall clock (2026-11-11). PW_WORKERS overrides
+  // (the sweep and hub jobs pass --workers themselves); locally, the default.
+  workers: process.env.PW_WORKERS ? Number(process.env.PW_WORKERS)
+    : process.env.ALL_BROWSERS || process.env.CI ? 4 : undefined,
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
   use: {
