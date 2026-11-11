@@ -3,6 +3,12 @@
 //
 //   node tools/ci-shard.mjs 3 10           the files shard 3 of 10 runs, one per line
 //   node tools/ci-shard.mjs --report 10    every shard's predicted load, and how even it is
+//   node tools/ci-shard.mjs 1 3 --only f   the same, over the spec files listed in f (one per line)
+//   node tools/ci-shard.mjs --count --only f   how many shards that list is worth, 1 to 10
+//
+// --only is the pull-request gate: tools/affected.mjs picks the specs a change
+// needs, and they are cut into as many shards as keeps each one no heavier
+// than a shard of the whole suite on ten.
 //
 // Playwright's own --shard cuts the alphabetical test list into equal-COUNT
 // chunks. Tests are not equal: charts.spec.js alone is 37 tests of ~11 s, all
@@ -52,15 +58,34 @@ export function check(files, bins) {
     if (a !== b && new RegExp(a).test(b)) throw new Error(`"${a}" also matches "${b}" as a Playwright filter`);
 }
 
+/** How many shards a subset is worth: each no heavier than one of the whole suite on `n`. */
+export function shardsFor(files, all, weights, n = 10) {
+  const known = Object.values(weights).sort((a, b) => a - b);
+  const median = known.length ? known[Math.floor(known.length / 2)] : 30;
+  const w = f => weights[path.basename(f)] ?? median;
+  const sum = fs => fs.reduce((t, f) => t + w(f), 0);
+  const per = sum(all) / n || 1;
+  return Math.max(1, Math.min(n, files.length, Math.ceil(sum(files) / per)));
+}
+
 function main(argv) {
+  const oi = argv.indexOf('--only');
+  const only = oi < 0 ? null : fs.readFileSync(argv[oi + 1], 'utf8').split(/\s+/).filter(Boolean);
+  if (oi >= 0) argv = argv.filter((_, i) => i !== oi && i !== oi + 1);
+  const count = argv[0] === '--count';
+  if (count) argv = ['--report', '10'];
   const report = argv[0] === '--report';
   const [k, n] = report ? [0, Number(argv[1])] : [Number(argv[0]), Number(argv[1])];
   if (!Number.isInteger(n) || n < 1 || (!report && (!Number.isInteger(k) || k < 1 || k > n)))
     { console.error('usage: ci-shard.mjs K N | --report N'); process.exit(64); }
-  const files = fs.readdirSync(path.join(ROOT, SPEC_DIR)).filter(f => f.endsWith('.spec.js')).sort().map(f => `${SPEC_DIR}/${f}`);
+  const every = fs.readdirSync(path.join(ROOT, SPEC_DIR)).filter(f => f.endsWith('.spec.js')).sort().map(f => `${SPEC_DIR}/${f}`);
+  const files = only ? every.filter(f => only.includes(f)) : every;
+  if (only && files.length !== new Set(only).size)
+    { console.error(`ci-shard: not spec files: ${only.filter(f => !every.includes(f)).join(', ')}`); process.exit(2); }
   let weights = {};
   try { weights = JSON.parse(fs.readFileSync(path.join(ROOT, SPEC_DIR, 'shard-weights.json'), 'utf8')); }
   catch (e) { console.error('no shard-weights.json: balancing by file count'); }
+  if (count) { console.log(shardsFor(files, every, weights)); return; }
   const bins = plan(files, weights, n);
   try { check(files, bins); } catch (e) { console.error('ci-shard: ' + e.message); process.exit(2); }
   if (report) {

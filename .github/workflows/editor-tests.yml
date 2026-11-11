@@ -12,8 +12,8 @@ on:
   # Every push to main and every pull request, with NO path filter here: main
   # is protected by a ruleset that requires the "Editor tests gate" check, and
   # a required check that never runs (a PR that changed only docs) would hold
-  # the PR forever. Which changes need the 20 shards is decided by the
-  # `changes` job below instead, and `gate` always reports.
+  # the PR forever. Which changes need the suite, and how much of it, is
+  # decided by the `changes` job below instead, and `gate` always reports.
   push:
     branches: [main]
   pull_request:
@@ -45,6 +45,8 @@ jobs:
       parity: ${{ steps.parity.outputs.parity }}
       base: ${{ steps.parity.outputs.base }}
       shards: ${{ steps.shards.outputs.shards }}
+      of: ${{ steps.shards.outputs.of }}
+      specs: ${{ steps.shards.outputs.specs }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +85,13 @@ jobs:
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           changed=$(git diff --name-only "$base" "${{ github.sha }}")
-          if echo "$changed" | grep -qE '^(docsync/|report2027/tools/serve\.py$|tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/)'; then
+          # A push to main sweeps every report when the editor or the engine
+          # changed. A pull request does that only when the sweep itself or the
+          # workflow changed: an engine change there sweeps the reports whose
+          # own files it touched, and main sweeps the rest after the merge.
+          every='^(docsync/|report2027/tools/serve\.py$|tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/)'
+          [ "${{ github.event_name }}" = pull_request ] && every='^(tests/editor/(every-field-opens\.spec\.js|fixtures/)|docsync\.yml$|\.github/)'
+          if echo "$changed" | grep -qE "$every"; then
             echo "reports=$(pick $all)" >> "$GITHUB_OUTPUT"; exit 0; fi
           some=""
           for id in $all; do
@@ -120,22 +128,64 @@ jobs:
             echo parity=false >> "$GITHUB_OUTPUT"
           fi
 
-      # Which shards run. A pull request, a manual dispatch and the nightly run
-      # run all ten. A push to main runs shard 1 only: the pull request that
-      # produced it already passed every shard on the same tree (the ruleset
-      # keeps main to merged PRs), so a second full run per merge only queued
-      # the next PR behind it — the org runs 20 jobs at once across every repo.
-      # Shard 1 is the cheap canary: it also carries the engine self-test, the
-      # render tolerances, the edit.html syntax guard and the Chrome export.
-      # The nightly run is the full backstop for two PRs that merged close
-      # together and broke each other.
+      # Which shards run, and which spec files.
+      #
+      # A pull request runs the specs its change needs (tools/affected.mjs
+      # --ci): the impact map says which specs ran the functions the change
+      # touches. They are cut into as few shards as keeps each no heavier than
+      # a shard of the whole suite, so a one-function change is one or two
+      # machines and a few minutes, not ten and a queue (2026-11-10: a
+      # one-verb change waited 5-6 minutes for machines, then ran 7.5). The
+      # pick errs toward everything: top-level code, a fixture, the workflow,
+      # no map or a map over two weeks old all run the ten shards as before.
+      #
+      # A push to main asks the picker the same question about the merge it
+      # is. If the pull request ran a pick, main runs all ten: what the pick
+      # missed shows up minutes after the merge, and `after-merge` opens an
+      # issue for it. If the pull request ran all ten, main runs shard 1 only,
+      # the cheap canary, as it always did: a second full run per merge only
+      # queued the next pull request behind it (the org runs 20 jobs at once).
+      #
+      # The nightly run and a manual dispatch run all ten and record what each
+      # spec ran (DS_IMPACT, below; it costs half again the time and its own
+      # run of the suite, which is why a push does not). `impact` folds the
+      # run on main into the map and caches it: the map restored here.
+      - uses: actions/setup-node@v4
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - name: Install Node dependencies (the picker parses with acorn)
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
+        run: npm ci --ignore-scripts
+      - name: The impact map main last built
+        if: (github.event_name == 'pull_request' || github.event_name == 'push') && steps.paths.outputs.editor == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .impact
+          key: impact-map-${{ github.sha }}
+          restore-keys: impact-map-
       - id: shards
         run: |
-          if [ "${{ github.event_name }}" = push ]; then
-            echo 'shards=[1]' >> "$GITHUB_OUTPUT"
-          else
-            echo 'shards=[1,2,3,4,5,6,7,8,9,10]' >> "$GITHUB_OUTPUT"
-          fi
+          full() { echo "$1"; { echo 'shards=[1,2,3,4,5,6,7,8,9,10]'; echo of=10; echo specs=; } >> "$GITHUB_OUTPUT"; exit 0; }
+          ev="${{ github.event_name }}"
+          [ "$ev" = pull_request ] || [ "$ev" = push ] || full "nightly or manual: the whole suite, recorded"
+          [ "${{ steps.paths.outputs.editor }}" = true ] || full "nothing the suite covers changed"
+          canary() { echo "$1"; { echo 'shards=[1]'; echo of=10; echo specs=; } >> "$GITHUB_OUTPUT"; exit 0; }
+          # What the pull request ran in full, main runs the canary of.
+          whole() { [ "$ev" = push ] && canary "the pull request ran $1: shard 1 only"; full "the whole suite: $1"; }
+          if [ "$ev" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
+          git cat-file -e "$base^{commit}" 2>/dev/null || full "no known base: the whole suite"
+          node tools/affected.mjs --ci --list --why --since "$base" --plan "$RUNNER_TEMP/plan.json" || whole "everything (the picker failed)"
+          all=$(node -p "require('$RUNNER_TEMP/plan.json').all || ''")
+          [ -z "$all" ] || whole "everything ($all)"
+          node -e "console.log(require('$RUNNER_TEMP/plan.json').specs.join('\n'))" > "$RUNNER_TEMP/only.txt"
+          [ -s "$RUNNER_TEMP/only.txt" ] || whole "everything (no spec picked)"
+          [ "$ev" = pull_request ] || full "the pull request ran a pick of $(wc -l < "$RUNNER_TEMP/only.txt") spec file(s): main runs the whole suite"
+          n=$(node tools/ci-shard.mjs --count --only "$RUNNER_TEMP/only.txt")
+          echo "$(wc -l < "$RUNNER_TEMP/only.txt") spec file(s) on $n shard(s)"
+          { echo "shards=[$(seq -s, 1 "$n")]"; echo "of=$n"; echo "specs=$(tr '\n' ' ' < "$RUNNER_TEMP/only.txt")"; } >> "$GITHUB_OUTPUT"
 
   test:
     needs: changes
@@ -157,7 +207,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.changes.outputs.shards) }}
-    name: test (${{ matrix.shard }}/10)
+    name: test (${{ matrix.shard }}/${{ needs.changes.outputs.of }})
     # A wedged shard holds one of the org's 20 slots until it is killed — but
     # the browser install step alone took 10–13 minutes on four runners at
     # once (2026-10-22, a slow cache restore), which cut off shards with every
@@ -230,12 +280,33 @@ jobs:
         run: python3 report2027/tools/test_export_chrome.py
 
       - name: Run the editor test suite
+        env:
+          # The specs a pull request's change needs (`changes`); empty: all.
+          SPECS: ${{ needs.changes.outputs.specs }}
+          OF: ${{ needs.changes.outputs.of }}
+          # Nightly and on a manual run, each test also records which functions it ran.
+          DS_IMPACT: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'record' || '' }}
         run: |
-          files=$(node tools/ci-shard.mjs ${{ matrix.shard }} 10)
+          if [ -n "$SPECS" ]; then
+            printf '%s\n' $SPECS > "$RUNNER_TEMP/only.txt"
+            files=$(node tools/ci-shard.mjs ${{ matrix.shard }} "$OF" --only "$RUNNER_TEMP/only.txt")
+          else
+            files=$(node tools/ci-shard.mjs ${{ matrix.shard }} 10)
+          fi
           # An empty list would make Playwright run EVERYTHING on this shard.
-          [ -n "$files" ] || { echo "::error::no spec files planned for shard ${{ matrix.shard }}/10"; exit 1; }
+          [ -n "$files" ] || { echo "::error::no spec files planned for shard ${{ matrix.shard }}/$OF"; exit 1; }
           echo "$files"
           npx playwright test $files
+
+      # What each test ran, for `impact` to fold into the map.
+      - name: Upload the impact records
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@v4
+        with:
+          name: impact-${{ matrix.shard }}
+          path: test-results/impact/
+          if-no-files-found: ignore
+          retention-days: 1
 
       # Only a failing shard's: twenty green reports a run say nothing.
       - name: Upload Playwright report
@@ -252,9 +323,8 @@ jobs:
   # of them in one shard ran past its budget. Which reports: `changes`.
   sweep:
     needs: changes
-    # Not on a push to main: the pull request already swept the same tree, and
-    # the nightly run sweeps everything (see `shards` above).
-    if: github.event_name != 'push' && needs.changes.outputs.sweep != '[]' && needs.changes.outputs.sweep != ''
+    # Which reports, and on which event: the `sweep` step of `changes`.
+    if: needs.changes.outputs.sweep != '[]' && needs.changes.outputs.sweep != ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -411,6 +481,64 @@ jobs:
           echo "::error::charts moved and docsync/CHART_PARITY.md does not say why"; exit 1
       - name: Reports, every bound page built by both trees
         run: python3 -m docsync.build_parity --base "${{ steps.base.outputs.base }}" --show 10
+
+  # The map a pull request picks its specs from (tools/affected.mjs): every
+  # shard's records of the nightly run on main (or a manual one there), folded
+  # into .impact/ and cached under this commit. A failed test still leaves its
+  # record, so one red test does not cost the map; a shard that died before
+  # its tests does, and the count below keeps the last map then: a spec
+  # missing from the map is never picked.
+  impact:
+    needs: [changes, test]
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && (needs.test.result == 'success' || needs.test.result == 'failure')
+    name: Impact map
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: impact-*
+          path: test-results/impact
+          merge-multiple: true
+      - name: Fold the records into the map
+        run: |
+          node -e "const m = require('./tests/editor/fixtures/impact-map'); m.snapshot(); m.merge();"
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('.impact/map.json', 'utf8'));
+            const have = Object.keys(m.tests).length;
+            const all = fs.readdirSync('tests/editor').filter(f => f.endsWith('.spec.js')).length;
+            console.log(have + ' of ' + all + ' spec files in the map');
+            if (have < all * 0.95 || !m.js['docsync/editor/edit.html']) { console.error('too few: the last map stays'); process.exit(1); }"
+      - uses: actions/cache/save@v4
+        with:
+          path: .impact
+          key: impact-map-${{ github.sha }}-${{ github.run_id }}
+
+  # Main went red after a merge: a pull request's gate ran the specs its
+  # change needed and main ran everything. One open issue says so, with the run.
+  # A run a newer merge cancelled is not a failure, and says nothing.
+  after-merge:
+    needs: [test, hub, sweep, reports, parity]
+    if: always() && github.event_name == 'push' && contains(needs.*.result, 'failure')
+    name: Main is red
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - run: |
+          title="main: the editor suite failed after a merge"
+          body="The full suite failed on main at ${{ github.sha }}: $RUN
+
+          A pull request's gate runs only the specs its change needs; this is the run of everything after the merge. \`npm run test:ci -- --report ${{ github.run_id }}\` lists the failing tests."
+          n=$(gh issue list -R "${{ github.repository }}" --state open --search "in:title \"$title\"" --json number -q '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" -R "${{ github.repository }}" --body "$body"
+          else gh issue create -R "${{ github.repository }}" --title "$title" --body "$body"; fi
 
   # The one check the ruleset on main requires. It always reports: green when
   # the shards passed or had nothing to test, red when any shard failed or was
