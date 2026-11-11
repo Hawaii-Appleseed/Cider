@@ -29,7 +29,7 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { test, expect, waitForFirstRender, openFileMenu, openShare, clickAddSection, fillDialog, submitDialog } = require('./fixtures/editor-test');
+const { test, expect, settled, waitForFirstRender, openFileMenu, openShare, clickAddSection, fillDialog, submitDialog } = require('./fixtures/editor-test');
 const { claimPort } = require('./fixtures/ports');
 // Pyodide arrives once per run from disk, not once per context from the CDN
 // (fixtures/pyodide-cache.js): this spec opens a context per person and per
@@ -430,7 +430,7 @@ test('History lists every Save, names one, and brings one back as a new version'
 // unsaved edits superseded, a reload and a fresh editor, the viewer's
 // read-only list, and naming from the dialog.
 const DOC_URL = () => `${hubAs(ADA_PORT)}/api/docs/Hawaii-Appleseed~Cider~${PROJECT}`;
-const versions = async () => (await a.request.get(`${DOC_URL()}/history`)).json();
+const versions = () => getJson(`${DOC_URL()}/history`);
 const historyRows = page => page.locator('#hpanel .hub-history-row');   // the side panel, since the dialog became one
 const closeDialog = page => page.locator('dialog[open] button.dsdlg-cancel').click();
 const closeHistory = page => page.locator('#hpanel-close').click();
@@ -902,9 +902,29 @@ test('a wheel over the gutter scrolls the page, as a wheel over the page does', 
 // persistence across a reload; and what the list page says.
 
 const ROOM_URL = `/api/docs/Hawaii-Appleseed~Cider~${PROJECT}`;
-const allComments = () => a.request.get(`${hubAs(ADA_PORT)}${ROOM_URL}/comments`).then(r => r.json());
+/** A read of the hub's API. The door these tests put in front of the hub
+ *  (identityProxy) answers 502 when its own connection to the local hub drops,
+ *  which a runner does now and then: one such blink failed a test on its
+ *  fifty-first step and the serial file started over, doubling the job. A read
+ *  is safe to ask again; anything else the hub answers is returned as it is. */
+const getJson = async url => {
+  for (let i = 0; ; i++) {
+    const r = await a.request.get(url);
+    if (r.status() !== 502 || i >= 3) return r.json();
+    await new Promise(res => setTimeout(res, 300));
+  }
+};
+const allComments = () => getJson(`${hubAs(ADA_PORT)}${ROOM_URL}/comments`);
+/** Have both open panels ask the hub now. A change these tests make through
+ *  the API, behind the editors' backs, otherwise shows at the panel's next
+ *  poll, up to fifteen seconds on; three tests spent most of their time
+ *  waiting for it. The poll itself is still what 'resolved from the other
+ *  editor' and the reply tests wait on. */
+const reloadComments = () => Promise.all([a, b].map(p =>
+  p.evaluate('typeof hubCommentsLoad === "function" && !document.getElementById("cpanel").hidden && hubCommentsLoad()').catch(() => {})));
 const clearComments = async () => {
   for (const c of await allComments()) await a.request.delete(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${c.id}`);
+  await reloadComments();
 };
 const cmtRow = (page, text) => page.locator('#cpanel .cmt', { hasText: text });
 // The panel opens on the open threads; the resolved ones are a tab of their own.
@@ -1097,6 +1117,7 @@ test('comments: Show flashes the paragraph; a comment on something no longer on 
   await expect(menuItem(cmtRow(a, 'Overall: shorter'), 'Show')).toHaveCount(0);
   await closeMenu(a);
   await a.request.post(`${hubAs(ADA_PORT)}${ROOM_URL}/comments`, { data: { anchor: 'ghost.element', text: 'Orphaned note.' } });
+  await reloadComments();
   await expect(cmtRow(a, 'Orphaned note')).toBeVisible({ timeout: 20_000 });
   await viaMenu(cmtRow(a, 'Orphaned note'), 'Show');
   await expect(a.locator('#stat')).toContainText('not on the page any more');
@@ -1608,6 +1629,7 @@ test('comments: in the margin the new comment is a card at its anchor, a line jo
   // Resolved: it trails the open ones under its line, and the line goes.
   const stored = (await allComments()).find(c => c.text.includes('Joined by a line'));
   await a.request.patch(`${hubAs(ADA_PORT)}${ROOM_URL}/comments/${stored.id}`, { data: { resolved: true } });
+  await reloadComments();
   await expect(cmtRow(a, 'Joined by a line')).toHaveCount(0, { timeout: 15_000 });   // gone from Open
   await showResolved(a);
   await expect(cmtRow(a, 'Joined by a line')).toHaveClass(/resolved/, { timeout: 15_000 });
@@ -1852,6 +1874,10 @@ test('a comment that names you reaches the list page and the Editor tab, and res
 // paragraph the restored version does not change keeps what is typed in it.
 const secondSlot = page => page.evaluate('source.match(/\\[\\[([^\\]]+)\\]\\][\\s\\S]*?\\[\\[([^\\]]+)\\]\\]/)[2]');
 const saveAs = async (page, other) => {
+  // Not while a render is still queued (a collaborator's words being adopted):
+  // it starts after the Save answers and takes the status row, and "saved — …"
+  // was gone before it could be read. Nobody presses Save that fast.
+  await settled(page);
   await page.locator('#save').click();
   await expect(page.locator('#stat')).toHaveText(/saved — anyone opening/, { timeout: 20_000 });
   await expect(other.locator('#save')).toBeDisabled({ timeout: 20_000 });
