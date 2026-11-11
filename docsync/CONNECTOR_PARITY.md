@@ -86,8 +86,8 @@ of A–D closes the gap.
 | Copy, paste, paste in place, cut | ◐ `duplicate` | — | Within one report. No path across reports except the library. |
 | Copy style / paste style (format painter) | ❌ | C | `copyStyle`/`pasteStyle` are UI-only. |
 | Step and repeat, transform again | ❌ `stepRepeat` | A | Transform again: C. |
-| Fill colour (box, shape, page) | ✅ `recolor` | — | Hex only. Does `recolor` take gradient fills? (`fillRow` does.) To check. |
-| Gradient fill, named swatch | ◐ | A | `defineSwatch`. Gradient through `recolor`: to check. |
+| Fill colour (box, shape, page) | ✅ `recolor` | — | Hex, `@Swatch` (with a tint %), or a linear/radial/conic gradient: checked 2026-11-11 (`_pilotValidateFill`). |
+| Gradient fill, named swatch | ✅ `recolor`, `defineSwatch` | — | Step 1. |
 | Border colour/weight (shapes) | ✅ `setShape` stroke/sw | — | |
 | Border dash, line ends (arrowheads) | ❌ | C | Inline in `layerMenu` (`shp.dash`, `shp.ends`). Widen `setShape`'s key list. |
 | Opacity, blend mode | ❌ | C | `storeOf.alpha`, arrange-bar Transparency (19471). |
@@ -112,10 +112,10 @@ of A–D closes the gap.
 | Expandable box, PDF button box | ❌ | C | `addExpandable`, `addTextBox('pdfbtn')`. |
 | Font, weight, size, colour, align, italic, underline, tracking, leading | ✅ `setStyle` | — | |
 | Text style (apply a named one) | ◐ `setStyle {use}` | — | Undocumented in `PAGE_VERBS`. Add it to the signature. |
-| Paragraph options (space before/after, indents, keep, widows, hyphenate, drop cap, small caps, OpenType, baseline shift, tab stops) | ◐ | A-doc / C | `_pilotApplySetStyle` passes ANY patch key to `setStyle()` unchecked. These may already work if the keys match `paraSet`'s, but nothing documents or validates them. Check, then list the keys or add a `setPara` verb. |
-| List options (marker, levels, continue) | ◐ | as above | `listSet`. |
-| Rules above/below, paragraph border, shading | ◐ | as above | `objSet`/`paraSet`. |
-| Box panel (background, border, padding, v-align, columns) | ◐ | as above | `renderBoxPanel`. |
+| Paragraph options (space before/after, indents, keep, widows, hyphenate, drop cap, small caps, OpenType, baseline shift, tab stops) | ✅ `setStyle` | — | Checked 2026-11-11: the ¶ panel's `paraSet` IS `setStyle(selected, patch)`, the same function the pilot calls, so every key works. The hub now documents them (step 1). Still unvalidated: the panel clamps, the pilot does not, and a misspelt key is ignored silently. |
+| List options (marker, levels, continue) | ✅ `setStyle {list}` | — | |
+| Rules above/below, paragraph border, shading | ✅ `setStyle` | — | `ruleAbove`, `ruleBelow`, `paraBorder`, `shade`, `paraPad`. |
+| Box panel (border, padding, corners, columns, gap) | ❌ | C | Checked: `renderBoxPanel` writes the BOX object (`bx.border`, `pad`, `radius`, `cols`, `gap`), not its style, so `setStyle` cannot reach it. Background is `recolor`. Needs a `setBox(id, {...})` verb. |
 | Character styles inside a run of words | ❌ | C | `applyCharStyle` works on a DOM selection. Needs a span grammar or a `charStyle(key, find, name)` verb. |
 | Anchor a box to a paragraph, text wrap and wrap shape | ❌ `anchor`, `wrap` | A | |
 | Thread frames, break a thread | ❌ `thread`, `unthread` | A | |
@@ -193,6 +193,8 @@ and Cider tests targeted (never the full suite). After a hub tool change:
 claude.ai → Connectors → Cider → **Refresh tools list**.
 
 ### Step 1: list the pilot verbs the hub already could relay (kind A). Hub only, one PR.
+
+**Built 2026-11-11** on hub branch `connector-verbs` (7b6c177), not yet pushed: 43 verbs, documented setStyle/setChart/setTable keys, and the drift test. `findChange` is held back with `setSlot` (it rewrites slot text past edit_report's citation and heading checks); `loadStylesFrom` too (it takes an object only the editor builds).
 
 `functions/api/mcp.js` `PAGE_VERBS`: add entries for the verbs the editor
 already takes. Group them so the description keeps every verb name inside
