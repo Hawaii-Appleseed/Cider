@@ -30,8 +30,12 @@
 // Specs whose code is not in the browser declare what they depend on in a
 // comment: `// affected-by: docsync/layout.py projects/*/render_report.py`.
 // boot-errors.spec.js runs whenever anything that boots the editor changed,
-// and the cheap Python checks run for any engine or report change. CI still
-// runs everything on every push; this is the loop between pushes.
+// and the cheap Python checks run for any engine or report change.
+//
+// CI uses the same pick as the merge gate of a pull request (--ci --plan, in
+// editor-tests.yml): the specs a change needs gate the merge, and main runs
+// the whole suite after it, records what each spec ran, and saves that as the
+// map the next pull request picks from.
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -57,6 +61,12 @@ const opt = (name, dflt) => { const i = own.indexOf(name); return i < 0 ? dflt :
 const SINCE = opt('--since', 'HEAD');
 const LIST = own.includes('--list');
 const LOCAL = own.includes('--local');
+// --ci: the pull-request gate (editor-tests.yml, `changes`). Nothing runs
+// here; --plan <file> gets {all, specs} for the shards to run. The gate errs
+// toward everything: a change to the gate itself, no map, or an old one.
+const CI = own.includes('--ci');
+const PLAN = opt('--plan', null);
+const MAP_MAX_DAYS = 14;
 
 // --- git ---------------------------------------------------------------------
 const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
@@ -690,8 +700,14 @@ const QUIET = [/\.md$/, /^LICENSE$/, /^\.claude\//, /^\.github\//, /^docs\/(?!pr
   /^report2027\/web\/index\.html$/, /^\.impact\//, /(^|\/)node_modules$/];
 const EVERYTHING = [/^tests\/editor\/fixtures\//, /^playwright\.config\.js$/, /^package(-lock)?\.json$/, /^report2027\/(content\.md|layout\.json|web\/)/];
 
+// What decides the gate, or how the suite is cut up: with --ci, everything.
+const CI_EVERYTHING = [/^\.github\//, /^tools\/(affected|ci-shard)\.mjs$/, /^tests\/editor\/shard-weights\.json$/];
+
 const changed = changedFiles();
+if (CI && !MAP) everything('no impact map on this runner (main builds one after each merge)');
+if (CI && MAP && Date.now() - Date.parse(MAP.built) > MAP_MAX_DAYS * 864e5) everything(`the impact map is over ${MAP_MAX_DAYS} days old`);
 for (const f of changed) {
+  if (CI && CI_EVERYTHING.some(re => re.test(f))) { everything(`${f} decides what the gate runs`); continue; }
   const declaredBy = SPECS.filter(s => DECLARED[s].some(re => re.test(f)));
   declaredBy.forEach(s => pick(s, `${f} (declared)`));
 
@@ -734,6 +750,9 @@ for (const f of changed) {
   }
 }
 
+// The gate always boots the editor once, whatever else it picks.
+if (CI && changed.length) pick(SMOKE, 'always, on the gate');
+
 // --- report ------------------------------------------------------------------------
 const rel = s => path.relative(SPEC_DIR, s);
 let run = [...picked.keys()].filter(s => SPECS.includes(s)).sort();
@@ -762,7 +781,8 @@ if (py.has('engine') || py.has('render')) checks.push(['python3', ['report2027/t
 if (py.has('collab')) checks.push(['npm', ['run', '--silent', 'test:collab']]);
 if (checks.length) console.log(`\nChecks: ${checks.map(([c, a]) => [c, ...a].join(' ')).join(' · ')}`);
 
-if (LIST) process.exit(0);
+if (PLAN) fs.writeFileSync(PLAN, JSON.stringify({ all: all || null, specs: all ? [] : run, notes: [...new Set(notes)] }));
+if (LIST || CI) process.exit(0);
 
 let failed = 0;
 for (const [cmd, args] of checks) {
