@@ -30941,9 +30941,34 @@ $('revert').onclick = async () => {
   layout = JSON.parse(layoutOrig || '{}');
   layout.positions = layout.positions || {};
   layout.shapes = layout.shapes || [];
+  layout.sections = layout.sections || {};
   clearDraftCache();                     // the edits are gone — so is their cache
   markDirty();
   await render();
+};
+
+// Test hook: put the editor back as it opened, without a reload — Discard,
+// minus the confirm, plus the things a Discard leaves (the undo stack, the
+// selection, an open dialog). The suite's shared-editor fixture runs it between
+// tests that only drive docsync.api, so they share one boot instead of paying
+// ~5 s each for Pyodide; it then compares inventory() with the fresh boot's
+// and boots again if anything stayed behind. Local editor only.
+window.__dsTestReset = async () => {
+  if (collab) return { ok: false, error: 'in a live session' };
+  document.querySelectorAll('dialog[open]').forEach(d => d.close());
+  try { setSel($('out').contentDocument, []); } catch (e) { swallowed('test reset: selection', e); }
+  source = original;
+  layout = JSON.parse(layoutOrig || '{}');
+  layout.positions = layout.positions || {};
+  layout.shapes = layout.shapes || [];
+  layout.sections = layout.sections || {};
+  syncPageSize();
+  past.length = 0; future.length = 0; stepTimes.clear(); historySeq++;
+  await clearDraftCache();
+  markDirty();
+  await render();
+  syncHistoryButtons();
+  return { ok: true };
 };
 
 // --- export -----------------------------------------------------------------

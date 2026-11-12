@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 64 (named gradient swatches, fade to clear) and 82
 // (links to another place in the report, and cross-reference text). Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
