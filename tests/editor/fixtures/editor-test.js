@@ -83,6 +83,30 @@ async function gotoEditor(page, query = '') {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: Number(process.env.DS_CPU_THROTTLE) });
   }
+  // A second gotoEditor inside one test means a real reload (a test of what
+  // survives one), so only a test's first call may reset instead.
+  const sh = SHARED.get(page);
+  const testId = sh && base.test.info().testId;
+  const first = sh && sh.lastTest !== testId;
+  if (sh) sh.lastTest = testId;
+  if (sh && first && sh.query === query && sh.fingerprint) {
+    const r = await page.evaluate(() => window.__dsTestReset ? window.__dsTestReset() : { ok: false });
+    if (r.ok) {
+      await settled(page);
+      const fp = await fingerprint(page);
+      if (fp === sh.fingerprint) { sharedStats.resets++; return; }
+      sharedStats.leaks++;
+      console.log(`[shared editor] ${base.test.info().titlePath.join(' › ')}: the reset left something behind, booting again`);
+    }
+  }
+  if (sh) {
+    sh.fingerprint = null;
+    // Leave the old editor completely before the next one boots: navigating
+    // straight from one report's editor to another's in the same tab left the
+    // second's first nudge measuring against the first's page.
+    if (page.url() !== 'about:blank') await page.goto('about:blank');
+    await wipeOrigin(sh.ctx, page, sh.baseURL);
+  }
   await page.goto('edit.html' + query);
   await waitForFirstRender(page);
   // Local mode (serve.py answers /__ping) polls its live-reload stream and
@@ -92,6 +116,7 @@ async function gotoEditor(page, query = '') {
   // This used to be a fixed 1.5s sleep — a quarter of a typical test, a
   // thousand times a run; the editor now says when it is settled.
   await settled(page);
+  if (sh) { sharedStats.boots++; sh.query = query; sh.fingerprint = await fingerprint(page); }
 }
 
 /** Wait until the editor has nothing on its way: the local probe answered,
@@ -152,6 +177,31 @@ const test = base.test.extend({
 // An impact-map run (DS_IMPACT) records per test through the context, so it
 // falls back to `test` there and the map stays exact.
 const KEEP_CACHE = 'ds-pyc-v1';         // edit.html's PYC_CACHE
+/** Wipe the origin's storage before a test, all but the compiled engine. */
+async function wipeOrigin(ctx, page, baseURL) {
+  const cdp = await ctx.newCDPSession(page);
+  const origin = new URL(baseURL).origin;
+  await cdp.send('Storage.clearDataForOrigin', {
+    origin, storageTypes: 'local_storage,indexeddb,service_workers',
+  });
+  // Every Cache Storage cache goes but the compiled engine (edit.html's
+  // PYC_CACHE). Without it every boot compiled the engine's .py files from
+  // source again — layout.py alone is ~300 ms on a laptop, more on a CI
+  // runner, a thousand boots a run. Keeping it is safe for the same reason
+  // it is in the app: each entry is a hash-checked pyc, refused and
+  // recompiled if the source changed. pyc-cache.spec.js, which needs an
+  // empty cache, is on plain `test` (a fresh context each time).
+  // Cache Storage is cleared from inside a page at the origin: the CDP
+  // CacheStorage domain refuses a tab that has no frame there yet (a new one
+  // is about:blank), so a blank tab first opens a path the server 404s.
+  await cdp.detach();
+  if (!page.url().startsWith(origin)) await page.goto(origin + '/__test-blank', { waitUntil: 'commit' });
+  await page.evaluate(async keep => {
+    try { sessionStorage.clear(); } catch (e) {}   // per tab: a reused one keeps it
+    for (const n of await caches.keys()) if (n !== keep) await caches.delete(n);
+  }, KEEP_CACHE);
+}
+
 const warm = base.test.extend({
   _warmContext: [async ({ browser }, use, workerInfo) => {
     const { baseURL, serviceWorkers, viewport, userAgent, deviceScaleFactor,
@@ -166,32 +216,54 @@ const warm = base.test.extend({
   },
   page: async ({ _warmContext, baseURL }, use) => {
     const page = await _warmContext.newPage();
-    const cdp = await _warmContext.newCDPSession(page);
-    const origin = new URL(baseURL).origin;
-    await cdp.send('Storage.clearDataForOrigin', {
-      origin, storageTypes: 'local_storage,indexeddb,service_workers',
-    });
-    // Every Cache Storage cache goes but the compiled engine (edit.html's
-    // PYC_CACHE). Without it every boot compiled the engine's .py files from
-    // source again — layout.py alone is ~300 ms on a laptop, more on a CI
-    // runner, a thousand boots a run. Keeping it is safe for the same reason
-    // it is in the app: each entry is a hash-checked pyc, refused and
-    // recompiled if the source changed. pyc-cache.spec.js, which needs an
-    // empty cache, is on plain `test` (a fresh context each time).
-    try {
-      const { caches } = await cdp.send('CacheStorage.requestCacheNames', { securityOrigin: origin });
-      for (const c of caches) {
-        if (c.cacheName !== KEEP_CACHE) await cdp.send('CacheStorage.deleteCache', { cacheId: c.cacheId });
-      }
-    } catch (e) {
-      await cdp.send('Storage.clearDataForOrigin', { origin, storageTypes: 'cache_storage' });
-    }
-    await cdp.detach();
+    await wipeOrigin(_warmContext, page, baseURL);
     await use(page);
+    // Keep what this boot compiled now rather than at the editor's next idle
+    // moment, which a short test closes before it comes.
+    await page.evaluate(() => window.__dsPycKeepNow && window.__dsPycKeepNow()).catch(() => {});
     await page.close();
   },
 });
 const warmTest = process.env.DS_IMPACT ? test : warm;
+
+// Shared-editor test: one booted editor per WORKER, put back as it opened
+// between tests (window.__dsTestReset — Discard plus the undo stack, the
+// selection and any open dialog) instead of reloaded. A boot is most of a
+// typical test (~5 of ~7 s on a CI runner); a reset is a render.
+//
+// Only for specs that drive the editor through docsync.api and read the page
+// back: nothing that clicks, types, routes, listens (page.on) or opens a
+// second page, all of which can leave state a reset does not know about.
+// Belt and braces: after each reset the document and inventory() are compared
+// with what the fresh boot had, and anything different boots again (and says
+// so in the log) — a leak costs a boot, never a wrong result. A failed test
+// restarts its worker, which discards the shared page with it. A different
+// gotoEditor query (another project) boots for real.
+const SHARED = new WeakMap();           // page -> { query, fingerprint }
+const sharedStats = { boots: 0, resets: 0, leaks: 0 };
+const fingerprint = page => page.evaluate(() => JSON.stringify({
+  doc: snapshot(), inv: docsync.api.inventory() }));
+
+const shared = warm.extend({
+  _sharedPage: [async ({ _warmContext }, use) => {
+    const slot = { page: null };
+    await use(slot);
+    if (sharedStats.boots + sharedStats.resets) {
+      console.log(`[shared editor] worker ${process.env.TEST_WORKER_INDEX}: ${sharedStats.boots} boots, `
+        + `${sharedStats.resets} resets, ${sharedStats.leaks} leaks`);
+    }
+    if (slot.page && !slot.page.isClosed()) await slot.page.close();
+  }, { scope: 'worker' }],
+  page: async ({ _warmContext, _sharedPage, baseURL }, use) => {
+    if (!_sharedPage.page || _sharedPage.page.isClosed()) {
+      _sharedPage.page = await _warmContext.newPage();
+      await wipeOrigin(_warmContext, _sharedPage.page, baseURL);
+      SHARED.set(_sharedPage.page, { query: null, fingerprint: null, baseURL, ctx: _warmContext });
+    }
+    await use(_sharedPage.page);
+  },
+});
+const sharedTest = process.env.DS_IMPACT ? test : shared;
 
 // Static-viewer test: forces local=false (blocks /__ping, which detectLocal()
 // treats as "no local server") and refuses the SSE stream too. Neither a local
@@ -310,7 +382,7 @@ async function submitDialogIfPresent(page, timeout = 3000) {
 
 module.exports = {
   settled, afterRender,
-  test, staticTest, warmTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
+  test, staticTest, warmTest, sharedTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent, selectWithoutTyping,
 };

@@ -5,7 +5,7 @@
 // touch moved, the page as rendered matches the page as dragged, and undo puts
 // everything back (2026-10-18). Each test below is one way that failed; each
 // fails on the editor before the fix. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** Run `fn(d, h)` in the editor, where `h` holds the measuring helpers. */
 const inEditor = (page, fn, arg) => page.evaluate(async ([src, arg]) => {

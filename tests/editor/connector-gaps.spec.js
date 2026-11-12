@@ -1,7 +1,7 @@
 // Things the staff-hub connector (docsync.api.batch) used to refuse or could not do:
 // a page given as the string "3", setStyle on a table, a cell style used in the batch
 // that defines it, one table cell's words, and an inline editor that is open for a moment.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const table = page => page.evaluate(() => docsync.api.addTable({ page: 3, x: 1, y: 1, w: 4,
   rows: [['A', 'B'], ['1', '2'], ['3', '4']] }));
