@@ -329,3 +329,23 @@ test('a report built on demo-report takes placed objects on many added pages', a
     await expect(sec.locator('table')).toHaveCount(1);
   }
 });
+
+// A deck leaves page 1 out of the order. The engine's once-per-document head
+// (including the layout.page size override) rides out with page 1's layer(),
+// so a hidden page 1 left every sheet at 8.5 x 11 whatever setPageSize said.
+test('demo-report sheets take the report page size even with page 1 hidden', async ({ page }) => {
+  await gotoEditor(page, '?project=demo-report');
+  const a = await api(page, () => docsync.api.addPage());
+  const b = await api(page, () => docsync.api.addPage());
+  await api(page, () => docsync.api.removePage(1));
+  const s = await api(page, () => docsync.api.setPageSize('slide43'));
+  expect(s.ok, s.error).not.toBe(false);
+  const frame = page.frameLocator('#out');
+  expect(await frame.locator('section.page[data-page="1"]').count()).toBe(0);
+  for (const P of [a.id, b.id]) {
+    const box = await frame.locator(`section.page[data-page="${P}"]`).evaluate(e => {
+      const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)];
+    });
+    expect(box).toEqual([960, 720]);
+  }
+});
