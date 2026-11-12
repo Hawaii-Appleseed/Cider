@@ -90,13 +90,18 @@ async function gotoEditor(page, query = '') {
   const first = sh && sh.lastTest !== testId;
   if (sh) sh.lastTest = testId;
   if (sh && first && sh.query === query && sh.fingerprint) {
-    const r = await page.evaluate(() => window.__dsTestReset ? window.__dsTestReset() : { ok: false });
+    // Words left open, or a menu: Escape is how a person leaves either.
+    if (await page.evaluate(() => editing).catch(() => false)) {
+      await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+    }
+    const r = await page.evaluate(() => window.__dsTestReset ? window.__dsTestReset() : { ok: false })
+      .catch(e => ({ ok: false, error: e.message }));
     if (r.ok) {
       await settled(page);
       const fp = await fingerprint(page);
       if (fp === sh.fingerprint) { sharedStats.resets++; return; }
       sharedStats.leaks++;
-      console.log(`[shared editor] ${base.test.info().titlePath.join(' › ')}: the reset left something behind, booting again`);
+      console.log(`[shared editor] ${base.test.info().titlePath.join(' › ')}: the reset left ${whatDiffers(sh.fingerprint, fp)} behind, booting again`);
     }
   }
   if (sh) {
@@ -239,10 +244,60 @@ const warmTest = process.env.DS_IMPACT ? test : warm;
 // so in the log) — a leak costs a boot, never a wrong result. A failed test
 // restarts its worker, which discards the shared page with it. A different
 // gotoEditor query (another project) boots for real.
+// Not test state: timers and pulses (previewT, hubAutosaveFlush), what the
+// engine is asked once and kept (ANCHOR_SRC, OBJ_KEYS), and the snap distance,
+// which every drag works out again from the zoom it starts at.
+const LET_CLOCKS = /(Seq|seq|At|Time|Times|Stamp|Count|Timer|timer|Id)$|^(historySeq|scrollTopWas|lastPing\w*|stalled\w*|previewT|hubAutosaveFlush|ANCHOR_SRC|OBJ_KEYS|SNAP_IN|SNAP_DENSE_IN)$/;
 const SHARED = new WeakMap();           // page -> { query, fingerprint }
+// Every top-level `let` in edit.html: the editor's own state (which tab the
+// Chart panel is on, what the Text panel last applied…). A reset that misses
+// one would hand the next test a different editor, so the fingerprint holds
+// each one's value (a Map or Set by its size, other objects not at all), and
+// a difference boots again. A few are clocks and counters, not state.
+const EDITOR_LETS = (() => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../../docsync/editor/edit.html'), 'utf8');
+  const names = new Set();
+  for (const line of src.split('\n')) {
+    if (!line.startsWith('let ')) continue;
+    // `let a = 1, b = 2;` - names at the top level of the line only
+    let depth = 0, cut = '';
+    for (const ch of line.slice(4)) {
+      if ('([{'.includes(ch)) depth++;
+      else if (')]}'.includes(ch)) depth--;
+      cut += depth ? ' ' : ch;
+      if (ch === ';' && !depth) break;
+    }
+    for (const m of cut.matchAll(/(?:^|,)\s*([A-Za-z_$][\w$]*)\s*(?:=|,|;|$)/g)) names.add(m[1]);
+  }
+  return [...names].filter(n => !LET_CLOCKS.test(n));
+})();
+
 const sharedStats = { boots: 0, resets: 0, leaks: 0 };
-const fingerprint = page => page.evaluate(() => JSON.stringify({
-  doc: snapshot(), inv: docsync.api.inventory() }));
+// What a reset must give back: the document, everything on the page, and the
+// editor's own chrome — which of its elements are showing (an open panel,
+// menu or bar), whether words are open, and what it keeps in storage.
+const fingerprint = page => page.evaluate(lets => {
+  const val = n => { try {
+    // eslint-disable-next-line no-eval
+    const v = (0, eval)(n);
+    if (v instanceof Map || v instanceof Set) return 'size:' + v.size;
+    return v === null || ['string', 'number', 'boolean', 'undefined'].includes(typeof v) ? v ?? null : '(object)';
+  } catch (e) { return '(unreadable)'; } };
+  // Tabs of one report elect a leader and stamp the time in localStorage
+  // (primer-live-leader:<id> …): a clock, not state a test left.
+  const store = st => { try {
+    return Object.entries(st).filter(([k]) => !/^primer-(live|preview)-(event|leader):/.test(k)).sort();
+  } catch (e) { return null; } };
+  return JSON.stringify({
+    doc: snapshot(), inv: docsync.api.inventory(), editing, presenting,
+    body: document.body.className,
+    shown: [...document.querySelectorAll('[id]')].filter(e => e.offsetParent !== null
+      || getComputedStyle(e).position === 'fixed' && getComputedStyle(e).display !== 'none'
+         && getComputedStyle(e).visibility !== 'hidden').map(e => e.id).filter(id => id !== 'tt').sort(),   // tt: a tooltip under the pointer
+    local: store(localStorage), session: store(sessionStorage),
+    lets: Object.fromEntries(lets.map(n => [n, val(n)])),
+  });
+}, EDITOR_LETS);
 
 const shared = warm.extend({
   _sharedPage: [async ({ _warmContext }, use) => {
@@ -264,6 +319,22 @@ const shared = warm.extend({
   },
 });
 const sharedTest = process.env.DS_IMPACT ? test : shared;
+/** Which parts of two fingerprints differ, for the log line. */
+function whatDiffers(a, b) {
+  a = JSON.parse(a); b = JSON.parse(b);
+  return Object.keys(a).filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map(k => {
+    if (k === 'shown') {
+      const x = new Set(a[k]), y = new Set(b[k]);
+      return `shown(+${b[k].filter(i => !x.has(i)).join('+')} -${a[k].filter(i => !y.has(i)).join('-')})`;
+    }
+    if (k === 'lets') return `lets(${Object.keys(a[k]).filter(i => JSON.stringify(a[k][i]) !== JSON.stringify(b[k][i])).join(',')})`;
+    if (k === 'local' || k === 'session') {
+      const x = new Map(a[k]), y = new Map(b[k]);
+      return `${k}(${[...new Set([...x.keys(), ...y.keys()])].filter(i => x.get(i) !== y.get(i)).join(',')})`;
+    }
+    return k;
+  }).join(' ') || 'nothing';
+}
 
 // Static-viewer test: forces local=false (blocks /__ping, which detectLocal()
 // treats as "no local server") and refuses the SSE stream too. Neither a local

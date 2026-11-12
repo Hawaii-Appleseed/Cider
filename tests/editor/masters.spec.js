@@ -6,7 +6,7 @@
 // half (expansion, {page}, validation) is in docsync/test_docsync.py; this is
 // the editor's promise: made from a page, given to another, edited once,
 // detached back into copies.
-const { warmTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 

@@ -2,7 +2,7 @@
 // one page at a time with every toolbar gone; arrows or click advance, the
 // left edge or ← goes back, Esc exits. Runs on the editor's own iframe and
 // zoom pipeline — nothing re-renders on entry. Local mode.
-const { warmTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, clickTool } = require('./fixtures/editor-test');
 
 const state = (page) => page.evaluate(() => {
   const d = document.getElementById('out').contentDocument;

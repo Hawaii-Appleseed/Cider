@@ -1,6 +1,6 @@
 // Smarter arranging (INDESIGN_PARITY.md 57): the key object, Distribute with
 // an exact gap, and equal-spacing guides while dragging. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const near = (a, b, tol = 0.02) => Math.abs(a - b) <= tol;
 

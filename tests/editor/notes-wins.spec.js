@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 61 (notes), 66 (change case, placeholder, plain paste),
 // 68 (rotate and flip) and 70 (hidden characters and text threads).
-const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

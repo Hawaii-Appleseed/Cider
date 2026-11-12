@@ -8,7 +8,7 @@
 // dragged over a text box rode over it all the way and vanished behind it on
 // the drop, and which of two moved things covered the other depended on their
 // order in the markup. Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // Page 3 (index 2) of the fixture report carries the BUDGET BASICS heading,
 // the same in-flow element movable-headings.spec.js drags.

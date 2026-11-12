@@ -3,7 +3,7 @@
 // as chips only while typing so an invisible one can be seen; breaks are
 // tokens in the variables grammar — {break:line} {break:optional}
 // {break:column} {break:frame}. Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const NBSP = ' ', NBHY = '‑', SHY = '­', EM = ' ';
 

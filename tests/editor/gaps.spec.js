@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 32–46: the gap list read from InDesign itself. One
 // describe per item. Local mode.
-const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

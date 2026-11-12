@@ -19,7 +19,7 @@
 // patching this page, that assertion fails first and says so — this spec is
 // then no longer exercising the bug, and wants a look rather than a pass.
 // affected-by: projects/our-mission/**
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 /** The carousel as drawn: every element's box in page pixels and its opacity,
  *  plus the carousel's height in inches and where the section under it starts.

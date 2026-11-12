@@ -2,7 +2,7 @@
 // bringForward / setLayer, and `behind` / `z` on addTextBox (which is what the
 // hub's addImage becomes). The regression: a full-page picture added over a
 // page's text hid it, and nothing a connector could send changed that.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const zs = (page, ids) => page.evaluate(ids => ids.map(i => zOf(i)), ids);
 

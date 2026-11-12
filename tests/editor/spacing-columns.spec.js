@@ -3,7 +3,7 @@
 // slot when it is one, the paragraphs inside a text box — never on the placed
 // box itself, which a margin would move. A decimal column splits each plain
 // figure at the point so every point sits at the same x. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const IN = 96;

@@ -1,6 +1,6 @@
 // The UHERO TRC summary's table and charts are editable — including in a
 // stored copy saved before Table 1 moved into layout.json (the hub's).
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('uhero-trc-summary: the table and charts edit', () => {
   test('charts named chart.* open in the Chart panel and take an edit', async ({ page }) => {

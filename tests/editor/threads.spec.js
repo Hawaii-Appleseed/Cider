@@ -4,7 +4,7 @@
 // paragraph at the first line that does not fit. Nothing is ever lost or
 // doubled, and a story too long for its frames is marked overset, not
 // hidden. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

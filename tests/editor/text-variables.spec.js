@@ -4,7 +4,7 @@
 // which page a thing landed on. The editor runs that same string after each
 // render. While typing, a token is an atomic chip, so an edit hands back the
 // token and never the number it currently shows. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 async function addBox(page, md, pg = 3) {
   const r = await page.evaluate(([m, p]) => docsync.api.addTextBox(

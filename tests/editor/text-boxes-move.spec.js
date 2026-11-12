@@ -20,7 +20,7 @@
 // so a report is covered the day it is bound.
 const fs = require('fs');
 const path = require('path');
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const REPO = path.resolve(__dirname, '../..');
 

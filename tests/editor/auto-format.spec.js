@@ -4,7 +4,7 @@
 // delimiter. layout.GREP_JS applies them after render, wrapping matches in
 // the same span a hand-made run uses (span.ds-cs, plus ds-auto), and the
 // markdown is never touched. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

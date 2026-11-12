@@ -2,7 +2,7 @@
 // .ds-h-* offsets). They used to straddle the edge — a 7-9px grip hung on
 // -4px — which painted 3-5px of white-and-green over the first and last
 // characters of every line. Local mode.
-const { warmTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, selectWithoutTyping } = require('./fixtures/editor-test');
 
 /** Open the heading's words, retrying: under four parallel workers a click
  *  that lands while the sheet is still settling does not always open them.

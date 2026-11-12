@@ -1,7 +1,7 @@
 // The Layers panel lists the page in view, so its title follows the canvas
 // while it is open; and the page strip's previews are built incrementally —
 // a render that changed no page reuses what is already drawn.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('layers panel follows the visible page', () => {
   test.beforeEach(async ({ page }) => { await gotoEditor(page); });

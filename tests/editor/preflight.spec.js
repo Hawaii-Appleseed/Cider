@@ -1,5 +1,5 @@
 // INDESIGN_PARITY.md 47 and 52: the Preflight panel and the Hyperlinks panel.
-const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

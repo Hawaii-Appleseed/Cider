@@ -4,7 +4,7 @@
 // renders inside the per-page <svg> layer every report renderer already emits,
 // so no report had to add a call to show one. Drawn as plain SVG with no
 // library, so the same markup serves the browser preview and the offline PDF.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // Mirrors CHART_KINDS in edit.html. A number here rather than a magic 13,
 // so adding a type is one edit and not a puzzle in a failing assertion.

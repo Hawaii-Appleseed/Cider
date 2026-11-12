@@ -3,7 +3,7 @@
 // had been copied to), and a width or height lands through ONE commitSize
 // (a handle drag, a group's corner and the pilot's place() each wrote the
 // stores their own way and had drifted).
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const PROJ = '?project=uhero-trc-summary';
 const P = 'para.groc.lead';

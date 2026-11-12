@@ -12,7 +12,7 @@
 // leave those with two of everything. Two mousedown handlers is two
 // startDrags, two pushHistorys, and an undo that needs pressing twice — so
 // the tests count undo steps, which is where that would surface.
-const { warmTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
 
 /** The report document's identity, as a token that changes when it reloads. */
 const docToken = (page) => page.evaluate(() => {

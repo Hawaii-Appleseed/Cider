@@ -4,7 +4,7 @@
 // Frame), none (Center Content) — and `fitAlign` the reference point. Fitting
 // fixes the frame at the size it has and fits the picture inside; a resized
 // frame refits itself. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const PIC = 'assets/signing.jpg';

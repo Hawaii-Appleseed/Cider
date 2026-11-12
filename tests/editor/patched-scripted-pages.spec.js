@@ -30,7 +30,7 @@
 // affected-by: projects/** docsync.yml docsync/layout.py docsync/blocks.py
 const fs = require('fs');
 const path = require('path');
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const REPO = path.resolve(__dirname, '../..');
 

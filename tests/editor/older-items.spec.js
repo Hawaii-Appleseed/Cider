@@ -2,7 +2,7 @@
 // bleed for every report, skew, named layers, the baseline grid, tables on
 // shared layouts and as anchors, per-item overrides on a shared layout, and
 // pen paths with Pathfinder. One spec, one describe per item. Local mode.
-const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 
