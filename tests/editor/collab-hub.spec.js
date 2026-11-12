@@ -856,18 +856,26 @@ test('a comment on a paragraph marks it on the page, and the other editor sees i
   await expect(a.locator('#cpanel')).toBeVisible();
   await a.locator('#cpanel-text').fill('Tighten this paragraph.');
   await a.locator('#cpanel-add').click();
+  // THIS thread, by its words, and alone. The panel a closed tab reopens
+  // shows the threads it last loaded until its own fetch answers, and the
+  // test before this one deleted its thread through the API while this
+  // panel was shut: a bare count of 1 was met by that stale card, B resolved
+  // it, and the hub answered 404 (CI, 2026-11-11).
+  await expect(cmtRow(a, 'Tighten this paragraph')).toHaveCount(1, { timeout: 10_000 });
   await expect(a.locator('#cpanel .cmt')).toHaveCount(1, { timeout: 10_000 });
   await expect(cmtCount(a)).toHaveText('1');
   // B's page carries the marker within one refresh of the panel.
   await b.locator('#comments').click();
+  const mine = cmtRow(b, 'Tighten this paragraph');
+  await expect(mine).toHaveCount(1, { timeout: 20_000 });
   await expect(b.locator('#cpanel .cmt')).toHaveCount(1, { timeout: 20_000 });
   const marked = await b.frameLocator('#out').locator('[data-ds-comments]').count();
   expect(marked).toBeGreaterThanOrEqual(0);
   // Resolve from B; A's count drops on its next refresh.
-  await b.locator('#cpanel .cmt button', { hasText: 'Resolve' }).first().click();
+  await mine.locator('button', { hasText: 'Resolve' }).first().click();
   await expect(b.locator('#cpanel-tab-open .cmt, #cpanel .cmt:not(.resolved)')).toHaveCount(0, { timeout: 10_000 });
   await showResolved(b);
-  await expect(b.locator('#cpanel .cmt').first()).toHaveClass(/resolved/, { timeout: 10_000 });
+  await expect(cmtRow(b, 'Tighten this paragraph')).toHaveClass(/resolved/, { timeout: 10_000 });
   await showOpen(b);
   await expect(cmtCount(a)).toHaveCount(0, { timeout: 30_000 });
   await b.locator('#cpanel-close').click();
@@ -1831,7 +1839,15 @@ test('a comment that names you reaches the list page and the Editor tab, and res
   await expect(page.locator('#primerBadge')).toHaveAttribute('title', /1 comment names you/);
   // The tag opens the editor on the For you tab, with the thread in it.
   await page.goto(`${hubAs(GRACE_PORT)}/primer/index.html`);
-  await tile.locator('.tag.t-you').click();
+  // Dispatched on the tag itself, not a click at its coordinates: the list
+  // draws three times as it opens (from what it holds, then again when the
+  // faces and the store's /api/docs answer, re-sorted), and the thumbnails
+  // load under it. A pointer click scrolled to the tag and landed on whatever
+  // had moved there by then - the tile body (the editor, without
+  // ?comments=you) or the page heading (/primer/) on CI, 2026-11-11. What is
+  // under test is the tag's handler, which one listener on the document runs.
+  await expect(tile.locator('.tag.t-you')).toHaveText('1 for you');
+  await tile.locator('.tag.t-you').dispatchEvent('click');
   await expect(page).toHaveURL(/comments=you/);
   await waitForFirstRender(page);
   await waitLive(page);
