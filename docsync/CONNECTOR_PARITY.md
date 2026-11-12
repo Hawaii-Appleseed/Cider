@@ -240,6 +240,8 @@ written down for colleagues' Claude (the `context.about` loop).
 
 ### Step 3: read queries through `/ask` (kind A on the room). Cider room plus hub.
 
+**Built and live 2026-11-11:** Cider #123 (d019862: room `ASKS`, editor `ASK_READS`), relay deployed (primer-collab eb4644a2), hub 9047008 (`check_report`, default `preflight`). `checkLinks` left out: it needs the local server. Verified live on demo-report through a fresh session.
+
 `collab/src/room.js` (~153): widen `what` from `inventory` to an allowlist
 (`preflight`, `audit`, `hyperlinks`, `checkLinks`, `colours`, `fontsInUse`,
 `links`, `styles`, `notes`, `overrides`, `stories`). edit.html's ask handler
