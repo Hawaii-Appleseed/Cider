@@ -31,7 +31,36 @@ runs:
           echo "the browser did not download (try $i of 3)"; sleep 20
         done
         exit 1
+    # The libraries are mostly on the runner image already; what install-deps
+    # adds is nine font packages (22 MB). Fetching them took 7 s on a good run
+    # and 36 s on a slow mirror (2026-11-12), and the slowest shard sets the
+    # gate's pace, so the packages are cached too, keyed on the runner image.
+    - name: Cache Chromium's system packages
+      id: debs
+      if: steps.cache.outputs.cache-hit == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pw-debs
+        key: playwright-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ steps.pw.outputs.version }}
     - name: Install Chromium's system libraries
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
-      run: npx playwright install-deps chromium
+      run: |
+        # man-db re-indexes the manual after every install: seconds, for pages
+        # nobody reads on a runner.
+        sudo rm -f /var/lib/man-db/auto-update
+        # From the cache: apt resolves them against the image's own package
+        # lists and refuses before changing anything if one no longer fits,
+        # in which case install-deps runs as before.
+        if compgen -G "$HOME/.cache/pw-debs/*.deb" > /dev/null \
+           && sudo apt-get install -y --no-download "$HOME"/.cache/pw-debs/*.deb; then
+          exit 0
+        fi
+        npx playwright install-deps chromium
+        # Only a folder with packages in it: an empty one would be saved under
+        # this key for good, and every job after would fetch them again.
+        if compgen -G "/var/cache/apt/archives/*.deb" > /dev/null; then
+          mkdir -p ~/.cache/pw-debs && cp /var/cache/apt/archives/*.deb ~/.cache/pw-debs/
+        else
+          echo "apt kept no packages to cache; the next job fetches them again"
+        fi
