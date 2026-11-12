@@ -2,7 +2,7 @@
 // heading used to be a placed shape, which stays where it was put while the
 // words move; as a text-style key it is the paragraph's own ::before/::after
 // and moves with it. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

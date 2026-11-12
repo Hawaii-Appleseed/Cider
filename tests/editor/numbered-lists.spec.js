@@ -2,7 +2,7 @@
 // list that counts on across boxes, and sub-levels. The printed numbers were
 // checked with real Chrome (2026-10-19: "1. one 2. two 2.1. two-a" then
 // "3. three" in a second box); these hold the editor's half.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const addBox = async (page, md, extra = {}) => {
   const r = await page.evaluate(([m, x]) => docsync.api.addTextBox({ page: 3, x: 1, y: 1, w: 3, md: m, ...x }), [md, extra]);

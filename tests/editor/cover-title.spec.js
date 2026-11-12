@@ -5,7 +5,7 @@
 // a press that travels drags it, and Escape leaves the words with it
 // selected. Both are plain text (not run through md_inline), so that editor
 // offers no Bold/Italic/Link toolbar. Local mode; editor opens on the cover.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 test.describe('editable cover title', () => {
   test('the cover title is an editable slot and commits an edit', async ({ page }) => {

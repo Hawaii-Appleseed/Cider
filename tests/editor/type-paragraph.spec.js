@@ -5,7 +5,7 @@
 // style. Drop caps and list looks need a pseudo-element, which an inline style
 // cannot reach — TYPE_CSS rides out once, only when something asks for one.
 // Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

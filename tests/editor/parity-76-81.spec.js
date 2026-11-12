@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 76 (style housekeeping), 79 (default styles for new
 // things), 81 (clear transformations) and 78 (span columns). Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

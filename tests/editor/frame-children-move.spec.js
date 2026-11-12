@@ -13,7 +13,7 @@
 //     band that runs edge to edge that is every press that misses the words;
 //   - a rubber band that touched it took it, and with it everything inside,
 //     so the text boxes could never be banded on their own.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const FIELD = '[data-el="cover.field"]';
 const TITLE = '[data-el="cover.h1"]';

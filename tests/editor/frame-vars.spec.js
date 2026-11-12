@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 49, 54, 56, 60: text frame options, page numbering
 // sections, widows / orphans / word spacing, and text variables. Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

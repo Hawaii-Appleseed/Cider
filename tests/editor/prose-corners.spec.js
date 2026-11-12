@@ -2,7 +2,7 @@
 // does in InDesign or Canva (Devin, 2026-10-21) — it used to take only the
 // east and west edges. Its dragged height is a FLOOR (positions[].hmin), so
 // the words are never cut off. Charts and tables keep their own handle sets.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 // A plain body paragraph. (It was para.groc.lead until 2026-10-28, when that
 // one moved inside the grocery callout panel and its stored y stopped being

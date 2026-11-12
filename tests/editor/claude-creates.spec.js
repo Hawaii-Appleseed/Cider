@@ -7,7 +7,7 @@
 // that swallowed clicks half an inch outside itself, a scatter plot whose
 // numbers the panel could not show. The engine halves are in
 // docsync/test_docsync.py ("what Claude builds stays editable").
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, fn, arg) => page.evaluate(fn, arg);
 const status = page => page.locator('#stat');

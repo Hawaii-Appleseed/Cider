@@ -1,6 +1,6 @@
 // Quick Apply (INDESIGN_PARITY.md 51): ⌘↩, a few letters, Enter — a text
 // style, character style, object style, swatch or any editor command.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const setLayout = (page, fn, arg) => page.evaluate(async ([src, a]) => {

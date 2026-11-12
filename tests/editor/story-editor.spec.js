@@ -1,6 +1,6 @@
 // Story editor (INDESIGN_PARITY.md 63): every slot and text box as plain
 // words in one column, page by page in reading order, written back as you go.
-const { warmTest: test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

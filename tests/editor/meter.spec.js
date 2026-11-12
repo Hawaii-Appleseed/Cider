@@ -5,7 +5,7 @@
 // never moved one, and the page once shipped a bar disagreeing with its own
 // numbers. docsync.check now refuses a hand-drawn bar under strict.
 // affected-by: docsync/blocks.py docsync/layout.py projects/tfc-2027-priorities/*
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const text = (page, sel) => page.evaluate(s =>
   (document.getElementById('out').contentDocument.querySelector(s) || {}).textContent || '', sel);

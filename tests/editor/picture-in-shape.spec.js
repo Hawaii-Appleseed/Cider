@@ -1,5 +1,5 @@
 // A picture inside a shape (INDESIGN_PARITY.md 58, InDesign's Paste Into).
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addShape = async (page, kind) => {

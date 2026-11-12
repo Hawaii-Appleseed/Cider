@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 80 (colours in use), 77 (type from the keyboard) and
 // 75 (load styles from another report).
-const { warmTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, clickTool } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {

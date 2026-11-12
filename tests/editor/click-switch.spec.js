@@ -2,7 +2,7 @@
 // (Devin, 2026-10-21: "it takes 2 clicks to click out of a content box into
 // another one"). The press on the second box only blurred the first —
 // dragify skipped every press while `editing` — so the click never landed.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const A = 'para.groc.lead', B = 'para.groc.pay.p';
 

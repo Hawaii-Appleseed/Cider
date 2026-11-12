@@ -2,7 +2,7 @@
 // a text caret over the WHOLE box — not the grab hand a movable object shows
 // at rest (reported 2026-10-27: "even when editing text, it gives the fist
 // drag icon"). Only the grip under the box moves it then.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 test('a box whose words are open shows the text caret, not the grab hand', async ({ page }) => {
   await gotoEditor(page);

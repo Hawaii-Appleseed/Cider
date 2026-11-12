@@ -1,6 +1,6 @@
 // A rectangle's corner radius, settable through the pilot API (and so through the
 // staff-hub connector): addShape({r}) and setShape(id, {r, stroke, sw, z}). Local mode.
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const rx = (page, id) => page.evaluate(i =>
   $('out').contentDocument.querySelector(`[data-shape="${CSS.escape(i)}"]`).getAttribute('rx'), id);

@@ -3,7 +3,7 @@
 // ⌘Z then went to the field, which had nothing to undo, and the box stayed
 // where it was dropped ("undoing a drag sometimes doesn't work",
 // 2026-10-29). Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 async function openBox(page, md = 'Drag me') {
   const r = await page.evaluate(md => docsync.api.addTextBox({ page: visiblePageId(), x: 1, y: 1.5, w: 3, md }), md);

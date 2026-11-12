@@ -4,7 +4,7 @@
 // style used, so redefining the style moves every run that wears it. Only the
 // letterform keys apply (layout.CHAR_KEYS) — alignment and leading are the
 // paragraph's. Local mode.
-const { warmTest: test, expect, gotoEditor, fillDialog, submitDialog,
+const { sharedTest: test, expect, gotoEditor, fillDialog, submitDialog,
         clickAddSection } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);

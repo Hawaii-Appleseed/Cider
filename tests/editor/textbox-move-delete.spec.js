@@ -3,7 +3,7 @@
 // to actually drag and drop text boxes", and the mini toolbar with Delete
 // was "finicky" to get, because a click on a box opens its words and the
 // toolbar never shows while they are open. Local mode.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const frameOf = page => page.frameLocator('#out');
 

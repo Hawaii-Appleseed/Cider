@@ -1,7 +1,7 @@
 // A library of reusable pieces (INDESIGN_PARITY.md 50): save the selection
 // with the styles and swatches it wears; drop it into another report.
 // Local mode: the server's library file (a throwaway one under the suite).
-const { warmTest: test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, openFileMenu } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 

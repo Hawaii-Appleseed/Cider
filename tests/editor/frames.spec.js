@@ -10,7 +10,7 @@
 // leaping, because the frame is positioned from birth. (A press on a card's
 // padding that travels before the card is selected bands instead of dragging
 // it — see frame-children-move.spec.js.)
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 const CARD = '[data-el="frame.fam-1"]';
 const FIELD = '[data-el="field.fam.h3-1"]';
