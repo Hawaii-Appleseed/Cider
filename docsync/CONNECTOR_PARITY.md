@@ -312,6 +312,10 @@ Every arrange verb needs a person's open tab today. Options:
 
 Decide this with Devin before building. It changes who is "in the room".
 
+Decided 2026-11-12 (Devin): not building it. The connector keeps handing
+over the open_in_editor link when nobody has the report open; Claude Code can
+open that link in its own browser tab when a layout change is needed.
+
 ### Not planned
 
 Viewing-only actions (zoom, present, panels, hidden characters), Google Doc
