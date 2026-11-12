@@ -253,6 +253,8 @@ done.
 
 ### Step 4: the page verbs nobody wrote (kind C, small). Cider editor plus a hub list entry each.
 
+**Built and live 2026-11-11:** Cider #127 (`movePage`, `showPage`, `setPageSize`, `saveToLibrary(name, ids)`, and continueEndnotes/placeFromLibrary/loadStyles/undo/redo as single verbs), hub d25197d. A relayed undo/redo takes back only Claude's own last step: refused once the person has changed anything since. Verified live on demo-report.
+
 In `PILOT_SINGLE_VERBS` / `docsync.api`, each wrapping an existing function:
 
 - `movePage(page, toIndex)` → `writeOrder` (15524).
