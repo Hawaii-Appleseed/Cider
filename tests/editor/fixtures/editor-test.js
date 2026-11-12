@@ -109,8 +109,12 @@ async function gotoEditor(page, query = '') {
     // Leave the old editor completely before the next one boots: navigating
     // straight from one report's editor to another's in the same tab left the
     // second's first nudge measuring against the first's page.
-    if (page.url() !== 'about:blank') await page.goto('about:blank');
-    await wipeOrigin(sh.ctx, page, sh.baseURL);
+    // A test's own second open is a reload, and a reload keeps what the
+    // origin stored (that is often what it tests); only a new test starts clean.
+    if (first) {
+      if (page.url() !== 'about:blank') await page.goto('about:blank');
+      await wipeOrigin(sh.ctx, page, sh.baseURL);
+    }
   }
   await page.goto('edit.html' + query);
   await waitForFirstRender(page);
@@ -247,7 +251,7 @@ const warmTest = process.env.DS_IMPACT ? test : warm;
 // Not test state: timers and pulses (previewT, hubAutosaveFlush), what the
 // engine is asked once and kept (ANCHOR_SRC, OBJ_KEYS), and the snap distance,
 // which every drag works out again from the zoom it starts at.
-const LET_CLOCKS = /(Seq|seq|At|Time|Times|Stamp|Count|Timer|timer|Id)$|^(historySeq|scrollTopWas|lastPing\w*|stalled\w*|previewT|hubAutosaveFlush|ANCHOR_SRC|OBJ_KEYS|SNAP_IN|SNAP_DENSE_IN)$/;
+const LET_CLOCKS = /(Seq|seq|At|Time|Times|Stamp|Timer|timer)$|^(historySeq|scrollTopWas|lastPing\w*|stalled\w*|previewT|hubAutosaveFlush|ANCHOR_SRC|OBJ_KEYS|SNAP_IN|SNAP_DENSE_IN|thumbSheetText)$/;
 const SHARED = new WeakMap();           // page -> { query, fingerprint }
 // Every top-level `let` in edit.html: the editor's own state (which tab the
 // Chart panel is on, what the Text panel last applied…). A reset that misses
@@ -296,6 +300,8 @@ const fingerprint = page => page.evaluate(lets => {
          && getComputedStyle(e).visibility !== 'hidden').map(e => e.id).filter(id => id !== 'tt').sort(),   // tt: a tooltip under the pointer
     local: store(localStorage), session: store(sessionStorage),
     lets: Object.fromEntries(lets.map(n => [n, val(n)])),
+    scroll: (() => { const se = document.getElementById('out').contentDocument.scrollingElement;
+      return [se.scrollTop, se.scrollLeft, scrollX, scrollY]; })(),
   });
 }, EDITOR_LETS);
 
