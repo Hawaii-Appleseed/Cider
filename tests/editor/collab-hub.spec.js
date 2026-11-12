@@ -2033,6 +2033,39 @@ test('autosave: hiding the tab saves what is pending, without waiting for the qu
   }
 });
 
+// The connector's undo takes back Claude's step and never the person's: the
+// tab's undo is the person's own, so a relayed undo runs only while the
+// relayed edit is still the last step in the tab.
+test("a relayed undo takes back the relayed edit, redo brings it back, and a person's edit in between stops both", async () => {
+  const shapes = p => p.evaluate('layout.shapes.length');
+  const n0 = await shapes(a);
+  const op = { ops: [{ verb: 'addShape', args: [{ page: 1, kind: 'rect', x: 0.5, y: 0.5, w: 0.4, h: 0.4 }] }], by: ADA };
+  let r = await a.evaluate(m => hubPilot(m), op);
+  expect(r.ok, JSON.stringify(r)).toBe(true);
+  expect(await shapes(a)).toBe(n0 + 1);
+  await expect.poll(() => shapes(b), { timeout: 20_000 }).toBe(n0 + 1);
+  r = await a.evaluate(() => hubPilot({ ops: [{ verb: 'undo' }] }));
+  expect(r.ok, JSON.stringify(r)).toBe(true);
+  expect(await shapes(a)).toBe(n0);
+  await expect.poll(() => shapes(b), { timeout: 20_000 }).toBe(n0);
+  r = await a.evaluate(() => hubPilot({ ops: [{ verb: 'redo' }] }));
+  expect(r.ok, JSON.stringify(r)).toBe(true);
+  expect(await shapes(a)).toBe(n0 + 1);
+  // The person moves the shape: now the last step is theirs.
+  const id = await a.evaluate('layout.shapes[layout.shapes.length - 1].id');
+  expect((await a.evaluate(i => docsync.api.place(i, { x: 1, y: 1 }), id)).ok).toBe(true);
+  r = await a.evaluate(() => hubPilot({ ops: [{ verb: 'undo' }] }));
+  expect(r.ok).toBe(false);
+  expect(r.error).toMatch(/not your edit/);
+  expect(await a.evaluate(i => shapeOf(i).x, id)).toBe(1);
+  r = await a.evaluate(() => hubPilot({ ops: [{ verb: 'redo' }] }));
+  expect(r.ok).toBe(false);
+  // Tidy: the person's own undo twice takes it all back.
+  await a.evaluate(() => docsync.api.undo());
+  await a.evaluate(() => docsync.api.undo());
+  await expect.poll(() => shapes(a), { timeout: 20_000 }).toBe(n0);
+});
+
 // With autosave every pause is a version, so a document outgrows the 100 the
 // store answers at a time within a sitting. The older ones were kept but the
 // panel never asked for them: no way back past the newest hundred.
