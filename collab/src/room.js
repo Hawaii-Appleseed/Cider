@@ -37,6 +37,15 @@ import { filesFromY, writeFiles } from '../ydoc.mjs';
 const ORIGIN_STORE = 'collab:store';
 
 const KEY_SEEDED = 'seeded';
+/** What /ask may ask an editor. Every one is a READ of the rendered page —
+ *  the same-named docsync.api read in edit.html — so a question can never
+ *  change a document; changes go through /pilot. 'inventory' is the page
+ *  map read_report uses; the rest are what Preflight and the editor's
+ *  panels show a person (checkLinks is not here: it runs through the local
+ *  server, which a hub editor does not have). The editor keeps the same
+ *  list; a name only one side knows is refused, not guessed at. */
+export const ASKS = new Set(['inventory', 'preflight', 'audit', 'hyperlinks', 'colours', 'fontsInUse',
+                             'links', 'styles', 'notes', 'overrides', 'stories']);
 
 export class PrimerRoom extends YServer {
   /**
@@ -83,8 +92,10 @@ export class PrimerRoom extends YServer {
    *   GET  …/status   what status() says — is it seeded, who is here
    *   POST …/pilot    {ops, by?, what?, timeout?} — hand pilot ops to ONE
    *                   editor in the room to apply, and wait for its answer
-   *   POST …/ask      {what:'inventory', timeout?} — ask ONE editor about the
-   *                   page it has rendered: where each slot sits, what is cut
+   *   POST …/ask      {what, timeout?} — ask ONE editor about the page it has
+   *                   rendered: 'inventory' (where each slot sits, what is
+   *                   cut) or one of the read-only checks in ASKS (Preflight,
+   *                   colours, fonts, links…). Never a change: /pilot is that
    *   GET  …/files    the document AS FILES: {content, layout, baseSha, …} —
    *                   what the room holds, which is the truth whenever it is
    *                   seeded (the store only ever holds what a room saved)
@@ -151,7 +162,7 @@ export class PrimerRoom extends YServer {
       let body;
       try { body = await request.json(); } catch { return Response.json({ ok: false, error: 'a JSON body is required' }, { status: 400 }); }
       const what = typeof body?.what === 'string' ? body.what : '';
-      if (what !== 'inventory') return Response.json({ ok: false, error: `nothing here answers '${what}'` }, { status: 400 });
+      if (!ASKS.has(what)) return Response.json({ ok: false, error: `nothing here answers '${what}'` }, { status: 400 });
       const all = [...this.getConnections()];
       const who = all.filter(c => c.state?.pilot === true);
       if (!who.length) return Response.json({ ok: false, reason: all.length ? 'no-pilot' : 'empty', connections: all.length });
