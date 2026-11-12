@@ -27,7 +27,7 @@
 // affected-by: docsync/editor/edit.html docsync/layout.py docsync/blocks.py docsync/content.py docsync.yml projects/**
 const fs = require('fs');
 const path = require('path');
-const { warmTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
 const REPO = path.resolve(__dirname, '../..');
 
@@ -86,10 +86,16 @@ const sweepSlots = (page, arg) => page.evaluate(async ([PROBE, PART]) => {
   };
   // A commit, an Escape or an undo ends in render(); the twin document swaps in
   // only once it has loaded, so wait for the render to be over and settle.
+  // Quiet twice a frame apart (renderBusy counts the twin still loading),
+  // not a flat 60ms after each of the seven-odd renders a slot costs.
+  const busy = () => (typeof renderBusy === 'function' ? renderBusy() : renderRunning) || editing;
   const settled = async () => {
-    await until(() => !renderRunning && !editing, 10000);
+    const t0 = performance.now();
+    for (let calm = 0; calm < 2 && performance.now() - t0 < 10000; ) {
+      await sleep(calm ? 16 : 10);
+      calm = busy() ? 0 : calm + 1;
+    }
     await until(() => [...D().images].every(i => i.complete), 5000);   // a picture still loading has no height yet
-    await sleep(60);
   };
   const D = () => document.getElementById('out').contentDocument;
   const esc = k => CSS.escape(k);
@@ -363,18 +369,27 @@ const glyphPoint = (page, key) => page.evaluate((key) => {
            inGroup: !!(el.closest('[data-el]') && (layout.groups || []).some(g => g.includes(el.closest('[data-el]').dataset.el))) };
 }, key);
 
-const openHost = page => page.evaluate(() => {
+// Quiet = no render running or loading its twin document, no field open;
+// asked twice a frame apart, so a render queued on the next tick is not
+// mistaken for quiet. (It used to sleep a flat 60ms after every action,
+// which was a third of the pointer pass on a report with many handles.)
+const QUIET = `async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const busy = () => (typeof renderBusy === 'function' ? renderBusy() : renderRunning) || editing;
+  const t0 = performance.now();
+  for (let calm = 0; calm < 2 && performance.now() - t0 < 10000; ) {
+    await sleep(calm ? 16 : 10);
+    calm = busy() ? 0 : calm + 1;
+  }
+}`;
+const settle = page => page.evaluate(`(${QUIET})()`);
+
+/** The slot whose editor is open, waiting up to `ms` for one to open. */
+const openedWithin = (page, ms) => page.waitForFunction(() => {
   const d = document.getElementById('out').contentDocument;
   const h = d.querySelector('.ds-edit[data-slot], input[data-slot], .ds-cell-edit');
   return h ? (h.dataset.slot || 'cell') : null;
-});
-
-const settle = page => page.evaluate(async () => {
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const t0 = performance.now();
-  while (performance.now() - t0 < 10000 && (renderRunning || editing)) await sleep(25);
-  await sleep(60);
-});
+}, null, { timeout: ms, polling: 15 }).then(h => h.jsonValue(), () => null);
 
 async function mouseSweep(page, PART) {
   const partOf = i => !PART || i % PART[1] === PART[0] - 1;
@@ -389,13 +404,11 @@ async function mouseSweep(page, PART) {
     if (!pt.onIt) covered.push(`${key} ← ${pt.hit}`);
     const src0 = await page.evaluate(() => source);
     await page.mouse.click(pt.x, pt.y);
-    await page.waitForTimeout(120);
-    let who = await openHost(page);
+    let who = await openedWithin(page, 150);
     let how = 'click';
     if (!who) {
       await page.mouse.dblclick(pt.x, pt.y);
-      await page.waitForTimeout(120);
-      who = await openHost(page);
+      who = await openedWithin(page, 150);
       how = 'double-click';
     }
     if (!who) {
@@ -417,7 +430,6 @@ async function mouseSweep(page, PART) {
     if (who && await page.evaluate(() => source) !== src0)
       fails.push(`${key}: opened and left with Escape, nothing typed, and the markdown changed`);
     await page.keyboard.press('Escape');     // clear the selection too
-    await page.waitForTimeout(40);
   }
   return { n, fails, needsDouble, covered };
 }
@@ -498,10 +510,11 @@ async function handleSweep(page, PART) {
     const h = await page.evaluate(async (id) => {
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       await docsync.api.select(id);
-      await sleep(60);
       const fr = document.getElementById('out');
       const d = fr.contentDocument;
-      const ov = d.querySelector(`.ds-handles[data-for="${CSS.escape(id)}"]`);
+      const sel = `.ds-handles[data-for="${CSS.escape(id)}"]`;
+      for (let t = 0; t < 40 && !fr.contentDocument.querySelector(sel); t++) await sleep(10);
+      const ov = fr.contentDocument.querySelector(sel);
       if (!ov) return { none: true };
       const order = ['se', 'e', 's', 'ne', 'sw', 'nw', 'n', 'w'];
       let h = null, dir = null;
@@ -529,11 +542,17 @@ async function handleSweep(page, PART) {
     const dy = h.dir.includes('s') ? 30 : h.dir.includes('n') ? -30 : 0;
     await page.mouse.move(h.x, h.y);
     await page.mouse.down();
-    await page.mouse.move(h.x + dx / 2, h.y + dy / 2, { steps: 3 });
-    await page.mouse.move(h.x + dx, h.y + dy, { steps: 3 });
+    await page.mouse.move(h.x + dx / 2, h.y + dy / 2, { steps: 2 });
+    await page.mouse.move(h.x + dx, h.y + dy, { steps: 2 });
     await page.mouse.up();
-    await settle(page);
-    const now = await page.evaluate(id => { const m = _pilotMeasure(id); return m ? { w: m.w, h: m.h } : null; }, id);
+    // after the drag, and after its undo, in one round trip
+    const { now, back } = await page.evaluate(`(async id => {
+      const quiet = ${QUIET};
+      const size = () => { const m = _pilotMeasure(id); return m ? { w: m.w, h: m.h } : null; };
+      await quiet(); const now = size();
+      await undo(); await quiet();
+      return { now, back: size() };
+    })(${JSON.stringify(id)})`);
     // what the drag asked for in inches, less what the page edge allows
     const askW = Math.min(30 * h.perPx, Math.max(0, h.roomE)), askH = Math.min(30 * h.perPx, Math.max(0, h.roomS));
     const grewW = now && h.was && now.w > h.was.w + askW * 0.5;
@@ -545,9 +564,6 @@ async function handleSweep(page, PART) {
       fails.push(`${id}: ${h.dir} handle dragged ${dx},${dy}px and the box stayed ${h.was.w}x${h.was.h} (now ${now.w.toFixed(2)}x${now.h.toFixed(2)})`);
     else if (expectW && !expectH && !grewW)
       fails.push(`${id}: ${h.dir} handle dragged and width stayed ${h.was.w} (now ${now.w.toFixed(2)}; x ${h.was.x}, room ${h.roomE.toFixed(2)}, asked ${askW.toFixed(2)})`);
-    await page.evaluate(async () => { await undo(); });
-    await settle(page);
-    const back = await page.evaluate(id => { const m = _pilotMeasure(id); return m ? { w: m.w, h: m.h } : null; }, id);
     if (back && h.was && (Math.abs(back.w - h.was.w) > 0.03 || Math.abs(back.h - h.was.h) > 0.03))
       fails.push(`${id}: undo after resize left ${back.w.toFixed(2)}x${back.h.toFixed(2)}, was ${h.was.w}x${h.was.h}`);
     await page.keyboard.press('Escape');
@@ -560,18 +576,40 @@ test('every bound report was discovered', () => {
   expect(ITEMS.length, process.env.DS_ONLY || '').toBeGreaterThan(0);
 });
 
+// The page is the shared editor (fixtures/editor-test.js, sharedTest), so a
+// test's listeners are taken off again when it ends, or the next test's
+// errors would land in this one's list too.
+function listen(page, errors, { http = false } = {}) {
+  const on = {
+    pageerror: e => errors.push(`pageerror: ${e.message}`),
+    console: m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); },
+  };
+  if (http) on.response = r => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url()}`); };
+  for (const [k, f] of Object.entries(on)) page.on(k, f);
+  return () => { for (const [k, f] of Object.entries(on)) page.off(k, f); };
+}
+
+// A report's two passes run one after the other on one worker, so the second
+// gets the editor the first booted (reset to the saved document, and checked
+// against how it booted, by the shared fixture) instead of booting its own:
+// one boot per report part, not two. Mode 'default' keeps them in order on
+// one worker without skipping the second when the first fails.
 for (const { rep, part: PART } of ITEMS) {
+  test.describe(`${rep.id}${tagOf(PART)}`, () => {
+  test.describe.configure({ mode: 'default' });
   test(`${rep.id}: every field opens, takes words, and every object moves${tagOf(PART)}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
-    page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
-    page.on('console', m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
-    page.on('response', r => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url()}`); });
+    const unlisten = listen(page, errors, { http: true });
+    try {
     await gotoEditor(page, rep.id === 'budget-primer' ? '' : `?project=${rep.id}`);
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
+    const t1 = Date.now();
     const s = await sweepSlots(page, [PROBE, PART]);
+    const t2 = Date.now();
     const m = await sweepMoves(page, PART);
+    console.log(`${rep.id}${tagOf(PART)} API pass, seconds: slots ${((t2 - t1) / 1000).toFixed(1)}, moves ${((Date.now() - t2) / 1000).toFixed(1)}`);
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: ${s.n}/${s.keys} slots opened, ${m.n} objects moved; ${s.skipped.length} hidden slots and ${m.hidden} hidden objects skipped`,
@@ -606,22 +644,25 @@ for (const { rep, part: PART } of ITEMS) {
       expect(fresh, `${rep.id}: fields that shift or are covered`).toEqual([]);
       expect(gone, `${rep.id}: fixed — delete these from KNOWN`).toEqual([]);
     }
+    } finally { unlisten(); }
   });
-}
 
-for (const { rep, part: PART } of ITEMS) {
   test(`${rep.id}: a real pointer opens every field; cells, panels and handles work${tagOf(PART)}`, async ({ page }) => {
     test.setTimeout(900_000);
     const errors = [];
-    page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
-    page.on('console', m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
+    const unlisten = listen(page, errors);
+    try {
+    const tb = Date.now();
     await gotoEditor(page, rep.id === 'budget-primer' ? '' : `?project=${rep.id}`);
     await page.evaluate(() => document.getElementById('out').contentDocument.fonts.ready);
     await page.waitForTimeout(500);
-    const mo = await mouseSweep(page, PART);
-    const ce = await cellSweep(page, PART);
-    const pa = await panelSweep(page, PART);
-    const ha = await handleSweep(page, PART);
+    console.log(`${rep.id}${tagOf(PART)} pointer pass: editor ready in ${((Date.now() - tb) / 1000).toFixed(1)}s`);
+    const took = {}, timed = async (k, f) => { const t0 = Date.now(); try { return await f(); } finally { took[k] = (Date.now() - t0) / 1000; } };
+    const mo = await timed('mouse', () => mouseSweep(page, PART));
+    const ce = await timed('cells', () => cellSweep(page, PART));
+    const pa = await timed('panels', () => panelSweep(page, PART));
+    const ha = await timed('handles', () => handleSweep(page, PART));
+    console.log(`${rep.id}${tagOf(PART)} pointer pass, seconds: ` + Object.entries(took).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(', '));
     const dirtyAfter = await page.evaluate(() => dirty);
     const lines = [
       `${rep.id}: mouse opened ${mo.n} slots; ${ce.n} cells; ${pa.charts} charts, ${pa.tables} tables; ${ha.n} handles dragged, ${ha.noHandles.length} objects with no resize handle`,
@@ -642,5 +683,7 @@ for (const { rep, part: PART } of ITEMS) {
     expect(pa.fails, 'every chart and table opens its panel').toEqual([]);
     expect(ha.fails, 'every resize handle resizes').toEqual([]);
     expect(dirtyAfter, 'the sweep left the document as it found it').toBe(false);
+    } finally { unlisten(); }
+  });
   });
 }
