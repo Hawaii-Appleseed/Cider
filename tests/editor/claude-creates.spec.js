@@ -288,3 +288,44 @@ test('a pilot will not make a chart on a page that cannot show it, and says whic
   expect(ok.ok, ok.error).toBe(true);
   await expect(page.frameLocator('#out').locator(`g[data-shape="${ok.id}"]`)).toHaveCount(1);
 });
+
+// demo-report's renderer used to ignore layout.pages: an added page was saved
+// and never drawn, so a pilot was refused for every page but 1 and a 12-slide
+// deck could not be built in one report (found building the Appleseed overview
+// deck on a copy of the hub's `test` report). Now every added or duplicated
+// page is a real sheet that takes a fill, shapes, text, a chart and a table.
+test('a report built on demo-report takes placed objects on many added pages', async ({ page }) => {
+  await gotoEditor(page, '?project=demo-report');
+  const frame = page.frameLocator('#out');
+  const pids = [];
+  for (let i = 0; i < 12; i++) {
+    const r = await api(page, () => docsync.api.addPage());
+    expect(r.ok, r.error).not.toBe(false);
+    pids.push(r.id);
+  }
+  // A duplicate of an added page is one too.
+  const dup = await api(page, P => docsync.api.duplicatePage(P), pids[0]);
+  expect(dup.page).toBeTruthy();
+  pids.push(dup.page);
+  for (const [i, P] of pids.entries()) {
+    const fill = await api(page, ([P, c]) => docsync.api.recolor('page.' + P, c), [P, i % 2 ? '#1E6194' : '#354F52']);
+    expect(fill.ok, fill.error).not.toBe(false);
+    const s = await api(page, P => docsync.api.addShape({ page: P, kind: 'rect', x: 0.5, y: 0.5, w: 2, h: 1, fill: '#FDCF21' }), P);
+    expect(s.ok, `${P} shape: ${s.error}`).not.toBe(false);
+    const t = await api(page, P => docsync.api.addTextBox({ page: P, x: 0.5, y: 2, w: 4, md: 'Slide text' }), P);
+    expect(t.ok, `${P} text: ${t.error}`).not.toBe(false);
+    const c = await api(page, P => docsync.api.addChart({ page: P, x: 0.5, y: 3, w: 4, h: 2.5,
+      chart: { type: 'bar', labels: ['a', 'b'], series: [{ name: 's', data: [1, 2] }] } }), P);
+    expect(c.ok, `${P} chart: ${c.error}`).toBe(true);
+    const tb = await api(page, P => docsync.api.addTable({ page: P, x: 5, y: 3, w: 3, rows: [['h1', 'h2'], ['1', '2']] }), P);
+    expect(tb.ok, `${P} table: ${tb.error}`).not.toBe(false);
+  }
+  await api(page, () => render());
+  for (const P of pids) {
+    const sec = frame.locator(`section.page[data-page="${P}"]`);
+    await expect(sec).toHaveCount(1);
+    await expect(sec.locator('g[data-shape]')).not.toHaveCount(0);
+    await expect(sec.locator('.ds-textbox')).toHaveCount(1);
+    await expect(sec.locator('table')).toHaveCount(1);
+  }
+});

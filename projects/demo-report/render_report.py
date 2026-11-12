@@ -48,12 +48,29 @@ page1 = f"""
 </section>"""
 
 body = C.fn.resolve(page1)
+# Page 1 and the endnotes sheet are this renderer's own; every other page is
+# one the editor added (addPage / duplicatePage / the "+" in the page strip).
+# Those used to be dropped on the floor: layout.pages was never read, so a
+# blank page was saved and never drawn, and a pilot (arrange_report's
+# addShape / addTextBox / addChart / addTable) was refused for any page but 1.
+# L.page_order(2) is [1, 2] with no override, so a report with no added page
+# renders byte-for-byte as before; L.sheet() gives a blank page the same
+# data-page section, background, layer, text boxes and tables as any scaffold.
+DESIGNED_PAGES = 2
 # The engine's list, not a hand-built one: each entry carries its
 # endnote.<id> hook (Sources panel), where the <li>s built here had none.
 endnotes = C.fn.endnotes_html(L)
 _eh = "endnotes.title"
 endnotes_title = (f'{L.spacer(_eh)}<h2{merge_attrs(C.slot_attr(_eh), L.attr(_eh))}>'
                   f'{C.text_or(_eh, "Endnotes")}</h2>')
+
+endnotes_page = f"""<section class="page">
+ {endnotes_title}
+ <div class="endnotes">{endnotes}</div>
+</section>"""
+_DESIGNED = {1: body, 2: endnotes_page}
+body = "\n".join(_DESIGNED[pid] if pid in _DESIGNED else L.sheet(pid)
+                 for pid in L.page_order(DESIGNED_PAGES))
 
 html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -73,10 +90,6 @@ html = f"""<!DOCTYPE html>
 </head>
 <body>
 {body}
-<section class="page">
- {endnotes_title}
- <div class="endnotes">{endnotes}</div>
-</section>
 </body>
 </html>
 """
