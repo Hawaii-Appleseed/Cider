@@ -269,6 +269,8 @@ In `PILOT_SINGLE_VERBS` / `docsync.api`, each wrapping an existing function:
 
 ### Step 5: widen the look verbs (kind C, medium). Cider editor.
 
+**Built and live 2026-11-11:** Cider #128 and hub 5c6c307. setShape takes dash, ends, sides, points, inner and data, and addShape takes sides, points and inner. New verbs: setLook(id, {alpha, blend, shadow}), animate, crop and tone on designed pictures, tableRow/tableCol (insert, delete, move, even, fit), copyStyle(from, [to]) and setWebsite({site, slug}) (the address only; a person Publishes). Not built: icon shapes (the editor has none), and opacity/shadow on pictures beyond what the menu allows (shadow stays shapes and text boxes). Verified live on demo-report.
+
 - `setShape`: add `dash`, `ends`, `alpha`, `blend`, `shadow`. Lift them from
   the inline `layerMenu` writes (6714–6844). Widen opacity and shadow to
   boxes, pictures and tables (`storeOf`), perhaps as a `setLook(id, {...})`.
