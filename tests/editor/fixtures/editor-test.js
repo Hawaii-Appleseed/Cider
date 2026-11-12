@@ -248,10 +248,12 @@ const warmTest = process.env.DS_IMPACT ? test : warm;
 // so in the log) — a leak costs a boot, never a wrong result. A failed test
 // restarts its worker, which discards the shared page with it. A different
 // gotoEditor query (another project) boots for real.
-// Not test state: timers and pulses (previewT, hubAutosaveFlush), what the
-// engine is asked once and kept (ANCHOR_SRC, OBJ_KEYS), and the snap distance,
-// which every drag works out again from the zoom it starts at.
-const LET_CLOCKS = /(Seq|seq|At|Time|Times|Stamp|Timer|timer)$|^(historySeq|scrollTopWas|lastPing\w*|stalled\w*|previewT|hubAutosaveFlush|ANCHOR_SRC|VARS_SRC|VARS_KEY|GREP_SRC|THREAD_SRC|OBJ_KEYS|SNAP_IN|SNAP_DENSE_IN|thumbSheetText)$/;
+// Not test state: timers and pulses (previewT, hubAutosaveFlush, the stage
+// and rail refit timers, the last nudge's time), what the engine is asked once
+// and kept (ANCHOR_SRC, XREF_SRC, OBJ_KEYS…), the last render's markup, which
+// the next render diffs against and replaces, and the snap distance, which
+// every drag works out again from the zoom it starts at.
+const LET_CLOCKS = /(Seq|seq|At|Time|Times|Stamp|Timer|timer)$|^(historySeq|scrollTopWas|lastPing\w*|stalled\w*|previewT|hubAutosaveFlush|stageT|railT|lastNudge|lastHtml|ANCHOR_SRC|VARS_SRC|VARS_KEY|GREP_SRC|THREAD_SRC|XREF_SRC|WRAPSHAPE_SRC|TABS_SRC|GRID_SRC|GRID_KEY|OBJ_KEYS|SNAP_IN|SNAP_DENSE_IN|thumbSheetText)$/;
 const SHARED = new WeakMap();           // page -> { query, fingerprint }
 // Every top-level `let` in edit.html: the editor's own state (which tab the
 // Chart panel is on, what the Text panel last applied…). A reset that misses
