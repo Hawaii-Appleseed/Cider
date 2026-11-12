@@ -74,7 +74,7 @@ jobs:
           pick() { printf '%s\n' "$@" | sed '/^$/d' | sort -u | python3 -c '
           import json, math, statistics, sys
           W = json.load(open("tests/editor/sweep-weights.json"))
-          BOOT, PART, DEFAULT = 0.5, 4.0, statistics.median(W.values())
+          BOOT, PART, DEFAULT = 0.5, 2.0, statistics.median(W.values())
           items = []
           for id in [l.strip() for l in sys.stdin if l.strip()]:
               w = W.get(id, DEFAULT); n = max(1, math.ceil(w / PART))
