@@ -151,6 +151,7 @@ const test = base.test.extend({
 // context and leak into the next test. Such a spec stays on `test`.
 // An impact-map run (DS_IMPACT) records per test through the context, so it
 // falls back to `test` there and the map stays exact.
+const KEEP_CACHE = 'ds-pyc-v1';         // edit.html's PYC_CACHE
 const warm = base.test.extend({
   _warmContext: [async ({ browser }, use, workerInfo) => {
     const { baseURL, serviceWorkers, viewport, userAgent, deviceScaleFactor,
@@ -166,10 +167,25 @@ const warm = base.test.extend({
   page: async ({ _warmContext, baseURL }, use) => {
     const page = await _warmContext.newPage();
     const cdp = await _warmContext.newCDPSession(page);
+    const origin = new URL(baseURL).origin;
     await cdp.send('Storage.clearDataForOrigin', {
-      origin: new URL(baseURL).origin,
-      storageTypes: 'local_storage,cache_storage,indexeddb,service_workers',
+      origin, storageTypes: 'local_storage,indexeddb,service_workers',
     });
+    // Every Cache Storage cache goes but the compiled engine (edit.html's
+    // PYC_CACHE). Without it every boot compiled the engine's .py files from
+    // source again — layout.py alone is ~300 ms on a laptop, more on a CI
+    // runner, a thousand boots a run. Keeping it is safe for the same reason
+    // it is in the app: each entry is a hash-checked pyc, refused and
+    // recompiled if the source changed. pyc-cache.spec.js, which needs an
+    // empty cache, is on plain `test` (a fresh context each time).
+    try {
+      const { caches } = await cdp.send('CacheStorage.requestCacheNames', { securityOrigin: origin });
+      for (const c of caches) {
+        if (c.cacheName !== KEEP_CACHE) await cdp.send('CacheStorage.deleteCache', { cacheId: c.cacheId });
+      }
+    } catch (e) {
+      await cdp.send('Storage.clearDataForOrigin', { origin, storageTypes: 'cache_storage' });
+    }
     await cdp.detach();
     await use(page);
     await page.close();
