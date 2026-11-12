@@ -285,6 +285,8 @@ In `PILOT_SINGLE_VERBS` / `docsync.api`, each wrapping an existing function:
 
 ### Step 6: images from Claude Code, versions, publish, shelf (kind B). Hub.
 
+**Built 2026-11-11:** hub e7b9181, hub only. `upload_image` answers a one-time upload address on `/api/mcp?upload=<token>` (the existing Access Bypass path; signed, ten minutes, one file name, the role checked again on arrival) and the curl for it; the picture is then placed with `addImage {src}`. `report_history` lists, reads (with `differs_from_now`) and labels versions. `publish_report` changes nothing without `confirmed: true` and refuses while an open editor holds unsaved changes. `manage_report` renames (hub-made only), files (by folder id or name), makes folders, takes off the list and restores. Delete-for-good and sharing stay with people, by decision. `new_report` copies a hub-made source's uploaded pictures; the matrix row overstated the gap, because a copy of a vendored report already finds its pictures through the template's room.
+
 - Image upload over 40 KB: `addImage {upload: true}` returns a short-lived
   signed PUT URL to `/api/docs/<room>/assets/<name>`. Claude Code `curl`s the
   file, then places it with `src`. Or raise the cap for the `data` field.
