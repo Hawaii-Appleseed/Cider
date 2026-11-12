@@ -334,7 +334,7 @@ Rules that bite:
   exactly for it (`#out[data-ds-render]` counts renders). Reach for
   `waitForTimeout` only for a CSS transition or a debounce — and say which.
   The sweep takes `DS_PART=k/n` (every nth field from the kth), which is how
-  CI splits a big report across jobs (`parts()` in editor-tests.yml).
+  CI splits a big report across jobs (`pick()` in editor-tests.yml's `changes` job).
 - **Run the tests your change needs, not the suite: `npm run test:affected`.**
   It runs the specs whose code the change touches, each with the reason, plus
   `boot-errors.spec.js` and the Python checks below when the change calls for
@@ -377,6 +377,11 @@ Rules that bite:
   and slowest shard from 209–541 s to a few percent. A NEW spec file works
   with no entry (it gets the median weight); `node tools/shard-weights.mjs`
   refreshes the numbers from a real run. Never pass `--shard` in the workflow.
+  The per-field sweep's six jobs are packed the same way, by report, from
+  `tests/editor/sweep-weights.json` (`node tools/sweep-weights.mjs [run]`
+  refreshes it from a run that swept every report; run it after binding a
+  new report). A report's two sweep passes share one editor (`sharedTest`),
+  so each part boots once.
 - **Tests:** `npx playwright test` (editor behaviour; ~780 tests, ~20 min here —
   `npm run test:ci` runs the same suite on GitHub),
   `python3 docsync/test_docsync.py` (engine round-trip),

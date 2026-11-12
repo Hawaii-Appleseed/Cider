@@ -280,7 +280,12 @@ const sharedStats = { boots: 0, resets: 0, leaks: 0 };
 // What a reset must give back: the document, everything on the page, and the
 // editor's own chrome — which of its elements are showing (an open panel,
 // menu or bar), whether words are open, and what it keeps in storage.
-const fingerprint = page => page.evaluate(lets => {
+// Measured once the page's fonts and pictures are in: a box measured before
+// its face loads is a different height, which read as a leak (2026-11-12).
+const fingerprint = page => page.evaluate(async lets => {
+  const d = document.getElementById('out').contentDocument;
+  await Promise.race([d.fonts.ready, new Promise(r => setTimeout(r, 5000))]);
+  for (let t = 0; t < 200 && ![...d.images].every(i => i.complete); t++) await new Promise(r => setTimeout(r, 25));
   const val = n => { try {
     // eslint-disable-next-line no-eval
     const v = (0, eval)(n);
@@ -337,6 +342,17 @@ function whatDiffers(a, b) {
     if (k === 'local' || k === 'session') {
       const x = new Map(a[k]), y = new Map(b[k]);
       return `${k}(${[...new Set([...x.keys(), ...y.keys()])].filter(i => x.get(i) !== y.get(i)).join(',')})`;
+    }
+    if (k === 'scroll') return `scroll(${a[k].join(',')} → ${b[k].join(',')})`;
+    if (k === 'inv') {
+      // the first place the two inventories part, as a path
+      const at = (x, y, p) => {
+        if (JSON.stringify(x) === JSON.stringify(y)) return null;
+        if (!x || !y || typeof x !== 'object' || typeof y !== 'object') return `${p}: ${JSON.stringify(x)} → ${JSON.stringify(y)}`.slice(0, 160);
+        for (const i of new Set([...Object.keys(x), ...Object.keys(y)])) { const r = at(x[i], y[i], `${p}.${i}`); if (r) return r; }
+        return null;
+      };
+      return `inv(${at(a[k], b[k], '')})`;
     }
     return k;
   }).join(' ') || 'nothing';
