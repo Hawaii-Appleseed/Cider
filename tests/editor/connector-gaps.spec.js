@@ -90,3 +90,68 @@ test.describe('removePage', () => {
     expect(await page.evaluate(() => PILOT_SINGLE_VERBS.has('removePage'))).toBe(true);
   });
 });
+
+// Step 4 of CONNECTOR_PARITY.md: the page strip's drag, the Hidden group's eye
+// and File > Page size as verbs, and the library by id.
+test.describe('page verbs', () => {
+  test('movePage puts a page at a place in the order, as one undo step', async ({ page }) => {
+    await gotoEditor(page);
+    const before = await page.evaluate(() => pageOrder().map(String));
+    const last = before[before.length - 1];
+    const r = await page.evaluate(p => docsync.api.movePage(p, 0), last);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    expect(r.pageOrder.map(String)).toEqual([last, ...before.slice(0, -1)]);
+    await page.evaluate(() => docsync.api.undo());
+    expect(await page.evaluate(() => pageOrder().map(String))).toEqual(before);
+    const same = await page.evaluate(p => docsync.api.movePage(p, 0), before[0]);
+    expect(same.unchanged).toBe(true);
+    expect((await page.evaluate(() => docsync.api.movePage('nope', 0))).ok).toBe(false);
+    expect((await page.evaluate(p => docsync.api.movePage(p, 99), before[0])).error).toMatch(/toIndex/);
+  });
+
+  test('showPage brings back a page removePage left out, where it was designed', async ({ page }) => {
+    await gotoEditor(page);
+    const before = await page.evaluate(() => pageOrder().map(String));
+    expect((await page.evaluate(() => docsync.api.removePage('2'))).hidden).toBe(true);
+    const r = await page.evaluate(() => docsync.api.showPage('2'));
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    expect(r.pageOrder.map(String)).toEqual(before);
+    expect((await page.evaluate(() => docsync.api.showPage('2'))).unchanged).toBe(true);
+    expect((await page.evaluate(() => docsync.api.showPage('nope'))).error).toMatch(/no page is hidden/);
+  });
+
+  test('setPageSize takes a size by name or in inches, and undo puts it back', async ({ page }) => {
+    await gotoEditor(page);
+    const w0 = await page.evaluate(() => PAGE_W_IN);
+    let r = await page.evaluate(() => docsync.api.setPageSize('a4'));
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    expect(r.page.w).toBeCloseTo(8.27, 2);
+    r = await page.evaluate(() => docsync.api.setPageSize({ w: 6, h: 9 }));
+    expect(r.page).toEqual({ w: 6, h: 9 });
+    expect((await page.evaluate(() => docsync.api.setPageSize('huge'))).ok).toBe(false);
+    expect((await page.evaluate(() => docsync.api.setPageSize({ w: 100, h: 9 }))).ok).toBe(false);
+    await page.evaluate(() => docsync.api.undo());
+    await page.evaluate(() => docsync.api.undo());
+    expect(await page.evaluate(() => PAGE_W_IN)).toBeCloseTo(w0, 2);
+  });
+
+  test('saveToLibrary takes ids, and leaves the selection as it was', async ({ page }) => {
+    await gotoEditor(page);
+    const s = await page.evaluate(() => docsync.api.addShape({ page: 3, kind: 'rect', x: 1, y: 1, w: 1, h: 1 }));
+    await page.evaluate(() => { selIds.clear(); });
+    const r = await page.evaluate(id => docsync.api.saveToLibrary('Test piece ' + Date.now(), [id]), s.id);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+    expect(r.items).toBe(1);
+    expect(await page.evaluate(() => selIds.size)).toBe(0);
+    expect((await page.evaluate(() => docsync.api.saveToLibrary('x', ['nope']))).error).toMatch(/no shape/);
+  });
+
+  test('the relay goes alone for each, and a relayed undo needs a shared session', async ({ page }) => {
+    await gotoEditor(page);
+    for (const v of ['movePage', 'showPage', 'setPageSize', 'continueEndnotes', 'saveToLibrary', 'placeFromLibrary', 'loadStyles', 'undo', 'redo'])
+      expect(await page.evaluate(x => PILOT_SINGLE_VERBS.has(x) && !PILOT_BATCH_VERBS[x], v), v).toBe(true);
+    const r = await page.evaluate(() => hubPilot({ ops: [{ verb: 'undo' }] }));
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/shared session/);
+  });
+});
