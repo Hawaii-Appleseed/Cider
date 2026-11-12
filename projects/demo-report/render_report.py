@@ -37,6 +37,15 @@ DIAGRAM = ('<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"'
            'stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'
            '<circle cx="92" cy="38" r="8" fill="#fff"/></svg>')
 
+# The engine's once-per-document head (the page-size override from
+# layout.page, print colour, ...) rides out with the FIRST layer() call, which
+# is page 1's. A report that leaves page 1 out of pages.order (a deck whose
+# first slide is an added page) then lost all of it: every sheet stayed 8.5 x
+# 11 whatever setPageSize said. Emit it up front when page 1 is not drawn.
+DESIGNED_PAGES = 2
+PAGES = L.page_order(DESIGNED_PAGES)
+lead = L.layer(0) if 1 not in PAGES else ""
+
 page1 = f"""
 <section class="page">
  {L.spacer("page1.h1")}<h1{L.attr("page1.h1")}>{C.t("page1.h1")}</h1>
@@ -56,7 +65,6 @@ body = C.fn.resolve(page1)
 # L.page_order(2) is [1, 2] with no override, so a report with no added page
 # renders byte-for-byte as before; L.sheet() gives a blank page the same
 # data-page section, background, layer, text boxes and tables as any scaffold.
-DESIGNED_PAGES = 2
 # The engine's list, not a hand-built one: each entry carries its
 # endnote.<id> hook (Sources panel), where the <li>s built here had none.
 endnotes = C.fn.endnotes_html(L)
@@ -69,8 +77,8 @@ endnotes_page = f"""<section class="page">
  <div class="endnotes">{endnotes}</div>
 </section>"""
 _DESIGNED = {1: body, 2: endnotes_page}
-body = "\n".join(_DESIGNED[pid] if pid in _DESIGNED else L.sheet(pid)
-                 for pid in L.page_order(DESIGNED_PAGES))
+body = lead + "\n".join(_DESIGNED[pid] if pid in _DESIGNED else L.sheet(pid)
+                        for pid in PAGES)
 
 html = f"""<!DOCTYPE html>
 <html lang="en">
