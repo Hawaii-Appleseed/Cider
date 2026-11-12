@@ -376,7 +376,8 @@ Rules that bite:
   `tests/editor/shard-weights.json`, which cut the spread between the fastest
   and slowest shard from 209–541 s to a few percent. A NEW spec file works
   with no entry (it gets the median weight); `node tools/shard-weights.mjs`
-  refreshes the numbers from a real run. Never pass `--shard` in the workflow.
+  refreshes the numbers: each file's median over the last four runs of all
+  ten shards (one run is too noisy: a spec's time swings by half between runs). Never pass `--shard` in the workflow.
   The per-field sweep's six jobs are packed the same way, by report, from
   `tests/editor/sweep-weights.json` (`node tools/sweep-weights.mjs [run]`
   refreshes it from a run that swept every report; run it after binding a

@@ -13,7 +13,11 @@ runs:
     - name: Playwright's version
       id: pw
       shell: bash
-      run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+      # ImageOS/ImageVersion are the runner's own environment, which ${{ env }}
+      # does not see (a key built from it came out "Linux---", 2026-11-12).
+      run: |
+        echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+        echo "image=${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
     - name: Cache Playwright's Chromium
       id: cache
       uses: actions/cache@v4
@@ -41,7 +45,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pw-debs
-        key: playwright-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ steps.pw.outputs.version }}
+        key: playwright-debs-${{ runner.os }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}
     - name: Install Chromium's system libraries
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
