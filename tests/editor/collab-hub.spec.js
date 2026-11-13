@@ -2105,3 +2105,73 @@ test('history: past the newest hundred the panel offers older versions, and they
   const all = await (await a.request.get(`${DOC_URL()}/history?limit=500`)).json();
   await expect(historyRows(a).last()).toHaveAttribute('data-version', all[all.length - 1].version);
 });
+
+// --- versions that hold one file, and the list of undo steps -------------------
+//
+// A Save sends only the file that changed, and the store fills the version's
+// other file from its own copy - which it does not have until that file is
+// first saved. A deck keeps every box in the layout file, so its words were
+// never saved: none of its versions had a content file, and the store answered
+// "no such version" to every look at one and every Restore (221 versions of
+// one live report, 2026-11-13). Autosave is ON here, as it is for people: with
+// it off and words saved first, as the tests above do, the hole never opens.
+test('history: a version saved with a layout and no words opens and restores, and a Save after it is a whole version', async () => {
+  const ROOM = 'Hawaii-Appleseed~Cider~slides';
+  const DOC = `${hubAs(ADA_PORT)}/api/docs/${ROOM}`;
+  const ctx = await newContext(browser);
+  await ctx.addInitScript(() => { try { localStorage.setItem('primer-autosave', 'on'); } catch (e) { /* private mode */ } });
+  const p = await ctx.newPage();
+  const boot = async () => { await waitForFirstRender(p); await waitLive(p); };
+  await p.goto(`${hubAs(ADA_PORT)}/primer/edit.html?project=slides`);
+  await boot();
+  // A version as editors before this fix made them: the layout alone, into a
+  // store that has never held this document's words.
+  const legacy = await p.evaluate(async () => (await (await fetch(docStore(), { method: 'PUT',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ layout: layoutOrig, base: null }) })).json()).version);
+  expect((await p.request.get(`${DOC}/history/${legacy}/content`)).status()).toBe(404);
+  await p.reload();
+  await boot();
+  expect(await p.evaluate('docVersion')).toBe(legacy);
+  const saved = async was => { await expect.poll(() => p.evaluate('docVersion'), { timeout: 20_000 }).not.toBe(was); return p.evaluate('docVersion'); };
+  const placed = () => p.evaluate('(layout.boxes || []).length + (layout.shapes || []).length');
+
+  expect((await p.evaluate(`docsync.api.addTextBox({ page: 1, x: 1, y: 1, w: 3, md: 'A box' })`)).ok).toBe(true);
+  const v1 = await saved(legacy);
+  // The Save changed only the layout, and its version has the words too.
+  expect((await p.request.get(`${DOC}/history/${v1}/content`)).status()).toBe(200);
+  expect((await p.evaluate(`docsync.api.addShape({ page: 1, kind: 'rect', x: 2, y: 3, w: 2, h: 1 })`)).ok).toBe(true);
+  await saved(v1);
+
+  // The list of undo steps names them in a session (it used to say only that
+  // the steps were "kept with the shared document"), and a row goes there.
+  const steps = () => p.evaluate(`(historyRender(), [...$('hist-list').querySelectorAll('.hrow')].map(b => b.className.replace('hrow ', '') + ': ' + b.querySelector('.hl').textContent))`);
+  expect(await steps()).toEqual(['now: Now', expect.stringMatching(/^past: ↶ added shape /), expect.stringMatching(/^past: ↶ added text box /)]);
+  await p.evaluate(`(historyRender(), [...$('hist-list').querySelectorAll('.hrow.past')].pop().click())`);
+  await expect.poll(placed, { timeout: 15_000 }).toBe(0);
+  expect(await steps()).toEqual([expect.stringMatching(/^ahead: ↷ added shape /), expect.stringMatching(/^ahead: ↷ added text box /), 'now: Now']);
+  await p.evaluate(`(historyRender(), $('hist-list').querySelector('.hrow.ahead').click())`);
+  await expect.poll(placed, { timeout: 15_000 }).toBe(2);
+  await expect.poll(() => p.evaluate('dirty'), { timeout: 20_000 }).toBe(false);   // autosave has caught up
+
+  // The old version opens (what it changed, not "could not load")…
+  await p.locator('#history').click();
+  const row = p.locator(`#hpanel .hub-history-row[data-version="${legacy}"]`);
+  await expect(row).toBeVisible({ timeout: 10_000 });
+  await row.locator('.hub-history-when').click();
+  await expect(row.locator('.hub-history-diff .sum')).toHaveText(/the layout differs/, { timeout: 10_000 });
+  // …and comes back.
+  await row.locator('.hub-history-restore').click();
+  await p.locator('dialog[open] button.dsdlg-ok').click();
+  await expect(p.locator('#stat')).toHaveText(/restored — the version from/, { timeout: 20_000 });
+  expect(await placed()).toBe(0);
+  const hist = await (await p.request.get(`${DOC}/history`)).json();
+  expect(hist[0].restored_from).toBe(legacy);
+  // What the restore made is whole, so it can itself be restored.
+  expect((await p.request.get(`${DOC}/history/${hist[0].version}/content`)).status()).toBe(200);
+  expect(JSON.parse(await (await p.request.get(`${DOC}/layout`)).text()).boxes || []).toEqual([]);
+  // A reload opens on it.
+  await p.reload();
+  await boot();
+  expect(await placed()).toBe(0);
+  await ctx.close();
+});
