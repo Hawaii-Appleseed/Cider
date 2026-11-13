@@ -674,6 +674,23 @@ Rules that bite:
   Open (switch project — the old `#proj` `<select>` is gone), Resize, and
   Download/Token moved in from the bar (same ids, same handlers). `+ Section`
   is hidden via `#add { display:none }` only — still fully wired.
+- **File > Download > PDF works without a server (2026-11-12).** Local mode
+  (`serve.py`) still prints with headless Chrome. On the hub or a static copy
+  `doExport()` calls `exportPdfInBrowser()` (not `print()`, which opened the
+  browser's print dialog and saved nothing). It takes the published render
+  (`renderClean` + `inlineEverything` with fonts), resolves @media for print at
+  the sheet's width (`flattenMedia(css, w, 'print')`), loads that into a hidden
+  iframe, and for each wanted sheet draws it at 3x through an SVG
+  `<foreignObject>` onto a canvas; `buildPdf()` lays the JPEGs in a PDF with the
+  page's words as invisible text (render mode 3, a ToUnicode table so the okina
+  and kahako copy right), the links as annotations, and the sheet's own size as
+  the page size. **It is NOT vector**: the words are pictures at 288 dpi. Vector
+  needs a real browser print (the local server) or a server-side Chrome on the
+  hub. Two traps, both measured: an SVG image paints its fonts and pictures on
+  its first paint, so `drawSvg()` repaints until two paints agree; and Chrome
+  lays text out differently in an SVG image than in a page unless both carry
+  `text-rendering:geometricPrecision` (the export document does). PNG, zip,
+  package and bleed marks are still local-only.
 - **Auto-update + rollback** (`tools/selfupdate.py`, `serve.py`'s
   `/__update` and `/__rollback`, the editor's version chip `#ver`/`#upd`):
   an update REBASES the user's local Save commits on top when their files
