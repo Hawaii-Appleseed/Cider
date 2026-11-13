@@ -2175,3 +2175,76 @@ test('history: a version saved with a layout and no words opens and restores, an
   expect(await placed()).toBe(0);
   await ctx.close();
 });
+
+// --- two people adding things at the same moment -------------------------------
+//
+// Each editor hands a new thing the first free id it knows of, and for a second
+// or two neither knows of the other's: both took 't1', the document kept both
+// (rightly), and the engine refuses a layout with a duplicate id - the page
+// stopped drawing for the whole session, and a move or delete by id went to
+// whichever came first. Two editors adding six shapes each collided on all six.
+const placedIds = page => page.evaluate(`[...(layout.shapes || []), ...(layout.boxes || []), ...(layout.tables || [])].map(x => x.id)`);
+const builds = page => page.evaluate(`!/does not build/.test($('out').contentDocument.body.textContent)`);
+const sameOnBoth = async what => {
+  await expect.poll(async () => JSON.stringify(await a.evaluate(what)) === JSON.stringify(await b.evaluate(what)), { timeout: 20_000 }).toBe(true);
+};
+
+test('two people add a text box and shapes at the same moment: each keeps its own, under its own id', async () => {
+  const stamp = Date.now();
+  const [ra, rb] = await Promise.all([
+    a.evaluate(`docsync.api.addTextBox({ page: 1, x: 1, y: 1, w: 2.5, md: 'Ada ${stamp}' })`),
+    b.evaluate(`docsync.api.addTextBox({ page: 1, x: 4, y: 1, w: 2.5, md: 'Grace ${stamp}' })`),
+  ]);
+  expect(ra.ok && rb.ok).toBe(true);
+  // A run of them, back to back on both sides: as two people building a page do.
+  const burst = (page, x) => page.evaluate(async x => {
+    for (let i = 0; i < 4; i++) {
+      const r = await docsync.api.addShape({ page: 1, kind: 'rect', x, y: 2 + i, w: 0.4, h: 0.4 });
+      if (!r.ok) return r.error;
+      await new Promise(r => setTimeout(r, 120));   // a person's pace, inside the other's lag
+    }
+    return 'ok';
+  }, x);
+  expect(await Promise.all([burst(a, 1.37), burst(b, 6.41)])).toEqual(['ok', 'ok']);
+  // Both editors settle on one layout, with no id used twice…
+  await expect.poll(async () => { const ids = await placedIds(a); return ids.length - new Set(ids).size; }, { timeout: 20_000 }).toBe(0);
+  await sameOnBoth('JSON.stringify([layout.shapes, layout.boxes])');
+  const ids = await placedIds(b);
+  expect(ids.length - new Set(ids).size).toBe(0);
+  // …and everything each of them made is there.
+  for (const page of [a, b]) {
+    const got = await page.evaluate(`({ boxes: layout.boxes.filter(x => /${stamp}$/.test(x.md)).map(x => x.md).sort(),
+      mine: layout.shapes.filter(s => s.x === 1.37).length, theirs: layout.shapes.filter(s => s.x === 6.41).length })`);
+    expect(got).toEqual({ boxes: [`Ada ${stamp}`, `Grace ${stamp}`], mine: 4, theirs: 4 });
+    expect(await builds(page)).toBe(true);
+  }
+});
+
+test('two people add a page at the same moment: two pages, each in the order once', async () => {
+  const pages = page => page.evaluate(`({ blanks: ((layout.pages || {}).blanks || []).map(x => x.id), order: ((layout.pages || {}).order || []).filter(x => typeof x === 'string') })`);
+  const before = (await pages(a)).blanks.length;
+  const [ra, rb] = await Promise.all([a.evaluate('docsync.api.addPage()'), b.evaluate('docsync.api.addPage()')]);
+  expect(ra.ok && rb.ok).toBe(true);
+  await expect.poll(async () => { const p = await pages(a); return p.blanks.length === before + 2 && new Set(p.blanks).size === p.blanks.length; }, { timeout: 20_000 }).toBe(true);
+  await sameOnBoth('JSON.stringify(layout.pages)');
+  for (const page of [a, b]) {
+    const p = await pages(page);
+    expect(new Set(p.blanks).size).toBe(before + 2);
+    expect([...p.order].sort()).toEqual([...p.blanks].sort());   // every added page in the order, once
+    expect(await builds(page)).toBe(true);
+  }
+});
+
+test('a change not yet said to the room survives a colleague edit that arrives first', async () => {
+  // Changed here, and still waiting for its render (which waits its turn
+  // behind one already running): the document's copy used to replace it the
+  // moment the colleague's edit was adopted.
+  const box = await b.evaluate(`layout.boxes[layout.boxes.length - 1].id`);
+  const was = await b.evaluate(`layout.boxes[layout.boxes.length - 1].y`);
+  await a.evaluate(() => { pushHistory(); layout.shapes[0].w = 1.77; });
+  expect((await b.evaluate(`docsync.api.place('text.${box}', { y: ${was + 0.25} })`)).ok).toBe(true);
+  await expect.poll(() => a.evaluate(`layout.boxes[layout.boxes.length - 1].y`), { timeout: 15_000 }).not.toBe(was);
+  await a.evaluate('render()');
+  expect(await a.evaluate('layout.shapes[0].w')).toBe(1.77);
+  await expect.poll(() => b.evaluate('layout.shapes[0].w'), { timeout: 15_000 }).toBe(1.77);
+});
