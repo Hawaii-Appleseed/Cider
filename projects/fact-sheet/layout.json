@@ -1,0 +1,427 @@
+{
+ "positions": {},
+ "groups": [
+  [
+   "fs-band",
+   "text.fs-eyebrow",
+   "text.fs-logo",
+   "text.fs-head"
+  ],
+  [
+   "fs-card1",
+   "text.fs-num1",
+   "text.fs-lab1"
+  ],
+  [
+   "fs-card2",
+   "text.fs-num2",
+   "text.fs-lab2"
+  ],
+  [
+   "fs-card3",
+   "text.fs-num3",
+   "text.fs-lab3"
+  ]
+ ],
+ "textStyles": {
+  "Eyebrow": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 16,
+   "color": "#52796F",
+   "tracking": 2,
+   "case": "upper"
+  },
+  "Headline": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 32,
+   "color": "#2F3E46",
+   "leading": 1.12
+  },
+  "Subhead": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 19,
+   "color": "#2F3E46",
+   "leading": 1.2
+  },
+  "Body": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 16,
+   "color": "#4A5A61",
+   "leading": 1.55
+  },
+  "Body bold": {
+   "from": "Body",
+   "weight": 700,
+   "color": "#2F3E46"
+  },
+  "Caption": {
+   "font": "Poppins",
+   "weight": 600,
+   "size": 15,
+   "color": "#2F3E46",
+   "leading": 1.4
+  },
+  "Source": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 14,
+   "color": "#5F6D73",
+   "leading": 1.4
+  }
+ },
+ "shapes": [
+  {
+   "id": "fs-band",
+   "page": 1,
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 8.5,
+   "h": 2.55,
+   "fill": "#354F52",
+   "z": 0
+  },
+  {
+   "id": "fs-rule",
+   "page": 1,
+   "kind": "rect",
+   "x": 0.6,
+   "y": 10.1,
+   "w": 7.3,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  },
+  {
+   "id": "fs-card1",
+   "page": 1,
+   "kind": "rect",
+   "x": 0.6,
+   "y": 2.95,
+   "w": 2.3,
+   "h": 1.7,
+   "fill": "#EDF1EC",
+   "z": 0,
+   "r": 0.14
+  },
+  {
+   "id": "fs-card2",
+   "page": 1,
+   "kind": "rect",
+   "x": 3.1,
+   "y": 2.95,
+   "w": 2.3,
+   "h": 1.7,
+   "fill": "#EDF1EC",
+   "z": 0,
+   "r": 0.14
+  },
+  {
+   "id": "fs-card3",
+   "page": 1,
+   "kind": "rect",
+   "x": 5.6,
+   "y": 2.95,
+   "w": 2.3,
+   "h": 1.7,
+   "fill": "#EDF1EC",
+   "z": 0,
+   "r": 0.14
+  },
+  {
+   "id": "fs-chart",
+   "page": 1,
+   "kind": "chart",
+   "x": 0.6,
+   "y": 7.25,
+   "w": 7.3,
+   "h": 2.3,
+   "z": 2,
+   "chart": {
+    "type": "row",
+    "labels": [
+     "Category A",
+     "Category B",
+     "Category C",
+     "Category D"
+    ],
+    "series": [
+     {
+      "name": "Series",
+      "data": [
+       40,
+       65,
+       30,
+       55
+      ],
+      "color": "#52796F"
+     }
+    ],
+    "values": true,
+    "legend": false,
+    "grid": false,
+    "labelColor": "#4A5A61"
+   }
+  }
+ ],
+ "boxes": [
+  {
+   "id": "fs-eyebrow",
+   "page": 1,
+   "x": 0.6,
+   "y": 0.55,
+   "w": 3.2,
+   "z": 3,
+   "md": "FACT SHEET",
+   "style": {
+    "font": "Manrope",
+    "size": 16,
+    "color": "#CAD2C5",
+    "weight": 800,
+    "tracking": 2.4
+   }
+  },
+  {
+   "id": "fs-logo",
+   "page": 1,
+   "x": 5.3,
+   "y": 0.45,
+   "w": 2.6,
+   "z": 3,
+   "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+  },
+  {
+   "id": "fs-head",
+   "page": 1,
+   "x": 0.6,
+   "y": 1.15,
+   "w": 7.3,
+   "z": 3,
+   "md": "A headline that states the finding in plain words, so a reader gets the point at a glance",
+   "style": {
+    "font": "Manrope",
+    "size": 32,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "leading": 1.15
+   }
+  },
+  {
+   "id": "fs-num1",
+   "page": 1,
+   "x": 0.8,
+   "y": 3.1,
+   "w": 1.9,
+   "z": 3,
+   "md": "00%",
+   "style": {
+    "font": "Manrope",
+    "size": 50,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "fs-lab1",
+   "page": 1,
+   "x": 0.8,
+   "y": 3.92,
+   "w": 1.9,
+   "z": 3,
+   "md": "A one-line label for this number",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#4A5A61",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "fs-num2",
+   "page": 1,
+   "x": 3.3000000000000003,
+   "y": 3.1,
+   "w": 1.9,
+   "z": 3,
+   "md": "$0.0M",
+   "style": {
+    "font": "Manrope",
+    "size": 50,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "fs-lab2",
+   "page": 1,
+   "x": 3.3000000000000003,
+   "y": 3.92,
+   "w": 1.9,
+   "z": 3,
+   "md": "A one-line label for this number",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#4A5A61",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "fs-num3",
+   "page": 1,
+   "x": 5.8,
+   "y": 3.1,
+   "w": 1.9,
+   "z": 3,
+   "md": "0,000",
+   "style": {
+    "font": "Manrope",
+    "size": 50,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "fs-lab3",
+   "page": 1,
+   "x": 5.8,
+   "y": 3.92,
+   "w": 1.9,
+   "z": 3,
+   "md": "A one-line label for this number",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#4A5A61",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "fs-h1",
+   "page": 1,
+   "x": 0.6,
+   "y": 5.0,
+   "w": 3.55,
+   "z": 3,
+   "md": "Why it matters",
+   "style": {
+    "font": "Manrope",
+    "size": 20,
+    "color": "#2F3E46",
+    "weight": 800
+   }
+  },
+  {
+   "id": "fs-p1",
+   "page": 1,
+   "x": 0.6,
+   "y": 5.45,
+   "w": 3.55,
+   "z": 3,
+   "md": "Two or three short sentences that say what the finding means for people in Hawaiʻi. Lead with the point, then the evidence.",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#4A5A61",
+    "leading": 1.55
+   }
+  },
+  {
+   "id": "fs-h2",
+   "page": 1,
+   "x": 4.35,
+   "y": 5.0,
+   "w": 3.55,
+   "z": 3,
+   "md": "What would change",
+   "style": {
+    "font": "Manrope",
+    "size": 20,
+    "color": "#2F3E46",
+    "weight": 800
+   }
+  },
+  {
+   "id": "fs-p2",
+   "page": 1,
+   "x": 4.35,
+   "y": 5.45,
+   "w": 3.55,
+   "z": 3,
+   "md": "Two or three short sentences on what the policy or program would do. Keep each sentence to one idea.",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#4A5A61",
+    "leading": 1.55
+   }
+  },
+  {
+   "id": "fs-cap",
+   "page": 1,
+   "x": 0.6,
+   "y": 6.85,
+   "w": 7.3,
+   "z": 3,
+   "md": "**Figure 1.** A caption that says what the chart shows",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#2F3E46",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "fs-src",
+   "page": 1,
+   "x": 0.6,
+   "y": 9.55,
+   "w": 7.3,
+   "z": 3,
+   "md": "Source: Name of the source, year.",
+   "style": {
+    "font": "Poppins",
+    "size": 14,
+    "color": "#5F6D73"
+   }
+  },
+  {
+   "id": "fs-url",
+   "page": 1,
+   "x": 0.6,
+   "y": 10.3,
+   "w": 3.0,
+   "z": 3,
+   "md": "hiappleseed.org",
+   "style": {
+    "font": "Manrope",
+    "size": 16,
+    "color": "#52796F",
+    "weight": 800
+   }
+  },
+  {
+   "id": "fs-org",
+   "page": 1,
+   "x": 3.3,
+   "y": 10.32,
+   "w": 4.6,
+   "z": 3,
+   "md": "Hawaiʻi Appleseed Center for Law & Economic Justice",
+   "style": {
+    "font": "Poppins",
+    "size": 14,
+    "color": "#5F6D73",
+    "align": "right"
+   }
+  }
+ ],
+ "tables": []
+}

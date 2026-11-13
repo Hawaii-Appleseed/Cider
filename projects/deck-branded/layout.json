@@ -1,0 +1,565 @@
+{
+ "positions": {},
+ "textStyles": {
+  "Eyebrow": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 24,
+   "color": "#52796F",
+   "tracking": 2,
+   "case": "upper"
+  },
+  "Headline": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 60,
+   "color": "#2F3E46",
+   "leading": 1.12
+  },
+  "Subhead": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 38,
+   "color": "#2F3E46",
+   "leading": 1.2
+  },
+  "Body": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 32,
+   "color": "#4A5A61",
+   "leading": 1.55
+  },
+  "Body bold": {
+   "from": "Body",
+   "weight": 700,
+   "color": "#2F3E46"
+  },
+  "Caption": {
+   "font": "Poppins",
+   "weight": 600,
+   "size": 27,
+   "color": "#2F3E46",
+   "leading": 1.4
+  },
+  "Source": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 18,
+   "color": "#5F6D73",
+   "leading": 1.4
+  }
+ },
+ "fill": {
+  "page.1": "#354F52",
+  "page.2": "#52796F",
+  "page.4": "#EDF1EC",
+  "page.6": "#354F52"
+ },
+ "shapes": [
+  {
+   "id": "dk-1-rule",
+   "page": 1,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 5.05,
+   "w": 1.4,
+   "h": 0.07,
+   "fill": "#84A98C",
+   "z": 0
+  },
+  {
+   "id": "dk-3-bar",
+   "page": 3,
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 13.333,
+   "h": 0.3,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "dk-5-bar",
+   "page": 5,
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 13.333,
+   "h": 0.3,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "dk-3-dot1",
+   "page": 3,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 2.7,
+   "w": 0.24,
+   "h": 0.24,
+   "fill": "#84A98C",
+   "z": 0,
+   "r": 0.12
+  },
+  {
+   "id": "dk-3-dot2",
+   "page": 3,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 4.05,
+   "w": 0.24,
+   "h": 0.24,
+   "fill": "#84A98C",
+   "z": 0,
+   "r": 0.12
+  },
+  {
+   "id": "dk-3-dot3",
+   "page": 3,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 5.4,
+   "w": 0.24,
+   "h": 0.24,
+   "fill": "#84A98C",
+   "z": 0,
+   "r": 0.12
+  },
+  {
+   "id": "dk-5-chart",
+   "page": 5,
+   "kind": "chart",
+   "x": 0.9,
+   "y": 1.7,
+   "w": 11.5,
+   "h": 4.5,
+   "z": 2,
+   "chart": {
+    "type": "bar",
+    "labels": [
+     "Category A",
+     "Category B",
+     "Category C",
+     "Category D"
+    ],
+    "series": [
+     {
+      "name": "Series",
+      "data": [
+       40,
+       65,
+       30,
+       55
+      ],
+      "color": "#52796F"
+     }
+    ],
+    "values": true,
+    "legend": false,
+    "grid": false,
+    "labelColor": "#4A5A61"
+   }
+  },
+  {
+   "id": "dk-6-rule",
+   "page": 6,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 3.6,
+   "w": 1.4,
+   "h": 0.07,
+   "fill": "#84A98C",
+   "z": 0
+  }
+ ],
+ "boxes": [
+  {
+   "id": "dk-1-logo",
+   "page": 1,
+   "x": 0.9,
+   "y": 0.7,
+   "w": 2.8,
+   "z": 3,
+   "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+  },
+  {
+   "id": "dk-1-eyebrow",
+   "page": 1,
+   "x": 0.9,
+   "y": 2.2,
+   "w": 8,
+   "z": 3,
+   "md": "HAWAIʻI APPLESEED",
+   "style": {
+    "font": "Manrope",
+    "size": 24,
+    "color": "#CAD2C5",
+    "weight": 800,
+    "tracking": 3
+   }
+  },
+  {
+   "id": "dk-1-title",
+   "page": 1,
+   "x": 0.9,
+   "y": 2.7,
+   "w": 11.4,
+   "z": 3,
+   "md": "A title that names the idea",
+   "style": {
+    "font": "Manrope",
+    "size": 80,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "leading": 1.06
+   }
+  },
+  {
+   "id": "dk-1-sub",
+   "page": 1,
+   "x": 0.9,
+   "y": 5.4,
+   "w": 11,
+   "z": 3,
+   "md": "A subtitle that says what this talk covers",
+   "style": {
+    "font": "Poppins",
+    "size": 36,
+    "color": "#CAD2C5",
+    "leading": 1.35
+   }
+  },
+  {
+   "id": "dk-1-date",
+   "page": 1,
+   "x": 0.9,
+   "y": 6.4,
+   "w": 9,
+   "z": 3,
+   "md": "Presenter name · Month 20XX",
+   "style": {
+    "font": "Poppins",
+    "size": 28,
+    "color": "#CAD2C5",
+    "weight": 600
+   }
+  },
+  {
+   "id": "dk-2-num",
+   "page": 2,
+   "x": 0.9,
+   "y": 1.3,
+   "w": 4,
+   "z": 3,
+   "md": "01",
+   "style": {
+    "font": "Manrope",
+    "size": 160,
+    "color": "#CAD2C5",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "dk-2-title",
+   "page": 2,
+   "x": 0.9,
+   "y": 3.8,
+   "w": 11.4,
+   "z": 3,
+   "md": "A section title",
+   "style": {
+    "font": "Manrope",
+    "size": 76,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "dk-2-sub",
+   "page": 2,
+   "x": 0.9,
+   "y": 5.3,
+   "w": 11,
+   "z": 3,
+   "md": "One line that frames this section",
+   "style": {
+    "font": "Poppins",
+    "size": 36,
+    "color": "#CAD2C5",
+    "leading": 1.35
+   }
+  },
+  {
+   "id": "dk-3-title",
+   "page": 3,
+   "x": 0.9,
+   "y": 0.7,
+   "w": 11.6,
+   "z": 3,
+   "md": "A title that states the point",
+   "style": {
+    "font": "Manrope",
+    "size": 60,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "dk-3-b1",
+   "page": 3,
+   "x": 1.4500000000000002,
+   "y": 2.5,
+   "w": 11,
+   "z": 3,
+   "md": "The first point, in one line",
+   "style": {
+    "font": "Poppins",
+    "size": 42,
+    "color": "#4A5A61",
+    "leading": 1.3
+   }
+  },
+  {
+   "id": "dk-3-b2",
+   "page": 3,
+   "x": 1.4500000000000002,
+   "y": 3.85,
+   "w": 11,
+   "z": 3,
+   "md": "The second point, in one line",
+   "style": {
+    "font": "Poppins",
+    "size": 42,
+    "color": "#4A5A61",
+    "leading": 1.3
+   }
+  },
+  {
+   "id": "dk-3-b3",
+   "page": 3,
+   "x": 1.4500000000000002,
+   "y": 5.2,
+   "w": 11,
+   "z": 3,
+   "md": "The third point, in one line",
+   "style": {
+    "font": "Poppins",
+    "size": 42,
+    "color": "#4A5A61",
+    "leading": 1.3
+   }
+  },
+  {
+   "id": "dk-3-url",
+   "page": 3,
+   "x": 0.9,
+   "y": 6.7,
+   "w": 4,
+   "z": 3,
+   "md": "hiappleseed.org",
+   "style": {
+    "font": "Manrope",
+    "size": 22,
+    "color": "#52796F",
+    "weight": 800
+   }
+  },
+  {
+   "id": "dk-4-eyebrow",
+   "page": 4,
+   "x": 0.9,
+   "y": 0.85,
+   "w": 8,
+   "z": 3,
+   "md": "BY THE NUMBERS",
+   "style": {
+    "font": "Manrope",
+    "size": 24,
+    "color": "#52796F",
+    "weight": 800,
+    "tracking": 3
+   }
+  },
+  {
+   "id": "dk-4-num",
+   "page": 4,
+   "x": 0.9,
+   "y": 1.55,
+   "w": 9,
+   "z": 3,
+   "md": "00%",
+   "style": {
+    "font": "Manrope",
+    "size": 220,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "dk-4-lab",
+   "page": 4,
+   "x": 0.9,
+   "y": 4.95,
+   "w": 11.4,
+   "z": 3,
+   "md": "What the number counts, in one line",
+   "style": {
+    "font": "Manrope",
+    "size": 48,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.15
+   }
+  },
+  {
+   "id": "dk-4-sub",
+   "page": 4,
+   "x": 0.9,
+   "y": 5.9,
+   "w": 11,
+   "z": 3,
+   "md": "One short line of context",
+   "style": {
+    "font": "Poppins",
+    "size": 34,
+    "color": "#4A5A61",
+    "leading": 1.35
+   }
+  },
+  {
+   "id": "dk-4-src",
+   "page": 4,
+   "x": 0.9,
+   "y": 6.85,
+   "w": 9,
+   "z": 3,
+   "md": "Source: Name of the source, year.",
+   "style": {
+    "font": "Poppins",
+    "size": 18,
+    "color": "#5F6D73"
+   }
+  },
+  {
+   "id": "dk-5-title",
+   "page": 5,
+   "x": 0.9,
+   "y": 0.6,
+   "w": 11.6,
+   "z": 3,
+   "md": "A title that states what the chart shows",
+   "style": {
+    "font": "Manrope",
+    "size": 56,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "dk-5-cap",
+   "page": 5,
+   "x": 0.9,
+   "y": 6.3,
+   "w": 11.6,
+   "z": 3,
+   "md": "A caption that says what to notice",
+   "style": {
+    "font": "Poppins",
+    "size": 28,
+    "color": "#4A5A61"
+   }
+  },
+  {
+   "id": "dk-5-src",
+   "page": 5,
+   "x": 0.9,
+   "y": 6.95,
+   "w": 9,
+   "z": 3,
+   "md": "Source: Name of the source, year.",
+   "style": {
+    "font": "Poppins",
+    "size": 18,
+    "color": "#5F6D73"
+   }
+  },
+  {
+   "id": "dk-6-logo",
+   "page": 6,
+   "x": 0.9,
+   "y": 0.7,
+   "w": 2.8,
+   "z": 3,
+   "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+  },
+  {
+   "id": "dk-6-title",
+   "page": 6,
+   "x": 0.9,
+   "y": 1.85,
+   "w": 11,
+   "z": 3,
+   "md": "Mahalo",
+   "style": {
+    "font": "Manrope",
+    "size": 104,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "dk-6-name",
+   "page": 6,
+   "x": 0.9,
+   "y": 4.0,
+   "w": 11,
+   "z": 3,
+   "md": "Name, Title",
+   "style": {
+    "font": "Poppins",
+    "size": 34,
+    "color": "#FFFFFF",
+    "weight": 600,
+    "leading": 1.3
+   }
+  },
+  {
+   "id": "dk-6-email",
+   "page": 6,
+   "x": 0.9,
+   "y": 4.8,
+   "w": 11,
+   "z": 3,
+   "md": "name@hiappleseed.org",
+   "style": {
+    "font": "Poppins",
+    "size": 34,
+    "color": "#CAD2C5",
+    "leading": 1.3
+   }
+  },
+  {
+   "id": "dk-6-url",
+   "page": 6,
+   "x": 0.9,
+   "y": 5.6,
+   "w": 11,
+   "z": 3,
+   "md": "hiappleseed.org",
+   "style": {
+    "font": "Poppins",
+    "size": 34,
+    "color": "#CAD2C5",
+    "leading": 1.3
+   }
+  }
+ ],
+ "tables": []
+}

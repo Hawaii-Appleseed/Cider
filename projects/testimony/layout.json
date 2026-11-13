@@ -1,0 +1,276 @@
+{
+ "positions": {},
+ "groups": [
+  [
+   "ty-pill",
+   "text.ty-pilltext"
+  ]
+ ],
+ "textStyles": {
+  "Eyebrow": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 14,
+   "color": "#52796F",
+   "tracking": 2,
+   "case": "upper"
+  },
+  "Headline": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 24,
+   "color": "#2F3E46",
+   "leading": 1.12
+  },
+  "Subhead": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 19,
+   "color": "#2F3E46",
+   "leading": 1.2
+  },
+  "Body": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 16,
+   "color": "#4A5A61",
+   "leading": 1.55
+  },
+  "Body bold": {
+   "from": "Body",
+   "weight": 700,
+   "color": "#2F3E46"
+  },
+  "Caption": {
+   "font": "Poppins",
+   "weight": 600,
+   "size": 15,
+   "color": "#2F3E46",
+   "leading": 1.4
+  },
+  "Source": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 13,
+   "color": "#5F6D73",
+   "leading": 1.4
+  }
+ },
+ "pages": {
+  "order": [
+   1
+  ]
+ },
+ "shapes": [
+  {
+   "id": "ty-top",
+   "page": 1,
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 8.5,
+   "h": 0.16,
+   "fill": "#354F52",
+   "z": 0
+  },
+  {
+   "id": "ty-rule",
+   "page": 1,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 1.55,
+   "w": 6.7,
+   "h": 0.025,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "ty-pill",
+   "page": 1,
+   "kind": "rect",
+   "x": 6.2,
+   "y": 1.95,
+   "w": 1.4,
+   "h": 0.42,
+   "fill": "#52796F",
+   "z": 0,
+   "r": 0.21
+  },
+  {
+   "id": "ty-2-top",
+   "page": 2,
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 8.5,
+   "h": 0.16,
+   "fill": "#354F52",
+   "z": 0
+  },
+  {
+   "id": "ty-2-rule",
+   "page": 2,
+   "kind": "rect",
+   "x": 0.9,
+   "y": 1.1,
+   "w": 6.7,
+   "h": 0.025,
+   "fill": "#52796F",
+   "z": 0
+  }
+ ],
+ "boxes": [
+  {
+   "id": "ty-logo",
+   "page": 1,
+   "x": 0.9,
+   "y": 0.55,
+   "w": 2.8,
+   "z": 3,
+   "md": "![Hawaiʻi Appleseed](assets/appleseed-logo.svg)"
+  },
+  {
+   "id": "ty-url",
+   "page": 1,
+   "x": 5.0,
+   "y": 0.8,
+   "w": 2.6,
+   "z": 3,
+   "md": "hiappleseed.org",
+   "style": {
+    "font": "Poppins",
+    "size": 14,
+    "color": "#5F6D73",
+    "align": "right"
+   }
+  },
+  {
+   "id": "ty-h1",
+   "page": 1,
+   "x": 0.9,
+   "y": 1.8,
+   "w": 5.1,
+   "z": 3,
+   "md": "Testimony of the Hawaiʻi Appleseed Center for Law and Economic Justice",
+   "style": {
+    "font": "Manrope",
+    "size": 15,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.35
+   }
+  },
+  {
+   "id": "ty-title",
+   "page": 1,
+   "x": 0.9,
+   "y": 2.5,
+   "w": 5.2,
+   "z": 3,
+   "md": "Support for HB 0000 – Relating to [Subject]",
+   "style": {
+    "font": "Manrope",
+    "size": 24,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.2
+   }
+  },
+  {
+   "id": "ty-pilltext",
+   "page": 1,
+   "x": 6.2,
+   "y": 2.03,
+   "w": 1.4,
+   "z": 3,
+   "md": "SUPPORT",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "align": "center",
+    "tracking": 1.5
+   }
+  },
+  {
+   "id": "ty-meta",
+   "page": 1,
+   "x": 0.9,
+   "y": 3.4,
+   "w": 6.7,
+   "z": 3,
+   "md": "House Committee on [Committee Name]\n\n[Weekday], [Month] [D], [Year], at [H:MM] [AM|PM] · Conference Room [000]",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#5F6D73",
+    "leading": 1.5
+   }
+  },
+  {
+   "id": "ty-hello",
+   "page": 1,
+   "x": 0.9,
+   "y": 4.5,
+   "w": 6.7,
+   "z": 3,
+   "md": "Dear Chair [Name], Vice Chair [Name], and Members of the Committee:",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#4A5A61",
+    "leading": 1.6
+   }
+  },
+  {
+   "id": "ty-body",
+   "page": 1,
+   "x": 0.9,
+   "y": 5.15,
+   "w": 6.7,
+   "z": 3,
+   "md": "Thank you for the opportunity to submit testimony in support of HB 0000, which would [say what the bill does in one sentence].\n\n[The subject] is [what it is and why it matters, stated plainly]. [One more sentence that sets up the evidence.]\n\n[Evidence: a named authority and a specific figure, with its source.] [A second piece of evidence, one or two sentences.]\n\n[Answer the predictable objection: name the idea, grant its logic, then explain with evidence why this bill would still work.]\n\nWe respectfully urge the Committee to pass HB 0000.\n\nMahalo for the opportunity to testify.\n\nHawaiʻi Appleseed Center for Law and Economic Justice\n\n[Name]\n\n[Title]",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#4A5A61",
+    "leading": 1.6
+   },
+   "next": "ty-body2",
+   "h": 5.05
+  },
+  {
+   "id": "ty-body2",
+   "page": 2,
+   "x": 0.9,
+   "y": 1.45,
+   "w": 6.7,
+   "z": 3,
+   "md": "",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#4A5A61",
+    "leading": 1.6
+   },
+   "h": 8.4
+  },
+  {
+   "id": "ty-2-run",
+   "page": 2,
+   "x": 0.9,
+   "y": 0.55,
+   "w": 6.7,
+   "z": 3,
+   "md": "Hawaiʻi Appleseed · Testimony on HB 0000 · Page 2",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#52796F",
+    "weight": 800
+   }
+  }
+ ],
+ "tables": []
+}
