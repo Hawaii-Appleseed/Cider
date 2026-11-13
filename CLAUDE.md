@@ -737,6 +737,47 @@ Rules that bite:
   and `edit()` seeds a slot the document has not got from the words on the
   page. rxkids-fiscal is the worked example (38 chart labels, the benefit
   pills as one list slot).
+- **Every renderer draws the pages the editor adds, and two clean starting
+  points exist (2026-11-12).** A renderer that writes its own `<section
+  class="page">` blocks never read `layout.pages`, so an added or duplicated
+  page was saved and never drawn, and a pilot's `addShape`/`addTextBox`/
+  `addChart`/`addTable` on it was refused ("page p1 does not draw placed
+  objects"): retitc, uhero-trc-summary, dotax-itep, tax-testimony and demo-report
+  (PR #135 patched that one renderer by hand). `docsync.layout.finish_html()`
+  now does it for ALL of them: after a render, every blank page `layout.pages`
+  puts in its order that the markup lacks is drawn by `L.sheet()` and spliced in
+  after the sheet before it in the order (`top_sheets()` finds the sheets, looking
+  past comments/scripts/styles). The page-size/print head needs nothing extra —
+  it rides out with the first `layer()` call, and `L.sheet()` makes one — and an
+  added sheet gets the report's HEIGHT inline when the report was resized, so a
+  renderer whose own CSS pins `.page{height:11in}` still follows File ▸ Page
+  size. A render with no added page comes back as the SAME string
+  (`docsync.build_parity`: 0 moved). It is wired in two places, so a report
+  builds the same either way: the editor's three renderer runners
+  (`renderOnce`, `renderWith`, `renderClean`) call `finish_output()` on the file
+  the renderer wrote, and a native run (`python3 render_report.py` with
+  `DOCSYNC_OUT`, which `docsync.check`, `docsync.hub` and `serve.py` all set) does
+  it itself at exit (`atexit`, registered by `Layout.__init__`; Pyodide has no
+  exit, hence the explicit call). A renderer therefore needs NO change to take
+  added pages; one that wants them somewhere else (demo-report's endnotes sheet
+  last) still calls `L.page_order()`/`L.sheet()` itself and the pass finds nothing
+  to add. Known gap, left alone on purpose: demo-report's renderer never calls
+  `L.font_link()`, so a style naming Manrope or Poppins (both are in the font
+  list) draws as the browser's serif there; one `{L.font_link()}` in its head
+  fixes it, but re-wraps every existing deck built on it, so it waits for
+  Devin's go-ahead. **The two starting
+  points** are `projects/blank-document` (US Letter, one empty page) and
+  `projects/slides` (4:3, 10 x 7.5in, one empty slide), bound in `docsync.yml`
+  and listed by the hub's `new_report` as `blank-document` / `slides`: the blank
+  placed-canvas renderer with NO placeholder source (an empty `[[sources]]` now
+  builds when published too; a citation with no source still refuses), no
+  endnotes page and nothing designed. Their specs are
+  `tests/editor/multi-page-everywhere.spec.js` (added pages on seven templates of
+  every shape, page size on added sheets, the two bases clean, removing the born
+  page still presents and exports a PDF); `text-boxes-move` and `text-legibility`
+  know they are born empty. A NEW report is not shipped to the hub with an editor
+  update (`wt ship` leaves it alone): it takes its own `docsync.hub` commit of
+  `primer/<id>/` and the `projects.json` entry.
 - **Words inside a drawing are refused at the build (2026-09-21).**
   `blocks.graphic()` raises `SvgLiteralError` in edit mode for any `<text>`
   with words and no hook — so the editor's draft does not render and

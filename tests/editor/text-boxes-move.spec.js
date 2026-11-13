@@ -36,6 +36,8 @@ const discover = () => {
   }).filter(r => r.built);
 };
 const REPORTS = discover();
+// The hub's two clean starting points hold no words at all (docsync.yml).
+const EMPTY_STARTS = ['blank-document', 'slides'];
 
 test('every bound report was discovered', () => {
   expect(REPORTS.length, REPORTS.map(r => r.id).join(', ')).toBeGreaterThan(5);
@@ -101,6 +103,13 @@ for (const rep of REPORTS) {
     expect(audit.flatMap(i => i.ids).sort()).toEqual([...stuck].sort());
     if (!rep.strict) return;    // warn/wip bindings: said, not yet required
     expect(stuck, 'strict: no text that types but cannot move').toEqual([]);
+
+    // A starting point born EMPTY (blank-document, slides) has no text to pick
+    // up until someone makes some: put one box on it, as a person would.
+    if (EMPTY_STARTS.includes(rep.id)) {
+      const r = await page.evaluate(() => docsync.api.addTextBox({ page: 1, x: 1, y: 1, w: 3, md: 'Hello' }));
+      expect(r.ok, r.error).not.toBe(false);
+    }
 
     // And a hook is not a move: pick a field up and put it down.
     const g = await grabbable(page);

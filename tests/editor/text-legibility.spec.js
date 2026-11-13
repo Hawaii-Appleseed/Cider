@@ -231,7 +231,10 @@ for (const ctx of CONTEXTS) {
         // scaffolded template renders about ten runs), not by the primer's
         // several hundred. Its job is to catch "measured nothing", and a
         // threshold tuned to the biggest report just fails the small ones.
-        expect(all.length, 'text runs found on the page').toBeGreaterThan(5);
+        // The hub's two clean starting points hold no words (docsync.yml); what
+        // is typed on them is the person's, so they have nothing to measure yet.
+        const born_empty = ['blank-document', 'slides'].includes(rep.id);
+        expect(all.length, 'text runs found on the page').toBeGreaterThan(born_empty ? -1 : 5);
 
         // On paper a CSS px is 0.75pt: the sheet is drawn at 96px to the inch
         // and the zoom rule is out of play in print.
