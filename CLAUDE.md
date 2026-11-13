@@ -761,9 +761,11 @@ Rules that bite:
   exit, hence the explicit call). A renderer therefore needs NO change to take
   added pages; one that wants them somewhere else (demo-report's endnotes sheet
   last) still calls `L.page_order()`/`L.sheet()` itself and the pass finds nothing
-  to add. The same pass links the Google Fonts a style names when the renderer
-  never called `L.font_link()` (demo-report's did not: Manrope drew as the
-  browser's serif); `Layout.font_demand()` is the shared list. **The two starting
+  to add. Known gap, left alone on purpose: demo-report's renderer never calls
+  `L.font_link()`, so a style naming Manrope or Poppins (both are in the font
+  list) draws as the browser's serif there; one `{L.font_link()}` in its head
+  fixes it, but re-wraps every existing deck built on it, so it waits for
+  Devin's go-ahead. **The two starting
   points** are `projects/blank-document` (US Letter, one empty page) and
   `projects/slides` (4:3, 10 x 7.5in, one empty slide), bound in `docsync.yml`
   and listed by the hub's `new_report` as `blank-document` / `slides`: the blank

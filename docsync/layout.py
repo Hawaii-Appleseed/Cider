@@ -6660,10 +6660,15 @@ class Layout:
         """
         return sorted(k for k in self.text if k not in styleable)
 
-    def font_demand(self) -> tuple[dict, dict]:
-        """The families and weights the document asks for, as font_link() sends
-        them to Google: the brand's own fonts plus whatever a style names
-        (roman, italic)."""
+    def font_link(self) -> str:
+        """The Google Fonts <link>, covering the brand's fonts plus anything a
+        style asks for.
+
+        It was a hardcoded literal. It has to keep producing that exact literal
+        when nothing is styled — the head of an unstyled report must not move a
+        byte — while also actually requesting a weight someone picks. Today
+        Barlow 400 would simply be faked; now it is fetched.
+        """
         want: dict[str, set] = {f: set(ws) for f, ws in BRAND_FONTS.items()}
         ital: dict[str, set] = {f: set(ws) for f, ws in BRAND_ITALICS.items()}
         # Slot styles AND box styles: a text box carries its style inline
@@ -6691,18 +6696,6 @@ class Layout:
             w = int(st.get("weight") or 400)
             (ital if st.get("italic") else want).setdefault(fam, set()).add(w)
             want.setdefault(fam, set())
-        return want, ital
-
-    def font_link(self) -> str:
-        """The Google Fonts <link>, covering the brand's fonts plus anything a
-        style asks for.
-
-        It was a hardcoded literal. It has to keep producing that exact literal
-        when nothing is styled — the head of an unstyled report must not move a
-        byte — while also actually requesting a weight someone picks. Today
-        Barlow 400 would simply be faked; now it is fetched.
-        """
-        want, ital = self.font_demand()
         parts = []
         for fam in list(BRAND_FONTS) + [f for f in want if f not in BRAND_FONTS]:
             roman, italic = sorted(want.get(fam, set())), sorted(ital.get(fam, set()))
@@ -8208,37 +8201,14 @@ def _sized(sheet: str, L) -> str:
     return sheet.replace(">", f' style="{h}">', 1)
 
 
-def _fonted(html: str, L) -> str:
-    """The Google Fonts <link>, for a renderer that never emitted one.
-
-    A text style that names a family (Manrope, Poppins: the Hawaiʻi Appleseed
-    brand pair is in the editor's font list) is only a name until the page asks
-    Google for the face. Layout.font_link() is that request, and a renderer has
-    to call it in its own <head>; demo-report's never did, so a deck set in
-    Manrope drew in the browser's serif, in the editor and in every export.
-    Added here when the document has no such link AND a style asks for
-    something beyond the brand's own two fonts — so a report that names no
-    font, or one whose renderer already links, is not touched."""
-    if "fonts.googleapis.com" in html:
-        return html
-    want, ital = L.font_demand()
-    if want == {f: set(ws) for f, ws in BRAND_FONTS.items()} \
-            and ital == {f: set(ws) for f, ws in BRAND_ITALICS.items()}:
-        return html
-    at = re.search(r"</head\s*>", html, re.I)
-    return html if not at else html[:at.start()] + L.font_link() + "\n" + html[at.start():]
-
-
 def finish_html(html: str, layout=None) -> str:
-    """Draw the blank pages layout.pages names that `html` does not carry, and
-    link the fonts the styles name when the renderer does not.
+    """Draw the blank pages layout.pages names that `html` does not carry.
 
     Returns `html` itself, the same object, when there is nothing to add —
-    which is every report with no added page and no unlinked font."""
+    which is every report with no added page."""
     L = layout or _renderer_layout()
     if L is None:
         return html
-    html = _fonted(html, L)
     blanks = set(map(str, L.blank_ids()))
     if not blanks:
         return html

@@ -6034,18 +6034,6 @@ check_eq("finish_html: an unresized report's added sheet has no inline height",
 _out, _lay = _fin({"page": {"w": 10, "h": 7.5}, "pages": {"order": [1, 2, "p1"], "blanks": [{"id": "p1"}]}})
 check_eq("finish_html: the page-size head arrives once", _out.count("@page{size:10.0in 7.5in;margin:0}"), 1)
 
-# A renderer that never links Google Fonts (demo-report's) drew a deck set in
-# Manrope in the browser's serif. The finish pass links the faces a style names
-# when the document has no link, and leaves everything else alone.
-_head = '<html><head><title>x</title></head><body><section class="page">a</section></body></html>'
-_man = _layout({"boxes": [{"id": "b", "page": 1, "x": 1, "y": 1, "w": 3, "md": "hi",
-                           "style": {"font": "Manrope", "weight": 700}}]})
-_o = _lm.finish_html(_head, _man)
-check("fonts: a named family is linked when the renderer has no link", _o, "family=Manrope:wght@700")
-check_eq("fonts: once, in the head", (_o.count("fonts.googleapis.com"), _o.index("fonts.googleapis.com") < _o.index("<body>")), (1, True))
-check_eq("fonts: a renderer that links already is not touched", _lm.finish_html(_o, _man) is _o, True)
-check_eq("fonts: nothing beyond the brand's two fonts, nothing added", _lm.finish_html(_head, _layout({})) is _head, True)
-
 # End to end, the way docsync.check, the hub and serve.py run a renderer: a
 # script that writes DOCSYNC_OUT, no editor to call finish_output for it. It
 # finishes its own output when the script ends.
