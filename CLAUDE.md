@@ -765,17 +765,35 @@ Rules that bite:
   `L.font_link()`, so a style naming Manrope or Poppins (both are in the font
   list) draws as the browser's serif there; one `{L.font_link()}` in its head
   fixes it, but re-wraps every existing deck built on it, so it waits for
-  Devin's go-ahead. **The two starting
+  Devin's go-ahead. **The starting
   points** are `projects/blank-document` (US Letter, one empty page) and
-  `projects/slides` (4:3, 10 x 7.5in, one empty slide), bound in `docsync.yml`
-  and listed by the hub's `new_report` as `blank-document` / `slides`: the blank
-  placed-canvas renderer with NO placeholder source (an empty `[[sources]]` now
-  builds when published too; a citation with no source still refuses), no
-  endnotes page and nothing designed. Their specs are
+  `projects/slides` (4:3, 10 x 7.5in, one empty slide), plus seven more sizes
+  (2026-11-12): `slides-widescreen` (13.333 x 7.5in), `social-square` (1080 x
+  1080), `social-portrait` (1080 x 1350), `social-story` (1080 x 1920),
+  `link-card` (1200 x 630), `letter-landscape` (11 x 8.5in) and `poster-tabloid`
+  (11 x 17in). All are bound in `docsync.yml` and listed by the hub's
+  `new_report` under their own ids: the blank placed-canvas renderer with NO
+  placeholder source (an empty `[[sources]]` now builds when published too; a
+  citation with no source still refuses), no endnotes page and nothing designed.
+  Social, link-card and widescreen canvases are drawn at 96 px per inch, so the
+  sheet IS its pixel size; a new text box starts at the base's own body size
+  (`font:` in its renderer: 32px on the 1080-1280px canvases, 28px on the
+  poster, 16px on landscape Letter, 15px on the two documents-and-4:3 originals)
+  rather than 15px everywhere. File > Resize only offers Letter, A4, A3, Legal,
+  4:3, 16:9 and Pageless; the connector's `setPageSize({w, h})` takes any size
+  from 2 to 60in, which is why these exist as starting points. PNG export is the
+  local server's only (`/__export`, headless Chrome); it defaults to scale 2 (so
+  a 1080px canvas exports at 2160) and the Download menu passes no `scale`, though
+  the server takes 0.1-4 (`exportBlob({fmt:'png', page, scale})`). The hub has no
+  PNG export at all. Their specs are
   `tests/editor/multi-page-everywhere.spec.js` (added pages on seven templates of
-  every shape, page size on added sheets, the two bases clean, removing the born
-  page still presents and exports a PDF); `text-boxes-move` and `text-legibility`
-  know they are born empty. A NEW report is not shipped to the hub with an editor
+  every shape, page size on added sheets, every base clean at its size, a new
+  text box at the base's size, removing the born page still presents and exports
+  a PDF) and, in real Chrome through the server's own screenshotter,
+  `report2027/tools/test_export_chrome.py` (every base's page PNG is the canvas
+  in pixels at 1x and twice that at 2x; the editor specs mock `/__export`, so only
+  this one can see it); `text-boxes-move` and `text-legibility` know they are
+  born empty. A NEW report is not shipped to the hub with an editor
   update (`wt ship` leaves it alone): it takes its own `docsync.hub` commit of
   `primer/<id>/` and the `projects.json` entry.
 - **Words inside a drawing are refused at the build (2026-09-21).**
