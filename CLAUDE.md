@@ -809,7 +809,7 @@ Rules that bite:
   Charcoal Blue `#2F3E46`, a 40% Ash tint for cards) and fonts: Manrope for
   headings, Poppins for body, requested by `L.font_link()` (it reads box styles,
   and each base also defines named text styles so Poppins 700 loads for
-  **bold**). Six rules they keep, each learned the hard way: a card, band or
+  **bold**). Seven rules they keep, each learned the hard way: a card, band or
   pill and its words are one `groups` entry (otherwise Preflight reports "100% of
   the smaller element is covered" for every label on a card) and the background
   shapes sit at `z: 0`; text colours clear the contrast check (Muted Teal on
@@ -819,7 +819,10 @@ Rules that bite:
   DESIGNED page left out of `pages.order` (hidden; `showPage(2)` brings it back)
   whose frame `ty-body2` is threaded from `ty-body`, so one page grows to two
   when the words need it; and the report's endnotes are an `act: endnotes` box
-  with the sources cited from the prose, so none is uncited. The deck is sized
+  with the sources cited from the prose, so none is uncited; and no thin shape is
+  flush against the left edge of a canvas as wide as the stage (the deck's): its
+  resize handle sits under the editor's tool rail, no pointer reaches it, and the
+  every-field sweep fails (the deck's accents run along the top instead). The deck is sized
   from the 1280px canvas (titles 53px+, bullets 32px+, hero number 80px+,
   nothing under 18px); a chart's own labels are the engine's (`chart_svg` caps
   them near 0.2in), so they stay small on a slide: an engine change, not a
