@@ -37,7 +37,8 @@ const discover = () => {
 };
 const REPORTS = discover();
 // The hub's two clean starting points hold no words at all (docsync.yml).
-const EMPTY_STARTS = ['blank-document', 'slides'];
+const EMPTY_STARTS = ['blank-document', 'slides', 'slides-widescreen', 'social-square', 'social-portrait',
+  'social-story', 'link-card', 'letter-landscape', 'poster-tabloid'];
 
 test('every bound report was discovered', () => {
   expect(REPORTS.length, REPORTS.map(r => r.id).join(', ')).toBeGreaterThan(5);

@@ -90,12 +90,22 @@ for (const project of TEMPLATES) {
 // ---------------------------------------------------------------------------
 // The two clean starting points the hub's new_report offers: nothing designed,
 // nothing to delete, nothing that raises an error before a word is typed.
+// size is the sheet in CSS px at 96 px to the inch; fs is the size a NEW text box
+// starts at (the base's own body size), so a slide or a social post does not open
+// on 15px type.
 const BASES = [
-  { id: 'blank-document', size: [816, 1056] },     // US Letter, 8.5 x 11 in
-  { id: 'slides', size: [960, 720] },              // 4:3, 10 x 7.5 in
+  { id: 'blank-document', size: [816, 1056], fs: 15 },      // US Letter, 8.5 x 11 in
+  { id: 'slides', size: [960, 720], fs: 15 },               // 4:3, 10 x 7.5 in
+  { id: 'slides-widescreen', size: [1280, 720], fs: 32 },   // 16:9, 13.333 x 7.5 in
+  { id: 'social-square', size: [1080, 1080], fs: 32 },      // 1080 x 1080
+  { id: 'social-portrait', size: [1080, 1350], fs: 32 },    // 4:5, 1080 x 1350
+  { id: 'social-story', size: [1080, 1920], fs: 32 },       // 9:16, 1080 x 1920
+  { id: 'link-card', size: [1200, 630], fs: 32 },           // link preview, 1200 x 630
+  { id: 'letter-landscape', size: [1056, 816], fs: 16 },    // 11 x 8.5 in
+  { id: 'poster-tabloid', size: [1056, 1632], fs: 28 },     // 11 x 17 in
 ];
 
-for (const { id, size } of BASES) {
+for (const { id, size, fs } of BASES) {
   test.describe(`clean base: ${id}`, () => {
     test('opens as one empty sheet with no placeholder, no endnotes page and no Preflight issue', async ({ page }) => {
       await gotoEditor(page, `?project=${id}`);
@@ -121,20 +131,26 @@ for (const { id, size } of BASES) {
       const a = await api(page, () => docsync.api.addPage());
       expect(a.ok, a.error).not.toBe(false);
       const P = a.id;
-      const s = await api(page, P => docsync.api.addShape({ page: P, kind: 'rect', x: 0.5, y: 0.5, w: 2, h: 1, fill: '#FDCF21' }), P);
+      // Laid out inside the SMALLEST canvas here (the 6.56in-high link card) so
+      // one set of numbers fits every size.
+      const s = await api(page, P => docsync.api.addShape({ page: P, kind: 'rect', x: 0.5, y: 0.5, w: 1.5, h: 0.8, fill: '#FDCF21' }), P);
       expect(s.ok, s.error).not.toBe(false);
-      const t = await api(page, P => docsync.api.addTextBox({ page: P, x: 0.5, y: 2, w: 4, md: 'Hello' }), P);
+      const t = await api(page, P => docsync.api.addTextBox({ page: P, x: 0.5, y: 1.5, w: 4, md: 'Hello' }), P);
       expect(t.ok, t.error).not.toBe(false);
-      const c = await api(page, P => docsync.api.addChart({ page: P, x: 0.5, y: 3, w: 4, h: 2.5,
+      const c = await api(page, P => docsync.api.addChart({ page: P, x: 0.5, y: 2.4, w: 4, h: 2.2,
         chart: { type: 'bar', labels: ['a', 'b'], series: [{ name: 's', data: [1, 2] }] } }), P);
       expect(c.ok, c.error).toBe(true);
-      const tb = await api(page, P => docsync.api.addTable({ page: P, x: 0.5, y: 5.8, w: 3, rows: [['h1', 'h2'], ['1', '2']] }), P);
+      const tb = await api(page, P => docsync.api.addTable({ page: P, x: 5, y: 0.5, w: 3, rows: [['h1', 'h2'], ['1', '2']] }), P);
       expect(tb.ok, tb.error).not.toBe(false);
       await expect(frame.locator('section.page')).toHaveCount(2);
       const sec = frame.locator(`section.page[data-page="${P}"]`);
       await expect(sec.locator('g[data-shape]')).not.toHaveCount(0);
       await expect(sec.locator('.ds-textbox')).toHaveCount(1);
       await expect(sec.locator('table')).toHaveCount(1);
+      // A new text box starts at the base's own body size (15px on a letter page,
+      // 32px on a 1080px social canvas), not on one size for every canvas.
+      const started = await sec.locator('.ds-textbox').first().evaluate(e => parseFloat(getComputedStyle(e).fontSize));
+      expect(started, 'a new text box starts at the base size').toBe(fs);
       const pf = await api(page, () => docsync.api.preflight());
       expect(pf.errors, JSON.stringify(pf.issues)).toBe(0);
     });
@@ -168,7 +184,11 @@ for (const { id, size } of BASES) {
       ]);
       const txt = require('fs').readFileSync(await download.path()).toString('latin1');
       const boxes = [...txt.matchAll(/\/Type \/Page \/Parent[^\n]*?\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g)].map(m => [+m[1], +m[2]]);
-      expect(boxes).toEqual([[size[0] * 0.75, size[1] * 0.75], [size[0] * 0.75, size[1] * 0.75]]);
+      expect(boxes.length).toBe(2);
+      for (const b of boxes) {          // 13.333in is 959.98pt, not 960: close, not equal
+        expect(b[0]).toBeCloseTo(size[0] * 0.75, 0);
+        expect(b[1]).toBeCloseTo(size[1] * 0.75, 0);
+      }
     });
   });
 }

@@ -718,3 +718,122 @@ bindings:
       palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
       page: [10.0, 7.5]
       margins: [0.5, 0.5]
+
+  # The blank sizes (2026-11-12), beside "Blank document" and "Slides" above: the
+  # same clean starting point (no placeholder source, no endnotes page, nothing
+  # designed) at the size a job needs. Canvases are drawn at 96 px per inch, so
+  # the social, link-card and widescreen ones ARE their pixel size at 1x. The
+  # editor's File > Resize only offers Letter, A4, A3, Legal, 4:3 and 16:9; these
+  # are the other sizes, one pick away.
+
+  - id: slides-widescreen
+    name: "Slides, widescreen (16:9)"
+    content: projects/slides-widescreen/content.md
+    editability: strict
+    build: python3 projects/slides-widescreen/render_report.py && python3 -m docsync.stage --id slides-widescreen
+    outputs:
+      - projects/slides-widescreen/web/index.html
+    editor:
+      dir: docs/slides-widescreen
+      render: projects/slides-widescreen/render_report.py
+      out: projects/slides-widescreen/web/index.html
+      layout: projects/slides-widescreen/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [13.333, 7.5]
+      margins: [0.5, 0.5]
+
+  - id: social-square
+    name: "Social post, square (1080 x 1080)"
+    content: projects/social-square/content.md
+    editability: strict
+    build: python3 projects/social-square/render_report.py && python3 -m docsync.stage --id social-square
+    outputs:
+      - projects/social-square/web/index.html
+    editor:
+      dir: docs/social-square
+      render: projects/social-square/render_report.py
+      out: projects/social-square/web/index.html
+      layout: projects/social-square/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [11.25, 11.25]
+      margins: [0.5, 0.5]
+
+  - id: social-portrait
+    name: "Social post, portrait (1080 x 1350)"
+    content: projects/social-portrait/content.md
+    editability: strict
+    build: python3 projects/social-portrait/render_report.py && python3 -m docsync.stage --id social-portrait
+    outputs:
+      - projects/social-portrait/web/index.html
+    editor:
+      dir: docs/social-portrait
+      render: projects/social-portrait/render_report.py
+      out: projects/social-portrait/web/index.html
+      layout: projects/social-portrait/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [11.25, 14.0625]
+      margins: [0.5, 0.5]
+
+  - id: social-story
+    name: "Social story (1080 x 1920)"
+    content: projects/social-story/content.md
+    editability: strict
+    build: python3 projects/social-story/render_report.py && python3 -m docsync.stage --id social-story
+    outputs:
+      - projects/social-story/web/index.html
+    editor:
+      dir: docs/social-story
+      render: projects/social-story/render_report.py
+      out: projects/social-story/web/index.html
+      layout: projects/social-story/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [11.25, 20.0]
+      margins: [0.5, 0.5]
+
+  - id: link-card
+    name: "Link preview card (1200 x 630)"
+    content: projects/link-card/content.md
+    editability: strict
+    build: python3 projects/link-card/render_report.py && python3 -m docsync.stage --id link-card
+    outputs:
+      - projects/link-card/web/index.html
+    editor:
+      dir: docs/link-card
+      render: projects/link-card/render_report.py
+      out: projects/link-card/web/index.html
+      layout: projects/link-card/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [12.5, 6.5625]
+      margins: [0.5, 0.5]
+
+  - id: letter-landscape
+    name: "Letter, landscape (11 x 8.5 in)"
+    content: projects/letter-landscape/content.md
+    editability: strict
+    build: python3 projects/letter-landscape/render_report.py && python3 -m docsync.stage --id letter-landscape
+    outputs:
+      - projects/letter-landscape/web/index.html
+    editor:
+      dir: docs/letter-landscape
+      render: projects/letter-landscape/render_report.py
+      out: projects/letter-landscape/web/index.html
+      layout: projects/letter-landscape/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [11.0, 8.5]
+      margins: [0.5, 0.5]
+
+  - id: poster-tabloid
+    name: "Poster, tabloid (11 x 17 in)"
+    content: projects/poster-tabloid/content.md
+    editability: strict
+    build: python3 projects/poster-tabloid/render_report.py && python3 -m docsync.stage --id poster-tabloid
+    outputs:
+      - projects/poster-tabloid/web/index.html
+    editor:
+      dir: docs/poster-tabloid
+      render: projects/poster-tabloid/render_report.py
+      out: projects/poster-tabloid/web/index.html
+      layout: projects/poster-tabloid/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [11.0, 17.0]
+      margins: [0.5, 0.5]

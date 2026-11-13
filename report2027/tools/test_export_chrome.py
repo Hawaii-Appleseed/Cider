@@ -142,6 +142,49 @@ def png_long(serve, tmp):
     check("long png: every band (every strip and seam) is the right colour", bad, [])
 
 
+# ---- the starting points: a PNG is the canvas, in pixels ----------------------
+# The hub's blank starting points are drawn at 96 px per inch, so one page's PNG at
+# scale 1 is the canvas in pixels (a social post is 1080 x 1080) and at the
+# server's default of 2 it is twice that. Real Chrome, through the same warm
+# screenshotter and one-page document /__export uses; the editor's own specs mock
+# /__export, so nothing else here can see a wrong size. The widescreen slide is
+# 13.333in, i.e. 1279.97px, which Chrome rounds to 1280.
+BASE_PX = {
+    "blank-document": (816, 1056), "slides": (960, 720), "slides-widescreen": (1280, 720),
+    "social-square": (1080, 1080), "social-portrait": (1080, 1350), "social-story": (1080, 1920),
+    "link-card": (1200, 630), "letter-landscape": (1056, 816), "poster-tabloid": (1056, 1632),
+}
+
+
+def base_pngs(serve, tmp):
+    import subprocess
+    root = HERE.parent.parent
+    c = serve._WarmChrome()
+    try:
+        for pid, (w, h) in BASE_PX.items():
+            proj = root / "projects" / pid
+            if not (proj / "render_report.py").is_file():
+                print(f"skip {pid}: not in this checkout")
+                continue
+            out = tmp / f"{pid}.html"
+            env = {**os.environ, "DOCSYNC_OUT": str(out)}
+            env.pop("DOCSYNC_EDIT", None)
+            r = subprocess.run([sys.executable, str(proj / "render_report.py")], cwd=str(root), env=env,
+                               capture_output=True, text=True)
+            check(f"{pid}: the publish render builds", r.returncode, 0)
+            if r.returncode:
+                continue
+            one = tmp / f"{pid}-p1.html"
+            one.write_text(serve._page_alone(out.read_text(), 1))
+            for scale in (1.0, 2.0):
+                data = c.png(one.resolve().as_uri(), scale)
+                got = struct.unpack(">II", data[16:24]) if data and data[:8] == b"\x89PNG\r\n\x1a\n" else None
+                check(f"{pid}: PNG at {scale:g}x is {int(w * scale)} x {int(h * scale)}", got,
+                      (int(w * scale), int(h * scale)))
+    finally:
+        c.close()
+
+
 # ---- the cold pageless PDF ---------------------------------------------------
 def pageless_cold(serve, tmp):
     h = 3100
@@ -242,6 +285,7 @@ def main():
     else:
         serve.CHROME = chrome
         with tempfile.TemporaryDirectory(prefix="export-chrome-") as t:
+            base_pngs(serve, Path(t))          # before anything imports fitz (it takes fds 3-6)
             png_long(serve, Path(t))
             web_pages(serve, Path(t))
             pageless_cold(serve, Path(t))
