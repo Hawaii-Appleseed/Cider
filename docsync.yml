@@ -837,3 +837,70 @@ bindings:
       palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
       page: [11.0, 17.0]
       margins: [0.5, 0.5]
+  - id: fact-sheet
+    name: "One-page fact sheet"
+    content: projects/fact-sheet/content.md
+    editability: strict
+    build: python3 projects/fact-sheet/render_report.py && python3 -m docsync.stage --id fact-sheet
+    outputs:
+      - projects/fact-sheet/web/index.html
+    editor:
+      dir: docs/fact-sheet
+      render: projects/fact-sheet/render_report.py
+      out: projects/fact-sheet/web/index.html
+      layout: projects/fact-sheet/layout.json
+      assets: projects/fact-sheet/assets
+      palette: ["#354F52", "#52796F", "#84A98C", "#CAD2C5", "#2F3E46", "#EDF1EC", "#FFFFFF"]
+      page: [8.5, 11.0]
+      margins: [0.6, 0.6]
+
+  - id: report
+    name: "Report"
+    content: projects/report/content.md
+    editability: strict
+    build: python3 projects/report/render_report.py && python3 -m docsync.stage --id report
+    outputs:
+      - projects/report/web/index.html
+    editor:
+      dir: docs/report
+      render: projects/report/render_report.py
+      out: projects/report/web/index.html
+      layout: projects/report/layout.json
+      assets: projects/report/assets
+      palette: ["#354F52", "#52796F", "#84A98C", "#CAD2C5", "#2F3E46", "#EDF1EC", "#FFFFFF"]
+      page: [8.5, 11.0]
+      margins: [0.7, 0.7]
+
+  - id: testimony
+    name: "Testimony"
+    content: projects/testimony/content.md
+    editability: strict
+    build: python3 projects/testimony/render_report.py && python3 -m docsync.stage --id testimony
+    outputs:
+      - projects/testimony/web/index.html
+    editor:
+      dir: docs/testimony
+      render: projects/testimony/render_report.py
+      out: projects/testimony/web/index.html
+      layout: projects/testimony/layout.json
+      assets: projects/testimony/assets
+      palette: ["#354F52", "#52796F", "#84A98C", "#CAD2C5", "#2F3E46", "#EDF1EC", "#FFFFFF"]
+      page: [8.5, 11.0]
+      margins: [0.9, 0.9]
+
+  - id: deck-branded
+    name: "Deck, branded (widescreen)"
+    content: projects/deck-branded/content.md
+    editability: strict
+    build: python3 projects/deck-branded/render_report.py && python3 -m docsync.stage --id deck-branded
+    outputs:
+      - projects/deck-branded/web/index.html
+    editor:
+      dir: docs/deck-branded
+      render: projects/deck-branded/render_report.py
+      out: projects/deck-branded/web/index.html
+      layout: projects/deck-branded/layout.json
+      assets: projects/deck-branded/assets
+      palette: ["#354F52", "#52796F", "#84A98C", "#CAD2C5", "#2F3E46", "#EDF1EC", "#FFFFFF"]
+      page: [13.333, 7.5]
+      margins: [0.9, 0.9]

@@ -796,6 +796,36 @@ Rules that bite:
   born empty. A NEW report is not shipped to the hub with an editor
   update (`wt ship` leaves it alone): it takes its own `docsync.hub` commit of
   `primer/<id>/` and the `projects.json` entry.
+- **Four BRANDED starting points (2026-11-12): `fact-sheet` (one-page fact
+  sheet), `report` (cover, summary, two sections, recommendations, numbered
+  endnotes: 6 pages), `testimony` (the house format, one page that grows to two)
+  and `deck-branded` (16:9, six slides).** Unlike the blank sizes they are
+  DESIGNED, as data on the same blank renderer: `layout.json` holds placed text
+  boxes, shapes, a real chart object and real tables (so everything moves and
+  edits like anything the editor places), the Appleseed logos are in the
+  project's `assets/`, and the words are stand-ins that say what goes there
+  (never a figure, a bill number or a name). Brand guide colours (Dark Slate
+  Grey `#354F52`, Deep Teal `#52796F`, Muted Teal `#84A98C`, Ash Grey `#CAD2C5`,
+  Charcoal Blue `#2F3E46`, a 40% Ash tint for cards) and fonts: Manrope for
+  headings, Poppins for body, requested by `L.font_link()` (it reads box styles,
+  and each base also defines named text styles so Poppins 700 loads for
+  **bold**). Six rules they keep, each learned the hard way: a card, band or
+  pill and its words are one `groups` entry (otherwise Preflight reports "100% of
+  the smaller element is covered" for every label on a card) and the background
+  shapes sit at `z: 0`; text colours clear the contrast check (Muted Teal on
+  white or on Dark Slate does not; Ash Grey on Dark Slate does); the logo is at
+  most 2.8in wide (Preflight reads an SVG's 424px width as ppi and warns under
+  150); a frame in a thread needs a fixed `h`; the testimony's page 2 is a
+  DESIGNED page left out of `pages.order` (hidden; `showPage(2)` brings it back)
+  whose frame `ty-body2` is threaded from `ty-body`, so one page grows to two
+  when the words need it; and the report's endnotes are an `act: endnotes` box
+  with the sources cited from the prose, so none is uncited. The deck is sized
+  from the 1280px canvas (titles 53px+, bullets 32px+, hero number 80px+,
+  nothing under 18px); a chart's own labels are the engine's (`chart_svg` caps
+  them near 0.2in), so they stay small on a slide: an engine change, not a
+  layout one. `tests/editor/branded-bases.spec.js` holds all of it. To change one
+  of these as a TEMPLATE (not one report made from it), edit its `layout.json`
+  and rerun that spec.
 - **Words inside a drawing are refused at the build (2026-09-21).**
   `blocks.graphic()` raises `SvgLiteralError` in edit mode for any `<text>`
   with words and no hook — so the editor's draft does not render and

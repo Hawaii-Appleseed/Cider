@@ -1,0 +1,824 @@
+{
+ "positions": {},
+ "groups": [
+  [
+   "rp-c-band",
+   "text.rp-c-url"
+  ],
+  [
+   "rp-2-call",
+   "text.rp-2-key"
+  ]
+ ],
+ "textStyles": {
+  "Eyebrow": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 16,
+   "color": "#52796F",
+   "tracking": 2,
+   "case": "upper"
+  },
+  "Headline": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 36,
+   "color": "#2F3E46",
+   "leading": 1.12
+  },
+  "Subhead": {
+   "font": "Manrope",
+   "weight": 800,
+   "size": 20,
+   "color": "#2F3E46",
+   "leading": 1.2
+  },
+  "Body": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 17,
+   "color": "#4A5A61",
+   "leading": 1.55
+  },
+  "Body bold": {
+   "from": "Body",
+   "weight": 700,
+   "color": "#2F3E46"
+  },
+  "Caption": {
+   "font": "Poppins",
+   "weight": 600,
+   "size": 15,
+   "color": "#2F3E46",
+   "leading": 1.4
+  },
+  "Source": {
+   "font": "Poppins",
+   "weight": 400,
+   "size": 14,
+   "color": "#5F6D73",
+   "leading": 1.4
+  }
+ },
+ "fill": {
+  "page.1": "#354F52"
+ },
+ "shapes": [
+  {
+   "id": "rp-c-rule",
+   "page": 1,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 6.1,
+   "w": 1.2,
+   "h": 0.05,
+   "fill": "#84A98C",
+   "z": 0
+  },
+  {
+   "id": "rp-c-band",
+   "page": 1,
+   "kind": "rect",
+   "x": 0,
+   "y": 10.1,
+   "w": 8.5,
+   "h": 0.9,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "rp-2-rule",
+   "page": 2,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 1.65,
+   "w": 1.2,
+   "h": 0.05,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "rp-2-call",
+   "page": 2,
+   "kind": "rect",
+   "x": 5.25,
+   "y": 2.15,
+   "w": 2.55,
+   "h": 2.95,
+   "fill": "#EDF1EC",
+   "z": 0,
+   "r": 0.12
+  },
+  {
+   "id": "rp-2-frule",
+   "page": 2,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 10.3,
+   "w": 7.1,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  },
+  {
+   "id": "rp-3-rule",
+   "page": 3,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 1.65,
+   "w": 1.2,
+   "h": 0.05,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "rp-3-frule",
+   "page": 3,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 10.3,
+   "w": 7.1,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  },
+  {
+   "id": "rp-3-chart",
+   "page": 3,
+   "kind": "chart",
+   "x": 0.7,
+   "y": 5.1,
+   "w": 7.1,
+   "h": 4.5,
+   "z": 2,
+   "chart": {
+    "type": "bar",
+    "labels": [
+     "Category A",
+     "Category B",
+     "Category C",
+     "Category D"
+    ],
+    "series": [
+     {
+      "name": "Series",
+      "data": [
+       40,
+       65,
+       30,
+       55
+      ],
+      "color": "#52796F"
+     }
+    ],
+    "values": true,
+    "legend": false,
+    "grid": false,
+    "labelColor": "#4A5A61"
+   }
+  },
+  {
+   "id": "rp-4-rule",
+   "page": 4,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 1.65,
+   "w": 1.2,
+   "h": 0.05,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "rp-4-frule",
+   "page": 4,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 10.3,
+   "w": 7.1,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  },
+  {
+   "id": "rp-5-rule",
+   "page": 5,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 1.65,
+   "w": 1.2,
+   "h": 0.05,
+   "fill": "#52796F",
+   "z": 0
+  },
+  {
+   "id": "rp-5-frule",
+   "page": 5,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 10.3,
+   "w": 7.1,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  },
+  {
+   "id": "rp-6-frule",
+   "page": 6,
+   "kind": "rect",
+   "x": 0.7,
+   "y": 10.3,
+   "w": 7.1,
+   "h": 0.02,
+   "fill": "#CAD2C5",
+   "z": 0
+  }
+ ],
+ "boxes": [
+  {
+   "id": "rp-c-logo",
+   "page": 1,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 2.7,
+   "z": 3,
+   "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
+  },
+  {
+   "id": "rp-c-eyebrow",
+   "page": 1,
+   "x": 0.7,
+   "y": 3.15,
+   "w": 7.1,
+   "z": 3,
+   "md": "RESEARCH REPORT",
+   "style": {
+    "font": "Manrope",
+    "size": 16,
+    "color": "#CAD2C5",
+    "weight": 800,
+    "tracking": 2.4
+   }
+  },
+  {
+   "id": "rp-c-title",
+   "page": 1,
+   "x": 0.7,
+   "y": 3.6,
+   "w": 7.1,
+   "z": 3,
+   "md": "A short, punchy title",
+   "style": {
+    "font": "Manrope",
+    "size": 64,
+    "color": "#FFFFFF",
+    "weight": 800,
+    "leading": 1.06
+   }
+  },
+  {
+   "id": "rp-c-sub",
+   "page": 1,
+   "x": 0.7,
+   "y": 6.4,
+   "w": 6.4,
+   "z": 3,
+   "md": "A subtitle that says what this report shows and why it matters",
+   "style": {
+    "font": "Poppins",
+    "size": 22,
+    "color": "#CAD2C5",
+    "leading": 1.45
+   }
+  },
+  {
+   "id": "rp-c-date",
+   "page": 1,
+   "x": 0.7,
+   "y": 8.35,
+   "w": 4.0,
+   "z": 3,
+   "md": "Month 20XX",
+   "style": {
+    "font": "Manrope",
+    "size": 18,
+    "color": "#CAD2C5",
+    "weight": 800,
+    "tracking": 1
+   }
+  },
+  {
+   "id": "rp-c-auth",
+   "page": 1,
+   "x": 0.7,
+   "y": 8.8,
+   "w": 6.5,
+   "z": 3,
+   "md": "Author: Name, Title",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#FFFFFF",
+    "leading": 1.5
+   }
+  },
+  {
+   "id": "rp-c-url",
+   "page": 1,
+   "x": 0.7,
+   "y": 10.38,
+   "w": 4,
+   "z": 3,
+   "md": "hiappleseed.org",
+   "style": {
+    "font": "Manrope",
+    "size": 16,
+    "color": "#FFFFFF",
+    "weight": 800
+   }
+  },
+  {
+   "id": "rp-2-h",
+   "page": 2,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 7.1,
+   "z": 3,
+   "md": "EXECUTIVE SUMMARY",
+   "style": {
+    "font": "Manrope",
+    "size": 36,
+    "color": "#354F52",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "rp-2-body",
+   "page": 2,
+   "x": 0.7,
+   "y": 2.15,
+   "w": 4.3,
+   "z": 3,
+   "md": "**THE OPENING WORDS, IN BOLD CAPITALS,** set the stage the way every Appleseed report opens. State the problem and who it affects in a sentence or two.[^s1]\n\nA second paragraph says what the report found, then what it recommends. Keep paragraphs to three or four sentences.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.6
+   }
+  },
+  {
+   "id": "rp-2-key",
+   "page": 2,
+   "x": 5.45,
+   "y": 2.35,
+   "w": 2.15,
+   "z": 3,
+   "md": "**Key findings**\n\n- One finding, in a line.\n- A second finding.\n- A third finding.",
+   "style": {
+    "font": "Poppins",
+    "size": 16,
+    "color": "#2F3E46",
+    "leading": 1.5
+   }
+  },
+  {
+   "id": "rp-2-pull",
+   "page": 2,
+   "x": 0.7,
+   "y": 6.3,
+   "w": 7.1,
+   "z": 3,
+   "md": "IN TOTAL, THE HEADLINE FINDING GOES HERE, WITH THE NUMBER **IN BOLD**.",
+   "style": {
+    "font": "Poppins",
+    "size": 26,
+    "color": "#52796F",
+    "leading": 1.35
+   }
+  },
+  {
+   "id": "rp-foot2",
+   "page": 2,
+   "x": 0.7,
+   "y": 10.42,
+   "w": 7.1,
+   "z": 3,
+   "md": "2 • SHORT REPORT TITLE",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#5F6D73",
+    "weight": 700,
+    "tracking": 0.8
+   }
+  },
+  {
+   "id": "rp-3-h",
+   "page": 3,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 7.1,
+   "z": 3,
+   "md": "SUBJECT-NAMED SECTION",
+   "style": {
+    "font": "Manrope",
+    "size": 36,
+    "color": "#354F52",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "rp-3-body",
+   "page": 3,
+   "x": 0.7,
+   "y": 2.15,
+   "w": 7.1,
+   "z": 3,
+   "md": "**THE SECTION'S FIRST WORDS, IN BOLD CAPITALS,** open it the way every section does. Name the mechanism or the evidence in plain language.[^s2]\n\nA second paragraph carries the argument. Refer to the figure in the text: Figure 1 shows how the measure changed.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.6
+   }
+  },
+  {
+   "id": "rp-3-cap",
+   "page": 3,
+   "x": 0.7,
+   "y": 4.6,
+   "w": 7.1,
+   "z": 3,
+   "md": "**Figure 1.** A Descriptive Caption in Title Case, Jurisdiction (Year)",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#2F3E46",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "rp-3-src",
+   "page": 3,
+   "x": 0.7,
+   "y": 9.7,
+   "w": 7.1,
+   "z": 3,
+   "md": "Source: Name of the source.",
+   "style": {
+    "font": "Poppins",
+    "size": 14,
+    "color": "#5F6D73"
+   }
+  },
+  {
+   "id": "rp-foot3",
+   "page": 3,
+   "x": 0.7,
+   "y": 10.42,
+   "w": 7.1,
+   "z": 3,
+   "md": "3 • SHORT REPORT TITLE",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#5F6D73",
+    "weight": 700,
+    "tracking": 0.8
+   }
+  },
+  {
+   "id": "rp-4-h",
+   "page": 4,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 7.1,
+   "z": 3,
+   "md": "ANOTHER SUBJECT-NAMED SECTION",
+   "style": {
+    "font": "Manrope",
+    "size": 36,
+    "color": "#354F52",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "rp-4-body",
+   "page": 4,
+   "x": 0.7,
+   "y": 2.15,
+   "w": 7.1,
+   "z": 3,
+   "md": "**ANOTHER OPENING, IN BOLD CAPITALS,** keeps the pattern. Where the evidence is a comparison, show it as a table and say what it shows.[^s3]\n\nCompare what happens here with a model that works elsewhere, then say what it means locally.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.6
+   }
+  },
+  {
+   "id": "rp-4-cap",
+   "page": 4,
+   "x": 0.7,
+   "y": 4.6,
+   "w": 7.1,
+   "z": 3,
+   "md": "**Table 1.** A Descriptive Caption in Title Case",
+   "style": {
+    "font": "Poppins",
+    "size": 15,
+    "color": "#2F3E46",
+    "leading": 1.4
+   }
+  },
+  {
+   "id": "rp-4-src",
+   "page": 4,
+   "x": 0.7,
+   "y": 8.3,
+   "w": 7.1,
+   "z": 3,
+   "md": "Source: Name of the source.",
+   "style": {
+    "font": "Poppins",
+    "size": 14,
+    "color": "#5F6D73"
+   }
+  },
+  {
+   "id": "rp-foot4",
+   "page": 4,
+   "x": 0.7,
+   "y": 10.42,
+   "w": 7.1,
+   "z": 3,
+   "md": "4 • SHORT REPORT TITLE",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#5F6D73",
+    "weight": 700,
+    "tracking": 0.8
+   }
+  },
+  {
+   "id": "rp-5-h",
+   "page": 5,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 7.1,
+   "z": 3,
+   "md": "RECOMMENDATIONS",
+   "style": {
+    "font": "Manrope",
+    "size": 36,
+    "color": "#354F52",
+    "weight": 800,
+    "leading": 1.1
+   }
+  },
+  {
+   "id": "rp-5-n1",
+   "page": 5,
+   "x": 0.7,
+   "y": 2.2,
+   "w": 0.9,
+   "z": 3,
+   "md": "1",
+   "style": {
+    "font": "Manrope",
+    "size": 64,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "rp-5-t1",
+   "page": 5,
+   "x": 1.8,
+   "y": 2.3000000000000003,
+   "w": 6.0,
+   "z": 3,
+   "md": "Name the first action",
+   "style": {
+    "font": "Manrope",
+    "size": 26,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.2
+   }
+  },
+  {
+   "id": "rp-5-d1",
+   "page": 5,
+   "x": 1.8,
+   "y": 2.95,
+   "w": 6.0,
+   "z": 3,
+   "md": "One or two sentences on who should do what, and what it would change.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.55
+   }
+  },
+  {
+   "id": "rp-5-n2",
+   "page": 5,
+   "x": 0.7,
+   "y": 4.800000000000001,
+   "w": 0.9,
+   "z": 3,
+   "md": "2",
+   "style": {
+    "font": "Manrope",
+    "size": 64,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "rp-5-t2",
+   "page": 5,
+   "x": 1.8,
+   "y": 4.9,
+   "w": 6.0,
+   "z": 3,
+   "md": "Name the second action",
+   "style": {
+    "font": "Manrope",
+    "size": 26,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.2
+   }
+  },
+  {
+   "id": "rp-5-d2",
+   "page": 5,
+   "x": 1.8,
+   "y": 5.550000000000001,
+   "w": 6.0,
+   "z": 3,
+   "md": "One or two sentences on who should do what, and what it would change.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.55
+   }
+  },
+  {
+   "id": "rp-5-n3",
+   "page": 5,
+   "x": 0.7,
+   "y": 7.4,
+   "w": 0.9,
+   "z": 3,
+   "md": "3",
+   "style": {
+    "font": "Manrope",
+    "size": 64,
+    "color": "#52796F",
+    "weight": 800,
+    "leading": 1.0
+   }
+  },
+  {
+   "id": "rp-5-t3",
+   "page": 5,
+   "x": 1.8,
+   "y": 7.5,
+   "w": 6.0,
+   "z": 3,
+   "md": "Name the third action",
+   "style": {
+    "font": "Manrope",
+    "size": 26,
+    "color": "#2F3E46",
+    "weight": 800,
+    "leading": 1.2
+   }
+  },
+  {
+   "id": "rp-5-d3",
+   "page": 5,
+   "x": 1.8,
+   "y": 8.15,
+   "w": 6.0,
+   "z": 3,
+   "md": "One or two sentences on who should do what, and what it would change.",
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61",
+    "leading": 1.55
+   }
+  },
+  {
+   "id": "rp-foot5",
+   "page": 5,
+   "x": 0.7,
+   "y": 10.42,
+   "w": 7.1,
+   "z": 3,
+   "md": "5 • SHORT REPORT TITLE",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#5F6D73",
+    "weight": 700,
+    "tracking": 0.8
+   }
+  },
+  {
+   "id": "rp-6-notes",
+   "page": 6,
+   "x": 0.7,
+   "y": 0.75,
+   "w": 7.1,
+   "z": 2,
+   "act": "endnotes",
+   "md": "## ENDNOTES"
+  },
+  {
+   "id": "rp-foot6",
+   "page": 6,
+   "x": 0.7,
+   "y": 10.42,
+   "w": 7.1,
+   "z": 3,
+   "md": "6 • SHORT REPORT TITLE",
+   "style": {
+    "font": "Manrope",
+    "size": 14,
+    "color": "#5F6D73",
+    "weight": 700,
+    "tracking": 0.8
+   }
+  }
+ ],
+ "tables": [
+  {
+   "id": "rp-4-tbl",
+   "page": 4,
+   "x": 0.7,
+   "y": 5.1,
+   "w": 7.1,
+   "header": true,
+   "headerFill": "#354F52",
+   "headerColor": "#FFFFFF",
+   "band": "#EDF1EC",
+   "colw": [
+    34,
+    22,
+    22,
+    22
+   ],
+   "rows": [
+    [
+     "Measure",
+     "Place A",
+     "Place B",
+     "Place C"
+    ],
+    [
+     "First measure",
+     "00",
+     "00",
+     "00"
+    ],
+    [
+     "Second measure",
+     "00",
+     "00",
+     "00"
+    ],
+    [
+     "Third measure",
+     "00",
+     "00",
+     "00"
+    ],
+    [
+     "Fourth measure",
+     "00",
+     "00",
+     "00"
+    ]
+   ],
+   "style": {
+    "font": "Poppins",
+    "size": 17,
+    "color": "#4A5A61"
+   }
+  }
+ ]
+}
