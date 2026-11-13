@@ -634,11 +634,41 @@ test('history: the panel groups versions by day, a version opens on what it chan
   await expect(marked).toHaveCount(0);
   await a.locator('#hpanel-show').check();
   await expect(marked).toHaveCount(1);
+  // The version itself is drawn over the page, read-only: its own words, not
+  // the ones on screen, with the paragraphs that differ marked - and the
+  // document underneath is exactly what it was.
+  const prev = a.frameLocator('#ds-histprev');
+  const prevIntro = prev.locator(`[data-slot="${intro}"], [data-el="${intro}"]`).first();
+  await expect(prevIntro).toBeVisible({ timeout: 20_000 });
+  await expect(prevIntro).not.toContainText('Marked on the page');
+  await expect(prev.locator('.ds-hist-changed')).not.toHaveCount(0);
+  await expect(a.locator('#ds-histchip')).toContainText('Previewing the version from');
+  await expect(a.locator('#ds-histchip')).toContainText('before the rewrite');
+  await expect(a.locator('#ds-histchip-restore')).toBeVisible();
+  await expect(diff.locator('.prev')).toHaveText(/shown on the page/);
+  expect(await slot(a, intro)).toBe('Marked on the page, for the test.');
+  await expect(a.frameLocator('#out').locator(`[data-slot="${intro}"]`).first()).toContainText('Marked on the page');
+  // It covers the page exactly.
+  const [po, pp] = [await a.locator('#out').boundingBox(), await a.locator('#ds-histprev').boundingBox()];
+  expect(Math.abs(po.x - pp.x) + Math.abs(po.y - pp.y) + Math.abs(po.width - pp.width)).toBeLessThan(2);
+  // Another row swaps the preview; Back to current takes it down and nothing was saved or changed.
+  const nBefore = (await versions()).length;
+  await a.locator('#ds-histchip-back').click();
+  await expect(a.locator('#ds-histprev')).toHaveCount(0);
+  await expect(a.locator('#ds-histchip')).toHaveCount(0);
+  await expect(named).not.toHaveClass(/(^| )on( |$)/);
+  await expect(marked).toHaveCount(0);
+  expect((await versions()).length).toBe(nBefore);
+  // Opened again, then the panel's own toggle (the row) closes it too.
+  await named.locator('.hub-history-head').click();
+  await expect(a.locator('#ds-histprev')).toHaveCount(1, { timeout: 20_000 });
+  await expect(marked).toHaveCount(1);
   // The edit taken back: the current version against the screen has nothing to mark.
   await a.evaluate(`docsync.api.setSlot(${JSON.stringify(intro)}, ${JSON.stringify(introWas)})`);
   await rows.first().locator('.hub-history-head').click();
   await expect(rows.first().locator('.hub-history-diff .sum')).toHaveText(/This is the version on screen|No difference in the words/, { timeout: 10_000 });
   await expect(marked).toHaveCount(0);
+  await expect(a.locator('#ds-histprev')).toHaveCount(0);   // the version on screen needs no preview
   // Named only: the one someone named.
   await a.locator('#hpanel-named').click();
   await expect(historyRows(a)).toHaveCount(1);
