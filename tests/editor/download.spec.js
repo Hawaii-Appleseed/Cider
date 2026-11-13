@@ -155,6 +155,16 @@ staticTest.describe('download: static mode (no local server)', () => {
     await expect(page.locator('#stat')).toContainText('the report has');   // refused before any drawing
   });
 
+  staticTest('inlineCssUrls leaves a #fragment written as %23 inside a data: URI alone (no false "could not be fetched")', async ({ page }) => {
+    const missed = await page.evaluate(async () => {
+      const css = `.n{background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'/><rect filter='url(%23n)'/></svg>")}`;
+      const m = [];
+      await inlineCssUrls(css, m);
+      return m;
+    });
+    expect(missed).toEqual([]);
+  });
+
   staticTest('buildPdf: the words copy out with their okina and kahako, and the file is well formed', async ({ page }) => {
     const r = await page.evaluate(async () => {
       // A 1x1 JPEG; the words are what is under test.
