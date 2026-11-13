@@ -679,3 +679,42 @@ bindings:
       layout: projects/wealth-tax-report/layout.json
       palette: ["#354F52", "#1E6194", "#FDCF21", "#A5CCB4", "#4E9685", "#232322", "#464646", "#FFFFFF"]
       page: [8.5, 11.0]
+
+  # The hub's two clean starting points (2026-11-12): "Blank document" (US Letter,
+  # one empty page) and "Slides" (4:3, 10 x 7.5in, one empty slide). Nothing
+  # designed rides on them: no placeholder source (the starters `docsync.new`
+  # makes carry one, and it is a publish-blocking Preflight error until deleted),
+  # no endnotes page, no pattern page. They are the blank placed-canvas renderer,
+  # so every added or duplicated page is drawn by L.sheet() and takes shapes,
+  # text, charts and tables at once. Pick them from `new_report`'s list.
+  - id: blank-document
+    name: "Blank document"
+    content: projects/blank-document/content.md
+    editability: strict
+    build: python3 projects/blank-document/render_report.py && python3 -m docsync.stage --id blank-document
+    outputs:
+      - projects/blank-document/web/index.html
+    editor:
+      dir: docs/blank-document
+      render: projects/blank-document/render_report.py
+      out: projects/blank-document/web/index.html
+      layout: projects/blank-document/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [8.5, 11.0]
+      margins: [0.75, 0.75]
+
+  - id: slides
+    name: "Slides"
+    content: projects/slides/content.md
+    editability: strict
+    build: python3 projects/slides/render_report.py && python3 -m docsync.stage --id slides
+    outputs:
+      - projects/slides/web/index.html
+    editor:
+      dir: docs/slides
+      render: projects/slides/render_report.py
+      out: projects/slides/web/index.html
+      layout: projects/slides/layout.json
+      palette: ["#1E6194", "#232322", "#FDCF21", "#4E9685", "#A5CCB4", "#7E6B3B", "#464646", "#FFFFFF"]
+      page: [10.0, 7.5]
+      margins: [0.5, 0.5]
