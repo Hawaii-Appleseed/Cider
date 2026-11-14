@@ -148,4 +148,24 @@ test.describe('deck: type sized from the canvas', () => {
     expect(px('dk-4-num'), 'the hero number').toBeGreaterThanOrEqual(80);
     expect(px('dk-5-cap'), 'the chart caption').toBeGreaterThanOrEqual(27);
   });
+
+  test('the chart on slide 5 has labels of 21px and up (its type grows with the canvas)', async ({ page }) => {
+    await gotoEditor(page, '?project=deck-branded');
+    const frame = page.frameLocator('#out');
+    // An SVG label is sized in the page's INCHES, so ask the browser what the page paints
+    // (font-size through getScreenCTM) rather than what the markup says, then express it
+    // against the 1280px canvas the type rules are written for, whatever zoom the editor shows.
+    const sizes = await frame.locator('section.page[data-page="5"]').evaluate(pg => {
+      const sheetW = pg.getBoundingClientRect().width;
+      return [...pg.querySelectorAll('g[data-shape="dk-5-chart"] text')]
+        .filter(t => t.textContent.trim())
+        .map(t => {
+          const m = t.getScreenCTM();
+          const px = parseFloat(getComputedStyle(t).fontSize) * Math.sqrt(Math.abs(m.a * m.d - m.b * m.c));
+          return { text: t.textContent.trim(), px1280: px / sheetW * 1280 };
+        });
+    });
+    expect(sizes.length, 'the chart draws labels').toBeGreaterThan(4);
+    for (const s of sizes) expect(s.px1280, `"${s.text}" is ${s.px1280.toFixed(1)}px on a 1280px slide`).toBeGreaterThanOrEqual(21);
+  });
 });
