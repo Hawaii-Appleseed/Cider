@@ -828,7 +828,10 @@ Rules that bite:
   2026-11-13 they grow with the canvas (`chart_svg(…, canvas_w=)`,
   `layout.chart_text_scale`: the page's width over Letter's 8.5in, never under
   1), so the deck's chart reads at 23-25px, not 15. A chart drawn with no page
-  to ask (`blocks.chart`) keeps the old sizes.
+  to ask (`blocks.chart`) keeps the old sizes. On such a page a ROW chart's
+  long names wrap onto a second (or third) line at the size the short ones
+  have, rather than shrinking to a gutter capped at 0.4 of the chart's width
+  (`layout._wide_row_names`); Letter and narrower pages still shrink them.
   `tests/editor/branded-bases.spec.js` holds all of it. To change one
   of these as a TEMPLATE (not one report made from it), edit its `layout.json`
   and rerun that spec.
