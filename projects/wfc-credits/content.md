@@ -22,7 +22,7 @@ Saving the Working Families Tax Credit Expansions
 What Hawaiʻi’s working families lose when the 2023 expansions of the state earned income tax credit and the food/excise tax credit expire after 2027, and what renewing them would cost.
 
 [[ha-est-meta.p-1]]
-Hawaiʻi Appleseed · Model run October 19, 2026 · Tax years 2028 to 2031
+Hawaiʻi Appleseed · Model run November 6, 2026 · Tax years 2028 to 2031
 
 [[ha-est-stat-label.div-1]]
 in **lost credits** for working families in 2028 (give or take about $1 million), which is also what renewing them would cost the state.
@@ -52,22 +52,22 @@ What Families Lose
 WHEN THE EXPANSIONS EXPIRE,
 
 [[ha-est-section-inner.p-1]]
-The food/excise credit’s amounts and income limits are not adjusted for inflation. As wages rise, fewer households qualify for the credit, and its value decreases. At its current level of expansion, the credit would provide $53 million in 2028 and $48 million in 2031. The state earned income tax credit follows the federal credit, which does increase with inflation.
+The food/excise credit’s amounts and income limits are not adjusted for inflation. As wages rise, fewer households qualify for the credit, and its value decreases. At its current level of expansion, the credit would provide $53 million in 2028 and $49 million in 2031. The state earned income tax credit follows the federal credit, which does increase with inflation.
 
 [[ha-est-figcap.p-2]]
 Figure 1. Credit Dollars Working Families Lose Each Year, Hawaiʻi (2028 to 2031)
 
 [[ha-est-col-val.span-1]]
-$76M
+$77M
 
 [[ha-est-col-val.span-2]]
 $76M
 
 [[ha-est-col-val.span-3]]
-$76M
+$77M
 
 [[ha-est-col-val.span-4]]
-$78M
+$79M
 
 [[ha-est-source.p-2]]
 Source: Hawaiʻi Appleseed estimates, Census-Forecaster tax model. Millions of dollars.
@@ -91,19 +91,19 @@ THE LOSS FALLS HARDEST ON FAMILIES WITH CHILDREN
 Figure 2. Average Loss per Household That Loses a Credit, by Family Type, Hawaiʻi (Tax Year 2028)
 
 [[ha-est-hbar-val.span-1]]
-$817
+$829
 
 [[ha-est-hbar-cat.div-1]]
 Couple with children
 
 [[ha-est-hbar-val.span-2]]
-$746
+$745
 
 [[ha-est-hbar-val.span-3]]
-$125
+$130
 
 [[ha-est-hbar-val.span-4]]
-$179
+$183
 
 [[ha-est-source.p-3]]
 Source: Hawaiʻi Appleseed estimates, Census-Forecaster tax model; tax year 2028.
@@ -139,7 +139,7 @@ These estimates answer one question, which is how much less working families wou
 Table 5. Model Against Department of Taxation Records
 
 [[ha-est-section-inner.p-5]]
-The Department of Taxation’s report on the state earned income tax credit also breaks down 2024 claims by income and by filing status, which makes it possible to check who the model says receives the credit, not only how much. For incomes under $55,000, the model’s dollars are within 11 percent of the Department’s in each of the four income ranges, while for incomes of $55,000 and above the model has $1.4 million against the Department’s $0.8 million. By filing status, the model gives heads of household 51.5 percent of the dollars against the Department’s 55.5 percent, gives married couples more (41.8 percent against 28.9 percent) and gives single filers less (6.6 percent against 15.3 percent). Because the statewide total is set to match the Department’s, these differences only shift losses between family types and do not change the statewide figure.
+The Department of Taxation’s report on the state earned income tax credit also breaks down 2024 claims by income and by filing status, which makes it possible to check who the model says receives the credit, not only how much. For incomes under $55,000, the model’s dollars are within 16 percent of the Department’s in each of the four income ranges, while for incomes of $55,000 and above the model has $1.4 million against the Department’s $0.8 million. By filing status, the model gives heads of household 51.8 percent of the dollars against the Department’s 55.5 percent, gives married couples more (41.4 percent against 28.9 percent) and gives single filers less (6.9 percent against 15.3 percent). Because the statewide total is set to match the Department’s, these differences only shift losses between family types and do not change the statewide figure.
 
 [[ha-est-figcap.p-9]]
 Table 6. State EITC by Income Range, 2024
@@ -187,7 +187,7 @@ Both expansions were temporary. Act 163 is repealed on December 31, 2027, and bo
 The state earned income tax credit stays refundable, but at 20 percent of the federal credit.
 
 [[ha-est-section-inner.p-txt-6]]
-working families will receive about $76 million less in tax year 2028, with $43 million coming from the state earned income tax credit and $34 million from the food/excise tax credit. Renewing both would cost the state the same amount, about $307 million over tax years 2028 to 2031.[^n5-hawaii-appleseed-forecast]
+working families will receive about $77 million less in tax year 2028, with $43 million coming from the state earned income tax credit and $34 million from the food/excise tax credit. Renewing both would cost the state the same amount, about $308 million over tax years 2028 to 2031.[^n5-hawaii-appleseed-forecast]
 
 [[ha-est-section-inner.p-txt-7]]
 Sampling error puts the 2028 loss within about $1 million either way (Table 8).
@@ -199,10 +199,10 @@ State earned income tax credit
 Food/excise tax credit
 
 [[ha-est-section-inner.p-txt-8]]
-and on the lowest incomes. Among the 20 percent of households with the lowest incomes, 75 percent would lose part of a credit in 2028, an average of $460 each, and that group would take 45 percent of the total loss. Single-parent households that lose part of a credit give up more, an average of $817 each, as Figure 2 shows.
+and on the lowest incomes. Among the 20 percent of households with the lowest incomes, 74 percent would lose part of a credit in 2028, an average of $474 each, and that group would take 45 percent of the total loss. Single-parent households that lose part of a credit give up more, an average of $829 each, as Figure 2 shows.
 
 [[ha-est-section-inner.p-txt-9]]
-an estimated 2,100 more people below the poverty line in 2028, about 500 of them children, and deepens poverty for families already below it by $16 million. The state poverty rate rises from 8.5 percent to 8.7 percent. For single parents and their children it rises from 19.1 percent to 19.7 percent.
+an estimated 2,100 more people below the poverty line in 2028, about 500 of them children, and deepens poverty for families already below it by $16 million. The state poverty rate rises from 8.6 percent to 8.8 percent. For single parents and their children it rises from 19.1 percent to 19.7 percent.
 
 [[ha-est-section-inner.p-txt-10]]
 with Hawaiʻi households from the Census Bureau’s 2024 American Community Survey, which records the age and relationship of each household member, and it grows their incomes forward using Congressional Budget Office projections. It then calculates the federal earned income tax credit for each household, adjusted to match IRS counts of Hawaiʻi claimants, and uses the statute’s own schedules to calculate each state credit under both laws.
@@ -241,13 +241,13 @@ The model then keeps that claim rate the same in every later year. As a test, th
 : run parameters, inputs and code version
 
 [[ha-est-stat-num.div-1]]
-$76 million
+$77 million
 
 [[ha-est-stat-num.div-2]]
-180,000
+178,000
 
 [[ha-est-stat-num.div-3]]
-$817
+$829
 
 [[sources]]
 [n1-hawaii-state-legislature]: Hawaiʻi State Legislature, Act 163, Session Laws of Hawaiʻi 2023, §§2, 3 and 5 (repeal and reenactment on December 31, 2027).
