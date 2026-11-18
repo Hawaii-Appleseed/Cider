@@ -110,7 +110,7 @@ jobs:
           if [ "${{ github.event_name }}" = workflow_dispatch ] || [ "${{ github.event_name }}" = schedule ]; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "${{ github.event_name }}" = pull_request ]; then base="${{ github.event.pull_request.base.sha }}"; else base="${{ github.event.before }}"; fi
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then echo editor=true >> "$GITHUB_OUTPUT"; exit 0; fi
-          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|tools/ci-shard\.mjs$|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/)'; then
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -qE '^(docsync/|tests/|tools/(ci-shard|hub-verbs)(\.test)?\.mjs$|docs/primer/(start\.html|sw\.js)$|report2027/tools/(serve|render_report)\.py$|playwright\.config\.js$|package\.json$|\.github/)'; then
             echo editor=true >> "$GITHUB_OUTPUT"
           else
             echo editor=false >> "$GITHUB_OUTPUT"
@@ -431,6 +431,69 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # Does the staff hub's connector (its MCP server, which relays the editor's
+  # verbs to Claude) still agree with this editor? The hub's own test_mcp.mjs
+  # pins that every verb the editor takes is relayed or held back on purpose,
+  # but it reads the editor the HUB carries, so a new verb here only went red
+  # there, after the merge, once the editor was vendored in: the hub's tests
+  # failed, `promote` skipped, production stayed put (2026-11-17/18: addGuide,
+  # removeGuide and addSpacer kept four editor ships off production for about
+  # nine hours). tools/hub-verbs.mjs runs that test twice on a copy of the hub,
+  # with its own editor and with THIS one, and fails on a check only this
+  # editor breaks. The fix is a change in the hub; to land it with this change,
+  # push a hub branch with the SAME NAME as this branch and this job uses it
+  # (main otherwise). Locally: node tools/hub-verbs.mjs --ref origin/main.
+  connector:
+    needs: changes
+    if: needs.changes.outputs.editor == 'true'
+    name: The hub's connector knows the editor's verbs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: A token that can read the hub
+        id: hub-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISH_APP_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+          owner: Hawaii-Appleseed
+          repositories: staff-updates-internal
+
+      # The hub branch that carries this change's connector side, if any.
+      - name: Which hub branch
+        id: hub-ref
+        env:
+          TOKEN: ${{ steps.hub-token.outputs.token }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          ref=main
+          if [ -n "$BRANCH" ] && git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Hawaii-Appleseed/staff-updates-internal.git" "$BRANCH" >/dev/null 2>&1; then
+            ref="$BRANCH"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Checking against the hub's $ref"
+
+      - name: Check out the hub beside the editor
+        uses: actions/checkout@v4
+        with:
+          repository: Hawaii-Appleseed/staff-updates-internal
+          ref: ${{ steps.hub-ref.outputs.ref }}
+          token: ${{ steps.hub-token.outputs.token }}
+          path: hub
+
+      # Node 22: the hub's tests use node:sqlite. Nothing else is installed.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: The checker itself
+        run: node --test tools/hub-verbs.test.mjs
+
+      - name: The hub's test_mcp.mjs, with this editor
+        run: node tools/hub-verbs.mjs hub
+
   # Every report's output and edit-mode draft (docsync.check): citations,
   # legibility, and editability — strict bindings fail on any finding, the
   # rest on any finding past docsync/editability-baseline.json. It ran in its
@@ -550,16 +613,17 @@ jobs:
   # cancelled — so a docs-only PR merges, and a broken editor cannot.
   gate:
     name: Editor tests gate
-    needs: [changes, test, hub, sweep, reports, parity]
+    needs: [changes, test, hub, connector, sweep, reports, parity]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - run: |
-          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, hub: ${{ needs.hub.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}, parity: ${{ needs.parity.result }}"
+          echo "changes: ${{ needs.changes.result }} (editor: ${{ needs.changes.outputs.editor }}), shards: ${{ needs.test.result }}, hub: ${{ needs.hub.result }}, connector: ${{ needs.connector.result }}, sweep: ${{ needs.sweep.result }} ${{ needs.changes.outputs.sweep }}, parity: ${{ needs.parity.result }}"
           [ "${{ needs.changes.result }}" = success ] || exit 1
           case "${{ needs.test.result }}" in success|skipped) ;; *) exit 1 ;; esac
           case "${{ needs.hub.result }}" in success|skipped) ;; *) echo "the editor failed when served from the staff hub"; exit 1 ;; esac
+          case "${{ needs.connector.result }}" in success|skipped) ;; *) echo "the hub's connector does not agree with this editor (tools/hub-verbs.mjs): a new verb needs a change in the hub"; exit 1 ;; esac
           [ "${{ needs.reports.result }}" = success ] || { echo "docsync.check failed"; exit 1; }
           case "${{ needs.parity.result }}" in success|skipped) ;; *) echo "engine parity failed: a chart or a page moved and nothing says why"; exit 1 ;; esac
           case "${{ needs.sweep.result }}" in success|skipped) exit 0 ;; *) exit 1 ;; esac

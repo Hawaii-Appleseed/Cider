@@ -77,6 +77,25 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   (`--skip-hub-spec` overrides, loudly). No hub checkout: it says so in one line
   and lands anyway. `tools/wt land <name> --check-only` runs just the gate;
   `tools/test-land-gate.sh <name>` tests it.
+  **A new editor verb needs a change in the hub, and the `connector` job says so
+  on the PR (2026-11-18).** The hub's connector relays the editor's pilot verbs
+  to Claude and its own test pins that every verb in `PILOT_BATCH_VERBS` /
+  `PILOT_SINGLE_VERBS` is relayed (`PAGE_VERBS` in the hub's
+  `functions/api/mcp.js`) or held back on purpose (`HELD` in its
+  `dev/test_mcp.mjs`). That test used to be the only check, and it ran in the hub
+  after the editor was vendored in, so a verb added here turned the hub's main red
+  and held its production deploy back until somebody read the log (addGuide,
+  removeGuide and addSpacer: four editor ships, about nine hours).
+  `tools/hub-verbs.mjs` runs the hub's `test_mcp.mjs` on a copy of the hub twice,
+  with the editor the hub carries and with this one, and fails on a check only
+  this editor breaks (a check the hub already fails is reported, not blamed).
+  The `connector` job runs it on every editor change and the gate waits for it.
+  To land a new verb: put the hub side on a hub branch with the SAME NAME as the
+  Cider branch (the job checks that branch out instead of main), then merge the
+  hub branch first, or right after, so the hub's main is not left red for long.
+  By hand: `node tools/hub-verbs.mjs --ref origin/main` (the hub folder is only
+  read; `--ref` because a laptop's hub folder is often on a stale branch).
+  `npm run test:hub-verbs` tests the checker.
 - An engine commit runs `.githooks/post-commit`, which vendors the engine into
   the consumers THIS machine names in `vendor.local.yml` (gitignored; Devin's
   names `~/BudgetPrimerFinal`). A fresh clone has none, so nothing happens.

@@ -10,7 +10,8 @@
     "test:full": "DS_IMPACT=map playwright test",
     "test:ui": "playwright test --ui",
     "test:collab": "node --test collab/serialize.test.mjs",
-    "test:shards": "node --test tools/ci-shard.test.mjs"
+    "test:shards": "node --test tools/ci-shard.test.mjs",
+    "test:hub-verbs": "node --test tools/hub-verbs.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
