@@ -114,6 +114,10 @@ test.describe('floating chrome', () => {
 
   test('the contextual card overlays the canvas, just under the top bar',
     async ({ page }) => {
+      // With the docked Control bar off (View ▸ Control bar): the floating
+      // card is then the only contextual chrome. control-bar.spec.js pins
+      // the docked layout.
+      await page.evaluate(() => toggleCtlBar(false));
       const g = await geo(page);
       // an overlay inside #work, not a band between #bar and #work
       expect(g.ctx.y).toBeGreaterThan(g.bar.bottom);
