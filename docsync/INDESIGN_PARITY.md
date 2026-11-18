@@ -1513,15 +1513,15 @@ Legend: **Missing** = not in Cider. **Hidden** = exists, not on a bar.
 | InDesign control | Cider | Note |
 |---|---|---|
 | Font family, style | Yes | |
-| Size in pt | Partial | px, whole box/slot only |
-| Leading, "(auto)" | Partial | whole box/slot only; no Auto display |
-| Tracking (1/1000 em) | Partial | px, whole box/slot only |
+| Size in pt | **Bar** (pt) | whole box/slot only (phase 5) |
+| Leading, "(auto)" | **Bar** (pt, auto in brackets) | whole box/slot only |
+| Tracking (1/1000 em) | **Bar** (1/1000 em) | whole box/slot only |
 | Kerning: Metrics / Optical / manual | Missing | |
-| All Caps, Small Caps | Yes | Small Caps in the Paragraph popover |
+| All Caps, Small Caps | **Bar** | case picker; small caps / all small caps |
 | Superscript / Subscript | Missing | the engine has OpenType `sups`/`subs`; no button |
-| Underline, Strikethrough + options (weight, offset, colour) | Partial | on/off only |
+| Underline, Strikethrough + options (weight, offset, colour) | Partial | on/off, both on the bar |
 | Vertical / horizontal scale % | Missing | |
-| Baseline shift | Hidden | Paragraph popover |
+| Baseline shift | **Bar** | pt |
 | Skew (false italic) | Missing | |
 | Text fill colour | Yes | |
 | Text stroke colour / weight | Missing | effects only (hollow) |
@@ -1539,15 +1539,15 @@ inline-run model carries them.
 
 | InDesign control | Cider | Note |
 |---|---|---|
-| Alignment left / centre / right / justify | Yes | |
+| Alignment left / centre / right / justify | **Bar** | |
 | Justify with last line left/centre/right, justify all | Missing | |
-| Left, right, first-line indents | Yes | Paragraph popover |
+| Left, right, first-line indents | **Bar** | inches, typed units |
 | Last-line right indent | Missing | |
-| Space before / after | Yes | |
+| Space before / after | **Bar** | |
 | Space between paragraphs of the same style | Missing | |
-| Drop cap lines | Yes | 2–5 |
+| Drop cap lines | **Bar** | 2–5 |
 | Drop cap characters, drop cap character style | Missing | |
-| Align to baseline grid, balance ragged lines, hyphenate | Yes | |
+| Align to baseline grid, balance ragged lines, hyphenate | Yes | grid and hyphenate on the bar |
 | Hyphenation settings (min word, before/after, limit, zone, capitalised) | Missing | |
 | Justification settings (word/letter spacing, glyph scaling, auto leading %) | Partial | word spacing only |
 | Keep options incl. "start in next column/frame/page" | Partial | keep together / with next only |
@@ -1590,7 +1590,7 @@ existing popovers MOVE into rather than being built twice. Inches for geometry,
 points for type, typed units accepted.
 
 1. Docked bar, object mode, reusing today's controls — **item 86, done**.
-2. Character and paragraph modes.
+2. Character and paragraph modes — **item 87, done**.
 3. Reference point, proportion link / scale X·Y, flip indicator, fitting options.
 4. The right-hand panel dock, rehoming the existing popovers.
 5. Per-character size / leading / tracking / kerning in the engine, then the
@@ -1623,4 +1623,29 @@ points for type, typed units accepted.
     `pt`, `p` (picas: `3p`, `3p6`, `p6`), `mm`, `cm`, `px` (`parseLen()`); a
     value that is not one is refused and marked, never written. `#cb-mode`
     and `#cb-ref` are the empty slots phases 2 and 3 fill.
+    `tests/editor/control-bar.spec.js`.
+87. **The Control bar's character and paragraph modes. — CLOSED 2026-11-17.**
+    With text selected the bar switches between three modes, as InDesign's
+    does: **▭** the frame (item 86's controls), **A** character and **¶**
+    paragraph (⌥⌘7 flips A / ¶, a `CHORDS` row; A or ¶ is remembered per
+    editor in `localStorage['ds-ctlmode']`, ▭ only for the selection it was
+    pressed on). The type card (`#type`) docks into the bar like the arrange
+    strip (`ctlDock()`; back into the floating card when the bar is off),
+    and `#ctl[data-mode]` shows its `.cb-char` or `.cb-para` controls. The
+    stylesheet picker, Box, ☰ Paragraph panel and Reset show in both.
+    Character: font, weight, **size in points** (the float's px stepper keeps
+    its − / +), **leading in points with auto in brackets** (a bare number of
+    4 or under, or `1.4x`, is a multiple), **tracking in thousandths of an
+    em**, B / I / U, case, small caps, strikethrough, baseline shift (pt),
+    colour, effects. Paragraph: alignment, left / first-line / right indents,
+    space before / after (inches, typed units), drop cap lines, align to
+    baseline grid, hyphenate, list marker. Every bar-only field (`.cb-only`)
+    PROXIES a field of the type card or its panels (`data-proxy`): it shows
+    that field's value in InDesign's units and, on a change, writes the field
+    in its own unit and fires the field's own events, so the one handler
+    there does the work. A value set from the bar is one undo step
+    (`pushHistory()` in `ctlTextWrite`). Still per box or slot, not per
+    character: that is phase 5's engine work.
+    Found doing it: the type card's own handlers push no undo step, so a run
+    of changes made there undoes as one. Left as it was here.
     `tests/editor/control-bar.spec.js`.
