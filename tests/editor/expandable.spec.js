@@ -114,6 +114,10 @@ test.describe('expandable sections', () => {
       await expect(arrow).toHaveCount(1);
       await expect(arrow).toHaveAttribute('data-el', `tglarrow.${btn.id}`);
 
+      // The Text tray is wider now (364px, was 252) and lies over the left of
+      // the page, where this small arrow sits: put it away, as a person
+      // reaching for something under it would, before clicking the page.
+      await page.click('#side-x');
       await arrow.click();
       await page.waitForTimeout(400);
       expect(await page.evaluate(() => [...selIds]))

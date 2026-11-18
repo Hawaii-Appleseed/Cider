@@ -7,7 +7,7 @@ const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test
 
 const SHOTS = process.env.RULER_SHOTS || '';
 
-for (const [btn, pop] of [['shape', 'shapepop'], ['icon', null], ['ar-img', null], ['text', null]]) {
+for (const [btn, pop] of [['shape', 'shapepop'], ['icon', null], ['elements', null], ['data', null], ['ar-img', null], ['text', null]]) {
   test(`rail tray from #${btn} is not covered by the rulers`, async ({ page }) => {
     await gotoEditor(page);
     await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
@@ -32,7 +32,12 @@ for (const [btn, pop] of [['shape', 'shapepop'], ['icon', null], ['ar-img', null
         const e = document.elementFromPoint((l + r) / 2, (t + btm) / 2);
         if (!e || !p.contains(e)) bad.push({ ruler: id, hit: e && (e.id || e.className || e.tagName) });
       }
-      for (const [x, y] of [[b.left + 12, b.top + 12], [b.right - 12, b.top + 12], [b.left + 12, b.bottom - 12], [b.right - 12, b.bottom - 12], [b.left + b.width / 2, b.top + 12], [b.left + 12, b.top + b.height / 2]]) {
+      // The page strip (#rail) is meant to lie over the foot of a tray (the
+      // tray scrolls its last control clear of it), and a tall tray's box runs
+      // down under it: probe only the part of the tray above the strip.
+      const strip = document.getElementById('rail');
+      const floor = Math.min(b.bottom, strip && !strip.hidden ? strip.getBoundingClientRect().top : b.bottom);
+      for (const [x, y] of [[b.left + 12, b.top + 12], [b.right - 12, b.top + 12], [b.left + 12, floor - 12], [b.right - 12, floor - 12], [b.left + b.width / 2, b.top + 12], [b.left + 12, b.top + b.height / 2]]) {
         const e = document.elementFromPoint(x, y);
         if (!e || !p.contains(e)) bad.push({ x, y, hit: e && (e.id || e.className || e.tagName) });
       }
