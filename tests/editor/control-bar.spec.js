@@ -8,7 +8,10 @@
 // selected it says what the page is rather than standing empty. Phase 2: text
 // docks too, in A (character) or ¶ (paragraph) mode, and the bar's fields
 // write the type card's and Paragraph panel's own fields in InDesign's units
-// (size and leading in points, tracking in thousandths of an em). Local mode.
+// (size and leading in points, tracking in thousandths of an em). Phase 3:
+// the nine-point reference point (what X/Y read, and what stays put when the
+// bar resizes, rotates or flips), the W/H link, scale X/Y, the P flip
+// indicator, and the picture's anchor and Frame Fitting Options. Local mode.
 const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 async function addRect(page) {
@@ -202,3 +205,103 @@ test.describe('control bar', () => {
     await expect(page.locator('#cb-size')).toBeHidden();
   });
 });
+
+test.describe('control bar: reference point and fitting', () => {
+  test.beforeEach(async ({ page }) => { await gotoEditor(page); });
+  async function rectAt(page, x, y, w, h) {
+    await page.evaluate(async ([x, y, w, h]) => {
+      pushHistory();
+      layout.shapes.push({ id: 'cb-rect', page: 3, kind: 'rect', x, y, w, h,
+                           fill: '#6B9E78', stroke: 'none', sw: 0.02, z: 3 });
+      markDirty(); await render();
+      setSel($('out').contentDocument, ['cb-rect']);
+    }, [x, y, w, h]);
+    await settled(page);
+  }
+  const enter = async (page, sel, v) => { await page.locator(sel).fill(v); await page.locator(sel).press('Enter'); };
+
+  test('X/Y read the chosen point, and a resize keeps it where it was', async ({ page }) => {
+    await rectAt(page, 3, 3, 2, 1);
+    await expect(page.locator('#cb-ref')).toBeVisible();
+    await expect(page.locator('#cb-ref [data-ref="tl"]')).toHaveClass(/\bon\b/);   // the default
+    await expect(page.locator('#cb-x')).toHaveValue('3');
+    await page.click('#cb-ref [data-ref="c"]');
+    await expect(page.locator('#cb-x')).toHaveValue('4');                            // the centre
+    await expect(page.locator('#cb-y')).toHaveValue('3.5');
+    await enter(page, '#cb-w', '4');                                                  // grows both ways
+    await expect.poll(async () => (await rect(page)).w).toBe(4);
+    expect((await rect(page)).x).toBeCloseTo(2, 3);
+    await page.click('#cb-ref [data-ref="r"]');
+    await enter(page, '#cb-w', '1');                                                  // right edge stays
+    await expect.poll(async () => (await rect(page)).w).toBe(1);
+    expect((await rect(page)).x).toBeCloseTo(5, 3);
+    // Typing X puts the reference point there.
+    await enter(page, '#cb-x', '7in');
+    await expect.poll(async () => (await rect(page)).x).toBeCloseTo(6, 3);
+    expect(await page.evaluate(() => localStorage.getItem('ds-refpt'))).toBe('r');
+  });
+
+  test('rotate and flip turn about the reference point; the P shows it', async ({ page }) => {
+    await rectAt(page, 3, 3, 2, 1);
+    await page.click('#cb-rotcw');                    // about the top left (3, 3)
+    await expect.poll(async () => (await rect(page)).rot).toBe(90);
+    let r = await rect(page);
+    expect(r.x).toBeCloseTo(1.5, 3); expect(r.y).toBeCloseTo(3.5, 3);
+    await expect(page.locator('#cb-x')).toHaveValue('3');   // the point did not move
+    await expect(page.locator('#cb-y')).toHaveValue('3');
+    await page.evaluate(() => undo());
+    await expect.poll(async () => (await rect(page)).rot ?? 0).toBe(0);
+    await page.evaluate(() => setSel($('out').contentDocument, ['cb-rect']));
+    await page.click('#cb-fliph');                    // mirrored across its left edge
+    await expect.poll(async () => (await rect(page)).flip).toBe('h');
+    r = await rect(page);
+    expect(r.x).toBeCloseTo(1, 3); expect(r.y).toBeCloseTo(3, 3);
+    await expect(page.locator('#cb-pflag')).toHaveAttribute('style', /scale\(-1, ?1\)/);
+    // About the centre, a turn stays in place.
+    await page.click('#cb-ref [data-ref="c"]');
+    await page.click('#cb-rotccw');
+    await expect.poll(async () => (await rect(page)).rot).toBe(-90);
+    r = await rect(page);
+    expect(r.x).toBeCloseTo(1, 3); expect(r.y).toBeCloseTo(3, 3);
+  });
+
+  test('the link keeps proportions; scale X/Y resize by a percent', async ({ page }) => {
+    await rectAt(page, 3, 3, 2, 1);
+    await page.click('#cb-link');
+    await expect(page.locator('#cb-link')).toHaveClass(/\bon\b/);
+    await enter(page, '#cb-w', '4');
+    await expect.poll(async () => (await rect(page)).h).toBe(2);
+    await page.click('#cb-link');                     // off again
+    await enter(page, '#cb-sx', '50');
+    await expect.poll(async () => (await rect(page)).w).toBe(2);
+    expect((await rect(page)).h).toBe(2);
+    await expect(page.locator('#cb-sx')).toHaveValue('100');   // a frame's scale reads 100 again
+  });
+
+  test('a fitted picture: the anchor grid and Frame Fitting Options', async ({ page }) => {
+    const id = await page.evaluate(() => {
+      const d = $('out').contentDocument;
+      const el = [...d.querySelectorAll('[data-el]')].find(e => fitKind(e.dataset.el));
+      return el && el.dataset.el;
+    });
+    test.skip(!id, 'no picture in the fixture');
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await settled(page);
+    await expect(page.locator('#cb-fit')).toBeVisible();
+    await expect(page.locator('#cb-fitref')).toBeHidden();      // nothing fitted yet
+    await page.click('#cb-fit [data-fit="cover"]');
+    await expect.poll(() => page.evaluate(i => fitNow(i).fit, id)).toBe('cover');
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await expect(page.locator('#cb-fitref')).toBeVisible();
+    await page.click('#cb-fitref [data-fa="tl"]');
+    await expect.poll(() => page.evaluate(i => fitNow(i).align, id)).toBe('top left');
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await page.click('#cb-fitopts');
+    const dlg = page.locator('dialog[open]');
+    await dlg.locator('select').first().selectOption('contain');
+    await dlg.locator('select').nth(1).selectOption('bottom right');
+    await dlg.locator('button.dsdlg-ok').click();
+    await expect.poll(() => page.evaluate(i => fitNow(i), id)).toEqual({ fit: 'contain', align: 'bottom right' });
+  });
+});
+
