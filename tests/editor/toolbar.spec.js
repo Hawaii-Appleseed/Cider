@@ -40,6 +40,20 @@ test.describe('contextual toolbar', () => {
     expect(off).toBeLessThan(2);
   });
 
+  test('the strip stays inside the window and wraps instead of running off', async ({ page }) => {
+    await page.setViewportSize({ width: 700, height: 800 });
+    await page.evaluate(() => toggleCtlBar(false));
+    await addRect(page);
+    const r = await page.evaluate(() => {
+      const a = $('arrange').getBoundingClientRect();
+      return { left: a.left, right: a.right, w: innerWidth, h: a.height,
+               scrolls: $('arrange').scrollWidth > $('arrange').clientWidth + 1 };
+    });
+    expect(r.right).toBeLessThanOrEqual(r.w + 1);
+    expect(r.left).toBeGreaterThanOrEqual(-1);
+    expect(r.scrolls).toBe(false);
+  });
+
   test('a shape offers colour, border, transparency, effects and Position', async ({ page }) => {
     await addRect(page);
     for (const id of ['ar-fill', 'ar-border', 'ar-alpha', 'ar-fxbtn', 'ar-pos']) {
