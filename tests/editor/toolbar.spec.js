@@ -24,6 +24,9 @@ test.describe('contextual toolbar', () => {
   });
 
   test('the strip is centered, not packed left', async ({ page }) => {
+    // The floating card, as it is with View ▸ Control bar off; docked, the
+    // strip is a run of the bar (control-bar.spec.js).
+    await page.evaluate(() => toggleCtlBar(false));
     await addRect(page);
     // Measured, not declared. This used to read justify-content and call it
     // centered — which stays true no matter where the box ends up once the
