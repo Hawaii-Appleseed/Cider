@@ -59,8 +59,10 @@ test.describe('local scaffold', () => {
 
     // And it is a WORKING canvas: place a text box through the editor's own
     // tools — the whole point of the blank placed-renderer template.
-    await page.click('#text');
-    await page.click('#textpop .txtpreset[data-k="body"]');
+    // The Insert palette (the rail's +): a fresh editor has no Text button pinned.
+    await page.click('#insert');
+    await page.keyboard.type('body text');
+    await page.keyboard.press('Enter');
     await page.frameLocator('#out').locator('.ds-textbox')
       .waitFor({ state: 'attached', timeout: 20000 });
   });

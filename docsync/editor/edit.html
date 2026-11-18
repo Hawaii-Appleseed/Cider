@@ -8986,7 +8986,7 @@ function togglePop(pop, anchor) {
   // the rail, on a short window) there is no room BELOW it at all: slide the
   // panel up until it fits rather than leave it hanging off the screen.
   const vh = document.documentElement.clientHeight, h = pop.offsetHeight;
-  if (r.bottom + 6 + h > vh - 8) {
+  if (vh - r.bottom - 18 < 120 && r.bottom + 6 + h > vh - 8) {
     const top = Math.max(8, vh - h - 12);
     pop.style.top = top + 'px';
     pop.style.maxHeight = Math.max(120, vh - top - 12) + 'px';
