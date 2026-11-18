@@ -58,6 +58,53 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
+  test('the docked bar wraps inside a narrow window instead of running off it', async ({ page }) => {
+    await page.setViewportSize({ width: 760, height: 800 });
+    const fits = () => page.evaluate(() => {
+      const bar = $('ctl'), w = innerWidth;
+      const kids = [...bar.querySelectorAll('input, select, button, label')]
+        .filter(e => e.offsetParent !== null);
+      // nothing past the window, and nothing hanging under the panel rail on the right
+      const rail = $('dock-icons').getBoundingClientRect().left;
+      const past = kids.filter(e => { const b = e.getBoundingClientRect();
+        return b.right > w + 1 || (b.bottom > 46 && b.right > rail + 1); }).map(e => e.id || e.className);
+      return { past, scrolls: bar.scrollWidth > bar.clientWidth + 1, h: bar.getBoundingClientRect().height };
+    });
+    // object mode
+    await addRect(page);
+    let r = await fits();
+    expect(r.past).toEqual([]);
+    expect(r.scrolls).toBe(false);
+    // character mode: the longest row
+    const id = await page.evaluate(async () =>
+      (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await settled(page);
+    await page.click('#cb-mode [data-m="char"]');
+    r = await fits();
+    expect(r.past).toEqual([]);
+    expect(r.scrolls).toBe(false);
+    expect(r.h).toBe(44);   // and the bar itself did not grow: the canvas must not move on a click
+  });
+
+  test('the comments panel opens below the rows that hang from the bar, not over them', async ({ page }) => {
+    await page.setViewportSize({ width: 760, height: 800 });
+    const id = await page.evaluate(async () =>
+      (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await settled(page);
+    await page.click('#cb-mode [data-m="char"]');
+    await page.evaluate(() => { $('cpanel').hidden = false; });
+    const r = await page.evaluate(() => {
+      const bar = $('ctl').getBoundingClientRect();
+      const low = Math.max(...[...$('ctl').querySelectorAll('input, select, button, label')]
+        .filter(e => e.offsetParent).map(e => e.getBoundingClientRect().bottom));
+      return { panelTop: $('cpanel').getBoundingClientRect().top, controlsBottom: low, barTop: bar.top };
+    });
+    expect(r.controlsBottom).toBeGreaterThan(r.barTop + 44);       // it did wrap
+    expect(r.panelTop).toBeGreaterThanOrEqual(r.controlsBottom - 1);
+  });
+
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
     await expect(page.locator('#ctl')).toBeVisible();
     const bar = await rectOf(page, 'bar'), ctl = await rectOf(page, 'ctl'),
