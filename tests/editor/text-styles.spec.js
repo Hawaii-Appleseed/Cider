@@ -9,8 +9,11 @@
 // the toolbar can SHOW what the page does.
 const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
 
-/** Select a slot and open its type toolbar, the way a click does. */
+/** Select a slot and open its type toolbar, the way a click does. These
+ *  tests type px into the floating card's own size field, so the docked
+ *  Control bar (which shows size in points instead) is switched off. */
 async function pickSlot(page, key) {
+  await page.evaluate(() => toggleCtlBar(false));
   const frame = page.frameLocator('#out');
   const el = frame.locator(`[data-slot="${key}"]`).first();
   await el.scrollIntoViewIfNeeded();

@@ -183,7 +183,40 @@
   #ctl #ar-border, #ctl #ar-alpha, #ctl #ar-fxbtn { order:-1; }
   #ctl #arrange select { font:12.5px system-ui; height:29px; padding:0 6px; box-sizing:border-box;
           border:1px solid #D9E1DB; border-radius:7px; background:#fff; color:#2F3E46; }
+  /* Text in the bar (phase 2). #type docks here too; the mode on #ctl
+     (ctlPaint: frame, char, para) says which of its controls show. The
+     .cb-only fields exist for the docked bar alone. */
+  body:not(.ds-ctlbar) .cb-only { display:none !important; }
+  #ctl[data-mode=char] #type .cb-para, #ctl[data-mode=para] #type .cb-char { display:none !important; }
+  #ctl[data-mode=frame] #type > :not(#ty-key):not(#ty-box):not(#ty-anchor):not(#ty-comment):not(.pop)
+        { display:none !important; }
+  #ctl #type #ty-size { display:none !important; }
+  #ctl #type .ty-step #cb-size { width:54px; height:29px; box-sizing:border-box; margin:0 -1px;
+          font:12.5px system-ui; text-align:center; color:#2F3E46; background:#fff;
+          border:1px solid #D9E1DB; border-radius:0; position:relative; z-index:1; }
+  #ctl #type .ty-step #cb-size.bad { border-color:#C0603F; }
+  #ctl #type #cb-lead { width:62px; }
+  #ctl #type #cb-smcp { width:62px; }
+  #ctl #type .ty-sep { flex:none; }
+  #ctl #cb-mode button { display:inline-flex; align-items:center; justify-content:center;
+          min-width:31px; height:29px; padding:0 7px; cursor:pointer; color:#2F3E46;
+          border:1px solid #D9E1DB; background:#fff; margin-left:-1px; border-radius:0; }
+  #ctl #cb-mode button:first-child { border-radius:7px 0 0 7px; margin-left:0; }
+  #ctl #cb-mode button:last-child { border-radius:0 7px 7px 0; }
+  #ctl #cb-mode button:hover { border-color:var(--sage); background:#EDF4EE; }
+  #ctl #cb-mode button.on { background:var(--ink); border-color:var(--ink); color:#fff; position:relative; z-index:1; }
+  #ctl #cb-mode button svg { display:block; pointer-events:none; }
+  #ctl #type select { font:12.5px system-ui; height:29px; padding:0 6px; box-sizing:border-box;
+          border:1px solid #D9E1DB; border-radius:7px; background:#fff; color:#2F3E46; }
+  #ctl #type .cb-f input { width:52px; }
+  #ctl #type .cb-f input.cb-narrowin { width:44px; }
+  #ctl #type .cb-f select { width:auto; }
+  #cb-paraf { gap:5px; }
+  #ctl #type #cb-lmark { width:112px; }
   /* The arrange strip, docked: no card of its own — it is a run of the bar. */
+  #ctl #type { background:transparent; box-shadow:none; border-radius:0; padding:0;
+          margin:0; width:auto; max-width:none; height:auto; overflow:visible;
+          justify-content:flex-start; pointer-events:auto; }
   #ctl #arrange { background:transparent; box-shadow:none; border-radius:0; padding:0;
           margin:0; width:auto; max-width:none; height:auto; overflow:visible;
           justify-content:flex-start; pointer-events:auto; }
@@ -2631,7 +2664,15 @@
      #cb-ref (the nine-point reference grid, phase 3) are the reserved slots,
      and ctlPaint() is the one function that decides what the bar shows. -->
 <div id="ctl" role="toolbar" aria-label="Control bar">
-  <span id="cb-mode" hidden></span>
+  <!-- Text selected: InDesign's three modes. ▭ the frame (#cb-obj), A the
+       character controls, ¶ the paragraph ones (.cb-char / .cb-para inside
+       #type, which docks here like #arrange). ctlPaint() picks. -->
+  <span class="ty-seg" id="cb-mode" hidden role="radiogroup" aria-label="Control bar mode">
+    <button data-m="frame" role="radio" aria-label="Frame — position, size and look of the box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+      stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="10" height="9"/><path d="M4.5 5.5h5M4.5 8.5h3" stroke-width="1.2"/></svg></button>
+    <button data-m="char" role="radio" aria-label="Character — font, size, leading, tracking (⌥⌘7)"><b style="font:700 13px Georgia,serif">A</b></button>
+    <button data-m="para" role="radio" aria-label="Paragraph — alignment, indents, spacing, drop cap (⌥⌘7)"><b style="font:700 13px Georgia,serif">¶</b></button>
+  </span>
   <span id="cb-ref" hidden></span>
   <div class="cb-grp" id="cb-empty">
     <span class="cb-lab" id="cb-page"></span>
@@ -2728,13 +2769,20 @@
     <div id="ty-boxbody"></div>
   </div>
   <span class="ty-sep"></span>
-  <select id="ty-font" title="Font"></select>
-  <select id="ty-weight" title="Weight"></select>
-  <span class="ty-step" title="Size (px)">
+  <select id="ty-font" class="cb-char" title="Font"></select>
+  <select id="ty-weight" class="cb-char" title="Weight"></select>
+  <span class="ty-step cb-char" title="Size (px)">
     <button id="ty-down" aria-label="Smaller">−</button><input id="ty-size" type="number"
-      min="10.5" max="200" step="0.5"><button id="ty-up" aria-label="Bigger">+</button>
+      min="10.5" max="200" step="0.5"><input id="cb-size" class="cb-only cb-num" data-proxy="ty-size"
+      data-unit="pt" title="Size, points — or type 16px" inputmode="decimal" autocomplete="off"
+      aria-label="Size in points"><button id="ty-up" aria-label="Bigger">+</button>
   </span>
-  <span class="ty-seg" id="ty-marks" hidden title="Formatting — applies to the selected words">
+  <!-- Docked only: leading in points ("(auto)" in brackets when the style
+       sets none) and tracking in thousandths of an em, as InDesign shows
+       them; both write the Spacing panel's own fields (ty-lead, ty-track). -->
+  <label class="cb-f cb-only cb-char" title="Leading, points — or a multiple like 1.4; empty for auto"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M5 2.5h7M5 7h7M5 11.5h7M2 2v10M1 3.2L2 2l1 1.2M1 10.8L2 12l1-1.2"/></svg><input id="cb-lead" data-proxy="ty-lead" data-unit="lead" inputmode="decimal" autocomplete="off"></label>
+  <label class="cb-f cb-only cb-char" title="Tracking, thousandths of an em"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2 3l2 6 2-6M8 3h4M10 3v6M1.5 12h11M1.5 12l1.2-1M1.5 12l1.2 1M12.5 12l-1.2-1M12.5 12l-1.2 1"/></svg><input id="cb-track" data-proxy="ty-track" data-unit="track" inputmode="decimal" autocomplete="off"></label>
+  <span class="ty-seg cb-char" id="ty-marks" hidden title="Formatting — applies to the selected words">
     <button id="ty-mb" aria-label="Bold the selection"><b>B</b></button>
     <button id="ty-mi" aria-label="Italicise the selection"><i>I</i></button>
     <button id="ty-mu" aria-label="Underline the selection"><u>U</u></button>
@@ -2751,13 +2799,19 @@
       <path d="M1.5 2.6l1-.6v3" stroke-width="1.1"/><path d="M1.2 8.4c1.6-1.6 2.2.6.2 1.6h2" stroke-width="1.1" fill="none"/></svg></button>
   </span>
   <span class="ty-sep"></span>
-  <button id="ty-i" aria-label="Italic"><svg width="14" height="14" viewBox="0 0 14 14"
+  <button id="ty-i" class="cb-char" aria-label="Italic"><svg width="14" height="14" viewBox="0 0 14 14"
     fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
     <path d="M6 2h5M3 12h5M8.5 2l-3 10"/></svg></button>
-  <button id="ty-u" aria-label="Underline"><svg width="14" height="14" viewBox="0 0 14 14"
+  <button id="ty-u" class="cb-char" aria-label="Underline"><svg width="14" height="14" viewBox="0 0 14 14"
     fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
     <path d="M3.5 1.8v4.7a3.5 3.5 0 0 0 7 0V1.8M2.5 12.4h9"/></svg></button>
-  <span class="ty-seg">
+  <!-- Docked only: the Paragraph panel's small caps, strikethrough and
+       baseline shift, on the bar (they write ty-smcp, ty-strike, ty-shift). -->
+  <select id="cb-smcp" class="cb-only cb-char" data-proxy="ty-smcp" title="Small caps">
+    <option value="">Tt</option><option value="small">Tᴛ small caps</option><option value="all">ᴛᴛ all small caps</option></select>
+  <button id="cb-strike" class="cb-only cb-char" data-proxy="ty-strike" aria-label="Strikethrough"><s>S</s></button>
+  <label class="cb-f cb-only cb-char" title="Baseline shift, points"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 11h6M9 3l2-1.5L13 3M11 1.5v7"/></svg><input id="cb-shift" placeholder="0" class="cb-narrowin" data-proxy="ty-shift" data-unit="pt" inputmode="decimal" autocomplete="off"></label>
+  <span class="ty-seg cb-para" id="ty-alseg">
     <button class="ty-al" data-a="left" aria-label="Align left"><svg width="14" height="14"
       viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
       <path d="M2 3h10M2 6h6M2 9h10M2 12h6"/></svg></button>
@@ -2771,21 +2825,36 @@
       viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
       <path d="M2 3h10M2 6h10M2 9h10M2 12h10"/></svg></button>
   </span>
-  <select id="ty-case" title="Letter case">
+  <!-- Docked only: the Paragraph panel's indents, spacing, drop cap,
+       baseline grid, hyphenation and list marker, each writing that panel's
+       own field (data-proxy), lengths in inches with typed units. -->
+  <span class="cb-only cb-para cb-grp" id="cb-paraf">
+    <label class="cb-f" title="Left indent — inches; 18pt, 1p6 too"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M6 2.5h6.5M6 5.5h6.5M6 8.5h6.5M6 11.5h6.5M1.5 4.5L4 7l-2.5 2.5"/></svg><input id="cb-il" placeholder="0" data-proxy="ty-il" data-unit="len" inputmode="decimal" autocomplete="off"></label>
+    <label class="cb-f" title="First-line indent — inches"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M5.5 2.5h7M1.5 5.5h11M1.5 8.5h11M1.5 11.5h11"/></svg><input id="cb-ti" placeholder="0" data-proxy="ty-ti" data-unit="len" inputmode="decimal" autocomplete="off"></label>
+    <label class="cb-f" title="Right indent — inches"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2.5H8M1.5 5.5H8M1.5 8.5H8M1.5 11.5H8M12.5 4.5L10 7l2.5 2.5"/></svg><input id="cb-ir" placeholder="0" data-proxy="ty-ir" data-unit="len" inputmode="decimal" autocomplete="off"></label>
+    <label class="cb-f" title="Space before — inches"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 7.5h11M1.5 10.5h11M7 1.5v4M5.5 4L7 5.5 8.5 4"/></svg><input id="cb-sb" placeholder="0" data-proxy="ty-sb" data-unit="len" inputmode="decimal" autocomplete="off"></label>
+    <label class="cb-f" title="Space after — inches"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 3.5h11M1.5 6.5h11M7 12.5v-4M5.5 10L7 8.5 8.5 10"/></svg><input id="cb-sa" placeholder="0" data-proxy="ty-sa" data-unit="len" inputmode="decimal" autocomplete="off"></label>
+    <label class="cb-f" title="Drop cap, lines"><svg class="cb-ic" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2h4.5v4.5H1.5zM8 2.5h4.5M8 5.5h4.5M1.5 9h11M1.5 12h11"/></svg><select id="cb-dcap" data-proxy="ty-dcap">
+      <option value="">0</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+    <button id="cb-grid" data-proxy="ty-grid" aria-label="Align to baseline grid"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M1.5 3.5h11M1.5 7h11M1.5 10.5h11" stroke-dasharray="1.2 1.4"/><path d="M3 3.5v-1M5 3.5v-1.4M7.5 7V5.6M10 7V5.8" stroke-width="1.5"/></svg></button>
+    <button id="cb-hyph" data-proxy="ty-hyph" aria-label="Hyphenate"><span style="font:600 12px system-ui">hy-</span></button>
+    <select id="cb-lmark" data-proxy="ty-lmark" title="List marker"></select>
+  </span>
+  <select id="ty-case" class="cb-char" title="Letter case">
     <option value="none">Aa</option><option value="upper">AA</option>
     <option value="lower">aa</option><option value="title">Aa Bb</option>
   </select>
   <span class="ty-sep"></span>
-  <button id="ty-colorbtn" aria-label="Text colour"><span class="A">A</span><span
+  <button id="ty-colorbtn" class="cb-char" aria-label="Text colour"><span class="A">A</span><span
     class="Abar" id="ty-Abar"></span></button>
-  <button id="ty-spacebtn" aria-label="Letter spacing and line height"><svg width="14"
+  <button id="ty-spacebtn" class="cb-char" aria-label="Letter spacing and line height"><svg width="14"
     height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"
     stroke-linecap="round"><path d="M2 2v10M12 2v10M4.6 7h4.8M4.6 7l1.5-1.5M4.6 7l1.5 1.5M9.4 7L7.9 5.5M9.4 7l-1.5 1.5"/></svg></button>
   <button id="ty-parabtn" aria-label="Paragraph — line breaks, keeping, figures, drop cap, list"><svg width="14"
     height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"
     stroke-linecap="round"><path d="M9.5 2v10M11.5 2v10M12.5 2H6.5a2.6 2.6 0 0 0 0 5.2h3"/></svg></button>
-  <select id="ty-fx" title="Effect"></select>
-  <span id="ty-fxp"></span>
+  <select id="ty-fx" class="cb-char" title="Effect"></select>
+  <span id="ty-fxp" class="cb-char"></span>
   <button id="ty-reset" aria-label="Put this text back the way the report designed it">Reset</button>
   <div class="pop" id="ty-colorpop" hidden>
     <p class="pop-h">Text colour</p>
@@ -12395,6 +12464,7 @@ function showType(key) {
   anchorButtonsPaint();
   $('type').hidden = false;
   $('arrange').hidden = true;            // the fixed row holds one toolbar at a time
+  if (document.body.classList.contains('ds-ctlbar')) ctlPaintText();
 }
 
 /** The style picker at the head of the type toolbar: what this text wears. */
@@ -14069,20 +14139,24 @@ function contextDodge(d) {
   const els = card ? selEls(d) : [];
   if (!els.length) { ctx.classList.remove('low'); return; }
   const fb = fr.getBoundingClientRect(), k = fb.width / fr.offsetWidth || 1;
-  const cb = card.getBoundingClientRect();
   const pad = 12;                                 // a handle and its ring
-  const under = els.some(el => {
+  const under = cb => els.some(el => {
     const r = el.getBoundingClientRect();
     if (!r.width && !r.height) return false;
     const top = fb.top + r.top * k - pad, bottom = fb.top + r.bottom * k + pad;
     const left = fb.left + r.left * k - pad, right = fb.left + r.right * k + pad;
     return top < cb.bottom && bottom > cb.top && left < cb.right && right > cb.left;
   });
-  // Only move it when the selection is near the TOP: a tall selection that
-  // also reaches the foot would be under it either way, and the top is home.
-  const low = under && !ctx.classList.contains('low');
-  const stay = under && ctx.classList.contains('low');
-  ctx.classList.toggle('low', low || stay);
+  // Judged against the card's HOME, whichever place it is in now: measured
+  // where it stood, a card already at the foot found nothing under it and went
+  // home — over the selection — on the next scroll, and back down on the one
+  // after. Two layout reads, no paint between them, so nothing flickers.
+  ctx.classList.remove('low');
+  if (!under(card.getBoundingClientRect())) return;
+  // Only move it when that clears the selection: a tall selection that also
+  // reaches the foot would be under it either way, and the top is home.
+  ctx.classList.add('low');
+  if (under(card.getBoundingClientRect())) ctx.classList.remove('low');
 }
 
 // ------------------------------------------------------------ mini toolbar
@@ -15338,6 +15412,9 @@ const CHORDS = [
   ['rulers & guides', (e, k) => k.mod && !k.alt && !k.shift && e.code === 'Semicolon', () => toggleGuides()],
   // ⌥⌘6 is InDesign's Window ▸ Control.
   ['control bar', (e, k) => k.mod && k.alt && !k.shift && e.code === 'Digit6', () => toggleCtlBar()],
+  // ⌥⌘7: InDesign's switch between the bar's character and paragraph modes.
+  ['control bar: A / ¶', (e, k) => k.mod && k.alt && !k.shift && e.code === 'Digit7' && !$('type').hidden,
+    () => setCtlMode($('ctl').dataset.mode === 'para' ? 'char' : 'para')],
   ['redo (Ctrl+Y)', (e, k) => k.mod && !k.alt && !k.shift && k.key === 'y', () => redo()],
   ['to front / back', (e, k) => k.mod && !k.alt && k.shift && (e.code === 'BracketRight' || e.code === 'BracketLeft'),
     (d, e) => { if (selIds.size) layerStep(d, e.code === 'BracketRight' ? 1 : -1, true); }],
@@ -17948,12 +18025,37 @@ try { ctlOn = localStorage.getItem('ds-ctlbar') !== '0'; } catch (e) { /* file: 
  *  floating card — and show or hide the bar. Moving the node keeps every id
  *  and listener on it, so nothing about the strip's controls changes. */
 function ctlDock() {
-  const ctl = $('ctl'), ar = $('arrange'), home = ctlOn ? ctl : $('context');
+  const ctl = $('ctl'), ar = $('arrange'), ty = $('type'), ctx = $('context');
   ctl.hidden = !ctlOn;
   document.body.classList.toggle('ds-ctlbar', ctlOn);
-  if (ar.parentNode !== home) home.appendChild(ar);
+  if (ctlOn) {
+    // The type controls lead (after the mode switch), the frame's follow,
+    // then the arrange strip — the order InDesign's bar reads in.
+    if (ty.parentNode !== ctl) ctl.insertBefore(ty, $('cb-empty'));
+    if (ar.parentNode !== ctl) ctl.appendChild(ar);
+  } else {
+    if (ty.parentNode !== ctx) ctx.insertBefore(ty, ctx.firstChild);
+    if (ar.parentNode !== ctx) ctx.appendChild(ar);
+  }
   $('ctlbar').classList.toggle('on', ctlOn);
 }
+// Text: which of InDesign's modes the bar is in. A or ¶ is remembered per
+// editor (InDesign keeps it too); ▭ Frame is for the selection it was
+// pressed on, and a new selection goes back to the words.
+let ctlTextMode = 'char', ctlFrameFor = null;
+try { if (localStorage.getItem('ds-ctlmode') === 'para') ctlTextMode = 'para'; } catch (e) { /* file: */ }
+function setCtlMode(m) {
+  if (m === 'frame') ctlFrameFor = [...selIds].join(' ') || null;
+  else {
+    ctlFrameFor = null; ctlTextMode = m === 'para' ? 'para' : 'char';
+    try { localStorage.setItem('ds-ctlmode', ctlTextMode); } catch (e) { /* file: */ }
+  }
+  const d = $('out').contentDocument;
+  if (d && d.body) arrangeBar(d); else ctlPaint(d);
+  return $('ctl').dataset.mode;
+}
+document.querySelectorAll('#cb-mode [data-m]').forEach(b =>
+  b.addEventListener('click', () => setCtlMode(b.dataset.m)));
 function toggleCtlBar(on = !ctlOn) {
   ctlOn = !!on;
   try { localStorage.setItem('ds-ctlbar', ctlOn ? '1' : '0'); } catch (e) { /* file: */ }
@@ -18003,10 +18105,30 @@ function ctlPaint(d) {
   const els = d && d.body ? selEls(d) : [];
   const one = n === 1 && els.length === 1 ? els[0] : null;
   const any = n > 0 && els.length > 0;
-  $('cb-obj').hidden = !any;
+  // Text in hand (the type controls are up): ▭ / A / ¶. Frame only when
+  // there is an object to be the frame — open words with nothing selected
+  // have none.
+  const text = !$('type').hidden;
+  const key = [...selIds].join(' ') || null;
+  const mode = !text ? (any ? 'obj' : 'empty')
+    : any && ctlFrameFor && ctlFrameFor === key ? 'frame' : ctlTextMode;
+  if (ctlFrameFor && ctlFrameFor !== key) ctlFrameFor = null;
+  const ctl = $('ctl');
+  ctl.dataset.mode = mode;
+  $('cb-mode').hidden = !text;
+  $('cb-mode').querySelector('[data-m="frame"]').hidden = !any;
+  $('cb-mode').querySelectorAll('[data-m]').forEach(b => {
+    b.classList.toggle('on', b.dataset.m === mode);
+    b.setAttribute('aria-checked', String(b.dataset.m === mode));
+  });
+  if (text) ctlPaintText();
+  // The strip sets these only on its own path; a text box takes the type
+  // path and would leave them as the last selection had them.
+  document.querySelectorAll('#cb-align .ar-al').forEach(b => { b.disabled = !any; });
+  $('cb-obj').hidden = !any || (text && mode !== 'frame');
   // Nothing selected: the document, quietly, rather than an empty strip. A
   // selected PAGE has its own strip (#arrange's page mode), so no hint.
-  $('cb-empty').hidden = any || !$('arrange').hidden;
+  $('cb-empty').hidden = any || text || !$('arrange').hidden;
   if (!any) {
     const pageless = PAGE_H_IN >= PAGELESS_H;
     $('cb-page').textContent = pageless ? `Pageless · ${+PAGE_W_IN.toFixed(3)} in wide`
@@ -18125,6 +18247,109 @@ $('cb-cols').addEventListener('change', () => { const id = ctlBoxId(); if (id) s
 document.querySelectorAll('#cb-frame [data-va]').forEach(b => b.addEventListener('click', () => {
   const id = ctlBoxId(); if (id) setBoxFrame(id, { vAlign: b.dataset.va || null });
 }));
+
+// ---- character and paragraph modes (phase 2)
+// Every docked text field PROXIES a field of the type card or its panels
+// (data-proxy): it shows that field's value in InDesign's units, and a
+// change writes the field in its own unit and fires the field's own event,
+// so the one handler there does the work — style, render, undo step.
+/** The size the selected text renders at, px: the style's, else the page's. */
+function ctlSizePx() {
+  const v = parseFloat($('ty-size').value);
+  return isFinite(v) && v > 0 ? v : parseFloat($('ty-size').placeholder) || 16;
+}
+const PX_PT = 0.75;
+/** A field's value, in the unit the bar shows it in. */
+function ctlTextShow(inp) {
+  const src = $(inp.dataset.proxy);
+  if (!src || (inp.tagName === 'INPUT' && document.activeElement === inp)) return;
+  inp.classList.remove('bad');
+  const u = inp.dataset.unit, px = ctlSizePx();
+  const n = v => String(+(+v).toFixed(2));
+  if (inp.tagName === 'SELECT') { inp.value = src.value; return; }
+  if (inp.tagName === 'BUTTON') { inp.classList.toggle('on', !!src.checked); return; }
+  if (u === 'pt' && inp.id === 'cb-size') { inp.value = n(px * PX_PT); return; }
+  if (u === 'pt') { inp.value = src.value === '' ? '' : n(+src.value); return; }
+  if (u === 'lead') {
+    // Auto (no leading in the style) shows in brackets, as InDesign does.
+    const set = src.value !== '';
+    const mult = set ? +src.value : parseFloat(src.placeholder) || 1.2;
+    const pt = n(mult * px * PX_PT);
+    inp.value = set ? pt : `(${pt})`;
+    return;
+  }
+  if (u === 'track') {
+    const t = src.value !== '' ? +src.value : parseFloat(src.placeholder) || 0;
+    inp.value = String(Math.round(t / px * 1000));
+    return;
+  }
+  inp.value = src.value === '' ? '' : n(+src.value);          // inches
+}
+/** What a person typed, converted to the proxied field's own unit — or
+ *  undefined when it is not a value, '' when it clears the field. */
+function ctlTextRead(inp) {
+  const t = String(inp.value).trim().toLowerCase(), u = inp.dataset.unit, px = ctlSizePx();
+  if (t === '' || t === 'auto' || /^\(.*\)$/.test(t)) return u === 'pt' && inp.id === 'cb-size' ? undefined : '';
+  if (u === 'pt' && inp.id === 'cb-size') {
+    const m = t.match(/^(\d*\.?\d+)\s*(pt|px)?$/);
+    if (!m) return undefined;
+    const v = m[2] === 'px' ? +m[1] : +m[1] / PX_PT;
+    return String(Math.round(Math.max(10.5, Math.min(200, v)) * 2) / 2);
+  }
+  if (u === 'pt') { const m = t.match(/^(-?\d*\.?\d+)\s*(pt)?$/); return m ? m[1] : undefined; }
+  if (u === 'lead') {
+    // Points, as InDesign; a bare number of 4 or under is a multiple of the
+    // size (no one sets 1.4-point leading), and "1.4x" says so outright.
+    const m = t.match(/^(\d*\.?\d+)\s*(pt|x|×)?$/);
+    if (!m) return undefined;
+    const v = +m[1];
+    const mult = m[2] === 'x' || m[2] === '×' || (!m[2] && v <= 4) ? v : v / (px * PX_PT);
+    return String(+Math.max(0.6, Math.min(4, mult)).toFixed(2));
+  }
+  if (u === 'track') {
+    const m = t.match(/^(-?\d*\.?\d+)$/);
+    if (!m) return undefined;
+    return String(+Math.max(-5, Math.min(20, +m[1] / 1000 * px)).toFixed(2));
+  }
+  const v = parseLen(t);                                       // inches
+  return isFinite(v) && v >= 0 ? String(+Math.min(3, v).toFixed(3)) : undefined;
+}
+/** Write the proxied field and fire its own events — as ONE undo step. The
+ *  type card's own handlers take none (an edit there joins the step its
+ *  selection opened); a value set from the bar is an act of its own. */
+function ctlTextWrite(src, value) {
+  pushHistory();
+  if (src.type === 'checkbox') src.checked = !!value; else src.value = value;
+  src.dispatchEvent(new Event('input', { bubbles: true }));
+  src.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function ctlPaintText() {
+  if (!selected) return;
+  try { fillParaPop(selected); } catch (e) { swallowed('ctlPaintText', e); }
+  // The list marker picker copies the panel's options once.
+  const lm = $('cb-lmark');
+  if (lm.options.length !== $('ty-lmark').options.length) lm.innerHTML = $('ty-lmark').innerHTML;
+  document.querySelectorAll('#type [data-proxy]').forEach(ctlTextShow);
+}
+document.querySelectorAll('#type input[data-proxy]').forEach(inp => {
+  inp.addEventListener('change', () => {
+    const v = ctlTextRead(inp);
+    if (v === undefined) {
+      inp.classList.add('bad');
+      $('stat').textContent = `“${inp.value}” is not a value here`;
+      return;
+    }
+    ctlTextWrite($(inp.dataset.proxy), v);
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); inp.blur(); ctlTextShow(inp); }
+    else if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+  });
+});
+document.querySelectorAll('#type select[data-proxy]').forEach(sel =>
+  sel.addEventListener('change', () => ctlTextWrite($(sel.dataset.proxy), sel.value)));
+document.querySelectorAll('#type button[data-proxy]').forEach(b =>
+  b.addEventListener('click', () => ctlTextWrite($(b.dataset.proxy), !$(b.dataset.proxy).checked)));
 
 // ----------------------------------------------------------------- layers
 // Canva's layers panel, scoped to the page in view: every FLOATING object —

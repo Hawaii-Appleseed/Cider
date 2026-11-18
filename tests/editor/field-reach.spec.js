@@ -296,6 +296,23 @@ test('the mini toolbar never lies across a small object near the top of the page
 
 test('the contextual card gets out of the way of a selection at the top of page 1 (tfc eyebrow)', async ({ page }) => {
   await gotoEditor(page, '?project=tfc-2027-priorities');
+  // Docked (the Control bar, on by default) the controls sit above the
+  // canvas, so nothing floats over the top of page 1 at all.
+  const docked = await page.evaluate(async (id) => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    await docsync.api.select(id); await sleep(120);
+    const fr = document.getElementById('out'), d = fr.contentDocument;
+    const hd = d.querySelector(`.ds-handles[data-for="${CSS.escape(id)}"] .ds-h-e`);
+    const b = hd.getBoundingClientRect(), fb = fr.getBoundingClientRect(), k = fb.width / fr.offsetWidth;
+    const top = document.elementFromPoint(fb.left + (b.left + b.width / 2) * k, fb.top + (b.top + b.height / 2) * k);
+    const floating = [...$('context').children].some(c => !c.hidden && c.offsetHeight);
+    await docsync.api.select(null); await sleep(60);
+    return { overFrame: top === fr, floating };
+  }, 'field.eyebrow.p-1');
+  expect(docked.floating, 'no card floats over the page while the bar is docked').toBe(false);
+  expect(docked.overFrame, 'docked: the east handle is reachable').toBe(true);
+  // With View ▸ Control bar off, the floating card is back and must dodge.
+  await page.evaluate(() => toggleCtlBar(false));
   const r = await page.evaluate(async (id) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     await docsync.api.select(id); await sleep(120);
