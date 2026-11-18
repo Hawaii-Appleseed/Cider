@@ -14139,20 +14139,24 @@ function contextDodge(d) {
   const els = card ? selEls(d) : [];
   if (!els.length) { ctx.classList.remove('low'); return; }
   const fb = fr.getBoundingClientRect(), k = fb.width / fr.offsetWidth || 1;
-  const cb = card.getBoundingClientRect();
   const pad = 12;                                 // a handle and its ring
-  const under = els.some(el => {
+  const under = cb => els.some(el => {
     const r = el.getBoundingClientRect();
     if (!r.width && !r.height) return false;
     const top = fb.top + r.top * k - pad, bottom = fb.top + r.bottom * k + pad;
     const left = fb.left + r.left * k - pad, right = fb.left + r.right * k + pad;
     return top < cb.bottom && bottom > cb.top && left < cb.right && right > cb.left;
   });
-  // Only move it when the selection is near the TOP: a tall selection that
-  // also reaches the foot would be under it either way, and the top is home.
-  const low = under && !ctx.classList.contains('low');
-  const stay = under && ctx.classList.contains('low');
-  ctx.classList.toggle('low', low || stay);
+  // Judged against the card's HOME, whichever place it is in now: measured
+  // where it stood, a card already at the foot found nothing under it and went
+  // home — over the selection — on the next scroll, and back down on the one
+  // after. Two layout reads, no paint between them, so nothing flickers.
+  ctx.classList.remove('low');
+  if (!under(card.getBoundingClientRect())) return;
+  // Only move it when that clears the selection: a tall selection that also
+  // reaches the foot would be under it either way, and the top is home.
+  ctx.classList.add('low');
+  if (under(card.getBoundingClientRect())) ctx.classList.remove('low');
 }
 
 // ------------------------------------------------------------ mini toolbar
