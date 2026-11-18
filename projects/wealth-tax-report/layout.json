@@ -119,77 +119,22 @@
       "stroke": "none",
       "sw": 0.02,
       "z": 1
+    },
+    {
+      "id": "s13-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 5.1,
+      "w": 1.1,
+      "h": 0.1,
+      "fill": "#FDCF21",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 5
     }
   ],
   "boxes": [
-    {
-      "id": "tpl-photo",
-      "page": 1,
-      "x": 0,
-      "y": 0,
-      "w": 8.5,
-      "z": 1,
-      "md": "![Cover photo placeholder](assets/cover-photo-placeholder.svg)"
-    },
-    {
-      "id": "tpl-logo",
-      "page": 1,
-      "x": 6.35,
-      "y": 0.6,
-      "w": 1.55,
-      "z": 3,
-      "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)"
-    },
-    {
-      "id": "tpl-title",
-      "page": 1,
-      "x": 0.7,
-      "y": 1.05,
-      "w": 5.9,
-      "z": 3,
-      "md": "Wealth Tax Report",
-      "style": {
-        "font": "Barlow",
-        "weight": 800,
-        "size": 58,
-        "color": "#FFFFFF",
-        "case": "upper",
-        "leading": 1.08
-      }
-    },
-    {
-      "id": "tpl-sub",
-      "page": 1,
-      "x": 0.7,
-      "y": 4.7,
-      "w": 3.9,
-      "z": 3,
-      "md": "A tax on the wealthiest millionaires",
-      "style": {
-        "font": "Source Sans 3",
-        "size": 19,
-        "color": "#FFFFFF",
-        "case": "upper",
-        "tracking": 1.2,
-        "leading": 1.4
-      }
-    },
-    {
-      "id": "tpl-date",
-      "page": 1,
-      "x": 0.7,
-      "y": 6.6,
-      "w": 2.6,
-      "z": 3,
-      "md": "NOVEMBER 2026",
-      "style": {
-        "font": "Source Sans 3",
-        "weight": 700,
-        "size": 14,
-        "color": "#FDCF21",
-        "tracking": 1.5
-      }
-    },
     {
       "id": "tpl-logo2",
       "page": 2,
@@ -345,18 +290,19 @@
     {
       "id": "tpl-callout3",
       "page": 3,
-      "x": 5.3,
-      "y": 1.95,
-      "w": 2.5,
+      "x": 5.41,
       "z": 2,
       "fill": "#303030",
-      "md": "- **Wealth,** or net worth, is the total value of everything a person owns—homes and land, stocks and bonds, ownership stakes in businesses—minus what they owe.\n- **Income** is the money a person takes in over the course of a year, such as wages, interest, dividends, and the profits from selling an asset.",
       "style": {
         "font": "Source Sans 3",
         "size": 13,
         "color": "#FFFFFF",
         "leading": 1.45
-      }
+      },
+      "md": "- **Wealth,** or net worth, is the total value of everything a person owns—homes and land, stocks and bonds, ownership stakes in businesses—minus what they owe.\n- **Income** is the money a person takes in over the course of a year, such as wages, interest, dividends, and the profits from selling an asset.",
+      "y": 2.03,
+      "w": 2.39,
+      "h": 2.28
     },
     {
       "id": "tpl-pull3",
@@ -1074,17 +1020,102 @@
       "id": "t22",
       "page": 11,
       "x": 0.7,
-      "y": 0.7,
+      "y": 1.7,
       "w": 7.1,
       "z": 2,
       "act": "endnotes",
-      "md": "## [Endnotes]{.Section head}",
+      "md": "",
       "style": {
         "font": "Source Sans 3",
         "size": 10.5,
         "color": "#1F1F1F",
         "leading": 1.22
+      },
+      "cols": 2,
+      "h": 8.5
+    },
+    {
+      "style": {
+        "z": 1
+      },
+      "id": "t23",
+      "page": 1,
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "z": -1,
+      "md": "![Abstract cover background: layered teal bands rising to the right, with one gold curve pulling away from the rest](assets/cover-bg-1d54cbdb.svg)"
+    },
+    {
+      "id": "t24",
+      "page": 1,
+      "x": 6.08,
+      "y": 0.6,
+      "w": 1.82,
+      "z": 1,
+      "md": "![Hawaiʻi Appleseed](assets/appleseed-logo-white.svg)",
+      "h": 0.44
+    },
+    {
+      "id": "t25",
+      "page": 1,
+      "x": 0.7,
+      "y": 1.05,
+      "w": 4,
+      "z": 2,
+      "md": "Wealth Tax Report",
+      "style": {
+        "font": "Barlow",
+        "weight": 800,
+        "size": 84,
+        "color": "#FFFFFF",
+        "case": "upper",
+        "leading": 1
+      },
+      "h": 3.7
+    },
+    {
+      "id": "t26",
+      "page": 1,
+      "x": 0.7,
+      "y": 5.7,
+      "w": 4.6,
+      "z": 3,
+      "md": "A tax on the wealthiest millionaires",
+      "style": {
+        "font": "Source Sans 3",
+        "size": 30,
+        "color": "#FFFFFF",
+        "case": "upper",
+        "tracking": 1.2,
+        "leading": 1.4
       }
+    },
+    {
+      "id": "t27",
+      "page": 1,
+      "x": 0.7,
+      "y": 9.95,
+      "w": 4,
+      "z": 4,
+      "md": "NOVEMBER 2026",
+      "style": {
+        "font": "Source Sans 3",
+        "weight": 700,
+        "size": 22,
+        "color": "#FDCF21",
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "t28",
+      "page": 11,
+      "x": 0.7,
+      "y": 0.7,
+      "w": 7.1,
+      "z": 3,
+      "md": "## [Endnotes]{.Section head}",
+      "h": 0.6
     }
   ],
   "tables": [
