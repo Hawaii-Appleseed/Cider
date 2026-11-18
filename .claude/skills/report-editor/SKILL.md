@@ -384,6 +384,7 @@ ids it returns:
 | `duplicatePage(page)` | the strip's Duplicate page: a new page right after it, carrying the movable layer AND — for a designed page or a copy of one — the page's content as its own `copy.<id>.*` slots and elements (see `docsync/pagecopy.py`). Returns `{page, copied}`. Own history step; not a batch verb |
 | `removePage(page)` | take a page out: a blank page is deleted with what is on it (`removed` lists the ids); a designed page is left out of the page order and stays in the strip's Hidden group (`hidden: true`). One undo step; the last page is refused. Not a batch verb |
 | `addSource(id, text, url)` / `addEndnotesSection()` | declare a source (cite via `[^id]` in slot text) / the synced endnotes section. The section's box words are only its heading: `setBoxText(id, '')` leaves the list with no heading (for one set as its own box), and spacing in its style goes under the heading, never under each note |
+| `editSource(id, {text, url})` | rewrite one source's citation and/or link (a field left out keeps its value; url `''` drops the link). The endnote on the page, the Sources panel and any citation pop-up all draw from that one `[[sources]]` line, so they follow; the id, its `[^id]` citations and its number stay put. An empty citation is refused. On the page a person does the same by clicking the endnote |
 | `continueEndnotes()` | a list longer than its page runs on onto a NEW page after it: a frame there at the same width threaded after the section's last frame, the page's footer copied, every frame sized to its page. Call again for a third page. `audit()`'s `print-overflow` on the section says when; the composer does this by itself for a long list. Own history step |
 | `batch(ops)` | `[{verb, args, as?}]` — one history entry, one render. See below |
 | `undo()` / `redo()` | the same history a human's ⌘Z walks |
@@ -397,7 +398,7 @@ cannot join a batch; call them singly.
 
 **`batch()` — the multi-edit fast path.** Verbs: `setSlot`, `setBoxText`, `describeImage`,
 `setStyle`, `place`, `recolor`, `rotate`, `lock`, `group`, `ungroup`,
-`addTextBox`, `addShape`, `addChart`, `addTable`, `addSource`. Name an op with `as` and later ops can say `'@name'`
+`addTextBox`, `addShape`, `addChart`, `addTable`, `addSource`, `editSource`. Name an op with `as` and later ops can say `'@name'`
 wherever an id goes — a bare string, an object value, or an item of a list
 (`group(['@chart', '@caption'])`) — so create-then-place is ONE call:
 

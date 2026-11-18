@@ -11538,6 +11538,22 @@ function editBox(d, el, at) {
  *  the single [[sources]] block in content.md, and the Endnotes page's <li>
  *  list is rebuilt fresh from it on every render — so there is nothing else
  *  that could hold a second, stale copy for the two to fall out of sync. */
+/** The endnote entry (`[data-el="endnote.<id>"]`) that `t` sits in, when it
+ *  is inside the object `el` — a placed Endnotes section's box or a frame its
+ *  list runs on into — or null. */
+function endnoteEntryAt(el, t) {
+  const en = t && t.closest ? t.closest('[data-el^="endnote."]') : null;
+  return en && en !== el && el.contains(en) ? en : null;
+}
+
+/** Why a source's citation may not be emptied: the [^id] tokens citing it
+ *  would point at nothing. Said, never silently reverted. */
+function emptyCitationRefusal(id) {
+  const n = citeCount(id);
+  return `an endnote needs its citation text — [${id}] is cited ${n} time${n === 1 ? '' : 's'}; `
+    + 'nothing was changed (to remove it, take out its citations, then delete it in Sources)';
+}
+
 function editEndnote(d, li, sid) {
   if (editing) return;
   const s = parseSources().find(r => r.id === sid);
@@ -11573,7 +11589,9 @@ function editEndnote(d, li, sid) {
       // The URL may be cleared: a citation can be a book or an interview, and
       // requiring one here meant a source that had a link could never lose it.
       // The citation text itself still has to say something.
-      if (t && (t !== opened[0] || u !== opened[1]) && (t !== s.text || u !== s.url)) {
+      // Said past the render below, which would otherwise claim the row.
+      if (!t) sayNowAndAfterRender(emptyCitationRefusal(sid));
+      else if ((t !== opened[0] || u !== opened[1]) && (t !== s.text || u !== s.url)) {
         pushHistory();
         updateSource(sid, t, u);
         markDirty();
@@ -22184,6 +22202,10 @@ function dragify(d, roots) {
     if ((el.dataset.el || '').startsWith('text.'))
       el.addEventListener('dblclick', e => {
         e.preventDefault();
+        // An endnote in a placed Endnotes section: the person is pointing at
+        // ONE citation, so it opens — no drill into the section's group first.
+        const en = endnoteEntryAt(el, e.target);
+        if (en) { editEndnote(d, en, en.dataset.el.slice('endnote.'.length)); return; }
         // Inside a group, the first double-click gets INSIDE the group, not
         // into the words — every other design tool works this way, and
         // without it a group's pieces were unreachable: two quick clicks
@@ -22794,8 +22816,16 @@ function typeOnClick(d, el, e0) {
   const t0 = e0.target;
   const t = shownNode(t0) ? t0 : (shownUnder(d, e0) || t0);
   const slot = t && t.closest ? t.closest('[data-slot]') : null;
+  // An entry of an Endnotes section the editor placed is a glued part of
+  // that section's text box (dragify), so a click on it reached the box and
+  // opened the section's HEADING — the citation itself could not be edited
+  // where it is read. It is a source: its own form, written to [[sources]].
+  const en = endnoteEntryAt(el, t);
   let opened = false;
-  if (slot && el.contains(slot) && !slot.closest('svg')) {
+  if (en) {
+    editEndnote(d, en, en.dataset.el.slice('endnote.'.length));
+    opened = editing;
+  } else if (slot && el.contains(slot) && !slot.closest('svg')) {
     const key = slot.dataset.slot;
     showType(key);
     edit(d, key, slot, at);
@@ -26952,7 +26982,21 @@ async function render() {
     const ws = renderWaiters; renderWaiters = [];
     ws.forEach(r => r());
     suggestSchedule();
+    syncSourcesPanel();
   }
+}
+
+/** The Sources panel is drawn from [[sources]] when it opens; anything else
+ *  that changes a source — an endnote edited on the page, ⌘Z, a colleague's
+ *  edit adopted from the room, the pilot's editSource — ends in a render, so
+ *  the panel redraws here when the list it shows is no longer the document's.
+ *  Not while a field in it has focus: that is somebody typing there. */
+function syncSourcesPanel() {
+  if (!srcPanel) return;
+  try {
+    if (srcPanel.contains(document.activeElement) && document.activeElement !== srcPanel) return;
+    if (srcPanel.dataset.drawn !== readSlot('sources')) renderSources();
+  } catch (e) { swallowed('syncSourcesPanel', e); }
 }
 
 // The status row has many writers, and render is the only one that fires
@@ -28540,6 +28584,7 @@ async function addSourceFromPanel() {
 
 function renderSources() {
   if (!srcPanel) return;
+  srcPanel.dataset.drawn = readSlot('sources');
   const list = srcPanel.querySelector('#srclist');
   list.textContent = '';
   const all = parseSources();
@@ -28647,7 +28692,7 @@ function renderSources() {
       const t = txt.value.trim(), u = url.value.trim();
       // The citation must say something; the LINK is optional — a book or an
       // interview has none, and a source that had one must be able to lose it.
-      if (!t) return;                             // never write a half-line
+      if (!t) { $('stat').textContent = emptyCitationRefusal(s.id); txt.value = s.text; return; }
       pushHistory(); updateSource(s.id, t, u); markDirty(); render();
     };
     txt.addEventListener('change', commit);       // fires on blur only when changed
@@ -35492,6 +35537,28 @@ function _pilotApplyAddSource(id, text, url) {
   addSource(id, text.trim(), url.trim());
   return { id };
 }
+/** editSource(id, {text?, url?}): rewrite one source's citation and/or link —
+ *  what editing its endnote on the page or its row in Sources does. The id
+ *  (and so every [^id] citing it, and its number) stays put; a field left out
+ *  keeps its value; url '' drops the link. An empty citation is refused: the
+ *  citations would point at nothing. */
+function _pilotValidateEditSource(id, p) {
+  const s = parseSources().find(r => r.id === id);
+  if (!s) return { ok: false, error: `no source [${id}] — sources are ${sourceIds().map(x => `[${x}]`).join(', ') || 'none'}` };
+  if (!p || typeof p !== 'object' || (!('text' in p) && !('url' in p)))
+    return { ok: false, error: 'editSource(id, {text, url}) — give the new citation text, url, or both' };
+  if ('text' in p && !String(p.text ?? '').trim()) return { ok: false, error: emptyCitationRefusal(id) };
+  if ('url' in p && /\s/.test(String(p.url ?? '').trim())) return { ok: false, error: 'a url has no spaces' };
+  if (/\n/.test(String(p.text ?? ''))) return { ok: false, error: 'a citation is one line' };
+  return { ok: true };
+}
+function _pilotApplyEditSource(id, p) {
+  const s = parseSources().find(r => r.id === id);
+  const text = 'text' in p ? String(p.text).trim() : s.text;
+  const url = 'url' in p ? String(p.url ?? '').trim() : s.url;
+  updateSource(id, text, url);
+  return { id, text, url };
+}
 
 // A whole new prose section — the one thing that adds a slot, and only where
 // the report opened a page for it (editor.pages, from the manifest). Not a
@@ -35934,6 +36001,8 @@ const PILOT_BATCH_VERBS = {
     }, apply: (ids, n, dx, dy) => ({ copies: stepRepeatIds([].concat(ids), Math.round(+n), +dx || 0, +dy || 0) }) },
   addSource: { validate: (id, t, u) => _pilotValidateAddSource(id, t, u),
                apply: (id, t, u) => _pilotApplyAddSource(id, t, u) },
+  editSource: { validate: (id, p) => _pilotValidateEditSource(id, p),
+                apply: (id, p) => _pilotApplyEditSource(id, p) },
   addSection: { validate: (p, sl) => _pilotValidateAddSection(p, sl),
                 apply: (p, sl, md) => _pilotApplyAddSection(p, sl, md) },
   setStyle: { validate: (k, p) => _pilotValidateSetStyle(k, p), apply: (k, p) => _pilotApplySetStyle(k, p) },
@@ -36554,6 +36623,19 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     markDirty();
     await render();
     return { ...docsync.api.status(), id };
+  },
+
+  /** Rewrite a source's citation text and/or url (see _pilotValidateEditSource).
+   *  The endnote on the page, the Sources panel and any citation pop-up all
+   *  draw from that one [[sources]] line. One undo step. */
+  async editSource(id, patch) {
+    const v = _pilotValidateEditSource(id, patch);
+    if (!v.ok) return v;
+    pushHistory();
+    const r = _pilotApplyEditSource(id, patch);
+    markDirty();
+    await render();
+    return { ...docsync.api.status(), source: r };
   },
 
   /** Apply several ops as ONE undo step and ONE render — for a pilot doing
