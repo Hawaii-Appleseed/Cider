@@ -710,6 +710,20 @@ Rules that bite:
   lays text out differently in an SVG image than in a page unless both carry
   `text-rendering:geometricPrecision` (the export document does). PNG, zip,
   package and bleed marks are still local-only.
+- **The left rail is tools + one palette (2026-11-18).** `nav#leftrail` holds
+  the toolbox (Select `V`, Type `T`, Hand `H`: `setTool()` is the only place the
+  tool changes; the rows are in `CHORDS`, so both key listeners hear them), the
+  green `+` that opens the Insert palette (`openPalette()`, also ⌘K), whatever
+  the person pinned from it (`railPins()`, kept in `localStorage['cider-rail-pins']`,
+  default Shapes, Chart, Image) and Colors. The palette (`palRows()`) runs the
+  code the old buttons ran, so there is still one way to place anything. The six
+  original buttons (`#text #shape #icon #ar-img #table #chart`) keep their ids:
+  pinned, they sit on the rail; unpinned, they wait hidden in `#rail-cmds`, and
+  every handler and spec binds to them as before (the spec fixture pins all six).
+  **A new placeable thing = one row in `palRows()`.** Type's press is
+  `wireTypeTool` (capture phase, like the hand's); a new tool is a key in
+  `TOOL_HINT`, a button with `data-tool`, a chord row and an `applyTool` class.
+  `tests/editor/rail-tools.spec.js` covers it.
 - **Auto-update + rollback** (`tools/selfupdate.py`, `serve.py`'s
   `/__update` and `/__rollback`, the editor's version chip `#ver`/`#upd`):
   an update REBASES the user's local Save commits on top when their files

@@ -116,6 +116,16 @@ async function gotoEditor(page, query = '') {
       await wipeOrigin(sh.ctx, page, sh.baseURL);
     }
   }
+  // The rail shows what the person pinned from the Insert palette (default:
+  // Shapes, Chart, Image). The suite's specs press the six original buttons by
+  // id, so they all start pinned; rail-tools.spec.js clears this to see the
+  // defaults. Written before the editor's own script runs.
+  await page.addInitScript(() => {
+    try {
+      if (!localStorage.getItem('cider-rail-pins') && !sessionStorage.getItem('cider-rail-pins-default'))
+        localStorage.setItem('cider-rail-pins', JSON.stringify(['text', 'shape', 'icon', 'ar-img', 'table', 'chart']));
+    } catch (e) { /* file: URL */ }
+  });
   await page.goto('edit.html' + query);
   await waitForFirstRender(page);
   // Local mode (serve.py answers /__ping) polls its live-reload stream and
