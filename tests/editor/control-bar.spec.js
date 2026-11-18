@@ -58,6 +58,32 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
+  test('the docked bar wraps inside a narrow window instead of running off it', async ({ page }) => {
+    await page.setViewportSize({ width: 760, height: 800 });
+    const fits = () => page.evaluate(() => {
+      const bar = $('ctl'), w = innerWidth;
+      const kids = [...bar.querySelectorAll('input, select, button, label')]
+        .filter(e => e.offsetParent !== null);
+      const past = kids.filter(e => e.getBoundingClientRect().right > w + 1).map(e => e.id || e.className);
+      return { past, scrolls: bar.scrollWidth > bar.clientWidth + 1, h: bar.getBoundingClientRect().height };
+    });
+    // object mode
+    await addRect(page);
+    let r = await fits();
+    expect(r.past).toEqual([]);
+    expect(r.scrolls).toBe(false);
+    // character mode: the longest row
+    const id = await page.evaluate(async () =>
+      (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await settled(page);
+    await page.click('#cb-mode [data-m="char"]');
+    r = await fits();
+    expect(r.past).toEqual([]);
+    expect(r.scrolls).toBe(false);
+    expect(r.h).toBeGreaterThan(44);          // it took a second row to do it
+  });
+
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
     await expect(page.locator('#ctl')).toBeVisible();
     const bar = await rectOf(page, 'bar'), ctl = await rectOf(page, 'ctl'),
