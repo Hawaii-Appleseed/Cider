@@ -256,6 +256,9 @@
      the same shape: 30px tall, 8px corners, a pale fill instead of an outline,
      no rule or shadow of its own. A number box is ONE pill with its icon or
      letter inside it, so there are no stray glyphs and no boxes-with-labels. */
+  /* The comments / history gutter starts where the page area starts, which is where
+     the hanging rows are, so the bar keeps clear of it as it does of the dock. */
+  body.cmt-margin #ctl { padding-right:calc(var(--dock-w, 40px) + var(--cmt-gutter, 384px) + 12px); }
   #ctl::before { content:""; position:absolute; z-index:-1; left:0; right:0; top:0;
          height:var(--ctl-sheet, 44px); max-height:60vh; background:#fff; pointer-events:none;
          box-shadow:0 1px 0 #E1E8E3, 0 10px 22px -8px rgba(20,40,30,.16); }
