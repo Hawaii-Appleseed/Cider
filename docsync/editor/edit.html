@@ -146,18 +146,23 @@
      rect every frame) follow it down. Light, like the contextual card whose
      controls it takes over; a fixed height so a change of selection never
      moves the canvas. Scrolls sideways, never wraps, like #bar. */
-  #ctl { flex:none; display:flex; align-items:center; gap:5px 5px; min-height:44px;
-         flex-wrap:wrap;   /* a long run of fields wraps to a second row inside the window;
-                              it used to scroll sideways with no scrollbar, so the
-                              rest of the bar was simply off the page */
-         box-sizing:border-box; padding:4px 12px; position:relative; z-index:3;
+  #ctl { flex:none; display:flex; align-items:center; gap:4px 5px; height:44px;
+         /* A long run of fields WRAPS inside the window; it used to scroll sideways
+            with no scrollbar, so everything past the edge was simply gone. The
+            bar's own height stays 44px, though: a row that grew on every selection
+            moved the canvas under the pointer between the two clicks of a
+            double-click. The extra row hangs over the top of the canvas instead,
+            on the white of #cb-obj / #type / #arrange below. */
+         flex-wrap:wrap; align-content:flex-start;
+         box-sizing:border-box; padding:0 12px; position:relative; z-index:3;
          background:#fff; color:var(--ink); border-bottom:1px solid #D9E1DB;
          overflow:visible; white-space:nowrap; }
   #ctl::-webkit-scrollbar { display:none; }
   #ctl[hidden], #ctl [hidden] { display:none !important; }
   #ctl > *, #cb-obj > *, .cb-grp > * { flex:none; }
   #cb-obj, .cb-grp { display:inline-flex; align-items:center; gap:5px; }
-  #cb-obj { flex-wrap:wrap; max-width:100%; row-gap:4px; }
+  /* clear of the 40px panel rail on the right, which the hanging row passes under */
+  #cb-obj { flex-wrap:wrap; max-width:calc(100% - 44px); row-gap:4px; background:#fff; }
   .cb-grp.ty-seg { gap:0; }
   .cb-lab { font:600 12px system-ui; color:#2F3E46; background:#E7EEE8;
             padding:3px 10px; border-radius:99px; }
@@ -239,11 +244,11 @@
   #cb-pflag { display:inline-block; width:16px; text-align:center; font:700 13px Georgia,serif;
           color:#5B6E66; transition:transform .15s; }
   /* The arrange strip, docked: no card of its own — it is a run of the bar. */
-  #ctl #type { background:transparent; box-shadow:none; border-radius:0; padding:0;
-          margin:0; width:auto; max-width:100%; height:auto; min-height:0; overflow:visible;
+  #ctl #type { background:#fff; box-shadow:none; border-radius:0; padding:0; row-gap:4px;
+          margin:0; width:auto; max-width:calc(100% - 44px); height:auto; min-height:0; overflow:visible;
           justify-content:flex-start; pointer-events:auto; }
-  #ctl #arrange { background:transparent; box-shadow:none; border-radius:0; padding:0;
-          margin:0; width:auto; max-width:100%; height:auto; min-height:0; overflow:visible;
+  #ctl #arrange { background:#fff; box-shadow:none; border-radius:0; padding:0; row-gap:4px;
+          margin:0; width:auto; max-width:calc(100% - 44px); height:auto; min-height:0; overflow:visible;
           justify-content:flex-start; pointer-events:auto; }
   /* A thin rule between the history/commit group and the rest. */
   .bar-sep { flex:none; width:1px; height:18px; background:var(--line); margin:0 1px; }

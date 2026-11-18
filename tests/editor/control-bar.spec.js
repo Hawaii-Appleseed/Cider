@@ -81,7 +81,7 @@ test.describe('control bar', () => {
     r = await fits();
     expect(r.past).toEqual([]);
     expect(r.scrolls).toBe(false);
-    expect(r.h).toBeGreaterThan(44);          // it took a second row to do it
+    expect(r.h).toBe(44);   // and the bar itself did not grow: the canvas must not move on a click
   });
 
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
