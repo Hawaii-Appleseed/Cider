@@ -34,6 +34,30 @@ const rectOf = (page, id) => page.evaluate(i => {
 test.describe('control bar', () => {
   test.beforeEach(async ({ page }) => { await gotoEditor(page); });
 
+  test('a field names itself on hover, and its icon scrubs the number', async ({ page }) => {
+    await addRect(page);
+    const lab = page.locator('#cb-x').locator('xpath=..');
+    // the native title is gone (a slow, easy-to-miss tooltip); the hover chip says it
+    await expect(lab).not.toHaveAttribute('title', /.+/);
+    await lab.hover({ position: { x: 4, y: 8 } });
+    await expect(page.locator('#tt')).toBeVisible();
+    await expect(page.locator('#tt')).toContainText('Left edge');
+    await expect(page.locator('#tt')).toContainText('drag');
+    // press the letter and drag right 100px: X moves by 1 inch, in ONE undo step
+    const before = (await rect(page)).x, steps = await page.evaluate(() => past.length);
+    const box = await lab.boundingBox();
+    const x0 = box.x + 4, y0 = box.y + box.height / 2;
+    await page.mouse.move(x0, y0);
+    await page.mouse.down();
+    await page.mouse.move(x0 + 50, y0, { steps: 5 });
+    await page.mouse.move(x0 + 100, y0, { steps: 5 });
+    await expect(page.locator('#cb-x')).toHaveValue(String(+(before + 1).toFixed(2)));
+    await page.mouse.up();
+    await settled(page);
+    expect((await rect(page)).x).toBeCloseTo(before + 1, 2);
+    expect(await page.evaluate(() => past.length)).toBe(steps + 1);
+  });
+
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
     await expect(page.locator('#ctl')).toBeVisible();
     const bar = await rectOf(page, 'bar'), ctl = await rectOf(page, 'ctl'),
