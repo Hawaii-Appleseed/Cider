@@ -64,7 +64,10 @@ test.describe('control bar', () => {
       const bar = $('ctl'), w = innerWidth;
       const kids = [...bar.querySelectorAll('input, select, button, label')]
         .filter(e => e.offsetParent !== null);
-      const past = kids.filter(e => e.getBoundingClientRect().right > w + 1).map(e => e.id || e.className);
+      // nothing past the window, and nothing hanging under the panel rail on the right
+      const rail = $('dock-icons').getBoundingClientRect().left;
+      const past = kids.filter(e => { const b = e.getBoundingClientRect();
+        return b.right > w + 1 || (b.bottom > 46 && b.right > rail + 1); }).map(e => e.id || e.className);
       return { past, scrolls: bar.scrollWidth > bar.clientWidth + 1, h: bar.getBoundingClientRect().height };
     });
     // object mode
