@@ -244,7 +244,9 @@ test.describe('Claude creates, a person edits', () => {
 
   test('a renderer chart\'s labels rename on the page, and place() can size it', async ({ page }) => {
     const frame = page.frameLocator('#out');
-    const lab = frame.locator('[data-chart="whopays.fig6"] [data-ch="label:0"]');
+    // The SECOND label: the first sits at the sheet's left edge, under the
+    // Chart panel that the double-click's first press opens.
+    const lab = frame.locator('[data-chart="whopays.fig6"] [data-ch="label:1"]');
     await lab.scrollIntoViewIfNeeded();
     // Bound only for shape charts before: a double-click here did nothing.
     await lab.dblclick();
@@ -252,7 +254,7 @@ test.describe('Claude creates, a person edits', () => {
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.type('Poorest fifth');
     await page.keyboard.press('Enter');
-    await expect.poll(() => api(page, () => ((layout.charts || {})['whopays.fig6'] || {}).labels?.[0])).toBe('Poorest fifth');
+    await expect.poll(() => api(page, () => ((layout.charts || {})['whopays.fig6'] || {}).labels?.[1])).toBe('Poorest fifth');
     // A size alone on a designed element wrote {w} with no x/y, which the
     // engine refuses: the whole draft stopped building.
     const r = await api(page, () => docsync.api.place('whopays.fig6', { w: 5 }));
