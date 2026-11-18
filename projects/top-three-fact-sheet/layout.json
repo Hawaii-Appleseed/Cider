@@ -1,0 +1,1801 @@
+{
+  "positions": {},
+  "fill": {},
+  "shapes": [
+    {
+      "id": "strip",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 0.16,
+      "fill": "#253551"
+    },
+    {
+      "id": "strip-acc",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 1.4,
+      "h": 0.16,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "foot",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 8.5,
+      "h": 0.9,
+      "fill": "#253551"
+    },
+    {
+      "id": "foot-acc",
+      "page": 1,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 1.4,
+      "h": 0.05,
+      "fill": "#3C73B9"
+    },
+    {
+      "id": "strip2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8.5,
+      "h": 0.16,
+      "fill": "#253551",
+      "z": -10
+    },
+    {
+      "id": "strip-acc2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 1.4,
+      "h": 0.16,
+      "fill": "#3C73B9",
+      "z": -9
+    },
+    {
+      "id": "foot2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 8.5,
+      "h": 0.9,
+      "fill": "#253551",
+      "z": -8
+    },
+    {
+      "id": "foot-acc2",
+      "page": 2,
+      "kind": "rect",
+      "x": 0,
+      "y": 10.1,
+      "w": 1.4,
+      "h": 0.05,
+      "fill": "#3C73B9",
+      "z": -7
+    },
+    {
+      "id": "s2bar0",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 2.3,
+      "w": 0.05,
+      "h": 0.58,
+      "fill": "#3C73B9",
+      "z": -6
+    },
+    {
+      "id": "h1rule",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 3.58,
+      "w": 7.1,
+      "h": 0.012,
+      "fill": "#D5DAE3",
+      "z": -5
+    },
+    {
+      "id": "h2rule",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 6.48,
+      "w": 7.1,
+      "h": 0.012,
+      "fill": "#D5DAE3",
+      "z": -4
+    },
+    {
+      "id": "ch2",
+      "page": 2,
+      "kind": "chart",
+      "x": 0.6,
+      "y": 7,
+      "w": 3.7,
+      "h": 1.95,
+      "chart": {
+        "type": "row",
+        "labels": [
+          "Single parent",
+          "Couple with children",
+          "Single, no children",
+          "Couple, no children"
+        ],
+        "series": [
+          {
+            "name": "Loss $M",
+            "data": [
+              33.5,
+              28.7,
+              8.4,
+              6
+            ],
+            "color": "#253551"
+          }
+        ],
+        "values": true,
+        "legend": false,
+        "grid": false,
+        "labelColor": "#4A5568",
+        "titleColor": "#253551",
+        "format": {
+          "prefix": "$",
+          "suffix": "M",
+          "decimals": 1
+        }
+      },
+      "z": -3
+    },
+    {
+      "id": "p2sbox",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.95,
+      "w": 4.95,
+      "h": 1,
+      "fill": "#E8F0FA",
+      "z": -2
+    },
+    {
+      "id": "p2sbar",
+      "page": 2,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 8.95,
+      "w": 0.05,
+      "h": 1,
+      "fill": "#3C73B9",
+      "z": -1
+    },
+    {
+      "id": "s21-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.6,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 6.85,
+      "fill": "#E8F0FA",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.14
+    },
+    {
+      "id": "s22-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.05,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 6.85,
+      "fill": "#E6E9EF",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.14
+    },
+    {
+      "id": "s24-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.6,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 1,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.14
+    },
+    {
+      "id": "s25-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.05,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 1,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.14
+    },
+    {
+      "id": "s26-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.5,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 1,
+      "fill": "#5B7C9F",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.14
+    },
+    {
+      "id": "s27-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 8.05,
+      "w": 2.1,
+      "h": 1.35,
+      "fill": "#FFFFFF",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.07
+    },
+    {
+      "id": "s28-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 8.05,
+      "w": 0.06,
+      "h": 1.35,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.03
+    },
+    {
+      "id": "s29-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 8.05,
+      "w": 2.1,
+      "h": 1.35,
+      "fill": "#FFFFFF",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.07
+    },
+    {
+      "id": "s30-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 8.05,
+      "w": 0.06,
+      "h": 1.35,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.03
+    },
+    {
+      "id": "s31-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.65,
+      "y": 8.05,
+      "w": 2.1,
+      "h": 1.35,
+      "fill": "#FFFFFF",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.07
+    },
+    {
+      "id": "s32-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.65,
+      "y": 8.05,
+      "w": 0.06,
+      "h": 1.35,
+      "fill": "#5B7C9F",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4,
+      "r": 0.03
+    },
+    {
+      "id": "s33-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 5.57,
+      "w": 2.1,
+      "h": 0.012,
+      "fill": "#C4CBD8",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 6
+    },
+    {
+      "id": "s34-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 5.57,
+      "w": 2.1,
+      "h": 0.012,
+      "fill": "#C4CBD8",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 6
+    },
+    {
+      "id": "s35-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.65,
+      "y": 5.57,
+      "w": 2.1,
+      "h": 0.012,
+      "fill": "#C4CBD8",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 6
+    },
+    {
+      "id": "s36-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 5.83,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s37-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 6.52,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s38-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.75,
+      "y": 7.21,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s39-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 5.83,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s40-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 6.57,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s42-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.65,
+      "y": 5.83,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#5B7C9F",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s44-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.65,
+      "y": 6.73,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#5B7C9F",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    },
+    {
+      "id": "s45-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 0.7,
+      "y": 0.635,
+      "w": 0.4,
+      "h": 0.03,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 12
+    },
+    {
+      "id": "s43-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 5.5,
+      "y": 2.7,
+      "w": 2.4,
+      "h": 6.85,
+      "fill": "#E9EEF3",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 2,
+      "r": 0.14
+    },
+    {
+      "id": "s41-chart",
+      "page": 2,
+      "kind": "chart",
+      "fill": "none",
+      "chart": {
+        "type": "stacked-row",
+        "labels": [
+          "",
+          "",
+          ""
+        ],
+        "series": [
+          {
+            "name": "Under $10K",
+            "data": [
+              9,
+              36,
+              1
+            ],
+            "color": "#9DBCE0"
+          },
+          {
+            "name": "$10K–$30K",
+            "data": [
+              56,
+              40,
+              7
+            ],
+            "color": "#3C73B9"
+          },
+          {
+            "name": "$30K–$60K",
+            "data": [
+              34,
+              24,
+              15
+            ],
+            "color": "#253551"
+          },
+          {
+            "name": "$60K+",
+            "data": [
+              1,
+              1,
+              78
+            ],
+            "color": "#D9902F"
+          }
+        ],
+        "values": true,
+        "grid": false,
+        "titleColor": "#253551",
+        "format": {
+          "suffix": "%",
+          "decimals": 0
+        },
+        "labelColor": "#253551",
+        "labelSize": 12,
+        "labelWeight": "bold",
+        "legend": false
+      },
+      "h": 1.45,
+      "x": 0.95,
+      "y": 3.94,
+      "w": 5.17,
+      "z": -11
+    },
+    {
+      "id": "s46-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 1.42,
+      "y": 5.28,
+      "w": 0.1,
+      "h": 0.1,
+      "fill": "#9DBCE0",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 21
+    },
+    {
+      "id": "s47-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 2.32,
+      "y": 5.28,
+      "w": 0.1,
+      "h": 0.1,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 22
+    },
+    {
+      "id": "s48-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.22,
+      "y": 5.28,
+      "w": 0.1,
+      "h": 0.1,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 23
+    },
+    {
+      "id": "s49-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 4.12,
+      "y": 5.28,
+      "w": 0.1,
+      "h": 0.1,
+      "fill": "#D9902F",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 24
+    },
+    {
+      "id": "s51-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.4,
+      "y": 2.9,
+      "w": 4.4,
+      "h": 0.36,
+      "fill": "#E8F0FA",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1,
+      "r": 0.04
+    },
+    {
+      "id": "s52-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.4,
+      "y": 2.9,
+      "w": 0.05,
+      "h": 0.36,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 4
+    },
+    {
+      "id": "s50-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 3.4,
+      "y": 2.3,
+      "w": 2.46,
+      "h": 0.34,
+      "fill": "#3C73B9",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 2
+    },
+    {
+      "id": "s53-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 5.86,
+      "y": 2.3,
+      "w": 1.94,
+      "h": 0.34,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 3
+    },
+    {
+      "id": "s54-rect",
+      "page": 2,
+      "kind": "rect",
+      "x": 5.75,
+      "y": 8.95,
+      "w": 2.05,
+      "h": 1,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 1
+    },
+    {
+      "id": "s55-rect",
+      "page": 1,
+      "kind": "rect",
+      "x": 3.2,
+      "y": 7.33,
+      "w": 0.09,
+      "h": 0.09,
+      "fill": "#253551",
+      "stroke": "none",
+      "sw": 0.02,
+      "z": 9
+    }
+  ],
+  "boxes": [
+    {
+      "id": "src2",
+      "page": 2,
+      "x": 0.7,
+      "y": 10.63,
+      "w": 7.1,
+      "z": 5,
+      "md": "Sources: Hawaiʻi Appleseed Census-Forecaster tax model, tax year 2028 (run Oct. 19, 2026); Hawaiʻi Dept. of Taxation, Tax Credits Claimed, tax year 2023 (Tables 4, A-5), and EITC Report, tax year 2024; Act 163 (2023). Model estimates carry sampling error.",
+      "style": {
+        "font": "Poppins",
+        "size": 10.5,
+        "color": "#9FB8DE",
+        "leading": 1.3
+      }
+    },
+    {
+      "id": "ctat2",
+      "page": 2,
+      "x": 0.7,
+      "y": 10.15,
+      "w": 7.1,
+      "z": 6,
+      "md": "Sign up for bill alerts and testimony at hitaxfairness.org",
+      "style": {
+        "font": "Poppins",
+        "size": 13,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "title2",
+      "page": 2,
+      "x": 0.7,
+      "y": 0.92,
+      "w": 7.1,
+      "z": 7,
+      "md": "Preserve Working Families’ Tax Credits",
+      "style": {
+        "font": "Manrope",
+        "size": 32,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.1,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "lede2",
+      "page": 2,
+      "x": 0.7,
+      "y": 1.5,
+      "w": 7.1,
+      "z": 8,
+      "md": "In 2023, Act 163 doubled the state Earned Income Tax Credit (EITC) and the food/excise tax credit, and it increased the child and dependent care tax credit (CDCTC). Both expansions end after 2027. Here is where the money goes today, and who stands to lose their benefits if the expansions expire.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "s2n0",
+      "page": 2,
+      "x": 0.87,
+      "y": 2.26,
+      "w": 2.1,
+      "z": 9,
+      "md": "$76M*",
+      "style": {
+        "font": "Manrope",
+        "size": 28,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1,
+        "tracking": -0.5
+      }
+    },
+    {
+      "id": "s2l0",
+      "page": 2,
+      "x": 0.87,
+      "y": 2.68,
+      "w": 2.4,
+      "z": 10,
+      "md": "less for working families in 2028",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "h1",
+      "page": 2,
+      "x": 0.7,
+      "y": 3.3,
+      "w": 7.1,
+      "z": 11,
+      "md": "WHERE THE BENEFITS FLOW NOW",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.8
+      }
+    },
+    {
+      "id": "c1t",
+      "page": 2,
+      "x": 0.7,
+      "y": 3.72,
+      "w": 4,
+      "z": 12,
+      "md": "Share of each credit’s dollars, by filer income, 2023",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "n1",
+      "page": 2,
+      "x": 3.52,
+      "y": 2.92,
+      "w": 4.2,
+      "z": 13,
+      "md": "**Food/excise falls from $64M (2023) to estimated $53M (2028)** even if renewed: its amounts and income limits don't rise with inflation.",
+      "style": {
+        "font": "Poppins",
+        "size": 10.5,
+        "color": "#3D4A5C",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "h2",
+      "page": 2,
+      "x": 0.7,
+      "y": 6.2,
+      "w": 7.1,
+      "z": 14,
+      "md": "WHO STANDS TO LOSE",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.8
+      }
+    },
+    {
+      "id": "c2t",
+      "page": 2,
+      "x": 0.7,
+      "y": 6.62,
+      "w": 3.6,
+      "z": 15,
+      "md": "**Total loss by family type**, EITC and Refundable Food/Excise Tax Credit, 2028",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "n2",
+      "page": 2,
+      "x": 4.55,
+      "y": 8.55,
+      "w": 3.25,
+      "z": 16,
+      "md": "**Single parents** are hit hardest: in 2028, 64% lose part of a credit, averaging **$817**.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "p2suph",
+      "page": 2,
+      "x": 0.95,
+      "y": 9.05,
+      "w": 4.5,
+      "z": 17,
+      "md": "RECOMMENDATION",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "p2sup",
+      "page": 2,
+      "x": 0.95,
+      "y": 9.28,
+      "w": 4.5,
+      "z": 18,
+      "md": "Extend the earned income, food/excise, and child and dependent care tax credits before they expire.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      },
+      "h": 0.65
+    },
+    {
+      "id": "t3",
+      "page": 1,
+      "x": 0.75,
+      "y": 2.84,
+      "w": 2.1,
+      "z": 5,
+      "md": "01",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#CFE0F5",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "t4",
+      "page": 1,
+      "x": 3.2,
+      "y": 2.84,
+      "w": 2.1,
+      "z": 6,
+      "md": "02",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#9FB8DE",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "t5",
+      "page": 1,
+      "x": 5.65,
+      "y": 2.84,
+      "w": 2.1,
+      "z": 6,
+      "md": "03",
+      "style": {
+        "font": "Manrope",
+        "size": 12,
+        "color": "#DDE6F0",
+        "weight": 800,
+        "tracking": 1.5
+      }
+    },
+    {
+      "id": "t6",
+      "page": 1,
+      "x": 0.7,
+      "y": 3.03,
+      "w": 2.2,
+      "z": 6,
+      "md": "Increase the Tax on Luxury Homes",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#FFFFFF",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "t7",
+      "page": 1,
+      "x": 3.2,
+      "y": 3.08,
+      "w": 2.1,
+      "z": 6,
+      "md": "Preserve Working Families’ Tax Credits",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#FFFFFF",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "t8",
+      "page": 1,
+      "x": 5.65,
+      "y": 3.08,
+      "w": 2.1,
+      "z": 6,
+      "md": "Tax Profits Like Paychecks",
+      "style": {
+        "font": "Manrope",
+        "size": 17,
+        "color": "#FFFFFF",
+        "weight": 800,
+        "leading": 1.15
+      }
+    },
+    {
+      "id": "t9",
+      "page": 1,
+      "x": 0.75,
+      "y": 3.95,
+      "w": 2.1,
+      "z": 6,
+      "md": "$271M",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#3C73B9",
+        "weight": 800,
+        "leading": 1,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "t10",
+      "page": 1,
+      "x": 3.2,
+      "y": 3.95,
+      "w": 2.1,
+      "z": 6,
+      "md": "$76M*",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "t11",
+      "page": 1,
+      "x": 5.65,
+      "y": 3.95,
+      "w": 2.1,
+      "z": 6,
+      "md": "$100M+",
+      "style": {
+        "font": "Manrope",
+        "size": 44,
+        "color": "#5B7C9F",
+        "weight": 800,
+        "leading": 1,
+        "tracking": -1
+      }
+    },
+    {
+      "id": "t18",
+      "page": 1,
+      "x": 0.97,
+      "y": 8.19,
+      "w": 1.76,
+      "z": 7,
+      "md": "RECOMMENDATION",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "t19",
+      "page": 1,
+      "x": 3.42,
+      "y": 8.19,
+      "w": 1.76,
+      "z": 7,
+      "md": "RECOMMENDATION",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#253551",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "t20",
+      "page": 1,
+      "x": 5.87,
+      "y": 8.19,
+      "w": 1.76,
+      "z": 7,
+      "md": "RECOMMENDATION",
+      "style": {
+        "font": "Manrope",
+        "size": 10.5,
+        "color": "#5B7C9F",
+        "weight": 800,
+        "tracking": 1.4
+      }
+    },
+    {
+      "id": "t21",
+      "page": 1,
+      "x": 0.97,
+      "y": 8.47,
+      "w": 1.76,
+      "z": 7,
+      "md": "Raise rates on high-value and non-owner-occupied properties, and dedicate the new revenue to Hawaiian Home Lands.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "t22",
+      "page": 1,
+      "x": 3.42,
+      "y": 8.47,
+      "w": 1.76,
+      "z": 7,
+      "md": "Extend the earned income, food/excise, and child and dependent care tax credits before they expire.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "t23",
+      "page": 1,
+      "x": 5.87,
+      "y": 8.47,
+      "w": 1.76,
+      "z": 7,
+      "md": "Tax capital gains at the same rates as ordinary income, so investment income does not receive preferential treatment.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#253551",
+        "leading": 1.38
+      }
+    },
+    {
+      "id": "t15",
+      "page": 1,
+      "x": 0.97,
+      "y": 5.78,
+      "w": 1.88,
+      "z": 8,
+      "md": "Rates **unchanged since 2009**; none of the revenue goes to Hawaiian Home Lands.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t16",
+      "page": 1,
+      "x": 0.97,
+      "y": 6.47,
+      "w": 1.88,
+      "z": 8,
+      "md": "Today one rate applies to the **whole price**, so the tax jumps at set prices.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t17",
+      "page": 1,
+      "x": 0.97,
+      "y": 7.16,
+      "w": 1.88,
+      "z": 8,
+      "md": "**The proposal:** switch to **marginal rates**, like income tax brackets, so each rate applies only to the part of the price in that bracket.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t25",
+      "page": 1,
+      "x": 3.42,
+      "y": 5.78,
+      "w": 1.88,
+      "z": 8,
+      "md": "Act 163 expanded the earned income, food/excise, and child and dependent care credits; all expansions end after 2027.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t26",
+      "page": 1,
+      "x": 3.42,
+      "y": 6.52,
+      "w": 1.88,
+      "z": 8,
+      "md": "In 2028, roughly 175,000–185,000 households would get reduced benefits. Single parents would lose $817 on average.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t28",
+      "page": 1,
+      "x": 5.87,
+      "y": 5.78,
+      "w": 1.88,
+      "z": 8,
+      "md": "Capital gains are the profits from selling stocks, bonds, and other assets are **taxed at a maximum of 7.25%**; wages are taxed up to **13%**.",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t30",
+      "page": 1,
+      "x": 5.87,
+      "y": 6.68,
+      "w": 1.88,
+      "z": 8,
+      "md": "**Most local families would pay not pay higher taxes if the capital gains rate were raised.**",
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568",
+        "leading": 1.42
+      }
+    },
+    {
+      "id": "t24",
+      "page": 1,
+      "x": 0.7,
+      "y": 10.4,
+      "w": 7.1,
+      "z": 10,
+      "md": "**Questions?** Devin Thomas · devin@hiappleseed.org",
+      "style": {
+        "font": "Poppins",
+        "size": 11.5,
+        "color": "#CFE0F5"
+      }
+    },
+    {
+      "id": "t31",
+      "page": 2,
+      "x": 0.7,
+      "y": 10.4,
+      "w": 7.1,
+      "z": 19,
+      "md": "**Questions?** Devin Thomas · devin@hiappleseed.org",
+      "style": {
+        "font": "Poppins",
+        "size": 11.5,
+        "color": "#CFE0F5"
+      }
+    },
+    {
+      "id": "t32",
+      "page": 1,
+      "x": 1.25,
+      "y": 0.55,
+      "w": 5.5,
+      "z": 11,
+      "md": "HAWAIʻI TAX FAIRNESS COALITION  ·  2027 SESSION",
+      "style": {
+        "font": "Manrope",
+        "size": 11,
+        "color": "#3C73B9",
+        "weight": 800,
+        "tracking": 2
+      }
+    },
+    {
+      "id": "t33",
+      "page": 1,
+      "x": 0.7,
+      "y": 0.84,
+      "w": 5.6,
+      "z": 11,
+      "md": "Tax Fairness Coalition 2027 Priorities",
+      "style": {
+        "font": "Manrope",
+        "size": 38,
+        "color": "#253551",
+        "weight": 800,
+        "leading": 1.05,
+        "tracking": -0.8
+      }
+    },
+    {
+      "id": "t34",
+      "page": 1,
+      "x": 0.7,
+      "y": 1.82,
+      "w": 6.2,
+      "z": 11,
+      "md": "Local families can no longer afford to remain in Hawaiʻi , while the ultra-wealthy continue to build on their fortunes. These three tax policies would ask the wealthiest among us to pay more, without affecting working families.",
+      "style": {
+        "font": "Poppins",
+        "size": 12,
+        "color": "#4A5568",
+        "leading": 1.5
+      }
+    },
+    {
+      "id": "t35",
+      "page": 1,
+      "x": 6.6,
+      "y": 0.3,
+      "w": 1.2,
+      "z": 13,
+      "md": "![Hawaiʻi Tax Fairness Coalition](assets/tfc-logo.png)"
+    },
+    {
+      "id": "t29",
+      "page": 2,
+      "x": 0.7,
+      "y": 5.55,
+      "w": 3.7,
+      "z": 20,
+      "md": "**78%** of child and dependent care dollars go to filers at $60K or more. For the EITC and food/excise, 99% goes to filers under $60K.",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t42",
+      "page": 2,
+      "x": 1.57,
+      "y": 5.23,
+      "w": 0.8,
+      "z": 25,
+      "md": "Under $10K",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t43",
+      "page": 2,
+      "x": 2.47,
+      "y": 5.23,
+      "w": 0.8,
+      "z": 26,
+      "md": "$10K–$30K",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t44",
+      "page": 2,
+      "x": 3.37,
+      "y": 5.23,
+      "w": 0.8,
+      "z": 27,
+      "md": "$30K–$60K",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t45",
+      "page": 2,
+      "x": 4.27,
+      "y": 5.23,
+      "w": 0.5,
+      "z": 28,
+      "md": "$60K+",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t36",
+      "page": 2,
+      "x": 0.42,
+      "y": 3.95,
+      "w": 0.95,
+      "z": 29,
+      "md": "**EITC**",
+      "style": {
+        "size": 10.5,
+        "color": "#253551",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t37",
+      "page": 2,
+      "x": 0.42,
+      "y": 4.13,
+      "w": 0.95,
+      "z": 30,
+      "md": "$77M",
+      "style": {
+        "size": 11,
+        "color": "#4A5568",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t38",
+      "page": 2,
+      "x": 0.42,
+      "y": 4.36,
+      "w": 0.95,
+      "z": 31,
+      "md": "**Food/excise**",
+      "style": {
+        "size": 10.5,
+        "color": "#253551",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t39",
+      "page": 2,
+      "x": 0.42,
+      "y": 4.54,
+      "w": 0.95,
+      "z": 32,
+      "md": "$64M",
+      "style": {
+        "size": 11,
+        "color": "#4A5568",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t40",
+      "page": 2,
+      "x": 0.42,
+      "y": 4.77,
+      "w": 0.95,
+      "z": 33,
+      "md": "**CDCTC**",
+      "style": {
+        "size": 10.5,
+        "color": "#253551",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t41",
+      "page": 2,
+      "x": 0.42,
+      "y": 4.95,
+      "w": 0.95,
+      "z": 34,
+      "md": "$15M",
+      "style": {
+        "size": 11,
+        "color": "#4A5568",
+        "align": "right"
+      }
+    },
+    {
+      "id": "t46",
+      "page": 2,
+      "x": 3.52,
+      "y": 2.35,
+      "w": 2.2,
+      "z": 35,
+      "md": "**$43M**",
+      "style": {
+        "size": 15,
+        "weight": 700,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "t48",
+      "page": 2,
+      "x": 5.98,
+      "y": 2.35,
+      "w": 1.7,
+      "z": 36,
+      "md": "**$34M**",
+      "style": {
+        "size": 15,
+        "weight": 700,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "t49",
+      "page": 2,
+      "x": 3.4,
+      "y": 2.68,
+      "w": 2.4,
+      "z": 37,
+      "md": "**State EITC** · 56%",
+      "style": {
+        "size": 10.5,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "t50",
+      "page": 2,
+      "x": 5.86,
+      "y": 2.68,
+      "w": 1.95,
+      "z": 38,
+      "md": "**Food/excise credit** · 44%",
+      "style": {
+        "size": 10.5,
+        "color": "#253551"
+      }
+    },
+    {
+      "id": "t12",
+      "page": 1,
+      "x": 0.75,
+      "y": 4.52,
+      "w": 2.1,
+      "z": 14,
+      "md": "**Estimated FY2027 revenue** under last session’s House bill, rising to **$303M** by FY2031.\n\nUp to **$60M a year** for Hawaiian Home Lands.",
+      "style": {
+        "size": 12.5,
+        "color": "#3D4A5C",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t13",
+      "page": 1,
+      "x": 3.2,
+      "y": 4.5,
+      "w": 2.1,
+      "z": 14,
+      "md": "**Less for working families** in 2028 if the expansions expire.\n\nThat is **$43M** from the EITC and **$34M** from food/excise.\n\n*Does not include the CDCTC.",
+      "style": {
+        "size": 12.5,
+        "color": "#3D4A5C",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t14",
+      "page": 1,
+      "x": 5.65,
+      "y": 4.52,
+      "w": 2.1,
+      "z": 14,
+      "md": "**Estimated revenue in 2027 from the capital gains tax**, not including non-resident taxpayers.\n\nAbout **90%** would come from the top **1%** of households.",
+      "style": {
+        "size": 12.5,
+        "color": "#3D4A5C",
+        "leading": 1.4
+      }
+    },
+    {
+      "id": "t47",
+      "page": 2,
+      "x": 5.9,
+      "y": 9.04,
+      "w": 1.8,
+      "z": 39,
+      "md": "Roughly",
+      "style": {
+        "size": 10.5,
+        "color": "#9DBCE0"
+      }
+    },
+    {
+      "id": "t51",
+      "page": 2,
+      "x": 5.9,
+      "y": 9.2,
+      "w": 1.85,
+      "z": 39,
+      "md": "**175,000–185,000**",
+      "style": {
+        "size": 16,
+        "weight": 700,
+        "color": "#FFFFFF"
+      }
+    },
+    {
+      "id": "t52",
+      "page": 2,
+      "x": 5.9,
+      "y": 9.48,
+      "w": 1.8,
+      "z": 39,
+      "md": "households would receive less benefits in 2028",
+      "style": {
+        "size": 10.5,
+        "color": "#DCE6F4"
+      }
+    },
+    {
+      "id": "t53",
+      "page": 2,
+      "x": 4.55,
+      "y": 6.5,
+      "w": 3.25,
+      "z": 40,
+      "md": "By household income (all members combined, so a household may include more than one filer)",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568",
+        "italic": true
+      }
+    },
+    {
+      "id": "t54",
+      "page": 2,
+      "x": 0.87,
+      "y": 2.92,
+      "w": 2.4,
+      "z": 41,
+      "md": "*Does not include the CDCTC.",
+      "style": {
+        "size": 10.5,
+        "color": "#4A5568",
+        "italic": true
+      }
+    },
+    {
+      "id": "t27",
+      "page": 1,
+      "x": 3.42,
+      "y": 7.28,
+      "w": 1.88,
+      "z": 15,
+      "md": "**+ $14.8M** child and dependent care credit (CDCTC) claimed in 2023, not counted in the $76M above. [MOCKUP: 2028 loss not yet modeled]",
+      "style": {
+        "size": 11,
+        "color": "#4A5568",
+        "font": "Poppins",
+        "leading": 1.42
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "t2",
+      "page": 2,
+      "x": 4.55,
+      "y": 6.88,
+      "w": 3.25,
+      "header": true,
+      "headerFill": "#253551",
+      "headerColor": "#FFFFFF",
+      "band": "#F1F5FA",
+      "colw": [
+        34,
+        22,
+        24
+      ],
+      "rows": [
+        [
+          "Household income",
+          "Avg. loss",
+          "Total"
+        ],
+        [
+          "Lowest 20%",
+          "$460",
+          "$34.2M"
+        ],
+        [
+          "Second 20%",
+          "$533",
+          "$18.8M"
+        ],
+        [
+          "Middle 20%",
+          "$356",
+          "$8.9M"
+        ],
+        [
+          "Fourth 20%",
+          "$366",
+          "$6.9M"
+        ],
+        [
+          "Top 20%",
+          "$292",
+          "$7.6M"
+        ]
+      ],
+      "style": {
+        "font": "Poppins",
+        "size": 11,
+        "color": "#4A5568"
+      }
+    },
+    {
+      "id": "t1",
+      "page": 2,
+      "x": 4.95,
+      "y": 3.78,
+      "w": 2.84,
+      "z": 2,
+      "header": true,
+      "rows": [
+        [
+          "2023",
+          "EITC",
+          "Food/ excise",
+          "CDCTC"
+        ],
+        [
+          "**Total Amount**",
+          "$77.1M",
+          "$64.0M",
+          "$14.8M"
+        ],
+        [
+          "**Average Benefit**",
+          "$912",
+          "$256",
+          "$818"
+        ]
+      ],
+      "headerRows": 1,
+      "band": "#EEF3FA",
+      "headerFill": "#253551",
+      "headerColor": "#FFFFFF",
+      "colw": [
+        0.8,
+        0.6,
+        0.65,
+        0.65
+      ],
+      "colAlign": [
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "style": {
+        "size": 10.5
+      }
+    }
+  ],
+  "pages": {},
+  "sections": {},
+  "masters": {},
+  "cellStyles": {
+    "Difference": {
+      "fill": "#DCE8F7",
+      "color": "#253551",
+      "bold": true
+    },
+    "Difference head": {
+      "fill": "#3C73B9",
+      "color": "#FFFFFF",
+      "bold": true
+    },
+    "Total row": {
+      "fill": "#253551",
+      "color": "#FFFFFF",
+      "bold": true
+    },
+    "Total difference": {
+      "fill": "#3C73B9",
+      "color": "#FFFFFF",
+      "bold": true
+    }
+  },
+  "locked": [
+    "s21-rect"
+  ]
+}
