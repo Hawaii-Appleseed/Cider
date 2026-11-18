@@ -22,7 +22,7 @@ const SLUG = 'zz-spec-refstyle';
 // live primer's own display face), Source Sans 3 for Source Sans Pro (its
 // current name) — the numbers are the reference's own.
 const REF = {
-  coverTitle: { family: 'Barlow', size: 58, weight: '800',
+  coverTitle: { family: 'Glober', size: 58, weight: '800',
                 transform: 'uppercase', color: 'rgb(255, 255, 255)',
                 leading: 1.08 },
   subtitle:   { family: 'Source Sans 3', size: 19,
@@ -30,10 +30,10 @@ const REF = {
                 spacing: '1.2px' },
   date:       { family: 'Source Sans 3', size: 14, weight: '700',
                 color: 'rgb(253, 207, 33)', spacing: '1.5px' },
-  heading:    { family: 'Barlow', size: 44, weight: '800',
+  heading:    { family: 'Glober', size: 44, weight: '800',
                 transform: 'uppercase', color: 'rgb(35, 35, 34)',
                 leading: 1.05 },
-  subheading: { family: 'Barlow', size: 22, weight: '700',
+  subheading: { family: 'Glober', size: 22, weight: '700',
                 color: 'rgb(30, 97, 148)' },       // the topic blue
   body:       { family: 'Source Sans 3', size: 15,
                 color: 'rgb(31, 31, 31)' },
