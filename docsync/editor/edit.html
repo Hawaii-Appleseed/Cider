@@ -51,7 +51,7 @@
           --txt:#EDF2EF; --dim:#A9BCB4;
           /* One number for the tool rail's width: #leftrail is that wide, and
              the floating panel starts exactly where it ends. */
-          --rail-w:67px;
+          --rail-w:84px;
           /* The right-hand panel dock's width (dockLayout keeps it): 0 with
              the dock off, its icon strip folded, strip + panel pinned open.
              What floats against the right edge stands this far in. */
@@ -439,32 +439,54 @@
      side of the document. Now it is only as tall as the tools it carries, and
      it floats over the canvas rather than taking a slice out of it, so the
      report runs underneath. */
-  #leftrail { position:absolute; left:0; top:0; z-index:2;
-              width:var(--rail-w); box-sizing:border-box; background:var(--chrome2);
-              display:flex; flex-direction:column;
-              align-items:stretch; gap:4px; padding:9px 5px; overflow:visible;
+  #leftrail { position:absolute; left:0; top:0; z-index:2; max-height:100%;
+              width:var(--rail-w); box-sizing:border-box;
+              /* The rail's own palette as variables, so a light rail is a swap
+                 of five values (body[data-chrome="light"] below), not a second
+                 stylesheet. */
+              --rb-ink:#EDF2EF; --rb-hover:rgba(255,255,255,.15);
+              --rb-edge:rgba(255,255,255,.07); --rb-top:#425260;
+              background:linear-gradient(180deg,var(--rb-top),var(--chrome2) 60%);
+              display:flex; flex-direction:column; align-items:center; gap:4px;
+              padding:12px 0; overflow-x:hidden; overflow-y:auto; scrollbar-width:none;
               border-radius:0 var(--r-edge) var(--r-edge) 0;
-              box-shadow:var(--shadow-edge); }
+              box-shadow:var(--shadow-edge), inset -1px 0 0 var(--rb-edge),
+                         inset 0 1px 0 rgba(255,255,255,.07); }
+  #leftrail::-webkit-scrollbar { display:none; }
+  body[data-chrome="light"] #leftrail { --rb-ink:#2F3E46; --rb-hover:#EAF0EC;
+              --rb-edge:#DCE5DF; --rb-top:#FBFCFB; background:linear-gradient(180deg,#FBFCFB,#fff 60%); }
   /* While one of the rail's own popovers is open it must outrank EVERYTHING —
      the rail's z-index:2 is a stacking context, so the .pop's z-index:1000
      only counts inside it, and the page strip (#rail, z-index:10) was eating
-     clicks on any popover row that overlapped it: on CI's font metrics that
-     was insert-image's "Upload from computer…", intercepted by a page chip
-     ("chip-view intercepts pointer events") on every run. Scoped to open,
-     undocked pops so normal layering returns the moment the menu closes. */
+     clicks on any popover row that overlapped it. Scoped to open, undocked
+     pops so normal layering returns the moment the menu closes. (Insert image
+     was the last popover of the rail's own; it is a docked tray now, so this
+     only matters if one is added back.) */
   #leftrail:has(.pop:not(.docked):not([hidden])) { z-index:11; }   /* above the rulers (7-8) and the page strip (10) */
-  /* Below the buttons there is NOTHING — not a veil, not a tint. The rail is
-     the tools and stops there; the canvas owns the rest of that column, which
-     is what frees the bottom-left corner for the page strip's own control. */
-  #leftrail button { display:flex; flex-direction:column; align-items:center; gap:5px;
-                     background:none; border:0; color:var(--txt); cursor:pointer;
-                     padding:9px 2px 8px; border-radius:var(--r-card);
-                     font:600 9px system-ui; letter-spacing:.1px;
-                     transition:background .14s, color .14s; }
-  #leftrail button:hover { background:rgba(255,255,255,.10); }
-  #leftrail button.on { background:var(--sage); color:#fff;
-                     box-shadow:0 1px 6px rgba(107,158,120,.42); }
-  #leftrail button svg { width:19px; height:19px; }
+  /* Five categories, each a word under its icon: Text, Elements, Data,
+     Images, Colors. 12px labels, up from the 9px the seven-button rail had.
+     The old tool ids (#shape #icon #table #chart) live on as .rail-alias
+     buttons that do what they always did, so every caller and spec that
+     reaches for them still lands. */
+  #leftrail .rb { width:68px; height:66px; flex:none; box-sizing:border-box;
+                  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+                  background:none; border:0; color:var(--rb-ink); cursor:pointer;
+                  padding:0; border-radius:14px;
+                  font:600 12px/1 system-ui; letter-spacing:.1px;
+                  transition:background .14s, color .14s; }
+  #leftrail .rb:hover { background:var(--rb-hover); }
+  #leftrail .rb:focus-visible { outline:2px solid var(--sage); outline-offset:2px; }
+  #leftrail .rb.on { background:linear-gradient(180deg,#7DB08A,#5E906E); color:#fff;
+                  box-shadow:0 3px 12px rgba(107,158,120,.5), inset 0 1px 0 rgba(255,255,255,.28); }
+  #leftrail .rb svg { width:24px; height:24px; flex:none; }
+  #leftrail .rsep { width:60%; height:1px; background:var(--rb-edge); margin:4px 0; flex:none; }
+  /* The old tool ids: present, reachable by a script or a spec, never seen.
+     1px, transparent, out of the tab order (tabindex=-1, aria-hidden). */
+  #leftrail .rail-alias { position:absolute; left:8px; bottom:3px; width:8px; height:1px;
+                  display:flex; gap:1px; overflow:hidden; opacity:0; }
+  /* side by side, a pixel each, so a click on one cannot land on another */
+  #leftrail .rail-alias button { flex:none; display:block; width:1px; height:1px; padding:0;
+                  margin:0; border:0; background:none; font-size:1px; }
   /* A boot failure is the one status the row must not quietly ellipsis away:
      it is the only thing on screen telling you why nothing works. */
   #stat.err { opacity:1; color:#FFD9D4; font-weight:600; cursor:help; }
@@ -1209,6 +1231,108 @@
         background:var(--sage); color:#fff; font:600 13.5px system-ui;
         cursor:pointer; transition:background .12s; }
   .pop.docked #txt-default:hover { background:var(--deep); color:#fff; }
+
+  /* -- the rail's trays (Text, Elements, Data, Images). Wider than the 252px
+     panels (Chart, Table, Colors, Find) because they carry a search box, tabs
+     and four tiles across; on a narrow window the tray takes what is left of
+     the width after the rail. Tray text is 13px and up. */
+  #side.tray:not(.folded) { width:min(364px, calc(100vw - var(--rail-w) - 12px)); }
+  #side.tray #side-head { padding:16px 14px 8px 20px; font:700 18px/1.2 system-ui; }
+  #side.tray #side-body { padding:0 16px 112px 20px; }
+  .tr-search { display:flex; align-items:center; gap:9px; height:40px; box-sizing:border-box;
+        border:1px solid #C9D6CD; border-radius:9px; padding:0 12px; background:#fff;
+        color:#5B6E66; margin:4px 0 0; }
+  .tr-search svg { width:16px; height:16px; flex:none; fill:none; stroke:currentColor;
+        stroke-width:1.6; stroke-linecap:round; }
+  .tr-search:focus-within { border-color:var(--sage); box-shadow:0 0 0 3px rgba(107,158,120,.22); }
+  .pop.docked .tr-search input, .pop.docked .tr-search #icon-q, .tr-search input { flex:1; min-width:0; width:100%;
+        border:0; outline:0; background:none; padding:0; margin:0; border-radius:0;
+        font:14.5px system-ui; color:var(--ink); box-shadow:none; }
+  .tr-search input::placeholder { color:#6B7F86; }
+  .tr-tabs { display:flex; gap:4px; border-bottom:1px solid #E1E8E3; margin:14px 0 0; }
+  .tr-tab { border:0; background:none; font:600 14.5px system-ui; color:#5B6E66;
+        padding:9px 12px 11px; cursor:pointer; position:relative; border-radius:8px 8px 0 0; }
+  .tr-tab:hover { color:var(--ink); background:#F4F7F5; }
+  .tr-tab[aria-selected="true"] { color:var(--deep); }
+  .tr-tab[aria-selected="true"]::after { content:""; position:absolute; left:10px; right:10px;
+        bottom:-1px; height:3px; border-radius:3px 3px 0 0; background:var(--sage); }
+  .tr-tab:focus-visible, .tr-chip:focus-visible, .tr-tile:focus-visible,
+  .pop.docked .tgrid .shp:focus-visible, .tr-row:focus-visible { outline:2px solid var(--sage); outline-offset:2px; }
+  .tr-h { display:flex; align-items:center; justify-content:space-between; gap:8px;
+        font:700 12.5px/1.2 system-ui; letter-spacing:.09em; text-transform:uppercase;
+        color:#5B6E66; margin:20px 0 10px; }
+  .tr-h select, .pop.docked .tr-h select { width:auto; margin:0; padding:4px 8px; border-radius:8px;
+        border:1px solid #C9D6CD; font:600 13px system-ui; letter-spacing:0;
+        text-transform:none; color:#3E5159; background:#fff; }
+  .tr-empty { font:13.5px/1.4 system-ui; color:#5B6E66; margin:14px 0 0; }
+  .tr-empty[hidden], .tr-h[hidden], [data-tpane][hidden] { display:none; }
+  .tr-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .tr-chip { border:1px solid transparent; background:#F1F5F2; color:#3E5159; height:32px;
+        padding:0 12px; border-radius:8px; font:600 13.5px system-ui; cursor:pointer;
+        transition:background .12s; }
+  .tr-chip:hover { background:#E3EEE6; }
+  /* a tile: art over a name, the whole card the button */
+  .tr-grid { display:grid; gap:8px; }
+  .tr-grid.c4 { grid-template-columns:repeat(4, 1fr); }
+  .tr-grid.c3 { grid-template-columns:repeat(3, 1fr); }
+  .tr-tile { border:1px solid transparent; background:#F1F5F2; border-radius:12px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:7px; cursor:pointer; color:var(--ink); font:600 13px/1.2 system-ui;
+        padding:10px 4px; min-width:0; text-align:center; position:relative;
+        transition:background .12s, border-color .12s, transform .12s, box-shadow .12s; }
+  .tr-tile:hover { background:#E5EFE8; border-color:var(--sage); transform:translateY(-1px);
+        box-shadow:0 4px 12px rgba(82,121,111,.18); }
+  .tr-tile[hidden] { display:none; }
+  .tr-tile svg { width:36px; height:30px; flex:none; }
+  .tr-tile.chart { min-height:84px; }
+  /* a row: one wide card with a name and a line under it (Table, Upload) */
+  .tr-row { width:100%; box-sizing:border-box; text-align:left; display:flex; align-items:center;
+        gap:12px; border:1px solid transparent; background:#F1F5F2; border-radius:12px;
+        padding:0 14px; min-height:56px; cursor:pointer; font:600 14.5px system-ui;
+        color:var(--ink); transition:background .12s, border-color .12s; }
+  .tr-row:hover { background:#E5EFE8; border-color:var(--sage); }
+  .tr-row svg { width:24px; height:24px; flex:none; fill:none; stroke:var(--deep);
+        stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .tr-row small { display:block; font:400 13px/1.3 system-ui; color:#5B6E66; }
+  .tr-row[hidden] { display:none; }
+  /* Elements: the shape tiles in the same four-across cards */
+  .tray-in .tgrid { grid-template-columns:repeat(4, 1fr); gap:8px; }
+  .pop.docked .tray-in .tgrid .shp, .pop.docked .tgrid.tr-cards .shp { height:88px; box-sizing:border-box;
+        justify-content:center; gap:7px; padding:8px 2px; background:#F1F5F2;
+        border:1px solid transparent; border-radius:12px; font:600 13px/1.2 system-ui; color:var(--ink);
+        transition:background .12s, border-color .12s, transform .12s, box-shadow .12s; }
+  .pop.docked .tgrid.tr-cards .shp:hover { background:#E5EFE8; border-color:var(--sage);
+        transform:translateY(-1px); box-shadow:0 4px 12px rgba(82,121,111,.18); color:var(--ink); }
+  .tgrid.tr-cards .shp[hidden] { display:none; }
+  .tgrid.tr-cards .tile-art { width:auto; aspect-ratio:auto; background:none; border:0;
+        border-radius:0; box-shadow:none; transform:none; }
+  .pop.docked .tgrid.tr-cards .shp:hover .tile-art { background:none; border:0; transform:none; box-shadow:none; }
+  .tgrid.tr-cards .shp svg { width:32px; height:32px; }
+  .tray-in .icon-grid-wrap #icon-grid, .pop.docked .tray-in #icon-grid { grid-template-columns:repeat(6, 1fr);
+        gap:8px; margin-top:0; }
+  .pop.docked .tray-in #icon-recent { grid-template-columns:repeat(6, 1fr); gap:8px; }
+  .pop.docked .tray-in .icon-tile { aspect-ratio:auto; height:46px; }
+  .pop.docked .tray-in .icon-note { font:13px/1.4 system-ui; color:#5B6E66; margin:10px 0 0; }
+  /* Images: a thumbnail per picture already in the report */
+  #img-list { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:0; }
+  .pop.docked #img-list .shp { flex-direction:column; align-items:center; justify-content:flex-start;
+        gap:6px; height:auto; padding:6px; background:#F1F5F2; border:1px solid transparent;
+        border-radius:10px; font:600 13px/1.2 system-ui; color:var(--ink); }
+  .pop.docked #img-list .shp:hover { background:#E5EFE8; border-color:var(--sage); color:var(--ink); }
+  .pop.docked #img-list .shp .shp-i { width:100%; height:64px; object-fit:contain;
+        background:#fff; border-radius:6px; }
+  .pop.docked #img-list .shp .shp-t { max-width:100%; overflow:hidden; text-overflow:ellipsis;
+        white-space:nowrap; }
+  /* Text: the three styles as cards that show the style, the rest as rows */
+  .pop.docked .tr-textcards { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .pop.docked .tr-textcards .txtpreset { display:flex; flex-direction:column; align-items:center;
+        justify-content:center; gap:4px; text-align:center; height:78px; margin:0; padding:8px 4px; }
+  .pop.docked .tr-textcards .txtpreset b { font:800 24px/1 system-ui; color:var(--ink); }
+  .pop.docked .tr-textcards .txtpreset span { font:600 13px system-ui; color:#3E5159; }
+  .pop.docked .tr-textrows .txtpreset { display:flex; align-items:center; gap:12px; margin:0 0 8px; min-height:56px; }
+  .pop.docked .tr-textrows .txtpreset > span { white-space:nowrap; flex:none; }
+  .pop.docked .tr-textrows .txtpreset small { font:13px/1.3 system-ui; color:#5B6E66; }
+  .pop.docked .txtpreset[hidden], .pop.docked #txt-default[hidden] { display:none; }
 
   /* the table panel: rows/columns, fill, text and borders on one surface */
   .tp-scope { font:11.5px system-ui; color:#5B6E66; background:#EDF4EE;
@@ -2720,31 +2844,62 @@
       <button id="dl-thispage" type="button">this page</button></div>
   </div>
   <div class="pop" id="textpop" hidden>
-    <p class="pop-h">Add text to the page in view</p>
+    <div class="tray-in">
+    <label class="tr-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14"/></svg><input id="text-q" type="search"
+      placeholder="Search text styles" autocomplete="off" spellcheck="false"
+      aria-label="Search text styles"></label>
     <!-- The plain one first and highlighted: an empty box to type in is what
          "add text" means most of the time, and the styled presets below are
          the shortcuts. Deliberately NOT .txtpreset — that class is the set of
-         three style presets, which the suite counts. -->
-    <button class="shp" id="txt-default" data-k="plain">Add a text box</button>
-    <p class="pop-h">Or start from a style</p>
-    <button class="shp txtpreset" data-k="heading" style="font:700 17px system-ui">Add a heading</button>
-    <button class="shp txtpreset" data-k="subheading" style="font:600 14px system-ui">Add a subheading</button>
-    <button class="shp txtpreset" data-k="body" style="font:12px system-ui">Add body text</button>
-    <button class="shp txtpreset" data-k="expand"><span
-      style="display:inline-block;background:#52796F;color:#fff;border-radius:7px;
-             padding:5px 12px;font:700 12px system-ui">Expandable section&nbsp;&#9662;</span>
-      <span style="font:12px system-ui">button + hidden content</span></button>
-    <button class="shp txtpreset" data-k="pdfbtn"><span
-      style="display:inline-block;background:#2F3E46;color:#fff;border-radius:7px;
-             padding:5px 12px;font:700 12px system-ui">&#8595;&nbsp;Download PDF</span>
-      <span style="font:12px system-ui">button</span></button>
+         style presets, which the suite counts. -->
+    <button class="shp" id="txt-default" data-k="plain" style="margin-top:14px">Add a text box</button>
+    <p class="tr-h" data-kw="heading subheading body style">Or start from a style</p>
+    <div class="tr-textcards">
+      <button class="shp txtpreset" data-k="heading" aria-label="Add a heading"><b>Aa</b><span>Heading</span></button>
+      <button class="shp txtpreset" data-k="subheading" aria-label="Add a subheading"><b style="font-size:20px;font-weight:700">Aa</b><span>Subheading</span></button>
+      <button class="shp txtpreset" data-k="body" aria-label="Add body text"><b style="font-size:17px;font-weight:500">Aa</b><span>Body</span></button>
+    </div>
+    <p class="tr-h" data-kw="expandable section button pdf download">Buttons and sections</p>
+    <div class="tr-textrows">
+      <button class="shp txtpreset" data-k="expand"><span
+        style="display:inline-block;background:#52796F;color:#fff;border-radius:7px;
+               padding:5px 12px;font:700 13px system-ui">Expandable section&nbsp;&#9662;</span>
+        <small>button + hidden content</small></button>
+      <button class="shp txtpreset" data-k="pdfbtn"><span
+        style="display:inline-block;background:#2F3E46;color:#fff;border-radius:7px;
+               padding:5px 12px;font:700 13px system-ui">&#8595;&nbsp;Download PDF</span>
+        <small>button</small></button>
+    </div>
+    <p class="tr-empty" id="text-empty" hidden>No text style matches that.</p>
+    </div>
   </div>
   <!-- The shape array. Each choice is an art tile (square + name underneath),
        so it reads as a gallery of things you can place rather than a menu. The
        .shp buttons and their data-k are untouched — only the wrapper is new. -->
-  <div class="pop" id="shapepop" hidden>
-    <p class="pop-h">Add to the page in view</p>
-    <div class="tgrid">
+  <!-- Elements: shapes AND icons in one tray (tabs: All, Shapes, Icons) with
+       one search box. The shape buttons are the old shape picker's, untouched
+       — same .shp[data-k], same handlers — and #icon-q / #icon-set / #icon-grid
+       are the icon picker's own nodes; only the wrapper is new. dockPanel moves
+       #elementspop into the left panel as a whole. -->
+  <div class="pop" id="elementspop" hidden>
+    <div class="tray-in">
+    <label class="tr-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14"/></svg><input id="icon-q" type="search"
+      placeholder="Search shapes and icons" autocomplete="off" spellcheck="false"
+      aria-label="Search shapes and icons"></label>
+    <div class="tr-tabs" role="tablist" id="el-tabs" aria-label="Elements">
+      <button class="tr-tab" role="tab" data-tab="all" aria-selected="true">All</button>
+      <button class="tr-tab" role="tab" data-tab="shapes" aria-selected="false">Shapes</button>
+      <button class="tr-tab" role="tab" data-tab="icons" aria-selected="false">Icons</button>
+    </div>
+    <div data-tpane="recent" data-tabs="all icons">
+      <p class="tr-h" id="icon-recent-h" hidden>Recently used</p>
+      <div id="icon-recent"></div>
+    </div>
+    <div id="shapepop" data-tpane="shapes" data-tabs="all shapes">
+      <p class="tr-h">Shapes</p>
+      <!-- The shape array. Each choice is an art tile with its name, so it
+           reads as a gallery of things you can place rather than a menu. -->
+      <div class="tgrid tr-cards">
       <button class="shp" data-k="rect"><span class="tile-art"><svg viewBox="0 0 15 15"
         fill="#CAD2C5" stroke="#52796F" stroke-width="1.2"><rect x="1.5" y="3" width="12"
         height="9" rx="1.5"/></svg></span>Rectangle</button>
@@ -2774,19 +2929,55 @@
       <button class="shp" data-pen title="Click to place points, drag to pull a curve; Enter or the first point to close, Esc to finish open"><span class="tile-art"><svg viewBox="0 0 15 15"
         fill="none" stroke="#52796F" stroke-width="1.3" stroke-linecap="round"><path
         d="M2 12C4 3 9 13 13 3"/><circle cx="2" cy="12" r="1.2" fill="#52796F"/><circle cx="13" cy="3" r="1.2" fill="#52796F"/></svg></span>Pen</button>
+      </div>
+    </div>
+    <div data-tpane="icons" data-tabs="all icons">
+      <p class="tr-h">Icons
+        <select id="icon-set" title="Which icon set to search" aria-label="Which icon set to search">
+          <option value="">All sets</option>
+        </select></p>
+      <div class="tr-chips" id="icon-sugg" aria-label="Try one of these"><button class="tr-chip" data-q="house">house</button><button class="tr-chip" data-q="arrow">arrow</button><button class="tr-chip" data-q="people">people</button><button class="tr-chip" data-q="chart">chart</button><button class="tr-chip" data-q="heart">heart</button><button class="tr-chip" data-q="money">money</button><button class="tr-chip" data-q="book">book</button><button class="tr-chip" data-q="map">map</button></div>
+      <div id="icon-grid"></div>
+      <p class="icon-note" id="icon-note"></p>
+    </div>
+    <p class="tr-empty" id="el-empty" hidden>No shape matches that.</p>
     </div>
   </div>
-  <div class="pop pop-wide" id="iconpop" hidden>
-    <p class="pop-h">Search open-source icons</p>
-    <input id="icon-q" type="search" placeholder="chart, house, arrow, people…"
-      autocomplete="off" spellcheck="false">
-    <select id="icon-set" title="Which icon set to search">
-      <option value="">All sets</option>
-    </select>
-    <p class="pop-h" id="icon-recent-h" hidden>Recently used</p>
-    <div id="icon-recent"></div>
-    <div id="icon-grid"></div>
-    <p class="icon-note" id="icon-note"></p>
+  <!-- Data: charts AND tables in one tray. A chart tile places that chart type
+       (only types the chart engine draws — CHART_TYPES in layout.py) and opens
+       its panel, as the old Chart button did for a bar chart; Table does the
+       same for a table. -->
+  <div class="pop" id="datapop" hidden>
+    <div class="tray-in">
+    <label class="tr-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14"/></svg><input id="data-q" type="search"
+      placeholder="Search charts and tables" autocomplete="off" spellcheck="false"
+      aria-label="Search charts and tables"></label>
+    <div class="tr-tabs" role="tablist" id="data-tabs" aria-label="Data">
+      <button class="tr-tab" role="tab" data-tab="all" aria-selected="true">All</button>
+      <button class="tr-tab" role="tab" data-tab="charts" aria-selected="false">Charts</button>
+      <button class="tr-tab" role="tab" data-tab="tables" aria-selected="false">Tables</button>
+    </div>
+    <div data-tpane="charts" data-tabs="all charts">
+      <p class="tr-h">Charts</p>
+      <div class="tr-grid c4" id="data-charts">
+        <button class="tr-tile chart" data-chart="bar" data-kw="column vertical bars" aria-label="Add a bar chart"><svg viewBox="0 0 40 30" aria-hidden="true"><g style="stroke:none"><rect x="5" y="14" width="7" height="13" rx="1.5" fill="#84A98C"/><rect x="16.5" y="5" width="7" height="22" rx="1.5" fill="#52796F"/><rect x="28" y="10" width="7" height="17" rx="1.5" fill="#84A98C"/></g></svg>Bar</button>
+        <button class="tr-tile chart" data-chart="row" data-kw="horizontal bars" aria-label="Add a row chart"><svg viewBox="0 0 40 30" aria-hidden="true"><g style="stroke:none"><rect x="5" y="4" width="22" height="6" rx="1.5" fill="#84A98C"/><rect x="5" y="12" width="30" height="6" rx="1.5" fill="#52796F"/><rect x="5" y="20" width="16" height="6" rx="1.5" fill="#84A98C"/></g></svg>Row</button>
+        <button class="tr-tile chart" data-chart="stacked-bar" data-kw="stacked column" aria-label="Add a stacked bar chart"><svg viewBox="0 0 40 30" aria-hidden="true"><g style="stroke:none"><rect x="5" y="16" width="7" height="11" rx="1.2" fill="#52796F"/><rect x="5" y="9" width="7" height="6" rx="1.2" fill="#84A98C"/><rect x="16.5" y="9" width="7" height="18" rx="1.2" fill="#52796F"/><rect x="16.5" y="3" width="7" height="5" rx="1.2" fill="#84A98C"/><rect x="28" y="13" width="7" height="14" rx="1.2" fill="#52796F"/><rect x="28" y="6" width="7" height="6" rx="1.2" fill="#84A98C"/></g></svg>Stacked bar</button>
+        <button class="tr-tile chart" data-chart="stacked-row" data-kw="stacked horizontal" aria-label="Add a stacked row chart"><svg viewBox="0 0 40 30" aria-hidden="true"><g style="stroke:none"><rect x="5" y="4" width="15" height="6" rx="1.2" fill="#52796F"/><rect x="21" y="4" width="9" height="6" rx="1.2" fill="#84A98C"/><rect x="5" y="12" width="22" height="6" rx="1.2" fill="#52796F"/><rect x="28" y="12" width="7" height="6" rx="1.2" fill="#84A98C"/><rect x="5" y="20" width="11" height="6" rx="1.2" fill="#52796F"/><rect x="17" y="20" width="10" height="6" rx="1.2" fill="#84A98C"/></g></svg>Stacked row</button>
+        <button class="tr-tile chart" data-chart="pie" data-kw="pie share" aria-label="Add a pie chart"><svg viewBox="0 0 40 30" aria-hidden="true"><g style="stroke:none"><circle cx="20" cy="15" r="12" fill="#CAD2C5"/><path d="M20 15V3A12 12 0 0 1 30.4 21z" fill="#52796F"/><path d="M20 15L30.4 21A12 12 0 0 1 8.6 20z" fill="#84A98C"/></g></svg>Pie</button>
+        <button class="tr-tile chart" data-chart="donut" data-kw="doughnut ring share" aria-label="Add a donut chart"><svg viewBox="0 0 40 30" aria-hidden="true"><circle cx="20" cy="15" r="9" fill="none" stroke="#CAD2C5" stroke-width="6"/><circle cx="20" cy="15" r="9" fill="none" stroke="#52796F" stroke-width="6" stroke-dasharray="30 57" transform="rotate(-90 20 15)"/></svg>Donut</button>
+        <button class="tr-tile chart" data-chart="line" data-kw="trend over time" aria-label="Add a line chart"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M4 23L14 12l8 6 14-13" fill="none" stroke="#52796F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><g style="stroke:none" fill="#84A98C"><circle cx="4" cy="23" r="2"/><circle cx="14" cy="12" r="2"/><circle cx="22" cy="18" r="2"/><circle cx="36" cy="5" r="2"/></g></svg>Line</button>
+        <button class="tr-tile chart" data-chart="area" data-kw="filled trend" aria-label="Add a area chart"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M4 25L4 20 14 11l8 6 14-11V25z" fill="#84A98C" stroke="none"/><path d="M4 20L14 11l8 6 14-11" fill="none" stroke="#52796F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Area</button>
+      </div>
+      <p class="tr-empty" style="margin-top:10px">Pick a type, then edit its numbers in the Chart panel. More types (stacked area, scatter, radar and others) are in the panel's type menu.</p>
+    </div>
+    <div data-tpane="tables" data-tabs="all tables">
+      <p class="tr-h">Tables</p>
+      <button class="tr-row" id="data-table" data-kw="table grid rows columns"><svg viewBox="0 0 14 14"
+        aria-hidden="true"><rect x="1.5" y="2" width="11" height="10" rx="1"/><path d="M1.5 5.5h11M1.5 9h11M5.5 2v10"/></svg><span>Table<small>Starts 2 × 3; add rows and columns</small></span></button>
+    </div>
+    <p class="tr-empty" id="data-empty" hidden>No chart or table matches that.</p>
+    </div>
   </div>
   <!-- The table panel is built in JS (renderTablePanel) because everything in
        it depends on what is selected — which table, and which of its cells. -->
@@ -3350,58 +3541,60 @@
   <!-- Left tool rail (Canva-style): the "add an object" tools live here, out of
        the top bar so it fits one line. Same button ids, so every handler and the
        popovers (positioned from the button's own rect) keep working. -->
-  <nav id="leftrail">
-    <button id="text" aria-label="Add a text box to the page in view">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.6" stroke-linecap="round"><path d="M2 3.2V2h10v1.2M7 2v10M5.2 12h3.6"/></svg>
-      Text</button>
-    <button id="shape" aria-label="Add a shape to the page in view">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.5"><rect x="1.2" y="3.4" width="8" height="8" rx="1.4"/>
-        <circle cx="10" cy="4.4" r="2.9"/></svg>
-      Shape</button>
-    <button id="icon" aria-label="Search thousands of open-source icons and place one">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.4" stroke-linejoin="round"><path d="M7 1.6l1.7 3.4 3.8.55-2.75 2.68.65 3.77L7 10.22 3.6 12l.65-3.77L1.5 5.55l3.8-.55z"/></svg>
-      Icon</button>
-    <button id="ar-img" aria-label="Insert image — uploads into the project's assets and places it on this page">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.4" stroke-linecap="round"><rect x="1.5" y="2" width="11" height="10"
+  <nav id="leftrail" aria-label="Add to the page">
+    <button class="rb" id="text" aria-label="Text — add a text box, a heading or an expandable section" title="Text">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor"
+        stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 3.2V2h10v1.2M7 2v10M5.2 12h3.6"/></svg>
+      <span>Text</span></button>
+    <button class="rb" id="elements" aria-label="Elements — shapes and icons" title="Elements">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor"
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="4.6" height="4.6" rx="1.1"/><circle cx="10.2" cy="3.8" r="2.3"/><path d="M3.8 8L6.2 12.4H1.4z"/><path d="M10.2 8.1v4.2M8.1 10.2h4.2"/></svg>
+      <span>Elements</span></button>
+    <button class="rb" id="data" aria-label="Data — charts and tables" title="Data">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor"
+        stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="1.8" width="11" height="10.4" rx="1.6"/><path d="M4.6 10V7.6M7 10V4.6M9.4 10V6.3"/></svg>
+      <span>Data</span></button>
+    <button class="rb" id="ar-img" aria-label="Images — upload one or place one already in this report" title="Images">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor"
+        stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2" width="11" height="10"
         rx="1.5"/><circle cx="5" cy="5.6" r="1.1" fill="currentColor" stroke="none"/>
         <path d="M2.5 10.5l3-3 2.2 2.2 2-2 1.8 1.8"/></svg>
-      Image</button>
-    <!-- Insert image's picker, shown only when the project already carries
-         images (a template's Appleseed logos, past uploads — manifest
-         "images"). Rows are filled in by openImageMenu(); with nothing
-         bundled the button keeps its straight-to-upload behaviour. -->
-    <div class="pop menu" id="imgpop" hidden>
-      <p class="pop-h">In this report</p>
-      <div id="img-list"></div>
-      <button class="shp" id="img-upload"><svg class="shp-i" viewBox="0 0 16 16"
-        ><path d="M8 13.4V6.3"/><path d="M5.1 9.2 8 6.3l2.9 2.9"/><path
-          d="M2.9 4.9V3.6a1 1 0 0 1 1-1h8.2a1 1 0 0 1 1 1v1.3"
-        /></svg><span class="shp-t">Upload from computer…</span></button>
-    </div>
-    <button id="table" aria-label="Add a table to the page in view">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.4"><rect x="1.5" y="2" width="11" height="10" rx="1"/>
-        <path d="M1.5 5.5h11M1.5 9h11M5.5 2v10"/></svg>
-      Table</button>
-    <button id="chart" aria-label="Add a bar, column, pie or donut chart">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.4" stroke-linecap="round"><path d="M1.6 12.4h10.8"/>
-        <rect x="2.6" y="7" width="2.4" height="4.2"/><rect x="6" y="4.2" width="2.4" height="7"/>
-        <rect x="9.4" y="1.8" width="2.4" height="9.4"/></svg>
-      Chart</button>
-    <button id="colors" aria-label="The report's palette and the published colour schemes">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-        stroke-width="1.4" stroke-linecap="round"><path
+      <span>Images</span></button>
+    <span class="rsep" role="separator"></span>
+    <button class="rb" id="colors" aria-label="Colors — the report's palette and the published colour schemes" title="Colors">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor"
+        stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path
         d="M7 1.8a5.2 5.2 0 1 0 0 10.4c.9 0 1.2-.6.9-1.2-.4-.8-.1-1.7.9-1.7h1.4c1.1 0 2-.9 2-2A5.6 5.6 0 0 0 7 1.8z"/>
         <circle cx="4.6" cy="5" r=".9" fill="currentColor" stroke="none"/>
         <circle cx="8.4" cy="4.2" r=".9" fill="currentColor" stroke="none"/>
         <circle cx="4.2" cy="8.4" r=".9" fill="currentColor" stroke="none"/></svg>
-      Colors</button>
+      <span>Colors</span></button>
+    <!-- The seven-button rail's ids, kept so a script or a spec that reaches
+         for #shape #icon #table #chart still lands: each does what it always
+         did (open that picker, or drop that object). Never seen, never in the
+         tab order; the visible way to each is Elements and Data. -->
+    <span class="rail-alias" aria-hidden="true">
+      <button id="shape" tabindex="-1">Shape</button>
+      <button id="icon" tabindex="-1">Icon</button>
+      <button id="table" tabindex="-1">Table</button>
+      <button id="chart" tabindex="-1">Chart</button>
+    </span>
   </nav>
+  <!-- Images' tray: upload, and the pictures the report already carries
+       (a template's logos, earlier uploads — manifest "images"). Rows are
+       filled in by renderImageTray(). -->
+  <div class="pop" id="imgpop" hidden>
+    <div class="tray-in">
+      <label class="tr-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14"/></svg><input id="img-q" type="search"
+        placeholder="Search this report's images" autocomplete="off" spellcheck="false"
+        aria-label="Search this report's images"></label>
+      <button class="tr-row" id="img-upload" style="margin-top:14px"><svg viewBox="0 0 14 14"
+        aria-hidden="true"><path d="M7 9.5V3M4.5 5.2L7 2.7l2.5 2.5M2.5 10.5V12h9v-1.5"/></svg><span>Upload from computer<small>Added to this report's images, then placed on the page</small></span></button>
+      <p class="tr-h" id="img-h">In this report</p>
+      <div id="img-list"></div>
+      <p class="tr-empty" id="img-empty" hidden></p>
+    </div>
+  </div>
   <!-- The left column is a PANEL host now: whatever the current tool needs a
        lot of room for (colour, today) opens here instead of in a popover that
        a 46px row would clip. Pages moved to the bottom strip. -->
@@ -8904,7 +9097,7 @@ function togglePop(pop, anchor) {
 // Only the controls that OPEN one of these surfaces. The File menu's
 // own entries are inside .pop already, and #guides is a plain toggle, not an
 // anchor — listing either would just stop a click there from closing anything.
-const POP_ANCHORS = '#ty-colorbtn, #ty-spacebtn, #ty-parabtn, #text, #shape, #icon, #layers,'
+const POP_ANCHORS = '#ty-colorbtn, #ty-spacebtn, #ty-parabtn, #text, #elements, #data, #shape, #icon, #layers,'
   + ' #download, #file, #view, #check, #zoombtn, #ar-img';
 
 // The rail's PICKERS — the panels that exist to put a new object on the page.
@@ -8914,7 +9107,7 @@ const POP_ANCHORS = '#ty-colorbtn, #ty-spacebtn, #ty-parabtn, #text, #shape, #ic
 // selected and are meant to be used WHILE working on the canvas: styling a
 // cell, recolouring one shape then the next. Dismissing them on a canvas click
 // would close them on the very gesture they exist to serve.
-const RAIL_PICKERS = new Set(['text', 'shape', 'icon']);
+const RAIL_PICKERS = new Set(['text', 'elements', 'data', 'img', 'shape', 'icon']);
 
 /** Close what a click landed outside of. `insideChrome` is false for clicks
  *  that came from the report itself, where nothing is ever "inside" a menu. */
@@ -8991,10 +9184,20 @@ function undockPanel() {
   $('bar').appendChild(pop);           // home, where togglePop can place it again
   // Not every panel has a rail button: Find is reached from the File menu and
   // ⌘F, because it inserts nothing and the rail is the insert rail.
-  const btn = $(sidePanelTool);
+  const btn = railButtonOf(sidePanelTool);
   if (btn) btn.classList.remove('on');
+  $('side').classList.remove('tray');
   sidePanelTool = null;
 }
+
+/** The rail button that stands for a docked tool. Five categories now: the
+ *  Shape and Icon pickers are Elements, the Table and Chart panels are Data
+ *  (a placed chart's panel keeps Data lit), Insert image is Images. */
+const RAIL_BUTTON_OF = { text: 'text', elements: 'elements', shape: 'elements', icon: 'elements',
+                         data: 'data', table: 'data', chart: 'data', img: 'ar-img' };
+function railButtonOf(tool) { return $(RAIL_BUTTON_OF[tool] || ''); }
+/** The four trays that have a search box and tabs: wider than a panel. */
+const TRAY_TOOLS = new Set(['text', 'elements', 'data', 'img']);
 
 function dockPanel(tool, title, opts = {}) {
   // toggle:false — reopening the same panel REFRESHES it instead of closing.
@@ -9016,8 +9219,9 @@ function dockPanel(tool, title, opts = {}) {
   pop.hidden = false;
   body.appendChild(pop);
   sidePanelTool = tool;
-  const btn = $(tool);
+  const btn = railButtonOf(tool);
   if (btn) btn.classList.add('on');
+  $('side').classList.toggle('tray', TRAY_TOOLS.has(tool));
   $('side-title').textContent = title;
   $('side').hidden = false;
   unfoldSide();          // reaching for a tool means you want to see it
@@ -9035,6 +9239,59 @@ function unfoldSide() {
 // is a text box with a style preset, so it drags, resizes and recolours like
 // any other — and its size/weight can then be tuned in the formatting toolbar.
 $('text').onclick = () => dockPanel('text', 'Text');
+// -------------------------------------------------------------- tray search
+// One rule for the trays that filter by name: a tile or a row whose words
+// (its label plus its data-kw keywords) do not contain the query is hidden.
+const trayHit = (el, q) => !q || (el.textContent + ' ' + (el.dataset.kw || '') + ' ' + (el.title || '')).toLowerCase().includes(q);
+$('text-q').addEventListener('input', () => {
+  const q = $('text-q').value.trim().toLowerCase();
+  const pop = $('textpop');
+  let shown = 0;
+  pop.querySelectorAll('.tr-textcards .txtpreset, .tr-textrows .txtpreset, #txt-default').forEach(b => {
+    const hit = trayHit(b, q); b.hidden = !hit; if (hit) shown++;
+  });
+  // A heading goes with its group: hidden when the group has nothing showing.
+  pop.querySelectorAll('.tr-h').forEach(h => {
+    const group = h.nextElementSibling;
+    h.hidden = !!q && group && !group.querySelector('.txtpreset:not([hidden])');
+  });
+  $('text-empty').hidden = !!shown;
+});
+// ----------------------------------------------------------- the Data tray
+// Charts AND tables. A chart tile places that type and opens the Chart panel;
+// the Table row places a table and opens the Table panel (the hidden #chart /
+// #table aliases do the same for a bar chart and a table).
+let dataTab = 'all';
+function dataFilter() {
+  const q = $('data-q').value.trim().toLowerCase();
+  const pop = $('datapop');
+  pop.querySelectorAll('.tr-tile, .tr-row').forEach(el => { el.hidden = !trayHit(el, q); });
+  pop.querySelectorAll('[data-tpane]').forEach(pane => {
+    const inTab = pane.dataset.tabs.split(' ').includes(dataTab);
+    pane.hidden = !inTab || (!!q && !pane.querySelector('.tr-tile:not([hidden]), .tr-row:not([hidden])'));
+  });
+  $('data-empty').hidden = !(q && ![...pop.querySelectorAll('.tr-tile, .tr-row')].some(el => !el.hidden));
+}
+function setDataTab(tab) {
+  dataTab = tab;
+  $('datapop').querySelectorAll('.tr-tab').forEach(t => {
+    t.setAttribute('aria-selected', t.dataset.tab === tab ? 'true' : 'false');
+    t.tabIndex = t.dataset.tab === tab ? 0 : -1;
+  });
+  dataFilter();
+}
+document.querySelectorAll('#data-tabs .tr-tab').forEach(t =>
+  t.addEventListener('click', () => setDataTab(t.dataset.tab)));
+$('data-q').addEventListener('input', dataFilter);
+document.querySelectorAll('#data-charts .tr-tile[data-chart]').forEach(b =>
+  b.addEventListener('click', () => placeChart(b.dataset.chart)));
+$('data-table').addEventListener('click', () => placeTable());
+$('data').onclick = () => {
+  dockPanel('data', 'Data');
+  if (sidePanelTool !== 'data') return;
+  setDataTab('all');
+  $('data-q').focus();
+};
 const TEXT_PRESETS = {
   // The default: a plain box at body size with nothing to delete first. The
   // three below are style shortcuts, and `body` keeps its worked example of
@@ -9247,7 +9504,8 @@ const freeTableId = () => freeTId();
 
 $('ar-table').addEventListener('click', () => openTablePanel(selectedTableId()));
 
-$('table').onclick = async () => {
+// The Data tray's Table tile and the hidden #table alias both land here.
+async function placeTable() {
   const page = visiblePageId();
   pushHistory();
   const id = freeTableId();
@@ -9260,7 +9518,8 @@ $('table').onclick = async () => {
   // controls rather than making you hunt for them.
   openTablePanel('table.' + id);
   $('stat').textContent = `table.${id} added to page ${page} — click a cell to style it, double-click to type`;
-};
+}
+$('table').onclick = () => placeTable();
 
 /** Table cells edit in place (double-click) and offer a rows/columns menu
  *  (right-click). Both are bound each render, since the DOM is rebuilt. */
@@ -11669,17 +11928,28 @@ function dressNewChart(ch) {
   return ch;
 }
 
-$('chart').onclick = async () => {
+// The chart types the Data tray offers as tiles. Every one is in the engine's
+// CHART_TYPES (layout.py) and CHART_KINDS above — the tray picks among what
+// the engine draws and invents nothing. 'bar' is the vertical one, 'row' the
+// horizontal (the engine's own names; 'column' is only the old name for row).
+// A stacked type needs a second series to look like anything but a bar.
+const DATA_STACKED = ['stacked-bar', 'stacked-row'];
+// The Data tray's chart tiles, and the hidden #chart alias (a bar chart, as
+// the one Chart button always placed), land here.
+async function placeChart(type = 'bar') {
   const page = visiblePageId();
   pushHistory();
   const id = freeShapeId('chart');
+  const stacked = DATA_STACKED.includes(type);
   layout.shapes.push({
     id, page, kind: 'chart', x: placeX(4), y: 1.6, w: 4, h: 2.8, z: nextZ(2, page), fill: 'none',
     chart: dressNewChart({
-      type: 'bar',
+      type,
       labels: ['First', 'Second', 'Third'],
-      series: [{ name: 'Series 1', data: [12, 19, 8] }],
-      legend: false, values: true, grid: true,
+      series: stacked
+        ? [{ name: 'Series 1', data: [12, 19, 8] }, { name: 'Series 2', data: [7, 11, 14] }]
+        : [{ name: 'Series 1', data: [12, 19, 8] }],
+      legend: stacked, values: true, grid: true,
     }),
   });
   setSel($('out').contentDocument, [id]);
@@ -11687,7 +11957,8 @@ $('chart').onclick = async () => {
   await render();
   openChartPanel(id);
   $('stat').textContent = `${id} added to page ${page} — edit its data in the Chart panel`;
-};
+}
+$('chart').onclick = () => placeChart('bar');
 $('ar-chart').addEventListener('click', () => openChartPanel(selectedChartId()));
 
 /** Choose a column count that leaves EVEN rows rather than an orphan. Packing
@@ -21392,14 +21663,21 @@ function projectImages() {
   return [...names].sort();
 }
 
-function openImageMenu() {
+/** The Images tray: Upload, and a thumbnail for each picture already in the
+ *  report. Filtered by the search box; with nothing bundled it says so and
+ *  Upload stays the one thing to press. */
+function renderImageTray() {
   const host = $('img-list');
   host.textContent = '';
-  for (const name of projectImages()) {
+  const q = $('img-q').value.trim().toLowerCase();
+  const all = projectImages();
+  const names = all.filter(n => !q || n.toLowerCase().includes(q));
+  for (const name of names) {
     const b = document.createElement('button');
     b.className = 'shp';
+    b.title = name;
     // The image IS its own icon — a name like logo-2.svg says far less than
-    // a 16px look at the thing itself.
+    // a look at the thing itself.
     const im = document.createElement('img');
     im.className = 'shp-i';
     im.alt = '';
@@ -21408,10 +21686,19 @@ function openImageMenu() {
     t.className = 'shp-t';
     t.textContent = name;
     b.append(im, t);
-    b.onclick = () => { $('imgpop').hidden = true; placeImageBox('assets/' + name, name); };
+    b.onclick = () => placeImageBox('assets/' + name, name);
     host.appendChild(b);
   }
-  togglePop($('imgpop'), $('ar-img'));
+  $('img-h').hidden = !names.length;
+  const empty = $('img-empty');
+  empty.hidden = !!names.length;
+  empty.textContent = all.length ? 'No image in this report matches that.'
+    : 'This report has no images yet. Upload one and it will show up here.';
+}
+function openImageTray() {
+  renderImageTray();
+  dockPanel('img', 'Images');
+  if (sidePanelTool === 'img') $('img-q').focus();
 }
 
 function startImageUpload() {
@@ -21419,16 +21706,12 @@ function startImageUpload() {
   uploadImageFile(d, (path, name) => placeImageBox(path, name));
 }
 
-$('ar-img').addEventListener('click', () => {
-  // With nothing already in the project there is nothing to pick from, so
-  // the button keeps its one-click path straight into the file dialog.
-  if (projectImages().length) openImageMenu();
-  else startImageUpload();
-});
-$('img-upload').addEventListener('click', () => {
-  $('imgpop').hidden = true;
-  startImageUpload();
-});
+// Images has a tray like the other categories. It used to be a small menu
+// (or, with nothing bundled, a straight jump into the file dialog); the tray
+// keeps both: pick a picture already in the report, or Upload.
+$('ar-img').addEventListener('click', openImageTray);
+$('img-q').addEventListener('input', renderImageTray);
+$('img-upload').addEventListener('click', startImageUpload);
 // Open the selection's own context menu from a button. layerMenu positions
 // itself from an event's clientX/clientY in the IFRAME's coordinate space, so
 // a click in the chrome cannot hand it its own — it gets the selected
@@ -24532,33 +24815,93 @@ async function addIcon(id) {
   $('stat').textContent = `${id} placed on page ${page} — drag to size, recolour with Fill`;
 }
 
-$('icon').onclick = () => {
+// ---------------------------------------------------------- the Elements tray
+// Shapes and icons in one tray: tabs All / Shapes / Icons and ONE search box
+// (#icon-q, the icon picker's own input). Typing filters the shape tiles by
+// name at once and searches the icon sets. #shape and #icon (the rail's hidden
+// aliases) open it on their own tab, and toggle it closed on a second press,
+// as the two buttons they stand for always did.
+let elTab = 'all';
+function setTrayTab(root, tab, tabsOf) {
+  root.querySelectorAll('.tr-tab').forEach(t => {
+    const on = t.dataset.tab === tab;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+  });
+  root.querySelectorAll('[data-tpane]').forEach(pane => {
+    pane.hidden = !pane.dataset.tabs.split(' ').includes(tab);
+  });
+}
+/** Show only the shape tiles whose name matches what is typed. */
+function elementsFilter() {
+  const q = $('icon-q').value.trim().toLowerCase();
+  const tiles = [...$('shapepop').querySelectorAll('.shp')];
+  let shown = 0;
+  tiles.forEach(b => {
+    const hit = !q || (b.textContent + ' ' + (b.title || '')).toLowerCase().includes(q);
+    b.hidden = !hit;
+    if (hit) shown++;
+  });
+  // A search with no shape in it hides the (empty) Shapes section on All, and
+  // says so on the Shapes tab, where it is the whole tray.
+  const sec = $('shapepop');
+  const none = !!q && !shown;
+  sec.hidden = !sec.dataset.tabs.split(' ').includes(elTab) || (none && elTab === 'all');
+  $('el-empty').hidden = !(none && elTab === 'shapes');
+  $('icon-sugg').hidden = !!q;
+}
+function setElementsTab(tab) {
+  elTab = tab;
+  setTrayTab($('elementspop'), tab);
+  elementsFilter();
+}
+document.querySelectorAll('#el-tabs .tr-tab').forEach(t =>
+  t.addEventListener('click', () => { setElementsTab(t.dataset.tab); if (t.dataset.tab !== 'shapes') iconDebounced(); }));
+document.querySelectorAll('#icon-sugg .tr-chip').forEach(c => c.addEventListener('click', () => {
+  $('icon-q').value = c.dataset.q;
+  elementsFilter();
+  iconSearch(c.dataset.q);
+  $('icon-q').focus();
+}));
+function openElements(tab) {
+  // Pressing the button for what is already showing closes the tray; a
+  // different tab of the open tray just switches.
+  if (sidePanelTool === 'elements') {
+    if (!tab || tab === elTab) { closeSide(); return; }
+    setElementsTab(tab);
+    if (tab !== 'shapes') iconRecentRender(!$('icon-q').value.trim());
+    return;
+  }
   const sel = $('icon-set');
   if (sel.options.length === 1) {
     ICON_SETS.forEach(([p, label]) => sel.add(new Option(label, p)));
   }
-  dockPanel('icon', 'Icons');
-  if (sidePanelTool === 'icon') {
-    iconRecentRender(!$('icon-q').value.trim());
-    $('icon-q').focus();
-  }
-};
+  dockPanel('elements', 'Elements');
+  if (sidePanelTool !== 'elements') return;
+  setElementsTab(tab || 'all');
+  iconRecentRender(!$('icon-q').value.trim());
+  $('icon-q').focus();
+}
+$('elements').onclick = () => openElements();
+$('icon').onclick = () => openElements('icons');
 let iconTimer = null;
 const iconDebounced = () => {
   clearTimeout(iconTimer);
+  // The Shapes tab searches shape names only; no reason to ask the icon API.
+  if (elTab === 'shapes') return;
   iconTimer = setTimeout(() => iconSearch($('icon-q').value), 220);
 };
-$('icon-q').addEventListener('input', iconDebounced);
+$('icon-q').addEventListener('input', () => { elementsFilter(); iconDebounced(); });
 $('icon-set').addEventListener('change', () => iconSearch($('icon-q').value));
 
-$('shape').onclick = () => dockPanel('shape', 'Shapes');
+$('shape').onclick = () => openElements('shapes');
 document.addEventListener('keydown', e => {
   if (!pen || (e.key !== 'Enter' && e.key !== 'Escape')) return;
   const d = $('out').contentDocument;
   if (d && d.__dsPenFinish) { e.preventDefault(); d.__dsPenFinish(e.key === 'Enter'); }
 }, true);
 $('shapepop').querySelector('[data-qr]').addEventListener('click', async () => {
-  $('shapepop').hidden = true;
+  closeSide();                       // a dialog follows; the tray would sit behind it
   const got = await dsForm('QR code', [{ name: 'data', type: 'text', label: 'The link it opens', value: 'https://' }],
     { okLabel: 'Add', validate: v => !v.data.trim() || v.data.trim() === 'https://' ? 'what should it open?'
       : new TextEncoder().encode(v.data.trim()).length > 213 ? 'that is longer than a QR code here carries (213 bytes)' : '' });
@@ -24578,7 +24921,7 @@ $('shapepop').querySelector('[data-spacer]').addEventListener('click', async () 
   $('stat').textContent = `spacer holding ${sh.h}in — size it to the gap you want; things it touches keep it when one moves`;
 });
 $('shapepop').querySelector('[data-pen]').addEventListener('click', () => {
-  $('shapepop').hidden = true;
+  closeSide();                       // the pen draws on the page, so the page needs the room
   pen = { pts: [], page: null, pid: null, drag: null };
   $('out').contentDocument.documentElement.classList.add('ds-pen-arm');
   $('stat').textContent = 'pen: click to place points, drag to pull a curve — Enter or the first point closes, Esc finishes open';
