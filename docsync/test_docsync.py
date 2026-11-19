@@ -6229,6 +6229,27 @@ for _slug, _wh in (("blank-document", (8.5, 11.0)), ("slides", (10.0, 7.5)),
             check_eq(f"{_slug}: no endnotes list", 'class="endnotes"' in _h, False)
             check(f"{_slug}: its page size", _h, f"width:{_wh[0]}in")
 
+# --- lists people and models actually type, and lists in indented containers ---
+from docsync.content import block_html as _bhl, bullets as _bul   # noqa: E402
+_li = lambda *t: '<ul class="extra-bullets">' + "".join(f"<li>{x}</li>" for x in t) + "</ul>"
+for _m in ("* a\n* b", "+ a\n+ b", "\u2022 a\n\u2022 b", "- a\n- b"):
+    check_eq(f"bullets typed as {_m.splitlines()[0][:1]!r} are one list", _bhl(_m), _li("a", "b"))
+check_eq("-5 degrees is prose, not a list", _bhl("-5 degrees"), "<p>-5 degrees</p>")
+check_eq("a blank line between items is still one list", _bhl("- a\n\n- b\n\n- c"), _li("a", "b", "c"))
+check_eq("a blank line then prose ends the list", _bhl("- a\n\nafter"), _li("a") + "<p>after</p>")
+check_eq("an indented wrapped line is the item's own words",
+         _bhl("- a long item\n  that goes on\n- b"), _li("a long item that goes on", "b"))
+check_eq("a wrapped numbered item with a sub-list",
+         _bhl("1. a\n\n2. b\n   wraps\n   - sub"),
+         '<ol class="extra-numbers"><li>a</li><li>b wraps<ul><li>sub</li></ul></li></ol>')
+check_eq("a card's bullets slot keeps a wrapped item's words, not drops them",
+         _bul("* one\n  continues\n* two"), ["one continues", "two"])
+_cs = SPACE_CSS
+check_eq("indents land on the outermost list, never on its items",
+         ("li)[style*='--ds-il:']" not in _cs, ":is(ul,ol):not(li :is(ul,ol))[style*='--ds-il:']" in _cs,
+          ":is(p,h1,h2,h3,h4,h5,h6,li)[style*='--ds-sb:']" in _cs,
+          ":is(p,h1,h2,h3,h4,h5,h6,li)[style*='--ds-ti:']" in _cs), (True, True, True, False))
+
 if FAILS:
     print("\n\n".join("FAIL: " + f for f in FAILS))
     print(f"\n{len(FAILS)} failed")
