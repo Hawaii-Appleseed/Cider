@@ -58,52 +58,32 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar wraps inside a narrow window, and is the same height in the common modes', async ({ page }) => {
-    await page.setViewportSize({ width: 900, height: 800 });
-    const fits = () => page.evaluate(() => {
-      const bar = $('ctl'), w = innerWidth;
-      const kids = [...bar.querySelectorAll('input, select, button, label')]
-        .filter(e => e.offsetParent !== null);
-      const bb = bar.getBoundingClientRect();
-      const out = kids.filter(e => { const b = e.getBoundingClientRect();
-        return b.right > w + 1 || b.bottom > bb.bottom + 1; }).map(e => e.id || e.className);
-      return { out, h: Math.round(bb.height), workTop: Math.round($('work').getBoundingClientRect().top),
-        barBottom: Math.round(bb.bottom) };
-    });
+  test('the docked bar is one fixed 44px row in every mode and width, and reaches every field by scrolling', async ({ page }) => {
     await addRect(page);
-    const o = await fits();
-    expect(o.out).toEqual([]);                       // nothing past the window, nothing out of the bar
-    expect(o.h).toBeGreaterThan(44);                 // a narrow window gets more rows
-    expect(o.workTop).toBeGreaterThanOrEqual(o.barBottom - 1);   // and the page starts below them
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
-    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
-    await settled(page);
-    for (const m of ['char', 'para']) {
-      await page.click(`#cb-mode [data-m="${m}"]`);
-      const r = await fits();
-      expect(r.out, m).toEqual([]);
-      expect(r.h, m).toBe(o.h);                      // selecting or switching mode never moves the canvas
-      expect(r.workTop, m).toBe(o.workTop);
+    const heights = [];
+    for (const w of [760, 1280, 1920]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.evaluate(() => setSel($('out').contentDocument, ['cb-rect']));
+      await settled(page);
+      heights.push(await page.evaluate(() => Math.round($('ctl').getBoundingClientRect().height)));
+      await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+      await settled(page);
+      for (const m of ['char', 'para', 'frame']) {
+        await page.click(`#cb-mode [data-m="${m}"]`);
+        heights.push(await page.evaluate(() => Math.round($('ctl').getBoundingClientRect().height)));
+      }
     }
-  });
-
-  test('the comments panel opens below the rows that hang from the bar, not over them', async ({ page }) => {
+    expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
+    expect(heights[0]).toBeLessThanOrEqual(45);
+    // at a narrow width the row scrolls, and the last control can be scrolled to
     await page.setViewportSize({ width: 760, height: 800 });
-    const id = await page.evaluate(async () =>
-      (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
-    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
-    await settled(page);
     await page.click('#cb-mode [data-m="char"]');
-    await page.evaluate(() => { $('cpanel').hidden = false; });
-    const r = await page.evaluate(() => {
-      const bar = $('ctl').getBoundingClientRect();
-      const low = Math.max(...[...$('ctl').querySelectorAll('input, select, button, label')]
-        .filter(e => e.offsetParent).map(e => e.getBoundingClientRect().bottom));
-      return { panelTop: $('cpanel').getBoundingClientRect().top, controlsBottom: low, barTop: bar.top };
-    });
-    expect(r.controlsBottom).toBeGreaterThan(r.barTop + 44);       // it did wrap
-    expect(r.panelTop).toBeGreaterThanOrEqual(r.controlsBottom - 1);
+    const r = await page.evaluate(() => { const c = $('ctl'); c.scrollLeft = c.scrollWidth;
+      return { scrolls: c.scrollWidth > c.clientWidth, h: Math.round(c.getBoundingClientRect().height) }; });
+    expect(r.scrolls).toBe(true);
+    expect(r.h).toBeLessThanOrEqual(45);
   });
 
   test('the bar covers neither ruler nor the rail, and its text-styles pop-up sits above the ruler, tidy', async ({ page }) => {

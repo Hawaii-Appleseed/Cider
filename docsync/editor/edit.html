@@ -146,22 +146,18 @@
      rect every frame) follow it down. Light, like the contextual card whose
      controls it takes over; a fixed height so a change of selection never
      moves the canvas. Scrolls sideways, never wraps, like #bar. */
-  #ctl { flex:none; display:flex; align-items:flex-start; gap:6px 6px;
-         /* The bar is as tall as the WINDOW's width needs (ctlRows sets --ctl-rows
-            from the widest mode), so a long run of fields wraps onto more rows
-            inside the page and its height depends on nothing else: selecting
-            something never moves the canvas under the pointer, and nothing hangs
-            over the page. (It used to scroll sideways with no scrollbar, so the
-            fields past the edge were simply gone; then it hung over the canvas.) */
-         min-height:calc(var(--ctl-rows, 1) * 38px + 6px); flex-wrap:wrap; align-content:flex-start;
-         box-sizing:border-box; padding:7px 12px; position:relative; z-index:9;   /* above the rulers (7-8): its pop-ups hang down over them */
+  #ctl { flex:none; display:flex; align-items:center; gap:6px; height:44px;
+         /* ONE fixed row, in the column: it never grows, so a selection never moves the
+            canvas, and it covers neither ruler nor the rail. A long mode scrolls sideways
+            (a thin visible bar); the more-than-fits menu replaces that. It sits above the
+            rulers (7-8) only so the pop-ups that hang from it are not cut by them. */
+         flex-wrap:nowrap; box-sizing:border-box; padding:0 12px; position:relative; z-index:9;
          background:#fff; color:var(--ink); border-bottom:1px solid #E1E8E3;
-         overflow:visible; white-space:nowrap; }
-  #ctl::-webkit-scrollbar { display:none; }
+         overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; white-space:nowrap; }
   #ctl[hidden], #ctl [hidden] { display:none !important; }
   #ctl > *, #cb-obj > *, .cb-grp > * { flex:none; }
   #cb-obj, .cb-grp { display:inline-flex; align-items:center; gap:5px; }
-  #cb-obj { flex-wrap:wrap; max-width:100%; row-gap:4px; }
+  #cb-obj { flex-wrap:nowrap; max-width:none; }
   .cb-grp.ty-seg { gap:0; }
   .cb-lab { font:600 12px system-ui; color:#2F3E46; background:#E7EEE8;
             padding:3px 10px; border-radius:99px; }
@@ -247,15 +243,15 @@
           margin:0; width:auto; max-width:100%; height:auto; min-height:0; overflow:visible;
           justify-content:flex-start; pointer-events:auto; }
   #ctl #arrange { background:transparent; box-shadow:none; border-radius:0; padding:0; row-gap:4px;
-          margin:0; width:auto; max-width:100%; height:auto; min-height:0; overflow:visible;
+          margin:0; width:auto; max-width:none; height:auto; min-height:0; overflow:visible; flex-wrap:nowrap;
           justify-content:flex-start; pointer-events:auto; }
 
   /* ---- the docked bar, one quiet surface ---------------------------------
-     One white surface, as tall as the window's width needs (ctlRows), and every
+     One white surface, one fixed row, and every
      control wears the same shape: 30px tall, 8px corners, a pale fill instead of an outline,
      no rule or shadow of its own. A number box is ONE pill with its icon or
      letter inside it, so there are no stray glyphs and no boxes-with-labels. */
-  #ctl #cb-obj, #ctl #type, #ctl #arrange { gap:6px; row-gap:6px; }
+  #ctl #cb-obj, #ctl #type, #ctl #arrange { gap:6px; flex-wrap:nowrap; max-width:none; }
   #ctl .cb-f { height:30px; box-sizing:border-box; padding:0 2px 0 10px; gap:5px;
          background:#F2F5F3; border-radius:8px; color:#72857C; font:600 11px system-ui;
          letter-spacing:.02em; transition:background .12s, box-shadow .12s; }
@@ -292,7 +288,7 @@
   #ctl #type .ty-step #cb-size { background:transparent; border:0; box-shadow:none; border-radius:0; }
   /* the text/arrange controls fill the line beside the mode switch and wrap among
      themselves, instead of dropping to a row of their own */
-  #ctl > #type, #ctl > #arrange { flex:1 1 560px; min-width:0; }   /* beside the mode switch when 560px is free, else a row of its own */
+  #ctl > #type, #ctl > #arrange { flex:none; }
   #ctl .ty-sep, #ctl .bar-sep { width:1px; height:18px; margin:0 3px; background:#E3E9E5; }
   #ctl .ty-key, #ctl .ar-count { background:#EEF3EF; color:#6B7C74; border-radius:8px;
          padding:6px 10px; font:500 11.5px ui-monospace, monospace; }
@@ -2016,7 +2012,7 @@
   /* Version history, the side panel: the comments panel's frame (same
      radii, same head), rows grouped by day, the chosen one open on what it
      changed. Under 1100px it floats over the page as the comments list does. */
-  #hpanel { position:fixed; right:12px; top:calc(104px + var(--ctl-over, 0px)); bottom:60px; width:min(360px, 90vw); z-index:45;
+  #hpanel { position:fixed; right:12px; top:104px; bottom:60px; width:min(360px, 90vw); z-index:45;
     display:flex; flex-direction:column; background:#F8FAF8; border:1px solid #C9D6CD; border-radius:var(--r-card, 10px);
     box-shadow:0 8px 28px rgba(30,44,50,.18); font:13px system-ui; color:var(--ink); }
   #hpanel[hidden] { display:none; }
@@ -2054,7 +2050,7 @@
      Shaped like Google Docs' comments: cards with an avatar, name and
      time, the quoted words above, replies threaded under, a checkmark and
      a ⋮ on hover, a one-line reply box that opens into a real one. */
-  #cpanel { position:fixed; right:12px; top:calc(104px + var(--ctl-over, 0px)); bottom:60px; width:min(360px, 90vw); z-index:45;
+  #cpanel { position:fixed; right:12px; top:104px; bottom:60px; width:min(360px, 90vw); z-index:45;
     display:flex; flex-direction:column; background:var(--cmt-ground); border:1px solid var(--cmt-edge); border-radius:var(--r-card);
     box-shadow:0 8px 28px rgba(30,44,50,.18); font:13px system-ui; color:var(--ink); }
   #cpanel[hidden] { display:none; }
@@ -18956,27 +18952,10 @@ function setCtlMode(m) {
 }
 document.querySelectorAll('#cb-mode [data-m]').forEach(b =>
   b.addEventListener('click', () => setCtlMode(b.dataset.m)));
-/** How many rows the docked bar reserves at this window width. Measured per mode at
- *  each width (object mode is the tallest: about 1900px of controls), then rounded to
- *  the width bands below. A function of the width ALONE, so selecting something or switching A / ¶ never
- *  changes the bar's height and so never moves the canvas under the pointer; the rare
- *  mode that needs one more row than this simply grows the bar. The comments and history
- *  panels that float on the right start below the extra rows (--ctl-over). */
-const CTL_ROW_BANDS = [[1900, 1], [1200, 2], [700, 4], [0, 6]];   // object mode is the widest: 1 / 2 / 4 / 6 rows
-function ctlRows() {
-  const c = $('ctl'), root = document.documentElement;
-  const band = CTL_ROW_BANDS.find(([w]) => innerWidth >= w);
-  const rows = !c || c.hidden ? 0 : band[1];
-  root.style.setProperty('--ctl-rows', String(rows || 1));
-  root.style.setProperty('--ctl-over', (rows ? (rows - 1) * 38 : 0) + 'px');
-}
-ctlRows();
-window.addEventListener('resize', ctlRows);
 function toggleCtlBar(on = !ctlOn) {
   ctlOn = !!on;
   try { localStorage.setItem('ds-ctlbar', ctlOn ? '1' : '0'); } catch (e) { /* file: */ }
   ctlDock();
-  ctlRows();
   const d = $('out').contentDocument;
   if (d && d.body) { arrangeBar(d); contextDodge(d); }
   startRulers();          // the stage moved; the rulers follow its rect
