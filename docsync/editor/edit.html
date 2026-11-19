@@ -159,12 +159,14 @@
   #ctl-r1 { grid-row:1; } #ctl-r2 { grid-row:2; }
   .ctl-row { display:flex; align-items:center; gap:6px; min-width:0; padding:0 12px; box-sizing:border-box;
          overflow-x:auto; overflow-y:hidden; white-space:nowrap; scrollbar-width:none;
-         --ctl-fl:0px; --ctl-fr:0px;
-         -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--ctl-fl), #000 calc(100% - var(--ctl-fr)), transparent);
-         mask-image:linear-gradient(90deg, transparent, #000 var(--ctl-fl), #000 calc(100% - var(--ctl-fr)), transparent); }
+         position:static; }
   .ctl-row::-webkit-scrollbar { display:none; }
   /* a row with more to the left or right says so: its edge fades */
-  .ctl-row.ctl-fade-l { --ctl-fl:22px; } .ctl-row.ctl-fade-r { --ctl-fr:22px; }
+  /* (a soft edge, not a mask: a mask would clip the pop-ups its controls open, which are fixed
+     descendants of the row) */
+  .ctl-row.ctl-fade-l { box-shadow:inset 14px 0 12px -12px rgba(47,62,70,.28); }
+  .ctl-row.ctl-fade-r { box-shadow:inset -14px 0 12px -12px rgba(47,62,70,.28); }
+  .ctl-row.ctl-fade-l.ctl-fade-r { box-shadow:inset 14px 0 12px -12px rgba(47,62,70,.28), inset -14px 0 12px -12px rgba(47,62,70,.28); }
   .ctl-row > * { flex:none; }
   .ctl-gsep { width:1px; height:18px; margin:0 3px; background:#E3E9E5; }
   #ctl[hidden], #ctl [hidden] { display:none !important; }

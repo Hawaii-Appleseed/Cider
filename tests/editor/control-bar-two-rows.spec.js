@@ -282,6 +282,12 @@ test.describe('control bar: two rows', () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.click('#cb-mode [data-m="char"]');
     await settled(page);
+    // a row must never mask, filter or transform what it holds: the pop-ups its controls open are its
+    // fixed-position descendants, and any of these cuts them off from the pointer (the character-style
+    // pop of B / I / U did exactly that under a mask)
+    expect(await page.evaluate(() => ['ctl', 'ctl-r1', 'ctl-r2'].map(i => { const c = getComputedStyle($(i));
+      return [c.maskImage, c.webkitMaskImage, c.filter, c.transform, c.clipPath, c.contain].join('|'); })))
+      .toEqual(Array(3).fill('none|none|none|none|none|none'));
     for (const [btn, pop] of [['#ty-colorbtn', '#ty-colorpop'], ['#ty-spacebtn', '#ty-spacepop'], ['#ty-style-more', '#ty-stylepop']]) {
       const opener = await barField(page, btn);
       await opener.click();

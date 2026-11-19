@@ -20,7 +20,15 @@ for (const [btn, pop] of [['shape', 'shapepop'], ['icon', null], ['ar-img', null
       });
       const p = open[0];
       if (!p) return { none: true };
-      const b = p.getBoundingClientRect();
+      let b = p.getBoundingClientRect();
+      // A tray that docks in the left panel scrolls inside it: only the part the panel shows is on
+      // the page (the bar's two rows leave the panel less height, so a tall tray scrolls).
+      const host = p.closest('#side-body');
+      if (host) {
+        const h = host.getBoundingClientRect();
+        const l = Math.max(b.left, h.left), t = Math.max(b.top, h.top), r = Math.min(b.right, h.right), bt = Math.min(b.bottom, h.bottom);
+        b = { left: l, top: t, right: r, bottom: bt, width: r - l, height: bt - t };
+      }
       const bad = [];
       // Wherever the tray and a ruler overlap, the tray must be what is on top
       // (probed away from the tray's rounded corners).
