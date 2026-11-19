@@ -95,7 +95,7 @@ function measureChrome(PIECES) {
           const q = strip.getBoundingClientRect();
           if (x < q.left || x > q.right) continue;
         }
-        const crow = el.closest('.ctl-row');         // a row of the Control bar scrolls: out of its box is not drawn
+        const crow = el.closest('#ctl-cols');        // the Control bar scrolls sideways: out of its box is not drawn
         if (crow) { const q = crow.getBoundingClientRect(); if (x < q.left || x > q.right) continue; }
         const name = el.id || el.getAttribute('aria-label') || el.className || el.tagName;
         if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) { blocked.push(name + ' is outside the window'); break; }

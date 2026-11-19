@@ -14,15 +14,15 @@ test('the contextual toolbar is not covered by the top ruler', async ({ page }) 
   await page.evaluate(id => docsync.api.select(id), r.id);
   await page.waitForTimeout(400);
   const res = await page.evaluate(() => {
-    // The Control bar's two rows (the strips' controls are laid in them, ctlFit): every control
+    // The Control bar's two rows of columns (the strips' controls are laid in its columns, ctlFit): every control
     // that is drawn must answer a press, and none may reach down into the ruler.
-    const ctls = [...document.querySelectorAll('#ctl .ctl-row > *')]
-      .filter(e => !e.classList.contains('ctl-gsep') && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0);
+    const ctls = [...document.querySelectorAll('#ctl .ctl-cell > *')]
+      .filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0);
     if (!ctls.length) return { none: true };
     const q = $('ruler-t').getBoundingClientRect();
     const bad = [];
     ctls.forEach(c => {
-      const b = c.getBoundingClientRect(), row = c.closest('.ctl-row').getBoundingClientRect();
+      const b = c.getBoundingClientRect(), row = $('ctl-cols').getBoundingClientRect();
       if (b.bottom > q.top + 1 && b.top < q.bottom - 1) bad.push({ over: c.id || c.className });
       for (const fx of [0.1, 0.5, 0.9]) {
         const x = b.left + b.width * fx;

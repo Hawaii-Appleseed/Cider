@@ -58,7 +58,7 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar is two fixed rows, the same height in every mode and width, and a narrow one scrolls the rows', async ({ page }) => {
+  test('the docked bar is two fixed rows, the same height in every mode and width, and a narrow one scrolls the bar', async ({ page }) => {
     await addRect(page);
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
@@ -77,11 +77,11 @@ test.describe('control bar', () => {
     }
     expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
     expect(heights[0]).toBe(80);                       // --ctl-h: two 30px-pill rows
-    // at a narrow width the rows scroll inside themselves: the bar and the page do not grow
+    // at a narrow width the bar's columns scroll inside it: the bar and the page do not grow
     // (control-bar-two-rows.spec.js pins the rest)
     await page.setViewportSize({ width: 760, height: 800 });
     await page.click('#cb-mode [data-m="char"]');
-    const r = await page.evaluate(() => { const c = $('ctl'), rows = [$('ctl-r1'), $('ctl-r2')];
+    const r = await page.evaluate(() => { const c = $('ctl'), rows = [$('ctl-cols')];
       return { barScrolls: c.scrollWidth > c.clientWidth + 1, rowsScroll: rows.some(e => e.scrollWidth > e.clientWidth + 1),
         h: Math.round(c.getBoundingClientRect().height), pageW: document.documentElement.scrollWidth, winW: innerWidth }; });
     expect(r.barScrolls).toBe(false);

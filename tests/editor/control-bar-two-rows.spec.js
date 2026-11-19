@@ -1,16 +1,18 @@
 // The docked Control bar is TWO rows, --ctl-h (80px) tall: the same in every mode and with
-// nothing selected, at every window width. Row 1 holds the primary fields and row 2 the
-// secondary ones (ctlFit, CTL_ROWS); each row scrolls sideways inside itself when the
-// window is narrower than its fields, so nothing wraps, nothing grows and nothing hides
-// behind a menu. The nodes are laid in the rows, not copied, so a field in row 2 types,
-// scrubs and answers a pilot verb exactly as it did in its strip.
-// Pinned here: the height (equal across every mode, both rows equal); that the bar covers
-// neither ruler nor the rail (every control probed at its top edge, centre, sides and foot);
-// that rulers, rail, dock and the comments/history panels start exactly at the bar's foot
-// (--ctl-bottom); that the canvas never moves when the selection changes; that a narrow window
-// makes each row scroll rather than the page grow; that a field in row 2 works; that a pop-up
-// from the bar opens whole, on top of the rulers; and that every control the bar can show has a
-// place in CTL_ROWS.
+// nothing selected, at every window width. It is laid out as InDesign's Control panel is:
+// ALIGNED COLUMNS. Each column is a vertical pair, a primary field over a secondary one, the same
+// width and left edge (font over style, size over leading, X over Y …); the columns are spread
+// across the whole bar with a thin divider between them (ctlFit, CTL_COLS), so both rows end near
+// the bar's right edge at every width. A window narrower than the columns scrolls the bar sideways
+// as one piece: nothing wraps, grows or hides behind a menu. The nodes are laid in the columns, not
+// copied, so a field there types, scrubs and answers a pilot verb exactly as it did in its strip.
+// Pinned here: the height (equal across every mode); the pairs; that both rows reach the bar's right
+// edge at 1280, 1397 and 1920 with no big hole between columns; that the bar covers neither ruler
+// nor the rail (every control probed at its top edge, centre, sides and foot); that rulers, rail, dock
+// and the comments/history panels start at the bar's foot (--ctl-bottom); that the canvas never moves
+// when the selection changes; that a narrow window scrolls the bar rather than growing the page; that
+// a field in the lower row works; that a pop-up from the bar opens whole, on top of the rulers; and
+// that every control the bar can show has a place in CTL_COLS.
 const { test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
 
 async function addRect(page) {
@@ -40,33 +42,31 @@ async function inMode(page, mode, ids) {
 }
 const MODES_ALL = [...MODES, ['empty', null]];
 async function inAnyMode(page, mode, ids) {
-  if (mode === 'empty') { await page.evaluate(() => setSel($('out').contentDocument, [])); await settled(page); }
+  if (mode === 'empty') { await page.evaluate(() => clearSel($('out').contentDocument)); await settled(page); }
   else await inMode(page, mode, ids);
 }
 const geometry = page => page.evaluate(() => {
   const bar = $('ctl').getBoundingClientRect();
-  const r1 = $('ctl-r1').getBoundingClientRect(), r2 = $('ctl-r2').getBoundingClientRect();
   const top = id => $(id).getBoundingClientRect().top;
-  // every control the rows draw, whole, inside its own row's box vertically (sideways a row scrolls)
+  // every control the bar draws, whole, inside the bar vertically (sideways the bar scrolls)
   const out = [...$('ctl').querySelectorAll('input, select, button, label')]
-    .filter(e => e.offsetParent !== null && !e.closest('.pop'))
-    .filter(e => { const b = e.getBoundingClientRect(), row = e.closest('.ctl-row').getBoundingClientRect();
-      return b.bottom > row.bottom + 1 || b.top < row.top - 1; })
+    .filter(e => e.offsetParent !== null && !e.closest('.pop') && !e.closest('#ctl-home'))
+    .filter(e => { const b = e.getBoundingClientRect(); return b.bottom > bar.bottom + 1 || b.top < bar.top - 1; })
     .map(e => e.id || e.className);
-  // a divider only ever stands between two controls of its row
-  const strays = ['ctl-r1', 'ctl-r2'].reduce((n, id) => {
-    const k = [...$(id).children].filter(c => c.offsetParent !== null);
-    return n + k.filter((c, i) => c.classList.contains('ctl-gsep') && (i === 0 || i === k.length - 1 || k[i - 1].classList.contains('ctl-gsep'))).length;
-  }, 0);
-  return { h: Math.round(bar.height), h1: Math.round(r1.height), h2: Math.round(r2.height), bottom: Math.round(bar.bottom),
-    r1Bottom: Math.round(r1.bottom), r2Top: Math.round(r2.top), out, strays,
+  // the two cells of a column: the top one over the bottom one
+  const cols = [...$('ctl-cols').children];
+  const misfit = cols.filter(c => { const [t, b] = c.children; if (b.hidden) return false;
+    const tr = t.getBoundingClientRect(), br = b.getBoundingClientRect(); return br.top < tr.bottom - 1; }).length;
+  const misInfo = cols.map(c => [...c.children].map(x => { const r = x.getBoundingClientRect(); return [x.hidden, Math.round(r.top), Math.round(r.height)].join('/'); }).join(' ')).join(' | ');
+  return { h: Math.round(bar.height), bottom: Math.round(bar.bottom), misfit, misInfo, cols: cols.length, out,
     dockTop: Math.round(top('dock-icons')), rulerT: Math.round(top('ruler-t')), rulerL: Math.round(top('ruler-l')),
     rail: Math.round(top('leftrail')), work: Math.round(top('work')),
     cssH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ctl-h')),
     ctlBottom: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ctl-bottom')),
     pageW: document.documentElement.scrollWidth, winW: innerWidth, pageH: document.documentElement.scrollHeight, winH: innerHeight };
 });
-const inRow = (page, id) => page.evaluate(i => { const r = $(i).closest('.ctl-row'); return r ? r.id : null; }, id);
+/** Which cell a control is in: 'top' or 'bot' (a control spanning both rows counts as top). */
+const inRow = (page, id) => page.evaluate(i => { const c = $(i).closest('.ctl-cell'); return c ? (c.classList.contains('ctl-top') ? 'top' : 'bot') : null; }, id);
 
 test.describe('control bar: two rows', () => {
   test.beforeEach(async ({ page }) => {
@@ -86,10 +86,8 @@ test.describe('control bar: two rows', () => {
         seen.add(g.h);
         expect(g.h, `${w} ${mode}`).toBe(g.cssH);
         expect(g.cssH, `${w} ${mode} --ctl-h`).toBe(80);
-        expect(Math.abs(g.h1 - g.h2), `${w} ${mode}: the rows are the same height`).toBeLessThanOrEqual(1);
-        expect(g.r2Top, `${w} ${mode}: row 2 starts where row 1 ends`).toBeGreaterThanOrEqual(g.r1Bottom - 1);
+        expect(g.misfit, `${w} ${mode}: a column whose cells are not one over the other: ${g.misInfo}`).toBe(0);
         expect(g.out, `${w} ${mode}`).toEqual([]);
-        expect(g.strays, `${w} ${mode} stray dividers`).toBe(0);
         expect(g.pageW, `${w} ${mode}: the page grew sideways`).toBeLessThanOrEqual(g.winW);
         expect(g.pageH, `${w} ${mode}: the page grew taller`).toBeLessThanOrEqual(g.winH);
         expect(await page.evaluate(() => $('ctl').scrollWidth <= $('ctl').clientWidth + 1), `${w} ${mode}: the bar itself scrolls`).toBe(true);
@@ -99,20 +97,81 @@ test.describe('control bar: two rows', () => {
     expect([...seen]).toEqual([80]);
   });
 
-  test('row 1 holds the primary fields and row 2 the secondary ones, in each mode', async ({ page }) => {
+  test('each column is a pair: a primary field over a secondary one, the same width and left edge', async ({ page }) => {
     const ids = { rect: null, text: null };
     await addRect(page); ids.rect = 'cb-rect'; ids.text = await addText(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    const want = {
-      obj:   { 'ctl-r1': ['cb-x', 'cb-y', 'cb-w', 'cb-h', 'cb-rot', 'cb-skew'], 'ctl-r2': ['ar-fill', 'ar-border', 'ar-alpha', 'cb-align', 'ar-dup'] },
-      frame: { 'ctl-r1': ['cb-x', 'cb-y', 'cb-w', 'cb-h', 'cb-rot'], 'ctl-r2': ['cb-align', 'cb-cols', 'ty-box'] },
-      char:  { 'ctl-r1': ['ty-font', 'ty-weight', 'cb-size', 'cb-lead', 'cb-track', 'cb-kern', 'ty-colorbtn'], 'ctl-r2': ['cb-shift', 'cb-smcp', 'ty-case', 'ty-spacebtn', 'ty-parabtn', 'ty-box'] },
-      para:  { 'ctl-r1': ['ty-alseg', 'cb-il', 'cb-ti', 'cb-ir', 'cb-sb', 'cb-sa'], 'ctl-r2': ['cb-dcap', 'cb-lmark', 'cb-hyph', 'ty-parabtn', 'ty-box'] },
+    const pairs = {
+      obj:   [['cb-x', 'cb-y'], ['cb-w', 'cb-h'], ['cb-sx', 'cb-sy'], ['cb-rot', 'cb-skew'], ['ar-fill', 'ar-border'], ['ar-alpha', 'ar-fxbtn'], ['ar-dup', 'ar-del']],
+      frame: [['cb-x', 'cb-y'], ['cb-w', 'cb-h'], ['cb-sx', 'cb-sy'], ['cb-rot', 'cb-skew']],
+      char:  [['ty-font', 'ty-weight'], ['cb-size', 'cb-lead'], ['cb-kern', 'cb-track'], ['cb-shift', 'cb-smcp'], ['ty-colorbtn', 'ty-spacebtn']],
+      para:  [['cb-il', 'cb-ti'], ['cb-ir', 'cb-dcap'], ['cb-sb', 'cb-sa'], ['ty-alseg', 'cb-lmark']],
     };
     for (const [mode] of MODES) {
       await inMode(page, mode, ids);
-      for (const [row, list] of Object.entries(want[mode]))
-        for (const id of list) expect(await inRow(page, id), `${mode}: ${id}`).toBe(row);
+      for (const [a, b] of pairs[mode]) {
+        const g = await page.evaluate(([x, y]) => {
+          const box = id => { const e = $(id); return (e.closest('.ty-step') || e.closest('label') || e).getBoundingClientRect(); };
+          const A = box(x), B = box(y), ca = $(x).closest('.ctl-col'), cb = $(y).closest('.ctl-col');
+          return { same: ca === cb, dl: Math.abs(A.left - B.left), above: A.bottom <= B.top + 1, w: [Math.round(A.width), Math.round(B.width)],
+            field: $(x).matches('input, select') || !!$(x).closest('label') };
+        }, [a, b]);
+        expect(g.same, `${mode}: ${a} and ${b} share a column`).toBe(true);
+        expect(g.above, `${mode}: ${a} over ${b}`).toBe(true);
+        expect(g.dl, `${mode}: ${a} and ${b} share a left edge`).toBeLessThanOrEqual(1);
+        // two fields of a pair are one width (a button cluster keeps its own)
+        if (g.field && !['ar-alpha', 'ar-fxbtn', 'ar-dup', 'ar-del', 'ar-fill', 'ar-border', 'ty-colorbtn', 'ty-spacebtn'].includes(a))
+          expect(Math.abs(g.w[0] - g.w[1]), `${mode}: ${a} ${g.w[0]}px, ${b} ${g.w[1]}px`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test('both rows reach the bar\'s right edge and the columns leave no big hole, at 1280, 1397 and 1920', async ({ page }) => {
+    const ids = { rect: null, text: null };
+    await addRect(page); ids.rect = 'cb-rect'; ids.text = await addText(page);
+    for (const [w, h] of [[1280, 720], [1397, 719], [1920, 1000]]) {
+      await page.setViewportSize({ width: w, height: h });
+      for (const [mode] of MODES) {
+        await inMode(page, mode, ids);
+        const r = await page.evaluate(() => {
+          const bar = $('ctl').getBoundingClientRect(), out = { gap: 0 };
+          for (const cls of ['ctl-top', 'ctl-bot']) {
+            let m = 0;
+            document.querySelectorAll('#ctl-cols .' + cls + ' > *').forEach(e => { if (e.offsetParent !== null) m = Math.max(m, e.getBoundingClientRect().right); });
+            out[cls] = Math.round(bar.right - m);
+          }
+          // the spaces between one column's right edge and the next one's left edge
+          const cs = [...$('ctl-cols').children].map(c => c.getBoundingClientRect());
+          cs.forEach((c, i) => { if (i) out.gap = Math.max(out.gap, Math.round(c.left - cs[i - 1].right)); });
+          out.scroll = $('ctl-cols').scrollWidth - $('ctl-cols').clientWidth;
+          return out;
+        });
+        if (process.env.DBGW) console.log('DBGW', w, mode, JSON.stringify(r), JSON.stringify(await page.evaluate(() => [...$('ctl-cols').children].map(c => Math.round(c.getBoundingClientRect().width) + ':' + [...c.querySelectorAll('.ctl-cell > *')].filter(e => e.offsetParent).map(e => e.id || e.className.toString().slice(0, 8)).join('+')))));
+        expect(r['ctl-top'], `${w} ${mode}: the top row ends ${r['ctl-top']}px short of the bar's edge`).toBeLessThanOrEqual(40);
+        expect(r['ctl-bot'], `${w} ${mode}: the bottom row ends ${r['ctl-bot']}px short of the bar's edge`).toBeLessThanOrEqual(40);
+        expect(r['ctl-top'], `${w} ${mode}: the top row runs off the bar`).toBeGreaterThanOrEqual(0);
+        expect(r.gap, `${w} ${mode}: a ${r.gap}px hole between two columns`).toBeLessThanOrEqual(110);
+        expect(r.scroll, `${w} ${mode}: scrolls at a window this wide`).toBeLessThanOrEqual(0);
+        expect((await geometry(page)).h, `${w} ${mode}`).toBe(80);
+      }
+    }
+  });
+
+  test('nothing selected shows one centred hint, and a page shows its columns centred', async ({ page }) => {
+    for (const w of [1280, 1920]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.evaluate(() => clearSel($('out').contentDocument));
+      await settled(page);
+      const hint = await page.evaluate(() => { const b = $('cb-empty').getBoundingClientRect(), bar = $('ctl').getBoundingClientRect();
+        return { mode: $('ctl').dataset.mode, hidden: $('cb-empty').hidden, arr: $('arrange').hidden, sel: selPage + '/' + selIds.size, parent: $('cb-empty').parentNode.className, visible: b.width > 0, left: b.left, right: bar.right - b.right, mid: (b.left + b.right) / 2, barMid: bar.width / 2 }; });
+      expect(hint.visible, JSON.stringify(hint)).toBe(true);
+      expect(Math.abs(hint.mid - hint.barMid), `${w}: the hint is centred`).toBeLessThanOrEqual(2);
+      expect((await geometry(page)).h).toBe(80);
+      await page.evaluate(() => setSelPage($('out').contentDocument, 3));
+      await settled(page);
+      const cols = await page.evaluate(() => { const c = [...$('ctl-cols').children].map(e => e.getBoundingClientRect()), bar = $('ctl').getBoundingClientRect();
+        return { l: c[0].left, r: bar.right - c[c.length - 1].right }; });
+      expect(Math.abs(cols.l - cols.r), `${w}: the page's columns are centred`).toBeLessThanOrEqual(8);
     }
   });
 
@@ -134,13 +193,13 @@ test.describe('control bar: two rows', () => {
         // and it covers nothing (the probe is the topmost element there)
         const blocked = await page.evaluate(() => {
           const bad = [];
-          document.querySelectorAll('#ctl .ctl-row > *').forEach(el => {
-            const cs = getComputedStyle(el); if (cs.display === 'none' || el.classList.contains('ctl-gsep')) return;
-            const b = el.getBoundingClientRect(), row = el.closest('.ctl-row').getBoundingClientRect();
+          document.querySelectorAll('#ctl .ctl-cell > *').forEach(el => {
+            const cs = getComputedStyle(el); if (cs.display === 'none') return;
+            const b = el.getBoundingClientRect(), row = $('ctl-cols').getBoundingClientRect();
             if (b.width < 4 || b.height < 4) return;
             for (const [fx, fy] of [[0.5, 0.08], [0.5, 0.5], [0.15, 0.5], [0.85, 0.5], [0.5, 0.92]]) {
               const x = b.left + b.width * fx, y = b.top + b.height * fy;
-              if (x < row.left || x > row.right) continue;          // scrolled out of its row: not drawn
+              if (x < row.left || x > row.right) continue;          // scrolled out of the bar: not drawn
               const hit = document.elementFromPoint(x, y);
               if (!hit || !(el === hit || el.contains(hit) || hit.contains(el))) { bad.push(`${el.id || el.className} (${fx},${fy}) under ${hit && (hit.id || hit.className)}`); break; }
             }
@@ -205,28 +264,29 @@ test.describe('control bar: two rows', () => {
     }
   });
 
-  test('a narrow window scrolls each row inside itself, and the page does not grow', async ({ page }) => {
+  test('a narrow window scrolls the bar inside itself, and the page does not grow', async ({ page }) => {
     const ids = { rect: null, text: null };
     await addRect(page); ids.rect = 'cb-rect'; ids.text = await addText(page);
     await page.setViewportSize({ width: 390, height: 780 });
     for (const [mode] of MODES) {
       await inMode(page, mode, ids);
-      const r = await page.evaluate(() => ['ctl-r1', 'ctl-r2'].map(id => { const e = $(id);
-        return { id, over: e.scrollWidth > e.clientWidth + 1, overflowX: getComputedStyle(e).overflowX, wrap: getComputedStyle(e).flexWrap,
-          h: Math.round(e.getBoundingClientRect().height) }; }));
-      // a row may be as wide as it likes inside itself; none wraps, and the bar keeps its height
-      for (const row of r) { expect(row.overflowX).toBe('auto'); expect(row.wrap).toBe('nowrap'); }
-      expect(r.some(x => x.over), `${mode}: something to scroll to at 390px`).toBe(true);
+      const r = await page.evaluate(() => { const e = $('ctl-cols');
+        return { over: e.scrollWidth > e.clientWidth + 1, overflowX: getComputedStyle(e).overflowX, h: Math.round($('ctl').getBoundingClientRect().height),
+          // no two columns draw over one another, however narrow the window
+          overlap: [...e.children].some((c, i, a) => i && c.getBoundingClientRect().left < a[i - 1].getBoundingClientRect().right - 1) }; });
+      expect(r.overflowX).toBe('auto');
+      expect(r.over, `${mode}: something to scroll to at 390px`).toBe(true);
+      expect(r.overlap, `${mode}: overlapping columns`).toBe(false);
       const g = await geometry(page);
       expect(g.h).toBe(80);
       expect(g.pageW).toBeLessThanOrEqual(g.winW);
     }
-    // a row scrolls with the pointer's wheel, and says so by fading its edge
+    // the bar scrolls with the pointer's wheel, and says so by shading its edge
     await inMode(page, 'char', ids);
-    const row = page.locator('#ctl-r1');
-    await row.evaluate(e => { e.scrollLeft = 120; e.dispatchEvent(new Event('scroll')); });
-    await expect(row).toHaveClass(/ctl-fade-l/);
-    await expect(row).toHaveClass(/ctl-fade-r/);
+    const bar = page.locator('#ctl-cols');
+    await bar.evaluate(e => { e.scrollLeft = 120; e.dispatchEvent(new Event('scroll')); });
+    await expect(bar).toHaveClass(/ctl-fade-l/);
+    await expect(bar).toHaveClass(/ctl-fade-r/);
     expect((await geometry(page)).h).toBe(80);
     // a control that was scrolled out of sight is reachable: it scrolls into view and answers
     const kern = await barField(page, '#cb-kern');
@@ -236,12 +296,12 @@ test.describe('control bar: two rows', () => {
     expect(await page.evaluate(() => $('ctl').scrollTop)).toBe(0);
   });
 
-  test('a field in row 2 works as it did in its strip: type, Enter, undo', async ({ page }) => {
+  test('a field in the lower row works as it did in its strip: type, Enter, undo', async ({ page }) => {
     await addRect(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await settled(page);
-    expect(await inRow(page, 'cb-r')).toBe('ctl-r2');
-    expect(await inRow(page, 'cb-skew')).toBe('ctl-r1');
+    expect(await inRow(page, 'cb-r')).toBe('top');
+    expect(await inRow(page, 'cb-skew')).toBe('bot');
     const f = await barField(page, '#cb-skew');
     await expect(f).toBeVisible();
     const steps = await page.evaluate(() => past.length);
@@ -252,7 +312,7 @@ test.describe('control bar: two rows', () => {
     await expect(f).toHaveValue('20');                                         // ctlPaint reads it back
     await page.evaluate(() => undo());
     await expect.poll(() => page.evaluate(() => layout.shapes.find(s => s.id === 'cb-rect').skew || 0)).toBe(0);
-    // and a row-2 colour button opens its panel
+    // and a lower-row colour button opens its panel
     await page.click('#ar-border');
     await expect(page.locator('#ar-borderpop')).toBeVisible();
   });
@@ -276,18 +336,18 @@ test.describe('control bar: two rows', () => {
     expect(await page.evaluate(() => layout.shapes.find(s => s.id === 'cb-rect').skew || 0)).not.toBe(0);
   });
 
-  test('a pop-up from either row opens whole, below its button, on top of the rulers, inside the window', async ({ page }) => {
+  test('a pop-up from either row of the bar opens whole, below its button, on top of the rulers, inside the window', async ({ page }) => {
     const id = await addText(page);
     await pick(page, id);
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.click('#cb-mode [data-m="char"]');
     await settled(page);
-    // a row must never mask, filter or transform what it holds: the pop-ups its controls open are its
+    // the bar must never mask, filter or transform what it holds: the pop-ups its controls open are its
     // fixed-position descendants, and any of these cuts them off from the pointer (the character-style
     // pop of B / I / U did exactly that under a mask)
-    expect(await page.evaluate(() => ['ctl', 'ctl-r1', 'ctl-r2'].map(i => { const c = getComputedStyle($(i));
+    expect(await page.evaluate(() => ['ctl', 'ctl-cols'].map(i => { const c = getComputedStyle($(i));
       return [c.maskImage, c.webkitMaskImage, c.filter, c.transform, c.clipPath, c.contain].join('|'); })))
-      .toEqual(Array(3).fill('none|none|none|none|none|none'));
+      .toEqual(Array(2).fill('none|none|none|none|none|none'));
     for (const [btn, pop] of [['#ty-colorbtn', '#ty-colorpop'], ['#ty-spacebtn', '#ty-spacepop'], ['#ty-style-more', '#ty-stylepop']]) {
       const opener = await barField(page, btn);
       await opener.click();
@@ -316,35 +376,35 @@ test.describe('control bar: two rows', () => {
     for (const [mode] of MODES_ALL) {
       await inAnyMode(page, mode, ids);
       unplaced.push(...await page.evaluate(m => {
-        // a control no list names lands at the end of row 2, whatever it is: say which
+        // a control no list names lands in a last column of its own, whatever it is: say which
         return ctlU.filter(u => {
           const ctlMode = $('ctl').dataset.mode;
           const here = getComputedStyle(u.el).display !== 'none'
             && [...(function* () { for (let a = u.ph.parentNode; a && a.id !== 'ctl'; a = a.parentNode) yield a; })()]
               .every(a => getComputedStyle(a).display !== 'none');
-          return here && u.at[ctlMode][1] === 99;
+          return here && u.at[ctlMode][0] === 999;
         }).map(u => `${m}: ${u.el.id || u.el.className}`);
       }, mode));
     }
     expect(unplaced).toEqual([]);
   });
 
-  test('a page selected has its own two rows, and the same height', async ({ page }) => {
+  test('a page selected has its own columns, and the same height', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.evaluate(() => { setSelPage($('out').contentDocument, 3); });
     await settled(page);
     const g = await geometry(page);
     expect(g.h).toBe(80);
     expect(g.out).toEqual([]);
-    expect(await inRow(page, 'ar-pagelabel')).toBe('ctl-r1');
-    expect(await inRow(page, 'ar-fill')).toBe('ctl-r2');
+    expect(await inRow(page, 'ar-pagelabel')).toBe('top');
+    expect(await inRow(page, 'ar-fill')).toBe('bot');
   });
 
-  test('the bar turned off puts every control back in its strip, and on again lays the rows out', async ({ page }) => {
+  test('the bar turned off puts every control back in its strip, and on again lays the columns out', async ({ page }) => {
     await addRect(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await settled(page);
-    const laid = () => page.evaluate(() => [...$('ctl-r1').children, ...$('ctl-r2').children].filter(c => c.__cu).length);
+    const laid = () => page.evaluate(() => [...document.querySelectorAll('#ctl-cols .ctl-cell > *')].filter(c => c.__cu).length);
     expect(await laid()).toBeGreaterThan(0);
     await page.evaluate(() => toggleCtlBar(false));
     expect(await laid()).toBe(0);
