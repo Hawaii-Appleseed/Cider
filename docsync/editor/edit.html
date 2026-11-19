@@ -154,7 +154,7 @@
             double-click. The extra row hangs over the top of the canvas instead,
             on the white of #cb-obj / #type / #arrange below. */
          flex-wrap:wrap; align-content:flex-start;
-         box-sizing:border-box; padding:7px calc(var(--dock-w, 40px) + 12px) 7px 12px; position:relative; z-index:3;
+         box-sizing:border-box; padding:7px calc(var(--dock-w, 40px) + 12px) 7px 12px; position:relative; z-index:9;  /* over the rulers (7-8): its wrapped rows hang onto the canvas top */
          background:#fff; color:var(--ink);
          overflow:visible; white-space:nowrap; }
   #ctl::-webkit-scrollbar { display:none; }
