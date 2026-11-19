@@ -361,30 +361,39 @@ def md_inline(s: str) -> str:
 # than one level past its predecessor is clamped rather than rejected: hand-typed
 # lists indent by 2, 3 or 4 spaces indifferently, and refusing to render is a
 # worse answer than reading the obvious intent.
-_ITEM_RE = re.compile(r"^(\s*)(?:-\s+|(\d+)[.)]\s+)(.*)$")
+# A bullet is "- ", and also "* ", "+ " and "\u2022 " (what people and models
+# type for one); a numbered item is "N. " or "N) ". "-5 degrees" is prose.
+_ITEM_RE = re.compile(r"^(\s*)(?:[-*+\u2022]\s+|(\d+)[.)]\s+)(.*)$")
 
 
 def _list_items(text: str) -> list[tuple]:
     """List lines -> [(depth, ordered, inline_html, number)], depth 0 at the
     margin; number is what a numbered item was typed with (None for a bullet).
 
-    Non-item lines are ignored, which is what every caller wants: bullets()
-    rejects a block with no items at all, and block_html() has already peeled
-    off headings and prose before it gets here.
+    A line that is not an item but is indented, straight under an item, is that
+    item's wrapped text ("- a long item\n  that goes on") and joins it; any
+    other non-item line is ignored, which is what every caller wants:
+    bullets() rejects a block with no items at all, and block_html() has
+    already peeled off headings and prose before it gets here.
     """
-    out: list[tuple[int, bool, str]] = []
+    raw: list[list] = []
     for line in text.splitlines():
-        m = _ITEM_RE.match(line.replace("\t", "  "))
-        if not m or not line.strip():
+        line = line.replace("\t", "  ")
+        if not line.strip():
+            continue
+        m = _ITEM_RE.match(line)
+        if not m:
+            if raw and line[:1] == " ":
+                raw[-1][2] += " " + line.strip()
             continue
         depth = len(m.group(1)) // 2
-        if out:
-            depth = min(depth, out[-1][0] + 1)   # no skipping a level
+        if raw:
+            depth = min(depth, raw[-1][0] + 1)   # no skipping a level
         else:
             depth = 0                            # the first item is the margin
-        out.append((depth, m.group(2) is not None, md_inline(m.group(3).strip()),
-                    int(m.group(2)) if m.group(2) is not None else None))
-    return out
+        raw.append([depth, m.group(2) is not None, m.group(3).strip(),
+                    int(m.group(2)) if m.group(2) is not None else None])
+    return [(d, o, md_inline(t), n) for d, o, t, n in raw]
 
 
 def _list_html(items: list[tuple], i: int, depth: int,
@@ -551,14 +560,18 @@ def block_html(block: str) -> str:
             out.append(_lists_html(_list_items("\n".join(items))))
             items.clear()
 
+    loose = False                  # a blank line since the last list item
     for line in block.splitlines():
         s = line.strip()
         if not s:
-            flush_para(); flush_items()
+            # A blank line inside a list ("- a", blank, "- b") is a loose list,
+            # still ONE list: whether it goes on is decided by the next line.
+            flush_para()
+            loose = bool(items)
             continue
         m = re.match(r"^(#{1,6})\s+(.*)$", s)
         if m:
-            flush_para(); flush_items()
+            flush_para(); flush_items(); loose = False
             txt = md_inline(m.group(2))
             out.append(f'<h2 class="sub">{txt}</h2>' if len(m.group(1)) <= 2
                        else f'<h3 class="sub2">{txt}</h3>')
@@ -568,8 +581,13 @@ def block_html(block: str) -> str:
         if _ITEM_RE.match(line.replace("\t", "  ")):
             flush_para()
             items.append(line)
+            loose = False
             continue
-        flush_items()
+        # An indented line straight under an item is that item's wrapped text.
+        if items and not loose and line[:1] in (" ", "\t"):
+            items.append(line)
+            continue
+        flush_items(); loose = False
         para.append(s)
     flush_para(); flush_items()
     return "".join(out)

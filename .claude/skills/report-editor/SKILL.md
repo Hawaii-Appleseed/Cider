@@ -471,6 +471,30 @@ change with the read tools; make the change with a verb.
 Reserve real clicks for what the API doesn't cover, and screenshots for
 visual judgement only.
 
+### Lists: where they work, what to type, how indents act (2026-11-18)
+
+Where Claude puts bullets decides whether they draw. A list renders in a
+**text box** (`addTextBox` / `setBoxText`), a **+Section slot** (`extra.*`,
+`add_section`) and a **card's bullet slot** (the slot is a `<ul>`; `setSlot`
+works there). A **prose slot** (a paragraph, a lede) has no list grammar:
+`setSlot` now REFUSES a list for one and says so; put the list in a text box.
+`docsync.check` warns on a page that still prints one as a paragraph of dashes.
+
+Type markdown the engine reads: `- `, `* `, `+ ` or `• ` for a bullet, `1. ` /
+`1) ` for numbered; two spaces per nesting level; a wrapped item continues on an
+indented line; a blank line between items is still ONE list. (`-5 degrees` is
+prose.) The editor rewrites bullets as `- ` the next time the words are edited.
+
+Indents on a list act on the **outermost list** (and, for a paragraph in the same
+box, on the paragraph): `setStyle(key, {indentLeft: 0.5})` moves the whole list
+0.5in, nested items keep their normal step inside it, the marker stays on its
+words. A first-line `indent` has no effect on list items and `hang` is just
+more left indent (a list already hangs); do not use them to shape a list. To
+change how the list steps in, use `list: {indent}` (the padding of each list
+level, default 0.42in) and `list: {marker}`. `pad` on a box insets the whole list
+and composes by plain addition. Never fake a bullet with a hanging indent and a
+typed `•`; that is what the list is for.
+
 ## "Make me a report from this text" — the house-style build-out
 
 The Appleseed house style is DATA, not lore: `docsync.templates.style_guide()`

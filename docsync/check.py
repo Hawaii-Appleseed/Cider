@@ -480,8 +480,24 @@ def check_alt_text(html: str) -> list[Problem]:
     return out
 
 
+# A list typed into a slot that draws prose has no list grammar to read it: the
+# dashes print as words, in one paragraph ("- one - two"). Slots that take lists
+# are text boxes, +Section slots and a renderer's own <ul> (content.py).
+_FLAT_LIST = re.compile(r"(?is)<p\b[^>]*>\s*(?:[-*+\u2022]\s+\S[^<]{0,60}?\s[-*+\u2022]\s+\S)")
+
+
+def check_flat_lists(html: str) -> list[Problem]:
+    """No paragraph is a list that was typed into a prose slot."""
+    return [Problem(
+        "lists",
+        f"a list was typed into a prose slot and prints as one paragraph of dashes: "
+        f"{re.sub(chr(60) + '[^>]*>', '', m.group(0))[:80]!r} — a list belongs in a text box, "
+        f"a +Section slot or a card's bullet list",
+        "warn") for m in _FLAT_LIST.finditer(html)]
+
+
 CHECKS = (check_citations, check_markdown, check_svg_bounds,
-          check_text_size, check_attributes, check_alt_text)
+          check_text_size, check_attributes, check_alt_text, check_flat_lists)
 
 
 

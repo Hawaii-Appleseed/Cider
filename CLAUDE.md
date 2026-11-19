@@ -306,6 +306,14 @@ Rules that bite:
   raising one needs `--allow-raise` and shows in the diff. Never raise the
   baseline or add to `editability_ok` to get past a finding: give the thing
   a handle.
+- **Lists (2026-11-18).** Indents act on the OUTERMOST `<ul>`/`<ol>`
+  (`layout.py` `_LIST_TOP`), never on `<li>`: a nested item used to take the
+  margin again inside its parent, a first-line indent parted a bullet from its
+  words and a hang landed the words on the marker. Bullets are `- * + •` (content.py
+  `_ITEM_RE`, twinned in edit.html `LIST_ITEM_RE`: change both); a blank line
+  and an indented wrapped line keep one list; a prose slot (C.html →
+  `paragraphs()`) takes no list, and the pilot's `setSlot` refuses one.
+  `tests/editor/list-indents.spec.js` holds it; skill: report-editor, "Lists".
 - **Every bar is a chart.** A bar showing numbers is `blocks.meter` (one bar
   of parts) or `blocks.chart`, so it opens in the Chart panel — never sized
   divs with typed-in widths, which `docsync.check` refuses under strict. Text

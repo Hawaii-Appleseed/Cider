@@ -1184,13 +1184,28 @@ SPACE_KEYS = ("spaceBefore", "spaceAfter", "indent", "hang", "indentLeft", "inde
 SPACE_RANGE = {"spaceBefore": (0, 3), "spaceAfter": (0, 3), "indent": (0, 3),
                "hang": (0, 3), "indentLeft": (0, 3), "indentRight": (0, 3)}
 _PARA = ":is(p,h1,h2,h3,h4,h5,h6,li)"
+# Left, right and first-line indents are NOT set on a list's items: a nested
+# item would take the margin again inside its parent (the indent doubling per
+# level), and a text-indent moves an item's words but never its outside
+# marker (a first-line indent parted a bullet from its text; a hang pulled
+# the words onto the marker). On a list the indent lives on the OUTERMOST
+# <ul>/<ol>; the items hang under it the way a list already hangs, and the
+# nested lists indent by their own padding. Space before/after stays on items.
+# (`hang` is folded into --ds-il, so a list takes it as a plain left indent.)
+_PARA_BLOCK = ":is(p,h1,h2,h3,h4,h5,h6)"
+_LIST_TOP = ":is(ul,ol):not(li :is(ul,ol))"
 
 
-def _space_rule(var: str, prop: str) -> str:
+def _list_rule(var: str, prop: str, val: str | None = None) -> str:
+    return (f"{_LIST_TOP}[style*='{var}:'],[style*='{var}:'] {_LIST_TOP}"
+            f"{{{prop}:{val or f'var({var})'}!important}}")
+
+
+def _space_rule(var: str, prop: str, sel: str = _PARA) -> str:
     # !important because the person asked for THIS paragraph's spacing, the
     # same strength an inline style has; a report's own `.page p.lead{margin}`
     # would otherwise out-rank an attribute selector and silently win.
-    return (f"{_PARA}[style*='{var}:'],[style*='{var}:'] {_PARA},"
+    return (f"{sel}[style*='{var}:'],[style*='{var}:'] {sel},"
             f"span[style*='{var}:']{{{prop}:var({var})!important}}")
 
 
@@ -1449,8 +1464,11 @@ def _check_fit(g: dict, where: str) -> None:
 
 SPACE_CSS = (
     _space_rule("--ds-sb", "margin-top") + _space_rule("--ds-sa", "margin-bottom")
-    + _space_rule("--ds-il", "margin-left") + _space_rule("--ds-ir", "margin-right")
-    + _space_rule("--ds-ti", "text-indent")
+    + _space_rule("--ds-il", "margin-left", _PARA_BLOCK)
+    + _space_rule("--ds-ir", "margin-right", _PARA_BLOCK)
+    + _space_rule("--ds-ti", "text-indent", _PARA_BLOCK)
+    + _list_rule("--ds-il", "margin-left")
+    + _list_rule("--ds-ir", "margin-right")
     # A heading's inline span has no vertical margin and no first line of its
     # own until it is a block.
     + "span[style*='--ds-sb:'],span[style*='--ds-sa:'],span[style*='--ds-il:'],"
