@@ -146,16 +146,16 @@
      rect every frame) follow it down. Light, like the contextual card whose
      controls it takes over; a fixed height so a change of selection never
      moves the canvas. Scrolls sideways, never wraps, like #bar. */
-  #ctl { flex:none; display:flex; align-items:flex-start; gap:6px 6px; height:44px;
-         /* A long run of fields WRAPS inside the window; it used to scroll sideways
-            with no scrollbar, so everything past the edge was simply gone. The
-            bar's own height stays 44px, though: a row that grew on every selection
-            moved the canvas under the pointer between the two clicks of a
-            double-click. The extra row hangs over the top of the canvas instead,
-            on the white of #cb-obj / #type / #arrange below. */
-         flex-wrap:wrap; align-content:flex-start;
-         box-sizing:border-box; padding:7px calc(var(--dock-w, 40px) + 12px) 7px 12px; position:relative; z-index:9;  /* over the rulers (7-8): its wrapped rows hang onto the canvas top */
-         background:#fff; color:var(--ink);
+  #ctl { flex:none; display:flex; align-items:flex-start; gap:6px 6px;
+         /* The bar is as tall as the WINDOW's width needs (ctlRows sets --ctl-rows
+            from the widest mode), so a long run of fields wraps onto more rows
+            inside the page and its height depends on nothing else: selecting
+            something never moves the canvas under the pointer, and nothing hangs
+            over the page. (It used to scroll sideways with no scrollbar, so the
+            fields past the edge were simply gone; then it hung over the canvas.) */
+         min-height:calc(var(--ctl-rows, 1) * 38px + 6px); flex-wrap:wrap; align-content:flex-start;
+         box-sizing:border-box; padding:7px 12px; position:relative; z-index:3;
+         background:#fff; color:var(--ink); border-bottom:1px solid #E1E8E3;
          overflow:visible; white-space:nowrap; }
   #ctl::-webkit-scrollbar { display:none; }
   #ctl[hidden], #ctl [hidden] { display:none !important; }
@@ -251,17 +251,10 @@
           justify-content:flex-start; pointer-events:auto; }
 
   /* ---- the docked bar, one quiet surface ---------------------------------
-     One sheet behind everything (the bar's height can stay 44px while a long
-     row wraps: --ctl-sheet is measured, see ctlSheet), and every control wears
-     the same shape: 30px tall, 8px corners, a pale fill instead of an outline,
+     One white surface, as tall as the window's width needs (ctlRows), and every
+     control wears the same shape: 30px tall, 8px corners, a pale fill instead of an outline,
      no rule or shadow of its own. A number box is ONE pill with its icon or
      letter inside it, so there are no stray glyphs and no boxes-with-labels. */
-  /* The comments / history gutter starts where the page area starts, which is where
-     the hanging rows are, so the bar keeps clear of it as it does of the dock. */
-  body.cmt-margin #ctl { padding-right:calc(var(--dock-w, 40px) + var(--cmt-gutter, 384px) + 12px); }
-  #ctl::before { content:""; position:absolute; z-index:-1; left:0; right:0; top:0;
-         height:var(--ctl-sheet, 44px); max-height:60vh; background:#fff; pointer-events:none;
-         box-shadow:0 1px 0 #E1E8E3, 0 10px 22px -8px rgba(20,40,30,.16); }
   #ctl #cb-obj, #ctl #type, #ctl #arrange { gap:6px; row-gap:6px; }
   #ctl .cb-f { height:30px; box-sizing:border-box; padding:0 2px 0 10px; gap:5px;
          background:#F2F5F3; border-radius:8px; color:#72857C; font:600 11px system-ui;
@@ -298,12 +291,8 @@
   #ctl .ty-step button { background:transparent; }
   #ctl #type .ty-step #cb-size { background:transparent; border:0; box-shadow:none; border-radius:0; }
   /* the text/arrange controls fill the line beside the mode switch and wrap among
-     themselves, instead of dropping to a row of their own — unless less than 260px
-     is left on that line. With a 12in-wide box selected there was 121px, and six
-     buttons stacked into a 138px column that hung over the canvas and covered the
-     box's own resize handle (every-field-opens, rxkids "tabs"); below the floor
-     they take a row of their own, which hangs 30px instead. */
-  #ctl > #type, #ctl > #arrange { flex:1 1 0; min-width:260px; }
+     themselves, instead of dropping to a row of their own */
+  #ctl > #type, #ctl > #arrange { flex:1 1 560px; min-width:0; }   /* beside the mode switch when 560px is free, else a row of its own */
   #ctl .ty-sep, #ctl .bar-sep { width:1px; height:18px; margin:0 3px; background:#E3E9E5; }
   #ctl .ty-key, #ctl .ar-count { background:#EEF3EF; color:#6B7C74; border-radius:8px;
          padding:6px 10px; font:500 11.5px ui-monospace, monospace; }
@@ -18958,33 +18947,27 @@ function setCtlMode(m) {
 }
 document.querySelectorAll('#cb-mode [data-m]').forEach(b =>
   b.addEventListener('click', () => setCtlMode(b.dataset.m)));
-/** The bar stays 44px tall in the column, and a long row wraps down over the
- *  canvas; the white sheet behind it (#ctl::before) is sized to what is really
- *  there. Measured, never guessed: every change of mode or selection changes it. */
-function ctlSheet() {
-  const c = $('ctl');
-  if (!c || c.hidden) { document.documentElement.style.setProperty('--ctl-over', '0px'); return; }
-  // From the controls' own bottoms, never scrollHeight: the sheet is a child of #ctl,
-  // so its height would be counted and the sheet would grow on every measure.
-  const top = c.getBoundingClientRect().top;
-  let low = 0;
-  c.querySelectorAll('input, select, button, label, #type, #arrange, #cb-obj').forEach(e => {
-    if (e.offsetParent) low = Math.max(low, e.getBoundingClientRect().bottom - top);
-  });
-  const sheet = Math.max(44, Math.ceil(low + 7));
-  c.style.setProperty('--ctl-sheet', sheet + 'px');
-  document.documentElement.style.setProperty('--ctl-over', (sheet - 44) + 'px');   // the panels that float on the right start below it
+/** How many rows the docked bar reserves at this window width. Measured per mode at
+ *  each width (object mode is the tallest: about 1900px of controls), then rounded to
+ *  the width bands below. A function of the width ALONE, so selecting something or switching A / ¶ never
+ *  changes the bar's height and so never moves the canvas under the pointer; the rare
+ *  mode that needs one more row than this simply grows the bar. The comments and history
+ *  panels that float on the right start below the extra rows (--ctl-over). */
+const CTL_ROW_BANDS = [[1900, 1], [1200, 2], [700, 4], [0, 6]];   // object mode is the widest: 1 / 2 / 4 / 6 rows
+function ctlRows() {
+  const c = $('ctl'), root = document.documentElement;
+  const band = CTL_ROW_BANDS.find(([w]) => innerWidth >= w);
+  const rows = !c || c.hidden ? 0 : band[1];
+  root.style.setProperty('--ctl-rows', String(rows || 1));
+  root.style.setProperty('--ctl-over', (rows ? (rows - 1) * 38 : 0) + 'px');
 }
-try {
-  const ro = new ResizeObserver(ctlSheet);
-  ro.observe($('ctl'));
-  [...$('ctl').querySelectorAll(':scope > *, #cb-obj > *')].forEach(e => ro.observe(e));
-  window.addEventListener('resize', ctlSheet);
-} catch (e) { swallowed('ctlSheet', e); }
+ctlRows();
+window.addEventListener('resize', ctlRows);
 function toggleCtlBar(on = !ctlOn) {
   ctlOn = !!on;
   try { localStorage.setItem('ds-ctlbar', ctlOn ? '1' : '0'); } catch (e) { /* file: */ }
   ctlDock();
+  ctlRows();
   const d = $('out').contentDocument;
   if (d && d.body) { arrangeBar(d); contextDodge(d); }
   startRulers();          // the stage moved; the rulers follow its rect

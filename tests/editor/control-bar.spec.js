@@ -58,33 +58,34 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar wraps inside a narrow window instead of running off it', async ({ page }) => {
-    await page.setViewportSize({ width: 760, height: 800 });
+  test('the docked bar wraps inside a narrow window, and is the same height in the common modes', async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 800 });
     const fits = () => page.evaluate(() => {
       const bar = $('ctl'), w = innerWidth;
       const kids = [...bar.querySelectorAll('input, select, button, label')]
         .filter(e => e.offsetParent !== null);
-      // nothing past the window, and nothing hanging under the panel rail on the right
-      const rail = $('dock-icons').getBoundingClientRect().left;
-      const past = kids.filter(e => { const b = e.getBoundingClientRect();
-        return b.right > w + 1 || (b.bottom > 46 && b.right > rail + 1); }).map(e => e.id || e.className);
-      return { past, scrolls: bar.scrollWidth > bar.clientWidth + 1, h: bar.getBoundingClientRect().height };
+      const bb = bar.getBoundingClientRect();
+      const out = kids.filter(e => { const b = e.getBoundingClientRect();
+        return b.right > w + 1 || b.bottom > bb.bottom + 1; }).map(e => e.id || e.className);
+      return { out, h: Math.round(bb.height), workTop: Math.round($('work').getBoundingClientRect().top),
+        barBottom: Math.round(bb.bottom) };
     });
-    // object mode
     await addRect(page);
-    let r = await fits();
-    expect(r.past).toEqual([]);
-    expect(r.scrolls).toBe(false);
-    // character mode: the longest row
+    const o = await fits();
+    expect(o.out).toEqual([]);                       // nothing past the window, nothing out of the bar
+    expect(o.h).toBeGreaterThan(44);                 // a narrow window gets more rows
+    expect(o.workTop).toBeGreaterThanOrEqual(o.barBottom - 1);   // and the page starts below them
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
     await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
     await settled(page);
-    await page.click('#cb-mode [data-m="char"]');
-    r = await fits();
-    expect(r.past).toEqual([]);
-    expect(r.scrolls).toBe(false);
-    expect(r.h).toBe(44);   // and the bar itself did not grow: the canvas must not move on a click
+    for (const m of ['char', 'para']) {
+      await page.click(`#cb-mode [data-m="${m}"]`);
+      const r = await fits();
+      expect(r.out, m).toEqual([]);
+      expect(r.h, m).toBe(o.h);                      // selecting or switching mode never moves the canvas
+      expect(r.workTop, m).toBe(o.workTop);
+    }
   });
 
   test('the comments panel opens below the rows that hang from the bar, not over them', async ({ page }) => {
