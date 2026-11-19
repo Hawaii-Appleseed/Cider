@@ -153,6 +153,33 @@ test.describe('pilot: the control bar, by verb', () => {
     // Inside a bold stretch is fine: the run sits inside the marker.
     const ok = await bad({ find: 'big' }, { size: 14 });
     expect(ok.md).toBe('Hello **[big]{size=14} bold** world');
+    // The Character panel's other keys: a family the report cannot load, a
+    // weight that family has not got, a colour that is not one, a shift past 24.
+    expect((await bad({ find: 'Hello' }, { font: 'Comic Sans' })).error).toContain('not a font');
+    expect((await bad({ find: 'Hello' }, { font: 'Lora', weight: 300 })).error).toContain('no weight 300');
+    expect((await bad({ find: 'Hello' }, { color: 'red' })).error).toContain('hex colour');
+    expect((await bad({ find: 'Hello' }, { case: 'shout' })).error).toContain('upper, lower or title');
+    expect((await bad({ find: 'Hello' }, { shift: 30 })).error).toContain('-24 to 24');
+  });
+
+  test('setRun: font, weight, colour, case, small caps, strike and shift on words', async ({ page }) => {
+    const tb = await api(page, `addTextBox({ page: 3, x: 1, y: 1, w: 4, md: 'Hello brave world' })`);
+    let r = await api(page, `setRun('${tb.id}', { find: 'brave' }, { font: 'Lora', weight: 700, color: '#C0392B', case: 'upper', smcp: 'small', strike: true, shift: 2 })`);
+    expect(r.ok).toBe(true);
+    expect(r.md).toBe('Hello [brave]{font="Lora" weight=700 color=#C0392B case=upper smcp=small strike=1 shift=2} world');
+    const cs = await page.evaluate(() => {
+      const e = $('out').contentDocument.querySelector('span[data-cr]');
+      const c = getComputedStyle(e);
+      return { fam: c.fontFamily, w: c.fontWeight, col: c.color, tt: c.textTransform, deco: c.textDecorationLine };
+    });
+    expect(cs.fam).toContain('Lora');
+    expect(cs.w).toBe('700');
+    expect(cs.col).toBe('rgb(192, 57, 43)');
+    expect(cs.tt).toBe('uppercase');
+    expect(cs.deco).toContain('line-through');
+    // strike false and null take keys off; the rest stay.
+    r = await api(page, `setRun('${tb.id}', { find: 'brave' }, { strike: false, smcp: null, shift: null, case: null })`);
+    expect(r.md).toBe('Hello [brave]{font="Lora" weight=700 color=#C0392B} world');
   });
 
   test('setType: the type fields in the bar\'s units, as one undo step', async ({ page }) => {

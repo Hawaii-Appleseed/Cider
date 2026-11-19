@@ -80,6 +80,86 @@ test.describe('character settings on selected words', () => {
     await expect(page.locator('#cb-track')).toHaveValue('50');
   });
 
+  test('the pickers act on the selection too: font, weight, case, small caps, strike, shift, colour', async ({ page }) => {
+    const { id, host } = await openBox(page, 'Alpha beta gamma');
+    // A pick from a list, as a person makes it: the press holds the words.
+    const pick = async (sel, v) => {
+      await page.waitForTimeout(50);                     // the last control's let-go
+      await page.locator(sel).click();
+      await page.locator(sel).selectOption(v);
+    };
+    await selectChars(page, 6, 10);                       // "beta"
+    await pick('#ty-font', 'Lora');
+    expect(await md(page)).toBe('Alpha [beta]{font="Lora"} gamma');
+    await expect(host).toBeVisible();                     // still typing
+    await pick('#ty-weight', '700');
+    await pick('#ty-case', 'upper');
+    await pick('#cb-smcp', 'small');
+    await page.waitForTimeout(50);
+    await page.locator('#cb-strike').click();
+    await setField(page, '#cb-shift', '3');
+    expect(await md(page)).toBe('Alpha [beta]{font="Lora" weight=700 case=upper smcp=small strike=1 shift=3} gamma');
+    // Colour from the pop: the words, not the box.
+    await page.waitForTimeout(50);
+    await page.locator('#ty-colorbtn').click();
+    const sw = page.locator('#ty-swgrid .sw[data-c]').first();
+    const c = await sw.getAttribute('data-c');
+    await sw.click();
+    expect(await md(page)).toBe(`Alpha [beta]{font="Lora" weight=700 color=${c} case=upper smcp=small strike=1 shift=3} gamma`);
+    expect(await host.locator('span.ds-cr').count()).toBe(1);
+    // The box itself did not change.
+    expect(await page.evaluate(i => { const s = styleOf(i) || {};
+      return [s.font, s.weight, s.color, s.case, s.smallCaps, s.strike, s.shift].filter(x => x != null).length; }, id)).toBe(0);
+    // Strike again takes it off.
+    await page.waitForTimeout(50);
+    await selectChars(page, 6, 10);
+    await page.locator('#cb-strike').click();
+    expect(await md(page)).toBe(`Alpha [beta]{font="Lora" weight=700 color=${c} case=upper smcp=small shift=3} gamma`);
+    // Leave the words: the page draws the run.
+    await page.waitForTimeout(50);
+    await host.press('Escape');
+    await settled(page);
+    const run = page.frameLocator('#out').locator(`[data-el="${id}"] span.ds-cr`);
+    const cs = await run.evaluate(e => { const s = getComputedStyle(e);
+      return { fam: s.fontFamily, w: s.fontWeight, tt: s.textTransform, caps: s.fontVariantCaps }; });
+    expect(cs.fam).toContain('Lora');
+    expect(cs).toMatchObject({ w: '700', tt: 'uppercase', caps: 'small-caps' });
+    // The caret in the run: the pickers read it; outside it, the box again.
+    await page.frameLocator('#out').locator(`[data-el="${id}"]`).click();
+    await host.waitFor({ state: 'visible' });
+    await selectChars(page, 7, 8);
+    await expect(page.locator('#ty-font')).toHaveValue('Lora');
+    await expect(page.locator('#ty-weight')).toHaveValue('700');
+    await expect(page.locator('#ty-case')).toHaveValue('upper');
+    await selectChars(page, 1, 2);
+    await expect(page.locator('#ty-font')).not.toHaveValue('Lora');
+    await expect(page.locator('#ty-case')).toHaveValue('none');
+  });
+
+  test('a pick that arrives without focus still lets the words go', async ({ page }) => {
+    const { host } = await openBox(page, 'Alpha beta gamma');
+    await selectChars(page, 6, 10);
+    // No click: a press event and a pick, the field never focused.
+    await page.dispatchEvent('#ty-font', 'pointerdown');
+    await page.selectOption('#ty-font', 'Lora');
+    expect(await md(page)).toBe('Alpha [beta]{font="Lora"} gamma');
+    expect(await page.evaluate(() => modalOpen)).toBe(false);
+    await expect(host).toBeVisible();
+    // and the words still close the ordinary way
+    await host.press('Escape');
+    await page.waitForFunction(() => editing === false, null, { timeout: 15000 });
+  });
+
+  test('with only a caret, a picker still sets the box', async ({ page }) => {
+    const { id } = await openBox(page, 'Alpha beta gamma');
+    await selectChars(page, 3, 3);
+    await page.locator('#ty-font').click();
+    await page.locator('#ty-font').selectOption('Lora');
+    await settled(page);
+    expect(await page.evaluate(i => (styleOf(i) || {}).font, id)).toBe('Lora');
+    expect(await page.evaluate(i => boxOf(i).md, id.replace(/^text\./, ''))).toBe('Alpha beta gamma');
+  });
+
   test('kerning at a caret is the pair either side of it; a selection takes it across', async ({ page }) => {
     const { id, host } = await openBox(page, 'AVATAR');
     await selectChars(page, 1, 1);                        // between A and V
