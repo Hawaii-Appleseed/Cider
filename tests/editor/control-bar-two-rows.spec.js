@@ -1,4 +1,4 @@
-// The docked Control bar is TWO rows, --ctl-h (80px) tall: the same in every mode and with
+// The docked Control bar is TWO rows, --ctl-h (58px) tall: the same in every mode and with
 // nothing selected, at every window width. It is laid out as InDesign's Control panel is:
 // ALIGNED COLUMNS. Each column is a vertical pair, a primary field over a secondary one, the same
 // width and left edge (font over style, size over leading, X over Y …); the columns are spread
@@ -85,7 +85,7 @@ test.describe('control bar: two rows', () => {
         const g = await geometry(page);
         seen.add(g.h);
         expect(g.h, `${w} ${mode}`).toBe(g.cssH);
-        expect(g.cssH, `${w} ${mode} --ctl-h`).toBe(80);
+        expect(g.cssH, `${w} ${mode} --ctl-h`).toBe(58);
         expect(g.misfit, `${w} ${mode}: a column whose cells are not one over the other: ${g.misInfo}`).toBe(0);
         expect(g.out, `${w} ${mode}`).toEqual([]);
         expect(g.pageW, `${w} ${mode}: the page grew sideways`).toBeLessThanOrEqual(g.winW);
@@ -94,7 +94,35 @@ test.describe('control bar: two rows', () => {
         expect(await page.evaluate(() => $('ctl').scrollHeight <= $('ctl').clientHeight + 1), `${w} ${mode}: the bar overflows downward`).toBe(true);
       }
     }
-    expect([...seen]).toEqual([80]);
+    expect([...seen]).toEqual([58]);
+  });
+
+  test('compact: 58px, pills about 24px, text never under 12px, every control a 24px target', async ({ page }) => {
+    const ids = { rect: null, text: null };
+    await addRect(page); ids.rect = 'cb-rect'; ids.text = await addText(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    for (const [mode] of MODES_ALL) {
+      await inAnyMode(page, mode, ids);
+      const r = await page.evaluate(() => {
+        const bad = [], big = [];
+        document.querySelectorAll('#ctl .ctl-cell > *').forEach(c => {
+          if (getComputedStyle(c).display === 'none' || c.id === 'cb-empty') return;
+          const b = c.getBoundingClientRect();
+          if (b.height < 7) return;
+          if (b.height > 27 && !c.matches('.cb-refgrid, .cb-grp')) big.push((c.id || c.className) + ':' + Math.round(b.height));
+          // a click target: at least 24px tall, but for the reference grid, the P flag and the read-only chips
+          if (!c.matches('.cb-refgrid, #cb-pflag, .ty-key, .ar-count') && b.height < 23.5) bad.push((c.id || c.className) + ' ' + Math.round(b.height) + 'px tall');
+        });
+        const small = [...document.querySelectorAll('#ctl .ctl-cell input, #ctl .ctl-cell select, #ctl .ctl-cell label, #ctl .ctl-cell button')]
+          .filter(e => e.offsetParent !== null && !e.closest('.pop') && e.textContent.trim() + (e.value || '') !== '' && parseFloat(getComputedStyle(e).fontSize) < 12)
+          .map(e => (e.id || e.className) + ' ' + getComputedStyle(e).fontSize);
+        return { bad, big, small, h: Math.round($('ctl').getBoundingClientRect().height) };
+      });
+      expect(r.h, mode).toBe(58);
+      expect(r.bad, `${mode}: controls under 24px`).toEqual([]);
+      expect(r.big, `${mode}: controls over 27px`).toEqual([]);
+      expect(r.small, `${mode}: text under 12px`).toEqual([]);
+    }
   });
 
   test('each column is a pair: a primary field over a secondary one, the same width and left edge', async ({ page }) => {
@@ -152,7 +180,7 @@ test.describe('control bar: two rows', () => {
         expect(r['ctl-top'], `${w} ${mode}: the top row runs off the bar`).toBeGreaterThanOrEqual(0);
         expect(r.gap, `${w} ${mode}: a ${r.gap}px hole between two columns`).toBeLessThanOrEqual(110);
         expect(r.scroll, `${w} ${mode}: scrolls at a window this wide`).toBeLessThanOrEqual(0);
-        expect((await geometry(page)).h, `${w} ${mode}`).toBe(80);
+        expect((await geometry(page)).h, `${w} ${mode}`).toBe(58);
       }
     }
   });
@@ -166,7 +194,7 @@ test.describe('control bar: two rows', () => {
         return { mode: $('ctl').dataset.mode, hidden: $('cb-empty').hidden, arr: $('arrange').hidden, sel: selPage + '/' + selIds.size, parent: $('cb-empty').parentNode.className, visible: b.width > 0, left: b.left, right: bar.right - b.right, mid: (b.left + b.right) / 2, barMid: bar.width / 2 }; });
       expect(hint.visible, JSON.stringify(hint)).toBe(true);
       expect(Math.abs(hint.mid - hint.barMid), `${w}: the hint is centred`).toBeLessThanOrEqual(2);
-      expect((await geometry(page)).h).toBe(80);
+      expect((await geometry(page)).h).toBe(58);
       await page.evaluate(() => setSelPage($('out').contentDocument, 3));
       await settled(page);
       const cols = await page.evaluate(() => { const c = [...$('ctl-cols').children].map(e => e.getBoundingClientRect()), bar = $('ctl').getBoundingClientRect();
@@ -278,7 +306,7 @@ test.describe('control bar: two rows', () => {
       expect(r.over, `${mode}: something to scroll to at 390px`).toBe(true);
       expect(r.overlap, `${mode}: overlapping columns`).toBe(false);
       const g = await geometry(page);
-      expect(g.h).toBe(80);
+      expect(g.h).toBe(58);
       expect(g.pageW).toBeLessThanOrEqual(g.winW);
     }
     // the bar scrolls with the pointer's wheel, and says so by shading its edge
@@ -287,7 +315,7 @@ test.describe('control bar: two rows', () => {
     await bar.evaluate(e => { e.scrollLeft = 120; e.dispatchEvent(new Event('scroll')); });
     await expect(bar).toHaveClass(/ctl-fade-l/);
     await expect(bar).toHaveClass(/ctl-fade-r/);
-    expect((await geometry(page)).h).toBe(80);
+    expect((await geometry(page)).h).toBe(58);
     // a control that was scrolled out of sight is reachable: it scrolls into view and answers
     const kern = await barField(page, '#cb-kern');
     await kern.fill('25');
@@ -394,7 +422,7 @@ test.describe('control bar: two rows', () => {
     await page.evaluate(() => { setSelPage($('out').contentDocument, 3); });
     await settled(page);
     const g = await geometry(page);
-    expect(g.h).toBe(80);
+    expect(g.h).toBe(58);
     expect(g.out).toEqual([]);
     expect(await inRow(page, 'ar-pagelabel')).toBe('top');
     expect(await inRow(page, 'ar-fill')).toBe('bot');
@@ -411,6 +439,6 @@ test.describe('control bar: two rows', () => {
     await page.evaluate(() => toggleCtlBar(true));
     await settled(page);
     expect(await laid()).toBeGreaterThan(0);
-    expect((await geometry(page)).h).toBe(80);
+    expect((await geometry(page)).h).toBe(58);
   });
 });

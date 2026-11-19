@@ -76,7 +76,7 @@ test.describe('control bar', () => {
       }
     }
     expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
-    expect(heights[0]).toBe(80);                       // --ctl-h: two 30px-pill rows
+    expect(heights[0]).toBe(58);                       // --ctl-h: two rows of 24px pills
     // at a narrow width the bar's columns scroll inside it: the bar and the page do not grow
     // (control-bar-two-rows.spec.js pins the rest)
     await page.setViewportSize({ width: 760, height: 800 });
@@ -86,7 +86,7 @@ test.describe('control bar', () => {
         h: Math.round(c.getBoundingClientRect().height), pageW: document.documentElement.scrollWidth, winW: innerWidth }; });
     expect(r.barScrolls).toBe(false);
     expect(r.rowsScroll).toBe(true);
-    expect(r.h).toBe(80);
+    expect(r.h).toBe(58);
     expect(r.pageW).toBeLessThanOrEqual(r.winW);
   });
 
