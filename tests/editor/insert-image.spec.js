@@ -103,7 +103,8 @@ test.describe('insert image', () => {
   // Shorter still, the rail leaves out the pins that do not fit above the page strip
   // (railFit); the + palette still reaches every one of them.
   test('on a window too short for every pin, the palette still uploads an image', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 520 });
+    // (the slimmer rail and the compact Control bar leave room for the image pin at 520px: shorter)
+    await page.setViewportSize({ width: 1280, height: 440 });
     await gotoEditor(page);
     expect(await page.evaluate(() => $('ar-img').offsetWidth)).toBe(0);      // not in the rail now
     expect(await page.evaluate(() => ['tool-select', 'tool-type', 'tool-hand', 'insert', 'colors']
