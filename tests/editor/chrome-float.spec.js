@@ -226,7 +226,7 @@ test.describe('selection-contextual arrange strip', () => {
       await expect(page.locator('#leftrail #ar-img')).toBeEnabled();
     });
 
-  test('the tool rail ends after its last button, with nothing below it',
+  test('the tool rail is a docked column down to the page strip: the canvas starts at its edge and nothing is drawn below the tools',
     async ({ page }) => {
       const g = await page.evaluate(() => {
         const rail = document.getElementById('leftrail');
@@ -241,15 +241,15 @@ test.describe('selection-contextual arrange strip', () => {
         const last = rail.querySelector(':scope > button:last-of-type').getBoundingClientRect();
         const work = document.getElementById('work').getBoundingClientRect();
         const stage = document.getElementById('stage').getBoundingClientRect();
-        return { railBottom: r.bottom, lastBottom: last.bottom, workBottom: work.bottom,
-                 stageX: stage.x, workX: work.x,
+        return { railBottom: r.bottom, railRight: r.right, lastBottom: last.bottom, workBottom: work.bottom,
+                 stageX: stage.x, workX: work.x, stripH: parseFloat(document.documentElement.style.getPropertyValue('--strip-h')) || 0,
                  after: getComputedStyle(rail, '::after').content };
       });
-      // solid only as far as the tools go — not a full-height wall
-      expect(g.railBottom).toBeLessThan(g.workBottom - 40);
-      expect(g.railBottom - g.lastBottom).toBeLessThan(20);
-      // the canvas runs underneath rather than starting where the rail ends
-      expect(g.stageX).toBeCloseTo(g.workX, 0);
+      // docked (2026-11-19): a column of the work area, as tall as the room above the page strip
+      expect(g.railBottom).toBeCloseTo(g.workBottom - g.stripH, 0);
+      expect(g.lastBottom).toBeLessThanOrEqual(g.railBottom);
+      // the canvas starts at the rail's right edge: the rail is not laid over it
+      expect(g.stageX).toBeCloseTo(g.railRight, 0);
       // and nothing continues below the tools — no veil, no tint
       expect(g.after).toBe('none');
     });

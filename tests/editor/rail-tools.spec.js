@@ -80,7 +80,9 @@ test.describe('the tools', () => {
       const d = $('out').contentDocument, pg = d.querySelector('section.page'), r = pg.getBoundingClientRect();
       const f = $('out').getBoundingClientRect();
       const taken = [...pg.querySelectorAll('[data-el], [data-slot]')].map(e => e.getBoundingClientRect());
-      for (let y = r.top + 20; y < Math.min(r.bottom, innerHeight) - 20; y += 24)
+      const strip = $('rail').hidden ? innerHeight : $('rail').getBoundingClientRect().top;   // (the page strip covers the foot)
+      const top = $('stage').getBoundingClientRect().top + 24;
+      for (let y = Math.max(r.top + 20, top - f.y); y < r.bottom - 20 && f.y + y < strip - 24; y += 24)
         for (let x = r.left + 12; x < r.right - 120; x += 24)
           if (!taken.some(b => x > b.left - 6 && x < b.right + 6 && y > b.top - 6 && y < b.bottom + 6))
             return { x: f.x + x, y: f.y + y };
@@ -106,7 +108,9 @@ test.describe('the tools', () => {
       const d = $('out').contentDocument, pg = d.querySelector('section.page'), r = pg.getBoundingClientRect();
       const f = $('out').getBoundingClientRect();
       const taken = [...pg.querySelectorAll('[data-el], [data-slot]')].map(e => e.getBoundingClientRect());
-      for (let y = r.top + 20; y < Math.min(r.bottom, innerHeight) - 20; y += 24)
+      const strip = $('rail').hidden ? innerHeight : $('rail').getBoundingClientRect().top;   // (the page strip covers the foot)
+      const top = $('stage').getBoundingClientRect().top + 24;
+      for (let y = Math.max(r.top + 20, top - f.y); y < r.bottom - 20 && f.y + y < strip - 24; y += 24)
         for (let x = r.left + 12; x < r.right - 120; x += 24)
           if (!taken.some(b => x > b.left - 6 && x < b.right + 6 && y > b.top - 6 && y < b.bottom + 6))
             return { x: f.x + x, y: f.y + y };
@@ -290,7 +294,7 @@ test.describe('a narrow rail', () => {
     await page.click('#shape');
     await expect(page.locator('#side')).toBeVisible();
     const t = await page.evaluate(() => ({ side: Math.round($('side').getBoundingClientRect().left), rail: Math.round($('leftrail').getBoundingClientRect().right) }));
-    expect(t.side).toBe(t.rail);
+    expect(t.side).toBe(t.rail + 18);              // clear of the left ruler beside the rail
     await page.click('#shape');
   });
 
