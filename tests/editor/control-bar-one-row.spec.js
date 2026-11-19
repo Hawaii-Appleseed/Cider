@@ -177,10 +177,16 @@ test.describe('control bar: one row', () => {
     await page.setViewportSize({ width: 900, height: 800 });
     await settled(page);
     const btn = page.locator('#ctl-more-btn'), pop = page.locator('#ctl-more-pop');
+    // what the row draws, and where: opening and closing More must not move any of it
+    const row = () => page.evaluate(() => [...$('ctl').querySelectorAll('input, select, button')]
+      .filter(e => e.offsetParent !== null && !e.closest('.pop'))
+      .map(e => `${e.id || e.className}@${Math.round(e.getBoundingClientRect().left)}`).join(' '));
+    const before = await row();
     await expect(btn).toHaveAttribute('aria-expanded', 'false');
     await btn.click();
     await expect(pop).toBeVisible();
     await expect(btn).toHaveAttribute('aria-expanded', 'true');
+    expect(await row()).toBe(before);
     // it opens below the button, whole, inside the window
     const r = await page.evaluate(() => {
       const p = $('ctl-more-pop').getBoundingClientRect(), b = $('ctl-more-btn').getBoundingClientRect();
@@ -193,6 +199,7 @@ test.describe('control bar: one row', () => {
     await page.keyboard.press('Escape');
     await expect(pop).toBeHidden();
     await expect(btn).toHaveAttribute('aria-expanded', 'false');
+    expect(await row()).toBe(before);
     await btn.click();
     await expect(pop).toBeVisible();
     // a click away on the editor's chrome (as for every pop-up here, a click on the page

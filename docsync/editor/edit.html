@@ -326,7 +326,7 @@
   #ctl-more-pop { width:max-content; max-width:min(560px, calc(100vw - 32px)); box-sizing:border-box;
          padding:12px; white-space:normal; }
   #ctl-more-body { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-  #ctl-more-body > * { flex:none; }
+  #ctl #ctl-more-body > * { flex:none; margin-left:0; margin-right:0; }   /* none pushed to a line's end */
   #ctl-more-pop label { margin:0; }
   #ctl-more-pop label span { width:auto; }
   /* A thin rule between the history/commit group and the rest. */
@@ -19140,6 +19140,9 @@ function ctlFit() {
       btn.hidden = true; pop.hidden = true;
       return;
     }
+    // While More is open nothing moves: the control a person is using in it must not jump
+    // into the row (or out of it) under the pointer. Closing it refits.
+    if (!pop.hidden && !btn.hidden) { btn.setAttribute('aria-expanded', 'true'); return; }
     const mode = CTL_KEEP[ctl.dataset.mode] ? ctl.dataset.mode : 'obj';
     CTL_TOPS.forEach(id => $(id).classList.remove('ctl-void'));
     ctlSeps.forEach(s => s.classList.remove('ctl-sep-off'));
@@ -19147,8 +19150,8 @@ function ctlFit() {
     // More it would show, with nothing left to hide it.
     ctlU.forEach(u => { if (inMore(u) && !shown(u)) toRow(u); });
     const vis = ctlU.filter(shown);
-    // widths: live where the control is drawn now (the row, or More while it is open)
-    vis.forEach(u => { if (!inMore(u) || !pop.hidden) { const w = u.el.getBoundingClientRect().width; if (w) u.w = w; } });
+    // widths: as the row draws them (More may draw a control a little wider or narrower)
+    vis.forEach(u => { if (!inMore(u)) { const w = u.el.getBoundingClientRect().width; if (w) u.w = w; } });
     const cand = vis.slice().sort((a, b) => a.rk[mode] - b.rk[mode] || a.vi - b.vi);
     const cs = getComputedStyle(ctl), box = ctl.getBoundingClientRect();
     const left = box.left + parseFloat(cs.paddingLeft), right = box.right - parseFloat(cs.paddingRight);
@@ -19211,8 +19214,10 @@ function ctlFit() {
 }
 try {
   ctlMO = new MutationObserver(recs => {
-    // a click away, or Escape, hides the pop: the button says so; any change of what is
-    // shown (ctlPaint toggles `hidden`, the mode is data-mode) refits the row
+    // a click away, or Escape, hides the pop: the button says so, and words held open for
+    // it let go; any change of what is shown (ctlPaint toggles `hidden`, the mode is
+    // data-mode) refits the row
+    if ($('ctl-more-pop').hidden && runCtx && runCtx.more) ctlRunLetGo();
     ctlFit();
   });
   ctlMO.observe($('ctl'), { subtree: true, attributes: true, attributeFilter: ['hidden', 'data-mode'] });
@@ -19223,6 +19228,19 @@ try {
     togglePop($('ctl-more-pop'), $('ctl-more-btn'));
     $('ctl-more-btn').setAttribute('aria-expanded', String(!$('ctl-more-pop').hidden));
   });
+  // Words being typed: pressing More must not end the edit, or a character setting
+  // picked in it (case, small caps, strike, shift…) would dress the whole box instead
+  // of the selected words. The press holds them as a press on a field in the row
+  // does (ctlRunHold), the caret too (kerning works at a caret); a pick in More lets go
+  // as it would in the row, and so does More closing or a press on the page.
+  $('ctl-more-btn').addEventListener('mousedown', () => {
+    if (!$('ctl-more-pop').hidden) return;
+    ctlRunHold({ id: 'cb-kern' });
+    if (runCtx) runCtx.more = true;
+  }, true);
+  onEachDocument(d => d.addEventListener('mousedown', () => {
+    if (runCtx && runCtx.more) ctlRunLetGo();
+  }, true));
 } catch (e) { swallowed('ctlFit', e); }
 function toggleCtlBar(on = !ctlOn) {
   ctlOn = !!on;
