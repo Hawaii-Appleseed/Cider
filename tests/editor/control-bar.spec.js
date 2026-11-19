@@ -12,7 +12,7 @@
 // the nine-point reference point (what X/Y read, and what stays put when the
 // bar resizes, rotates or flips), the W/H link, scale X/Y, the P flip
 // indicator, and the picture's anchor and Frame Fitting Options. Local mode.
-const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
 
 async function addRect(page) {
   await page.evaluate(async () => {
@@ -58,7 +58,7 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar is one fixed 44px row in every mode and width, and reaches every field by scrolling', async ({ page }) => {
+  test('the docked bar is one fixed 44px row in every mode and width, and what does not fit is under More', async ({ page }) => {
     await addRect(page);
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
@@ -77,12 +77,15 @@ test.describe('control bar', () => {
     }
     expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
     expect(heights[0]).toBeLessThanOrEqual(45);
-    // at a narrow width the row scrolls, and the last control can be scrolled to
+    // at a narrow width the row does not scroll: what does not fit went under More
+    // (control-bar-one-row.spec.js pins More itself)
     await page.setViewportSize({ width: 760, height: 800 });
     await page.click('#cb-mode [data-m="char"]');
-    const r = await page.evaluate(() => { const c = $('ctl'); c.scrollLeft = c.scrollWidth;
-      return { scrolls: c.scrollWidth > c.clientWidth, h: Math.round(c.getBoundingClientRect().height) }; });
-    expect(r.scrolls).toBe(true);
+    const r = await page.evaluate(() => { const c = $('ctl');
+      return { scrolls: c.scrollWidth > c.clientWidth + 1, more: !$('ctl-more-btn').hidden,
+        h: Math.round(c.getBoundingClientRect().height) }; });
+    expect(r.scrolls).toBe(false);
+    expect(r.more).toBe(true);
     expect(r.h).toBeLessThanOrEqual(45);
   });
 
@@ -170,8 +173,8 @@ test.describe('control bar', () => {
     // The strip's own controls are in the bar too, not floating.
     await expect(page.locator('#ctl #ar-fill')).toBeVisible();
     await expect(page.locator('#cb-w')).toHaveValue('2');
-    await expect(page.locator('#cb-corner')).toBeVisible();     // a rectangle
-    await expect(page.locator('#cb-frame')).toBeHidden();       // not a text frame
+    await expect(await barField(page, '#cb-r')).toBeVisible();   // a rectangle: its corner size
+    await expect(page.locator('#cb-cols')).toBeHidden();         // not a text frame
 
     await page.locator('#cb-w').fill('216pt');                  // = 3in
     await page.locator('#cb-w').press('Enter');
@@ -209,9 +212,9 @@ test.describe('control bar', () => {
     await settled(page);
     // Text first: the bar opens in A (character) mode; ▭ shows the frame.
     await expect(page.locator('#ctl #type')).toBeVisible();
-    await expect(page.locator('#cb-frame')).toBeHidden();
+    await expect(page.locator('#cb-cols')).toBeHidden();
     await page.click('#cb-mode [data-m="frame"]');
-    await expect(page.locator('#cb-frame')).toBeVisible();
+    await expect(await barField(page, '#cb-cols')).toBeVisible();
     await expect(page.locator('#ty-font')).toBeHidden();
     await expect(page.locator('#cb-w')).toHaveValue('4');
     await page.selectOption('#cb-cols', '2');
@@ -254,7 +257,7 @@ test.describe('control bar', () => {
     await page.locator('#cb-track').fill('50');                // 50/1000 em of 24px = 1.2px
     await page.locator('#cb-track').press('Enter');
     await expect.poll(async () => (await st()).tracking).toBeCloseTo(1.2, 2);
-    await page.click('#cb-strike');
+    await (await barField(page, '#cb-strike')).click();        // lives in More in a narrow window
     await expect.poll(async () => (await st()).strike).toBe(true);
     await expect(page.locator('#cb-strike')).toHaveClass(/\bon\b/);
 
@@ -311,7 +314,7 @@ test.describe('control bar: reference point and fitting', () => {
     }, [x, y, w, h]);
     await settled(page);
   }
-  const enter = async (page, sel, v) => { await page.locator(sel).fill(v); await page.locator(sel).press('Enter'); };
+  const enter = async (page, sel, v) => { const f = await barField(page, sel); await f.fill(v); await f.press('Enter'); };
 
   test('X/Y read the chosen point, and a resize keeps it where it was', async ({ page }) => {
     await rectAt(page, 3, 3, 2, 1);
@@ -368,7 +371,7 @@ test.describe('control bar: reference point and fitting', () => {
     await enter(page, '#cb-sx', '50');
     await expect.poll(async () => (await rect(page)).w).toBe(2);
     expect((await rect(page)).h).toBe(2);
-    await expect(page.locator('#cb-sx')).toHaveValue('100');   // a frame's scale reads 100 again
+    await expect(await barField(page, '#cb-sx')).toHaveValue('100');   // a frame's scale reads 100 again
   });
 
   test('a fitted picture: the anchor grid and Frame Fitting Options', async ({ page }) => {
@@ -385,11 +388,11 @@ test.describe('control bar: reference point and fitting', () => {
     await page.click('#cb-fit [data-fit="cover"]');
     await expect.poll(() => page.evaluate(i => fitNow(i).fit, id)).toBe('cover');
     await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
-    await expect(page.locator('#cb-fitref')).toBeVisible();
-    await page.click('#cb-fitref [data-fa="tl"]');
+    await expect(await barField(page, '#cb-fitref')).toBeVisible();
+    await (await barField(page, '#cb-fitref [data-fa="tl"]')).click();
     await expect.poll(() => page.evaluate(i => fitNow(i).align, id)).toBe('top left');
     await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
-    await page.click('#cb-fitopts');
+    await (await barField(page, '#cb-fitopts')).click();
     const dlg = page.locator('dialog[open]');
     await dlg.locator('select').first().selectOption('contain');
     await dlg.locator('select').nth(1).selectOption('bottom right');
