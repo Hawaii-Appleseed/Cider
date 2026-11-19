@@ -71,14 +71,26 @@ test.describe('the tools', () => {
     expect(await page.evaluate(() => $('out').contentDocument.body.classList.contains('ds-hand'))).toBe(false);
   });
 
-  test('Hand: a drag pans the page and selects nothing', async ({ page }) => {
+  test('Hand: a drag on empty page pans it and selects nothing', async ({ page }) => {
+    await page.evaluate(() => $('out').contentDocument.querySelector('section.page').scrollIntoView());
     await page.click('#tool-hand');
+    // A spot with nothing placed (a press on an item MOVES it with the Hand tool;
+    // hand-tool-moves.spec.js covers that), found by geometry.
+    const spot = await page.evaluate(() => {
+      const d = $('out').contentDocument, pg = d.querySelector('section.page'), r = pg.getBoundingClientRect();
+      const f = $('out').getBoundingClientRect();
+      const taken = [...pg.querySelectorAll('[data-el], [data-slot]')].map(e => e.getBoundingClientRect());
+      for (let y = r.top + 20; y < Math.min(r.bottom, innerHeight) - 20; y += 24)
+        for (let x = r.left + 12; x < r.right - 120; x += 24)
+          if (!taken.some(b => x > b.left - 6 && x < b.right + 6 && y > b.top - 6 && y < b.bottom + 6))
+            return { x: f.x + x, y: f.y + y };
+      return null;
+    });
+    test.skip(!spot, 'no empty spot on this page');
     const before = await page.evaluate(() => $('out').contentWindow.scrollY);
-    const box = await page.locator('#out').boundingBox();
-    const x = box.x + box.width / 2, y = box.y + box.height / 2;
-    await page.mouse.move(x, y);
+    await page.mouse.move(spot.x, spot.y);
     await page.mouse.down();
-    await page.mouse.move(x, y - 120, { steps: 6 });
+    await page.mouse.move(spot.x, spot.y - 120, { steps: 6 });
     await page.mouse.up();
     const after = await page.evaluate(() => $('out').contentWindow.scrollY);
     expect(after).toBeGreaterThan(before + 60);
