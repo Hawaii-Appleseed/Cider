@@ -290,19 +290,28 @@
     {
       "id": "tpl-callout3",
       "page": 3,
-      "x": 5.41,
+      "x": 5.3,
       "z": 2,
       "fill": "#303030",
       "style": {
         "font": "Source Sans 3",
-        "size": 13,
+        "size": 14,
         "color": "#FFFFFF",
-        "leading": 1.45
+        "leading": 1.4,
+        "list": {
+          "marker": "disc",
+          "indent": 0.22
+        },
+        "indentLeft": 0,
+        "spaceAfter": 0.2,
+        "align": "left",
+        "paraPad": 0,
+        "indentRight": 0.1
       },
       "md": "- **Wealth,** or net worth, is the total value of everything a person owns—homes and land, stocks and bonds, ownership stakes in businesses—minus what they owe.\n- **Income** is the money a person takes in over the course of a year, such as wages, interest, dividends, and the profits from selling an asset.",
-      "y": 2.03,
-      "w": 2.39,
-      "h": 2.28
+      "y": 1.95,
+      "w": 2.5,
+      "h": 3.14
     },
     {
       "id": "tpl-pull3",
@@ -1063,7 +1072,7 @@
       "y": 1.05,
       "w": 4,
       "z": 2,
-      "md": "Wealth Tax Report",
+      "md": "[Wealth Tax Report]{track=3 kern=10}",
       "style": {
         "font": "Barlow",
         "weight": 800,
@@ -1247,5 +1256,14 @@
         "leading": 1.45
       }
     }
+  },
+  "guides": {
+    "y": [
+      1.04,
+      4.82
+    ],
+    "x": [
+      8.01
+    ]
   }
 }
