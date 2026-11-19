@@ -19956,8 +19956,12 @@ Object.keys(CB_RUN_PICK).forEach(id => {
     if (!runCtx || runCtx.range.collapsed) return;
     e.stopImmediatePropagation();
     const p = ctlRunPick(el);
-    if (p.error) { $('stat').textContent = p.error; ctlRunLetGo(); return; }
-    ctlRunApply(p.patch, p.what);
+    if (p.error) $('stat').textContent = p.error;
+    else ctlRunApply(p.patch, p.what);
+    // A pick is one act: let go now rather than wait for the control's blur,
+    // which never comes when the pick arrived without focus (a script, an
+    // assistive tool), and modalOpen would stay on.
+    ctlRunLetGo();
   }, true);
 });
 // Colour: the button opens the pop, and the words stay held until a colour is

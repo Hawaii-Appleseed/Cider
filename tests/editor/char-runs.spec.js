@@ -136,6 +136,20 @@ test.describe('character settings on selected words', () => {
     await expect(page.locator('#ty-case')).toHaveValue('none');
   });
 
+  test('a pick that arrives without focus still lets the words go', async ({ page }) => {
+    const { host } = await openBox(page, 'Alpha beta gamma');
+    await selectChars(page, 6, 10);
+    // No click: a press event and a pick, the field never focused.
+    await page.dispatchEvent('#ty-font', 'pointerdown');
+    await page.selectOption('#ty-font', 'Lora');
+    expect(await md(page)).toBe('Alpha [beta]{font="Lora"} gamma');
+    expect(await page.evaluate(() => modalOpen)).toBe(false);
+    await expect(host).toBeVisible();
+    // and the words still close the ordinary way
+    await host.press('Escape');
+    await page.waitForFunction(() => editing === false, null, { timeout: 15000 });
+  });
+
   test('with only a caret, a picker still sets the box', async ({ page }) => {
     const { id } = await openBox(page, 'Alpha beta gamma');
     await selectChars(page, 3, 3);

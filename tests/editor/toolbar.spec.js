@@ -149,6 +149,9 @@ test.describe('contextual toolbar', () => {
     // The strip NAMES the thing now ("paragraph"); the key it stands for is on
     // the title, which is where anything needing the slot id reads it.
     const key = await page.evaluate(() => document.getElementById('ty-key').title);
+    // A double-click selects a word, and with words selected a font goes on
+    // THEM (char-runs.spec.js). This is the box's path: a caret only.
+    await page.evaluate(() => document.querySelector('#out').contentDocument.getSelection().collapseToEnd());
 
     // The wedge's exact path: interact with the font control mid-edit.
     await page.dispatchEvent('#ty-font', 'pointerdown');
