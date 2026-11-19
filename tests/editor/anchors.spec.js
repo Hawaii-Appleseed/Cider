@@ -196,3 +196,42 @@ test('a shape cannot be anchored, and the verb says why', async ({ page }) => {
   expect(r.verb.error).toMatch(/cannot be anchored/);
   expect(r.button).toBe(true);
 });
+
+test('an anchored piece whose stored y went stale moves from where it stands, not from the stale y',
+  async ({ page }) => {
+    // The UHERO cover's deck, as the hub had it: anchored to its spacer, the
+    // flow above it changed, and the stored y left 1.07in below where the
+    // anchor draws it. The drag started from the stored y, so the box leapt
+    // down the page when it was picked up - "I can't move it".
+    await gotoEditor(page, '?project=uhero-trc-summary');
+    await page.evaluate(async () => {
+      layout.positions['para.cover.deck'] = { x: 0.72, y: 3.55, w: 7.31, reserve: 1.11, reserveW: 7.3, z: 3,
+        anchor: { to: 'spacer:para.cover.deck', dy: -0.02 } };
+      await render();
+    });
+    const pts = await page.evaluate(() => {
+      const f = document.getElementById('out');
+      const el = f.contentDocument.querySelector('[data-el="para.cover.deck"]');
+      el.scrollIntoView({ block: 'center' });
+      const pg = el.closest('section.page'), b = inchBox(el, pg);
+      const fr = f.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const x0 = fr.left + r.left + 3, y0 = fr.top + r.top + r.height / 2;
+      return { y: b.y, x0, y0, px: DPI * zoomOf(pg) };
+    });
+    expect(Math.abs(pts.y - 3.55), 'the anchor draws it away from the stored y').toBeGreaterThan(0.3);
+    await page.mouse.move(pts.x0, pts.y0);
+    await page.mouse.down();
+    await page.mouse.move(pts.x0 + 5, pts.y0 + 10, { steps: 3 });
+    await page.mouse.move(pts.x0, pts.y0 + 0.6 * pts.px, { steps: 10 });
+    await page.mouse.up();
+    const after = async () => page.evaluate(() => {
+      const el = document.getElementById('out').contentDocument.querySelector('[data-el="para.cover.deck"]');
+      return inchBox(el, el.closest('section.page')).y;
+    });
+    const y1 = await after();
+    expect(Math.abs(y1 - (pts.y + 0.6)), `moved ${pts.y} -> ${y1}`).toBeLessThan(0.06);
+    await page.evaluate(() => render());
+    await settled(page);
+    const y2 = await after();
+    expect(Math.abs(y2 - y1), `stays after a render: ${y1} -> ${y2}`).toBeLessThan(0.02);
+  });
