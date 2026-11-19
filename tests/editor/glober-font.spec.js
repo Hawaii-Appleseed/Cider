@@ -63,4 +63,20 @@ test.describe('Glober (hub-only font)', () => {
     await expect.poll(() => hits.some(u => /Glober-Bold\.woff2/.test(u))).toBe(true);
     expect(hits.some(u => /Glober-Thin/.test(u))).toBe(false);   // unused faces cost nothing
   });
+
+  test('a new text box starts in Glober on the hub only', async ({ page }) => {
+    await gotoEditor(page);
+    const local = await page.evaluate(async () => {
+      const r = await docsync.api.addTextBox({ page: 1, x: 1, y: 1, w: 3, md: 'local' });
+      return layout.boxes.find(b => b.id === (r.id || r).replace(/^text\./, '')).style || null; });
+    expect(local && local.font).toBeFalsy();
+    await page.evaluate(() => { M.collab = { path: '/api/collab/x' }; });
+    const hub = await page.evaluate(async () => {
+      const r = await docsync.api.addTextBox({ page: 1, x: 1, y: 3, w: 3, md: 'hub' });
+      const own = await docsync.api.addTextBox({ page: 1, x: 1, y: 5, w: 3, md: 'own', style: { font: 'Lora' } });
+      const get = id => layout.boxes.find(b => b.id === String(id.id || id).replace(/^text\./, '')).style;
+      return { plain: get(r), own: get(own) }; });
+    expect(hub.plain.font).toBe('Glober');
+    expect(hub.own.font).toBe('Lora');
+  });
 });
