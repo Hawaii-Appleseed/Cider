@@ -169,11 +169,14 @@
   /* a column: two cells, one over the other (or one cell across both); it grows with the bar up to
      its own ceiling (--cmax), and the room left over becomes the gaps between columns */
   .ctl-col { display:grid; grid-template-rows:minmax(0,1fr) minmax(0,1fr); grid-template-columns:minmax(min-content,1fr);
-         flex:var(--cg, 0) 1 auto; max-width:var(--cmax, none); min-width:min-content; padding:0 6px; align-items:center;
+         flex:var(--cg, 0) 1 auto; max-width:var(--cmax, none); min-width:min-content; padding:0 5px; align-items:center;
          border-left:1px solid #E3E9E5; }
   /* nothing selected, or a page: a few columns, centred in the bar rather than left in a clump */
   #ctl-cols[data-mode=empty] { justify-content:center; gap:28px; }
   #ctl-cols[data-mode=empty] .ctl-col:last-child .ctl-cell { justify-content:flex-start; }
+  /* a phone scrolls the bar: B / I / U, which show with words selected, lead it rather than sit
+     four swipes along (audit3.spec.js) */
+  @media (max-width:600px) { .ctl-col:has(#ty-marks) { order:-1; } }
   .ctl-col:first-child { border-left:0; padding-left:4px; }
   .ctl-col:last-child { padding-right:4px; }
   .ctl-cell { display:flex; align-items:center; gap:5px; min-width:min-content; }
@@ -183,7 +186,7 @@
   .ctl-col:last-child .ctl-cell { justify-content:flex-end; }
   /* a field fills its cell, so the two of a pair are one width */
   #ctl .ctl-cell > .cb-f, #ctl .ctl-cell > .ty-step, #ctl .ctl-cell > select { flex:1 1 auto; }
-  #ctl .ctl-cell > .cb-f { min-width:74px; }
+  #ctl .ctl-cell > .cb-f { min-width:70px; }
   #ctl .ctl-cell > .cb-f input { flex:1 1 0; width:0; min-width:34px; }
   #ctl .ctl-cell > .ty-step { min-width:118px; }
   #ctl .ctl-cell > .ty-step #cb-size { flex:1 1 0; width:0; min-width:40px; }
