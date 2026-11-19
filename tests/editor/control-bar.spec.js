@@ -217,10 +217,10 @@ test.describe('control bar', () => {
     await expect(await barField(page, '#cb-cols')).toBeVisible();
     await expect(page.locator('#ty-font')).toBeHidden();
     await expect(page.locator('#cb-w')).toHaveValue('4');
-    await page.selectOption('#cb-cols', '2');
+    await (await barField(page, '#cb-cols')).selectOption('2');
     await expect.poll(() => page.evaluate(i => (boxOf(i) || {}).cols, id)).toBe(2);
-    await expect(page.locator('#cb-gapwrap')).toBeVisible();
-    await page.click('#cb-frame [data-va="bottom"]');
+    await expect(await barField(page, '#cb-gapwrap')).toBeVisible();
+    await (await barField(page, '[data-va="bottom"]')).click();
     await expect.poll(() => page.evaluate(i => (boxOf(i) || {}).vAlign, id)).toBe('bottom');
   });
 

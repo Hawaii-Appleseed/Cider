@@ -43,7 +43,14 @@ const geometry = page => page.evaluate(() => {
     .filter(e => e.offsetParent !== null && !e.closest('.pop') && e.id !== 'ctl-more-btn')
     .filter(e => { const b = e.getBoundingClientRect(); return b.right > innerWidth + 1 || b.bottom > bar.bottom + 1 || b.top < bar.top - 1; })
     .map(e => e.id || e.className);
-  return { h: Math.round(bar.height), bottom: Math.round(bar.bottom), out, dockTop: Math.round(top('dock-icons')),
+  // a divider only ever stands between two controls of the row
+  const drawn = [...$('ctl').querySelectorAll('.ty-sep, input, select, button, label, .cb-refgrid, .ty-seg, .ty-key, .ar-count')]
+    .filter(e => e.offsetParent !== null && !e.closest('.pop') && e.id !== 'ctl-more-btn'
+      && !(e.parentElement && e.parentElement.closest('label, .ty-seg, .ty-step, .cb-refgrid')))
+    .map(e => ({ sep: e.classList.contains('ty-sep'), x: e.getBoundingClientRect().left }))
+    .sort((a, b) => a.x - b.x);
+  const strays = drawn.filter((e, i) => e.sep && (i === 0 || i === drawn.length - 1 || drawn[i - 1].sep)).length;
+  return { h: Math.round(bar.height), bottom: Math.round(bar.bottom), out, strays, dockTop: Math.round(top('dock-icons')),
     rulerT: Math.round(top('ruler-t')), rulerL: Math.round(top('ruler-l')), rail: Math.round(top('leftrail')),
     work: Math.round(top('work')),
     more: !$('ctl-more-btn').hidden, moreN: +$('ctl-more-n').textContent };
@@ -65,6 +72,7 @@ test.describe('control bar: one row', () => {
         const g = await geometry(page);
         expect(g.h, `${w} ${mode}`).toBe(44);
         expect(g.out, `${w} ${mode}`).toEqual([]);
+        expect(g.strays, `${w} ${mode} stray dividers`).toBe(0);
         expect(g.dockTop, `${w} ${mode} dock`).toBeGreaterThanOrEqual(g.bottom - 1);
         expect(await page.evaluate(() => $('ctl').scrollWidth <= $('ctl').clientWidth + 1), `${w} ${mode} scrolls`).toBe(true);
       }
@@ -187,7 +195,9 @@ test.describe('control bar: one row', () => {
     await expect(btn).toHaveAttribute('aria-expanded', 'false');
     await btn.click();
     await expect(pop).toBeVisible();
-    await page.mouse.click(300, 400);                                           // the page, away from it
+    // a click away on the editor's chrome (as for every pop-up here, a click on the page
+    // itself leaves pop-ups open: the colour and stroke panels are used while working there)
+    await page.locator('#stat').click({ force: true });
     await expect(pop).toBeHidden();
     await btn.click();                                                          // a second press of More shuts it
     await expect(pop).toBeVisible();

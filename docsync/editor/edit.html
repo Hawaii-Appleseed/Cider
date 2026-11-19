@@ -269,24 +269,24 @@
   #ctl .cb-f input:hover { border:0; }
   #ctl .cb-f input:focus { outline:none; }
   #ctl .cb-f .cb-ic { color:#72857C; }
-  #ctl .cb-f select:not(.pop:not(#ctl-more-pop) *), #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) select:not(.pop:not(#ctl-more-pop) *) {
+  #ctl .cb-f select:not(:where(.pop:not(#ctl-more-pop)) *), #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) select:not(:where(.pop:not(#ctl-more-pop)) *) {
          height:30px; border:0; border-radius:8px; background-color:#F2F5F3; box-shadow:none;
          color:#2F3E46; font:500 12.5px system-ui; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) select:not(.pop:not(#ctl-more-pop) *):hover { background-color:#E8EEEA; border:0; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(.pop:not(#ctl-more-pop) *) {
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) select:not(:where(.pop:not(#ctl-more-pop)) *):hover { background-color:#E8EEEA; border:0; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(:where(.pop:not(#ctl-more-pop)) *) {
          height:30px; min-width:30px; border:0; border-radius:8px; background:#F2F5F3;
          box-shadow:none; color:#2F3E46; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(.pop:not(#ctl-more-pop) *):hover { background:#E8EEEA; border:0; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(.pop:not(#ctl-more-pop) *).on { background:#2F3E46; color:#fff; border:0; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(.pop:not(#ctl-more-pop) *):disabled { background:transparent; color:#B4C0B9; opacity:1; }
-  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(.pop:not(#ctl-more-pop) *):focus-visible { outline:2px solid rgba(107,158,120,.6); outline-offset:1px; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(:where(.pop:not(#ctl-more-pop)) *):hover { background:#E8EEEA; border:0; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(:where(.pop:not(#ctl-more-pop)) *).on { background:#2F3E46; color:#fff; border:0; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(:where(.pop:not(#ctl-more-pop)) *):disabled { background:transparent; color:#B4C0B9; opacity:1; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) button:not(:where(.pop:not(#ctl-more-pop)) *):focus-visible { outline:2px solid rgba(107,158,120,.6); outline-offset:1px; }
   /* a segmented group is one pale pill; its pressed button is the dark chip */
   #ctl .ty-seg { background:#F2F5F3; border-radius:8px; gap:0; }
-  #ctl .ty-seg button:not(.pop:not(#ctl-more-pop) *) { background:transparent; border-radius:8px; margin:0; }
-  #ctl .ty-seg button:not(.pop:not(#ctl-more-pop) *):hover { background:#E1E9E4; }
-  #ctl .ty-seg button:not(.pop:not(#ctl-more-pop) *).on { background:#2F3E46; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) .ty-seg button:not(:where(.pop:not(#ctl-more-pop)) *) { background:transparent; border-radius:8px; margin:0; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) .ty-seg button:not(:where(.pop:not(#ctl-more-pop)) *):hover { background:#E1E9E4; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) .ty-seg button:not(:where(.pop:not(#ctl-more-pop)) *).on { background:#2F3E46; }
   #ctl .ty-step { background:#F2F5F3; border-radius:8px; }
-  #ctl .ty-step button:not(.pop:not(#ctl-more-pop) *) { background:transparent; }
+  #ctl :is(#type, #arrange, #cb-obj, #ctl-more-body) .ty-step button:not(:where(.pop:not(#ctl-more-pop)) *) { background:transparent; }
   #ctl .ty-step #cb-size { background:transparent; border:0; box-shadow:none; border-radius:0; }
   #ctl .ty-sep, #ctl .bar-sep { width:1px; height:18px; margin:0 3px; background:#E3E9E5; }
   #ctl .ty-key, #ctl .ar-count { background:#EEF3EF; color:#6B7C74; border-radius:8px;
@@ -14701,7 +14701,7 @@ function pageBar(d) {
     const el = $(id); if (el) el.hidden = true;
   });
   document.querySelectorAll('.ar-pos, #ar-possep').forEach(x => { x.hidden = true; });
-  document.querySelectorAll('#arrange > .ty-seg, #arrange > .ty-sep')
+  document.querySelectorAll('#arrange > .ty-seg, #arrange > .ty-sep, #ctl-more-body > .ty-seg.cu-arrange')
     .forEach(x => { x.hidden = true; });
   document.querySelectorAll('.ds-pageonly').forEach(x => { x.hidden = false; });
   $('ar-pagelabel').textContent = 'Page ' + pageLabel(selPage);
@@ -19079,13 +19079,13 @@ const CTL_KEEP = {
   char: ['#ty-font', '#ty-weight', '.ty-step', 'label:has(#cb-lead)', 'label:has(#cb-track)', 'label:has(#cb-kern)',
     '#ty-marks', '#ty-i', '#ty-u', '#ty-colorbtn', '#ty-style', '#ty-style-more', '#ty-case',
     'label:has(#cb-shift)', '#cb-strike', '#cb-smcp', '#ty-fx', '#ty-fxp', '#ty-spacebtn', '#ty-parabtn',
-    '#ty-reset', '#ty-comment', '#ar-fill', '#ar-pos', '#ar-more', '#ar-del', '#ar-lock', '#ar-dup',
-    '#ar-border', '#ar-alpha', '#ar-fxbtn', '#arrange > .ty-seg', '#ar-comment', '#ar-anchor', '#ty-key', '#ar-count'],
+    '#ty-reset', '#ty-box', '#ty-comment', '#ar-fill', '#ar-pos', '#ar-more', '#ar-del', '#ar-lock', '#ar-dup',
+    '#ar-border', '#ar-alpha', '#ar-fxbtn', '#arrange > .ty-seg', '#ar-comment', '#ty-anchor', '#ar-anchor', '#ty-key', '#ar-count'],
   // ¶: how the paragraph sits
   para: ['#ty-alseg', '#ty-style', '#ty-style-more', 'label:has(#cb-il)', 'label:has(#cb-ti)', 'label:has(#cb-sb)',
     'label:has(#cb-sa)', 'label:has(#cb-ir)', '#cb-lmark', '#cb-grid', '#cb-hyph', 'label:has(#cb-dcap)', '#ty-parabtn',
-    '#ty-reset', '#ty-comment', '#ar-fill', '#ar-pos', '#ar-more', '#ar-del', '#ar-lock', '#ar-dup',
-    '#ar-border', '#ar-alpha', '#ar-fxbtn', '#arrange > .ty-seg', '#ar-comment', '#ar-anchor', '#ty-key', '#ar-count'],
+    '#ty-reset', '#ty-box', '#ty-comment', '#ar-fill', '#ar-pos', '#ar-more', '#ar-del', '#ar-lock', '#ar-dup',
+    '#ar-border', '#ar-alpha', '#ar-fxbtn', '#arrange > .ty-seg', '#ar-comment', '#ty-anchor', '#ar-anchor', '#ty-key', '#ar-count'],
 };
 const CTL_TOPS = ['type', 'cb-obj', 'arrange'];
 const CTL_TRANSP = '#type, #arrange, #cb-obj, #cb-geo, #cb-turn, #cb-corner, #cb-fitx, #cb-frame, #cb-paraf';
@@ -19105,7 +19105,8 @@ function ctlUnitsInit() {
         const i = CTL_KEEP[m].findIndex(sel => k.matches(sel));
         u.rk[m] = i < 0 ? 999 : i;
       }
-      if (id === 'type') k.classList.add('cu-type');
+      // where it lives, for the code that finds it by its strip (#arrange > .ty-seg, #cb-turn button …)
+      k.classList.add('cu-' + id); k.dataset.cuIn = c.id;
       k.before(u.ph);          // where it lives: it goes back here
       k.__cu = u;
       ctlU.push(u);
@@ -19180,8 +19181,11 @@ function ctlFit() {
       });
       let seen = false, pending = null;
       ctlSeps.forEach(s => s.classList.add('ctl-sep-off'));
-      // walk the row in DOM order, strips in turn
-      const walk = c => [...c.children].forEach(el => {
+      // walk the row in the order it is DRAWN, strips in turn (the arrange strip leads with
+      // fill, stroke, transparency and effects by CSS order, not by where they are in it)
+      const ord = el => +getComputedStyle(el).order || 0;
+      const walk = c => [...c.children].map((el, i) => [el, i, ord(el)])
+        .sort((a, b) => a[2] - b[2] || a[1] - b[1]).map(x => x[0]).forEach(el => {
         if (el.matches(CTL_TRANSP)) return walk(el);
         if (el.classList.contains('ty-sep')) { if (seen) pending = el; return; }
         const u = el.__cu;
@@ -19692,7 +19696,8 @@ function ctlPaint(d) {
   $('cb-pflag').style.transform = `rotate(${rotNow}deg) scale(${flip.includes('h') ? -1 : 1},${flip.includes('v') ? -1 : 1})`;
   $('cb-pflag').title = !one ? '' : (flip ? `flipped ${flip === 'hv' ? 'both ways' : flip === 'h' ? 'horizontally' : 'vertically'}` : 'not flipped')
     + (rotNow ? `, turned ${rotNow}°` : '');
-  document.querySelectorAll('#cb-turn button, #cb-geo input, #cb-turn input')
+  document.querySelectorAll('#cb-turn button, #cb-geo input, #cb-turn input, [data-cu-in="cb-turn"] button,'
+    + ' [data-cu-in="cb-geo"] input, [data-cu-in="cb-turn"] input')
     .forEach(x => { x.disabled = locked; });
   // A rectangle's corners.
   const sh = id && shapeOf(id);
@@ -19728,7 +19733,7 @@ function ctlPaint(d) {
     const pad = Array.isArray(eff.pad) ? eff.pad[0] : eff.pad;
     ctlShow($('cb-pad'), pad ?? (eff.fill ? 0.1 : 0));
     const va = eff.vAlign && eff.vAlign !== 'top' ? eff.vAlign : '';
-    document.querySelectorAll('#cb-frame [data-va]').forEach(b =>
+    document.querySelectorAll('#cb-frame [data-va], #ctl-more-body [data-va]').forEach(b =>
       b.classList.toggle('on', b.dataset.va === va));
   }
 }
@@ -20188,7 +20193,7 @@ function ctlPaintText() {
   // The list marker picker copies the panel's options once.
   const lm = $('cb-lmark');
   if (lm.options.length !== $('ty-lmark').options.length) lm.innerHTML = $('ty-lmark').innerHTML;
-  document.querySelectorAll('#type [data-proxy]').forEach(ctlTextShow);
+  document.querySelectorAll('#type [data-proxy], #ctl-more-body [data-proxy]').forEach(ctlTextShow);   // More too
 }
 document.querySelectorAll('#type input[data-proxy]').forEach(inp => {
   inp.addEventListener('change', () => {
