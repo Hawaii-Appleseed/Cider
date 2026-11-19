@@ -282,6 +282,9 @@ test.describe('expandable sections', () => {
 // wired through the button's own right-click menu.
 test.describe('multi-kind targets', () => {
   test.beforeEach(async ({ page }) => {
+    // a taller window: these right-click menus open below the box and must clear the page strip that
+    // covers the canvas's foot (the docked rail narrows the canvas, which moves the pages a little)
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await gotoEditor(page);
   });
 
