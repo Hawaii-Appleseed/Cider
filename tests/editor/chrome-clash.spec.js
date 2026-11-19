@@ -78,7 +78,7 @@ function measureChrome(PIECES) {
     });
   }
   const own = new Set(['leftrail', 'side', 'dock-icons', 'dock-panel']);
-  document.querySelectorAll('#leftrail button, #dock-icons button, #bar > button, #ctl button, #rail-fold, #rail-add, #side-fold, #side-x')
+  document.querySelectorAll('#leftrail button, #dock-icons button, #bar > button, #ctl button, #rail-fold, #rail-add, #side-fold, #side-x, #dock-head button, #rail-tab, #dock-tab, #focus-pill')
     .forEach(el => {
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') return;
@@ -86,15 +86,23 @@ function measureChrome(PIECES) {
       if (b.width < 4 || b.height < 4) return;
       if (el.closest('[hidden]') || (el.closest('#ctl') && el.closest('#ctl-more-body'))) return;
       if (document.querySelector('#palette:not([hidden])')) return;      // a modal: it is meant to cover them
-      const x = b.left + b.width / 2, y = b.top + b.height / 2;
-      if (strip && strip.contains(el)) {            // scrolled out of the strip: not drawn, so not blocked
-        const q = strip.getBoundingClientRect();
-        if (x < q.left || x > q.right) return;
-      }
-      if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) { blocked.push((el.id || el.className || el.tagName) + ' is outside the window'); return; }
-      const hit = document.elementFromPoint(x, y);
-      if (!hit || !(el === hit || el.contains(hit) || hit.contains(el) && hit.tagName === 'LABEL')) {
-        blocked.push((el.id || el.getAttribute('aria-label') || el.className || el.tagName) + ' is under ' + (hit && (hit.id || hit.className || hit.tagName)));
+      // Every control is probed at its top edge, centre, both sides and foot, not only
+      // its middle: the top ruler once covered only the first few pixels of the
+      // Select tool, which a centre or corner probe never saw (PR 171).
+      const pts = [[0.5, 0.08], [0.5, 0.5], [0.15, 0.5], [0.85, 0.5], [0.5, 0.92]];
+      for (const [fx, fy] of pts) {
+        const x = b.left + b.width * fx, y = b.top + b.height * fy;
+        if (strip && strip.contains(el)) {          // scrolled out of the strip: not drawn, so not blocked
+          const q = strip.getBoundingClientRect();
+          if (x < q.left || x > q.right) continue;
+        }
+        const name = el.id || el.getAttribute('aria-label') || el.className || el.tagName;
+        if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) { blocked.push(name + ' is outside the window'); break; }
+        const hit = document.elementFromPoint(x, y);
+        if (!hit || !(el === hit || el.contains(hit) || hit.contains(el) && hit.tagName === 'LABEL')) {
+          blocked.push(`${name} at (${fx}, ${fy}) is under ${hit && (hit.id || hit.className || hit.tagName)}`);
+          break;
+        }
       }
     });
   return { items: out, blocked };
