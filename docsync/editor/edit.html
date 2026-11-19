@@ -154,7 +154,7 @@
             over the page. (It used to scroll sideways with no scrollbar, so the
             fields past the edge were simply gone; then it hung over the canvas.) */
          min-height:calc(var(--ctl-rows, 1) * 38px + 6px); flex-wrap:wrap; align-content:flex-start;
-         box-sizing:border-box; padding:7px 12px; position:relative; z-index:3;
+         box-sizing:border-box; padding:7px 12px; position:relative; z-index:9;   /* above the rulers (7-8): its pop-ups hang down over them */
          background:#fff; color:var(--ink); border-bottom:1px solid #E1E8E3;
          overflow:visible; white-space:nowrap; }
   #ctl::-webkit-scrollbar { display:none; }
@@ -267,28 +267,28 @@
   #ctl .cb-f input:hover { border:0; }
   #ctl .cb-f input:focus { outline:none; }
   #ctl .cb-f .cb-ic { color:#72857C; }
-  #ctl .cb-f select, #ctl #type select, #ctl #arrange select {
+  #ctl .cb-f select:not(.pop *), #ctl #type select:not(.pop *), #ctl #arrange select:not(.pop *) {
          height:30px; border:0; border-radius:8px; background-color:#F2F5F3; box-shadow:none;
          color:#2F3E46; font:500 12.5px system-ui; }
-  #ctl #type select:hover, #ctl #arrange select:hover { background-color:#E8EEEA; border:0; }
-  #ctl #type button, #ctl #arrange button, #ctl #cb-obj button {
+  #ctl #type select:not(.pop *):hover, #ctl #arrange select:not(.pop *):hover { background-color:#E8EEEA; border:0; }
+  #ctl #type button:not(.pop *), #ctl #arrange button:not(.pop *), #ctl #cb-obj button:not(.pop *) {
          height:30px; min-width:30px; border:0; border-radius:8px; background:#F2F5F3;
          box-shadow:none; color:#2F3E46; }
-  #ctl #type button:hover, #ctl #arrange button:hover, #ctl #cb-obj button:hover {
+  #ctl #type button:not(.pop *):hover, #ctl #arrange button:not(.pop *):hover, #ctl #cb-obj button:not(.pop *):hover {
          background:#E8EEEA; border:0; }
-  #ctl #type button.on, #ctl #arrange button.on, #ctl #cb-obj button.on {
+  #ctl #type button:not(.pop *).on, #ctl #arrange button:not(.pop *).on, #ctl #cb-obj button:not(.pop *).on {
          background:#2F3E46; color:#fff; border:0; }
-  #ctl #type button:disabled, #ctl #arrange button:disabled, #ctl #cb-obj button:disabled {
+  #ctl #type button:not(.pop *):disabled, #ctl #arrange button:not(.pop *):disabled, #ctl #cb-obj button:not(.pop *):disabled {
          background:transparent; color:#B4C0B9; opacity:1; }
-  #ctl #type button:focus-visible, #ctl #arrange button:focus-visible,
-  #ctl #cb-obj button:focus-visible { outline:2px solid rgba(107,158,120,.6); outline-offset:1px; }
+  #ctl #type button:not(.pop *):focus-visible, #ctl #arrange button:not(.pop *):focus-visible,
+  #ctl #cb-obj button:not(.pop *):focus-visible { outline:2px solid rgba(107,158,120,.6); outline-offset:1px; }
   /* a segmented group is one pale pill; its pressed button is the dark chip */
   #ctl .ty-seg { background:#F2F5F3; border-radius:8px; gap:0; }
-  #ctl .ty-seg button, #ctl #cb-obj .ty-seg button { background:transparent; border-radius:8px; margin:0; }
-  #ctl .ty-seg button:hover { background:#E1E9E4; }
+  #ctl .ty-seg button:not(.pop *), #ctl #cb-obj .ty-seg button:not(.pop *) { background:transparent; border-radius:8px; margin:0; }
+  #ctl .ty-seg button:not(.pop *):hover { background:#E1E9E4; }
   #ctl .ty-seg button.on { background:#2F3E46; }
   #ctl .ty-step { background:#F2F5F3; border-radius:8px; }
-  #ctl .ty-step button { background:transparent; }
+  #ctl .ty-step button:not(.pop *) { background:transparent; }
   #ctl #type .ty-step #cb-size { background:transparent; border:0; box-shadow:none; border-radius:0; }
   /* the text/arrange controls fill the line beside the mode switch and wrap among
      themselves, instead of dropping to a row of their own */
@@ -298,6 +298,15 @@
          padding:6px 10px; font:500 11.5px ui-monospace, monospace; }
   #ctl #ar-del { color:#C0603F; }
   #ctl #ar-del:hover { background:#F8E7E2; }
+  /* Pop-ups that hang out of the bar (text styles, box options …): the bar's own button
+     rule (29px tall, nowrap, 8px sides) reached their .tp-btn rows, so three long labels
+     overlapped. Their rows wrap and a button sizes to its words. */
+  #ty-stylepop { width:340px; max-width:calc(100vw - 24px); box-sizing:border-box; }
+  #type .pop .tp-row, #arrange .pop .tp-row { flex-wrap:wrap; }
+  #type .pop .tp-btn, #arrange .pop .tp-btn { display:block; flex:1 1 calc(50% - 6px); min-width:0;
+         height:auto; padding:7px 8px; white-space:normal; line-height:1.25; text-align:center;
+         font:11.5px system-ui; }
+  #type .pop .side-note, #arrange .pop .side-note { white-space:normal; overflow:visible; width:auto; }
   /* the nine-dot reference and anchor grids keep their own 7px cells */
   #ctl #cb-obj .cb-refgrid button, #ctl #type .cb-refgrid button, #ctl #arrange .cb-refgrid button {
          all:unset; box-sizing:border-box; width:7px; height:7px; min-width:0; cursor:pointer;

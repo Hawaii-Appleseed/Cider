@@ -106,6 +106,47 @@ test.describe('control bar', () => {
     expect(r.panelTop).toBeGreaterThanOrEqual(r.controlsBottom - 1);
   });
 
+  test('the bar covers neither ruler nor the rail, and its text-styles pop-up sits above the ruler, tidy', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
+    const id = await page.evaluate(async () =>
+      (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
+    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+    await settled(page);
+    await page.click('#cb-mode [data-m="char"]');
+    const geo = await page.evaluate(() => {
+      const bb = $('ctl').getBoundingClientRect().bottom;
+      const top = r => Math.round($(r).getBoundingClientRect().top);
+      return { bar: Math.round(bb), rulerT: top('ruler-t'), rulerL: top('ruler-l'), rail: top('leftrail') };
+    });
+    // nothing the bar draws reaches the rulers or the left rail: they all start below it
+    expect(geo.rulerT).toBeGreaterThanOrEqual(geo.bar - 1);
+    expect(geo.rulerL).toBeGreaterThanOrEqual(geo.bar - 1);
+    expect(geo.rail).toBeGreaterThanOrEqual(geo.bar - 1);
+    // the "…" next to the style picker: the pop-up is whole, above the ruler, its buttons apart
+    await page.click('#ty-style-more');
+    await expect(page.locator('#ty-stylepop')).toBeVisible();
+    const pop = await page.evaluate(() => {
+      const p = $('ty-stylepop'), r = p.getBoundingClientRect();
+      const hit = (x, y) => { const e = document.elementFromPoint(x, y); return !!e && p.contains(e); };
+      const btns = [...p.querySelectorAll('.tp-btn')].map(b => b.getBoundingClientRect());
+      let overlaps = 0;
+      for (let i = 0; i < btns.length; i++) for (let j = i + 1; j < btns.length; j++) {
+        const a = btns[i], b = btns[j];
+        if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) overlaps++;
+      }
+      const clipped = [...p.querySelectorAll('.tp-btn, .side-note')]
+        .filter(e => e.scrollWidth > e.clientWidth + 1).length;
+      const pts = []; for (let fy = 0.03; fy < 1; fy += 0.04) for (const fx of [0.15, 0.85]) pts.push([fx, fy]);
+      return { onTop: pts.every(([fx, fy]) => hit(r.left + r.width * fx, r.top + r.height * fy)),   // the whole height: the ruler is a thin band
+        overlaps, clipped, n: btns.length };
+    });
+    expect(pop.n).toBeGreaterThan(4);
+    expect(pop.onTop).toBe(true);          // not under the ruler
+    expect(pop.overlaps).toBe(0);          // not jumbled
+    expect(pop.clipped).toBe(0);           // no label cut off
+  });
+
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
     await expect(page.locator('#ctl')).toBeVisible();
     const bar = await rectOf(page, 'bar'), ctl = await rectOf(page, 'ctl'),
