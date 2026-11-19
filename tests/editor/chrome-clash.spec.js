@@ -45,10 +45,10 @@ const PIECES = {
 // Pairs that are SUPPOSED to share pixels. The rulers are drawn over the stage,
 // not over each other's chrome; nothing else is allowed.
 const OK_PAIRS = new Set([
-  // the rulers are one assembly (the corner sits where they meet), and a tray
-  // or a fly-out is drawn over a ruler it crosses: the rulers are canvas
-  // furniture, the tray is a panel
-  'ruleL|ruleT', 'ruleC|ruleT', 'ruleC|ruleL', 'ruleT|tray', 'ruleL|tray', 'ruleC|tray',
+  // the rulers are one assembly (the corner sits where they meet). The tool rail is docked and a tray
+  // opens clear of the rulers (2026-11-19), so neither is allowed over one any more; the dock's
+  // fly-out, below, still is.
+  'ruleL|ruleT', 'ruleC|ruleT', 'ruleC|ruleL',
   // a tray's own fold tab hangs on its edge
   'tray|trayFold',
   // the dock's fly-out is drawn over a ruler it crosses, as a tray is

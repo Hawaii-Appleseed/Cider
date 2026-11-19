@@ -28,6 +28,9 @@ const imgStyle = (page, sel) => page.evaluate(s => {
 
 test.describe('frame fitting', () => {
   test.beforeEach(async ({ page }) => {
+    // taller than the default: the Fitting submenu opens well below the box and has to clear the page
+    // strip over the canvas's foot (the docked rail narrows the canvas and moves the pages a little)
+    await page.setViewportSize({ width: 1280, height: 1300 });
     await gotoEditor(page);
     await page.waitForTimeout(600);
   });

@@ -26,6 +26,10 @@ const animCount = (page) => page.evaluate(() => window.__animCount || 0);
 
 test.describe('entrance animations', () => {
   test.beforeEach(async ({ page }) => {
+    // A tall window for every test here: they right-click a box and use its menu, which opens well
+    // below the pointer and has to clear the page strip over the canvas's foot (the docked rail
+    // narrows the canvas, which moves the pages a little).
+    await page.setViewportSize({ width: 1280, height: 1300 });
     await gotoEditor(page);
   });
 
@@ -179,7 +183,7 @@ test.describe('entrance animations', () => {
     // A taller window than the default: the speed slider is the last row of a tall submenu, which
     // the canvas clamps to its own foot, and at 720px (the Control bar's two rows leave the canvas
     // 36px less than one row did) that row can sit under the page strip, where no pointer reaches it.
-    await page.setViewportSize({ width: 1280, height: 860 });
+    await page.setViewportSize({ width: 1280, height: 1300 });
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);

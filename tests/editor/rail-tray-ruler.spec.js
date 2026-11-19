@@ -72,3 +72,59 @@ test('every rail button is on top of the rulers, all the way to its edges', asyn
   });
   expect(bad).toEqual([]);
 });
+
+// The rail is DOCKED (2026-11-19), a column of the work area like the right dock: flush to the window's
+// edge, square, no shadow, and the rulers begin at its right edge with the hairline between. A tray
+// opens over the canvas, clear of the left ruler beside it and the top ruler above it. Asserted as
+// geometry (no shared pixel) at two window sizes, with rulers on and off.
+const rects = `(() => { const r = id => { const e = document.getElementById(id); if (!e || e.hidden || !e.offsetWidth) return null;
+  const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+  return { rail: r('leftrail'), side: r('side'), T: r('ruler-t'), L: r('ruler-l'), C: r('ruler-c'), work: r('work') }; })()`;
+const hit = (a, b) => a && b && a.l < b.r - 0.5 && a.r > b.l + 0.5 && a.t < b.b - 0.5 && a.b > b.t + 0.5;
+
+for (const [w, h] of [[1280, 720], [1920, 1000]]) {
+  test(`the rail is docked and keeps off both rulers, and a tray opens clear of them (${w}x${h})`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await gotoEditor(page);
+    await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
+    await page.waitForTimeout(250);
+    const look = await page.evaluate(() => { const c = getComputedStyle(document.getElementById('leftrail'));
+      return { shadow: c.boxShadow, radius: c.borderTopRightRadius + '/' + c.borderBottomRightRadius, position: c.position, w: parseFloat(c.width) }; });
+    expect(look.shadow, 'no shadow falls on the ruler').toBe('none');
+    expect(look.radius).toBe('0px/0px');
+    expect(look.position, 'a column of the work area, not an overlay').toBe('relative');
+    expect(look.w).toBe(48);
+    let g = await page.evaluate(rects);
+    expect(g.rail.l, 'flush to the window edge').toBe(0);
+    expect(g.rail.t, 'from the top of the work area').toBe(g.work.t);
+    expect(hit(g.rail, g.T), 'rail over the top ruler').toBeFalsy();
+    expect(hit(g.rail, g.L), 'rail over the left ruler').toBeFalsy();
+    expect(hit(g.rail, g.C), 'rail over the corner').toBeFalsy();
+    // the rulers begin at the rail's right edge, the corner with them
+    expect(Math.round(g.L.l)).toBe(Math.round(g.rail.r));
+    expect(Math.round(g.T.t)).toBe(Math.round(g.work.t));
+    expect(Math.round(g.C.l)).toBe(Math.round(g.rail.r));
+    // a tray opens against the ruler's right edge and below the top ruler: over the canvas only
+    await page.click('#shape');
+    await page.waitForTimeout(300);
+    g = await page.evaluate(rects);
+    expect(g.side, 'the tray is open').toBeTruthy();
+    expect(hit(g.side, g.L), 'tray over the left ruler').toBeFalsy();
+    expect(hit(g.side, g.T), 'tray over the top ruler').toBeFalsy();
+    expect(hit(g.side, g.C), 'tray over the corner').toBeFalsy();
+    expect(Math.round(g.side.l)).toBe(Math.round(g.L.r));
+    expect(Math.round(g.side.t)).toBe(Math.round(g.T.b));
+    expect(hit(g.side, g.rail)).toBeFalsy();
+    await page.click('#shape');
+    // rulers off: the tray is against the rail again, from the top
+    await page.evaluate(() => { if (guidesOn) toggleGuides(); });
+    await page.waitForTimeout(250);
+    await page.click('#shape');
+    await page.waitForTimeout(300);
+    g = await page.evaluate(rects);
+    expect(g.L).toBeNull();
+    expect(Math.round(g.side.l)).toBe(Math.round(g.rail.r));
+    expect(Math.round(g.side.t)).toBe(Math.round(g.work.t));
+    await page.click('#shape');
+  });
+}

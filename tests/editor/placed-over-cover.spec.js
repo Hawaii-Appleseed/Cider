@@ -58,7 +58,9 @@ test.describe('a text box placed over the cover', () => {
 
     const frame = page.frameLocator('#out');
     const el = frame.locator(`[data-el="text.${id}"]`);
-    await el.scrollIntoViewIfNeeded();
+    // centred, not merely in view: nearest-edge scrolling can leave it under the page strip
+    await el.evaluate(e => e.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(200);
     await el.click();
     await page.waitForTimeout(400);
     // The editor marks its current selection on the element itself.
