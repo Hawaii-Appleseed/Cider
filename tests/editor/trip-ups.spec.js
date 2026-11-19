@@ -18,7 +18,10 @@ async function clickWords(page, id) {
   await page.waitForTimeout(600);
 }
 async function rightClick(page, css) {
-  const b = await page.frameLocator('#out').locator(css).first().boundingBox();
+  const el = page.frameLocator('#out').locator(css).first();
+  // (the bar's two rows leave the canvas less height: the box can sit below the fold, or under the page strip)
+  await el.evaluate(e => e.scrollIntoView({ block: 'center' }));
+  const b = await el.boundingBox();
   await page.mouse.click(b.x + Math.min(40, b.width / 2), b.y + Math.min(10, b.height / 2), { button: 'right' });
   await page.waitForTimeout(700);
 }
