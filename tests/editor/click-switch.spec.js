@@ -8,6 +8,8 @@ const A = 'para.groc.lead', B = 'para.groc.pay.p';
 
 async function clickWords(page, id) {
   const el = page.frameLocator('#out').locator(`[data-el="${id}"] [data-slot]`).first();
+  // (the bar's two rows leave the canvas less height: the second box can sit below the fold, or under the page strip)
+  await el.evaluate(e => e.scrollIntoView({ block: 'center' }));
   const b = await el.boundingBox();
   await page.mouse.click(b.x + b.width * 0.4, b.y + 8);
   await page.waitForTimeout(700);

@@ -830,9 +830,8 @@ test('a comment on the selected element, from its own strip, marks it on the pag
   test.skip(!id, 'this project has no addressable elements');
   await a.evaluate(`docsync.api.select(${JSON.stringify(id)})`);
   // Whichever strip this element gets, its comment button is on it.
-  // (in a narrow window the strip's Comment is under the bar's More)
   const which = await a.evaluate(`(['ar-comment', 'ty-comment'].find(i => { const e = document.getElementById(i);
-    return e && (e.closest('#ctl-more-body') ? getComputedStyle(e).display !== 'none' : e.offsetParent !== null); }) || 'ar-comment')`);
+    return e && e.offsetParent !== null; }) || 'ar-comment')`);
   const btn = await barField(a, '#' + which);
   await expect(btn).toBeVisible();
   await btn.click();
@@ -1016,9 +1015,8 @@ test('comments: on the document, a paragraph and an element - each anchored wher
 
   // An element, from its own strip.
   await a.evaluate(`docsync.api.select(${JSON.stringify(other.id)})`);
-  // (in a narrow window the strip's Comment is under the bar's More)
   const which = await a.evaluate(`(['ar-comment', 'ty-comment'].find(i => { const e = document.getElementById(i);
-    return e && (e.closest('#ctl-more-body') ? getComputedStyle(e).display !== 'none' : e.offsetParent !== null); }) || 'ar-comment')`);
+    return e && e.offsetParent !== null; }) || 'ar-comment')`);
   const btn = await barField(a, '#' + which);
   await btn.click();
   await a.locator('#cpanel-text').fill('Nudge this to the left.');

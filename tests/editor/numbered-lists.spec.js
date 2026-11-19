@@ -28,7 +28,7 @@ test.describe('55 numbered lists', () => {
     const b = await page.evaluate(id => { const r = $('out').contentDocument.querySelector(`[data-el="${id}"]`).getBoundingClientRect(); return [r.left, r.top]; }, id);
     await page.mouse.click(fr.x + b[0] + 6, fr.y + b[1] + 6);
     await expect.poll(() => page.evaluate(() => editing)).toBe(true);
-    await (await barField(page, '#ty-parabtn')).scrollIntoViewIfNeeded();   // under More when narrow
+    await (await barField(page, '#ty-parabtn')).scrollIntoViewIfNeeded();   // scrolled out of its row when narrow
     const pb = await page.locator('#ty-parabtn').boundingBox();
     await page.mouse.click(pb.x + pb.width / 2, pb.y + pb.height / 2);
     await expect(page.locator('#ty-parapop')).toBeVisible();

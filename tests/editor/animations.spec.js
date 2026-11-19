@@ -176,6 +176,10 @@ test.describe('entrance animations', () => {
     });
 
   test('changing the speed plays it again, at the new speed', async ({ page }) => {
+    // A taller window than the default: the speed slider is the last row of a tall submenu, which
+    // the canvas clamps to its own foot, and at 720px (the Control bar's two rows leave the canvas
+    // 36px less than one row did) that row can sit under the page strip, where no pointer reaches it.
+    await page.setViewportSize({ width: 1280, height: 860 });
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);

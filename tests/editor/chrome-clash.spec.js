@@ -24,7 +24,6 @@ const HEIGHTS = (process.env.CLASH_H || '600,720,900').split(',').map(Number);
 const PIECES = {
   bar: '#bar',
   ctl: '#ctl',
-  more: '#ctl-more-pop:not([hidden])',
   rail: '#leftrail',
   tray: '#side:not([hidden]):not(.folded)',
   trayFold: '#side-fold',
@@ -84,7 +83,7 @@ function measureChrome(PIECES) {
       if (cs.display === 'none' || cs.visibility === 'hidden') return;
       const b = el.getBoundingClientRect();
       if (b.width < 4 || b.height < 4) return;
-      if (el.closest('[hidden]') || (el.closest('#ctl') && el.closest('#ctl-more-body'))) return;
+      if (el.closest('[hidden]')) return;
       if (document.querySelector('#palette:not([hidden])')) return;      // a modal: it is meant to cover them
       // Every control is probed at its top edge, centre, both sides and foot, not only
       // its middle: the top ruler once covered only the first few pixels of the
@@ -96,6 +95,8 @@ function measureChrome(PIECES) {
           const q = strip.getBoundingClientRect();
           if (x < q.left || x > q.right) continue;
         }
+        const crow = el.closest('.ctl-row');         // a row of the Control bar scrolls: out of its box is not drawn
+        if (crow) { const q = crow.getBoundingClientRect(); if (x < q.left || x > q.right) continue; }
         const name = el.id || el.getAttribute('aria-label') || el.className || el.tagName;
         if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) { blocked.push(name + ' is outside the window'); break; }
         const hit = document.elementFromPoint(x, y);
@@ -129,7 +130,6 @@ async function rest(page) {
     const d = $('out').contentDocument;
     if (d && d.activeElement && d.activeElement.blur) d.activeElement.blur();
     setSel(d, []);
-    $('ctl-more-pop').hidden = true;
   });
   await settled(page);
 }
@@ -176,7 +176,6 @@ const STATES = {
     await p.evaluate(() => { dockPinned = true; dockShow('layers'); const h = $('hpanel'); h.hidden = false; hubGutterSync(); });
     await p.click('#colors');
   },
-  more: async p => { await p.evaluate(() => { const b = $('ctl-more-btn'); if (b && !b.hidden && b.offsetWidth) b.click(); }); },
   selected: async p => {
     await p.evaluate(async () => {
       const inv = docsync.api.inventory();
@@ -231,7 +230,7 @@ function findClashes(items, vw, vh) {
   }
   // wholly inside the window
   for (const it of items) {
-    if (['pop', 'more', 'tray', 'dockPanel', 'palette', 'cpanel', 'hpanel'].includes(it.kind)
+    if (['pop', 'tray', 'dockPanel', 'palette', 'cpanel', 'hpanel'].includes(it.kind)
         && (it.l < -1 || it.t < -1 || it.r > vw + 1 || it.b > vh + 1)) {
       bad.push(`${it.kind} (${it.id}) is not wholly in the window: ${[it.l, it.t, it.r, it.b].map(Math.round)} in ${vw}x${vh}`);
     }

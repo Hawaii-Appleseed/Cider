@@ -58,7 +58,7 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar is one fixed 44px row in every mode and width, and what does not fit is under More', async ({ page }) => {
+  test('the docked bar is two fixed rows, the same height in every mode and width, and a narrow one scrolls the rows', async ({ page }) => {
     await addRect(page);
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
@@ -76,17 +76,18 @@ test.describe('control bar', () => {
       }
     }
     expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
-    expect(heights[0]).toBeLessThanOrEqual(45);
-    // at a narrow width the row does not scroll: what does not fit went under More
-    // (control-bar-one-row.spec.js pins More itself)
+    expect(heights[0]).toBe(80);                       // --ctl-h: two 30px-pill rows
+    // at a narrow width the rows scroll inside themselves: the bar and the page do not grow
+    // (control-bar-two-rows.spec.js pins the rest)
     await page.setViewportSize({ width: 760, height: 800 });
     await page.click('#cb-mode [data-m="char"]');
-    const r = await page.evaluate(() => { const c = $('ctl');
-      return { scrolls: c.scrollWidth > c.clientWidth + 1, more: !$('ctl-more-btn').hidden,
-        h: Math.round(c.getBoundingClientRect().height) }; });
-    expect(r.scrolls).toBe(false);
-    expect(r.more).toBe(true);
-    expect(r.h).toBeLessThanOrEqual(45);
+    const r = await page.evaluate(() => { const c = $('ctl'), rows = [$('ctl-r1'), $('ctl-r2')];
+      return { barScrolls: c.scrollWidth > c.clientWidth + 1, rowsScroll: rows.some(e => e.scrollWidth > e.clientWidth + 1),
+        h: Math.round(c.getBoundingClientRect().height), pageW: document.documentElement.scrollWidth, winW: innerWidth }; });
+    expect(r.barScrolls).toBe(false);
+    expect(r.rowsScroll).toBe(true);
+    expect(r.h).toBe(80);
+    expect(r.pageW).toBeLessThanOrEqual(r.winW);
   });
 
   test('the bar covers neither ruler nor the rail, and its text-styles pop-up sits above the ruler, tidy', async ({ page }) => {
@@ -168,7 +169,8 @@ test.describe('control bar', () => {
 
   test('a shape: W typed with a unit, X in inches, flip and rotate', async ({ page }) => {
     await addRect(page);
-    await expect(page.locator('#cb-obj')).toBeVisible();
+    await expect(page.locator('#cb-obj')).toBeVisible();      // the strip is up (its 1px shell); its fields are in the rows
+    await expect(page.locator('#cb-x')).toBeVisible();
     await expect(page.locator('#cb-empty')).toBeHidden();
     // The strip's own controls are in the bar too, not floating.
     await expect(page.locator('#ctl #ar-fill')).toBeVisible();
