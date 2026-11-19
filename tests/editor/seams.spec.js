@@ -38,7 +38,8 @@ test.describe('one chord table, both documents', () => {
     const names = await page.evaluate(() => window.__dsChords());
     for (const n of ['undo / redo', 'redo (Ctrl+Y)', 'to front / back', 'forward / back', 'select all on the page',
       'duplicate', 'copy / copy style', 'cut', 'paste in place', 'paste / paste style', 'step and repeat',
-      'transform again', 'next / previous object', 'group / ungroup', 'deselect', 'delete', 'open the words', 'nudge'])
+      'transform again', 'next / previous object', 'group / ungroup', 'deselect', 'delete', 'open the words', 'nudge',
+      'tool: select (V)', 'tool: type (T)', 'tool: hand (H)', 'back to the select tool', 'insert palette'])
       expect(names, n).toContain(n);
   });
 
