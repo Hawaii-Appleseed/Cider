@@ -58,51 +58,73 @@ test.describe('control bar', () => {
     expect(await page.evaluate(() => past.length)).toBe(steps + 1);
   });
 
-  test('the docked bar wraps inside a narrow window instead of running off it', async ({ page }) => {
-    await page.setViewportSize({ width: 760, height: 800 });
-    const fits = () => page.evaluate(() => {
-      const bar = $('ctl'), w = innerWidth;
-      const kids = [...bar.querySelectorAll('input, select, button, label')]
-        .filter(e => e.offsetParent !== null);
-      // nothing past the window, and nothing hanging under the panel rail on the right
-      const rail = $('dock-icons').getBoundingClientRect().left;
-      const past = kids.filter(e => { const b = e.getBoundingClientRect();
-        return b.right > w + 1 || (b.bottom > 46 && b.right > rail + 1); }).map(e => e.id || e.className);
-      return { past, scrolls: bar.scrollWidth > bar.clientWidth + 1, h: bar.getBoundingClientRect().height };
-    });
-    // object mode
+  test('the docked bar is one fixed 44px row in every mode and width, and reaches every field by scrolling', async ({ page }) => {
     await addRect(page);
-    let r = await fits();
-    expect(r.past).toEqual([]);
-    expect(r.scrolls).toBe(false);
-    // character mode: the longest row
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
-    await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
-    await settled(page);
+    const heights = [];
+    for (const w of [760, 1280, 1920]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.evaluate(() => setSel($('out').contentDocument, ['cb-rect']));
+      await settled(page);
+      heights.push(await page.evaluate(() => Math.round($('ctl').getBoundingClientRect().height)));
+      await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
+      await settled(page);
+      for (const m of ['char', 'para', 'frame']) {
+        await page.click(`#cb-mode [data-m="${m}"]`);
+        heights.push(await page.evaluate(() => Math.round($('ctl').getBoundingClientRect().height)));
+      }
+    }
+    expect(new Set(heights).size).toBe(1);             // the same height everywhere: nothing moves the canvas
+    expect(heights[0]).toBeLessThanOrEqual(45);
+    // at a narrow width the row scrolls, and the last control can be scrolled to
+    await page.setViewportSize({ width: 760, height: 800 });
     await page.click('#cb-mode [data-m="char"]');
-    r = await fits();
-    expect(r.past).toEqual([]);
-    expect(r.scrolls).toBe(false);
-    expect(r.h).toBe(44);   // and the bar itself did not grow: the canvas must not move on a click
+    const r = await page.evaluate(() => { const c = $('ctl'); c.scrollLeft = c.scrollWidth;
+      return { scrolls: c.scrollWidth > c.clientWidth, h: Math.round(c.getBoundingClientRect().height) }; });
+    expect(r.scrolls).toBe(true);
+    expect(r.h).toBeLessThanOrEqual(45);
   });
 
-  test('the comments panel opens below the rows that hang from the bar, not over them', async ({ page }) => {
-    await page.setViewportSize({ width: 760, height: 800 });
+  test('the bar covers neither ruler nor the rail, and its text-styles pop-up sits above the ruler, tidy', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
     const id = await page.evaluate(async () =>
       (await docsync.api.addTextBox({ page: 3, x: 1, y: 6, w: 4, md: 'Words to set in the bar.' })).id);
     await page.evaluate(i => setSel($('out').contentDocument, [i]), id);
     await settled(page);
     await page.click('#cb-mode [data-m="char"]');
-    await page.evaluate(() => { $('cpanel').hidden = false; });
-    const r = await page.evaluate(() => {
-      const bar = $('ctl').getBoundingClientRect();
-      const low = Math.max(...[...$('ctl').querySelectorAll('input, select, button, label')]
-        .filter(e => e.offsetParent).map(e => e.getBoundingClientRect().bottom));
-      return { panelTop: $('cpanel').getBoundingClientRect().top, controlsBottom: low, barTop: bar.top };
+    const geo = await page.evaluate(() => {
+      const bb = $('ctl').getBoundingClientRect().bottom;
+      const top = r => Math.round($(r).getBoundingClientRect().top);
+      return { bar: Math.round(bb), rulerT: top('ruler-t'), rulerL: top('ruler-l'), rail: top('leftrail') };
     });
-    expect(r.controlsBottom).toBeGreaterThan(r.barTop + 44);       // it did wrap
-    expect(r.panelTop).toBeGreaterThanOrEqual(r.controlsBottom - 1);
+    // nothing the bar draws reaches the rulers or the left rail: they all start below it
+    expect(geo.rulerT).toBeGreaterThanOrEqual(geo.bar - 1);
+    expect(geo.rulerL).toBeGreaterThanOrEqual(geo.bar - 1);
+    expect(geo.rail).toBeGreaterThanOrEqual(geo.bar - 1);
+    // the "…" next to the style picker: the pop-up is whole, above the ruler, its buttons apart
+    await page.click('#ty-style-more');
+    await expect(page.locator('#ty-stylepop')).toBeVisible();
+    const pop = await page.evaluate(() => {
+      const p = $('ty-stylepop'), r = p.getBoundingClientRect();
+      const hit = (x, y) => { const e = document.elementFromPoint(x, y); return !!e && p.contains(e); };
+      const btns = [...p.querySelectorAll('.tp-btn')].map(b => b.getBoundingClientRect());
+      let overlaps = 0;
+      for (let i = 0; i < btns.length; i++) for (let j = i + 1; j < btns.length; j++) {
+        const a = btns[i], b = btns[j];
+        if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) overlaps++;
+      }
+      const clipped = [...p.querySelectorAll('.tp-btn, .side-note')]
+        .filter(e => e.scrollWidth > e.clientWidth + 1).length;
+      const pts = []; for (let fy = 0.03; fy < 1; fy += 0.04) for (const fx of [0.15, 0.85]) pts.push([fx, fy]);
+      return { onTop: pts.every(([fx, fy]) => hit(r.left + r.width * fx, r.top + r.height * fy)),   // the whole height: the ruler is a thin band
+        overlaps, clipped, n: btns.length };
+    });
+    expect(pop.n).toBeGreaterThan(4);
+    expect(pop.onTop).toBe(true);          // not under the ruler
+    expect(pop.overlaps).toBe(0);          // not jumbled
+    expect(pop.clipped).toBe(0);           // no label cut off
   });
 
   test('docked under the menu bar, with the canvas below it', async ({ page }) => {
