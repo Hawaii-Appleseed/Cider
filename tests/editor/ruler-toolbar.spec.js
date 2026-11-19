@@ -14,19 +14,24 @@ test('the contextual toolbar is not covered by the top ruler', async ({ page }) 
   await page.evaluate(id => docsync.api.select(id), r.id);
   await page.waitForTimeout(400);
   const res = await page.evaluate(() => {
-    const strip = [...document.querySelectorAll('#type, #arrange')].find(e => !e.hidden && e.getBoundingClientRect().width > 0);
-    if (!strip) return { none: true };
-    const b = strip.getBoundingClientRect();
+    // The Control bar's two rows (the strips' controls are laid in them, ctlFit): every control
+    // that is drawn must answer a press, and none may reach down into the ruler.
+    const ctls = [...document.querySelectorAll('#ctl .ctl-row > *')]
+      .filter(e => !e.classList.contains('ctl-gsep') && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0);
+    if (!ctls.length) return { none: true };
     const q = $('ruler-t').getBoundingClientRect();
-    const t = Math.max(b.top, q.top) + 1, btm = Math.min(b.bottom, q.bottom) - 1;
     const bad = [];
-    if (btm > t) {
+    ctls.forEach(c => {
+      const b = c.getBoundingClientRect(), row = c.closest('.ctl-row').getBoundingClientRect();
+      if (b.bottom > q.top + 1 && b.top < q.bottom - 1) bad.push({ over: c.id || c.className });
       for (const fx of [0.1, 0.5, 0.9]) {
-        const e = document.elementFromPoint(b.left + b.width * fx, (t + btm) / 2);
-        if (!e || !strip.contains(e)) bad.push({ fx, hit: e && (e.id || e.className || e.tagName) });
+        const x = b.left + b.width * fx;
+        if (x < row.left || x > row.right) continue;
+        const e = document.elementFromPoint(x, (b.top + b.bottom) / 2);
+        if (!e || !(c === e || c.contains(e) || e.contains(c))) bad.push({ fx, id: c.id || c.className, hit: e && (e.id || e.className || e.tagName) });
       }
-    }
-    return { strip: strip.id, b: [b.top, b.bottom], ruler: [q.top, q.bottom], bad };
+    });
+    return { controls: ctls.length, ruler: [q.top, q.bottom], bad };
   });
   if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, `toolbar-${process.env.SHOT_TAG || 'after'}.png`) }); }
   expect(res.none, 'a toolbar should show for a selected text box').toBeFalsy();
