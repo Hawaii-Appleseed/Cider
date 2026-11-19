@@ -43,3 +43,24 @@ for (const [btn, pop] of [['shape', 'shapepop'], ['icon', null], ['ar-img', null
     expect(r.bad, JSON.stringify(r)).toEqual([]);
   });
 }
+
+// The rail itself, not only its trays: the top ruler is a fixed canvas that runs the
+// whole width, and used to be drawn over the first buttons of the rail (Select).
+test('every rail button is on top of the rulers, all the way to its edges', async ({ page }) => {
+  await gotoEditor(page);
+  await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
+  await page.waitForTimeout(250);
+  const bad = await page.evaluate(() => {
+    const rail = $('leftrail'), out = [];
+    for (const b of rail.querySelectorAll('button')) {
+      if (!b.offsetParent) continue;
+      const r = b.getBoundingClientRect();
+      for (const [fx, fy] of [[0.5, 0.08], [0.5, 0.5], [0.15, 0.5], [0.85, 0.5], [0.5, 0.92]]) {
+        const e = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
+        if (!e || !rail.contains(e)) out.push({ id: b.id || b.getAttribute('aria-label'), fx, fy, hit: e && (e.id || e.className) });
+      }
+    }
+    return out;
+  });
+  expect(bad).toEqual([]);
+});
