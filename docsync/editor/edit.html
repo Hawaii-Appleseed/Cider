@@ -9263,8 +9263,12 @@ function togglePop(pop, anchor) {
   // picker's bottom rows (the image popover's "Upload from computer…" above
   // all) below the fold with no way to reach them. The floor keeps a pop
   // opened NEAR the bottom usable rather than one row tall.
+  // max-height is the CONTENT box's (.pop is content-box): its padding and border
+  // come on top, and a clamped menu used to hang that much (14px) past the window.
+  const pcs = getComputedStyle(pop), edge = pcs.boxSizing === 'border-box' ? 0
+    : ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((a, k) => a + (parseFloat(pcs[k]) || 0), 0);
   pop.style.maxHeight = Math.max(120,
-    document.documentElement.clientHeight - r.bottom - 18) + 'px';
+    document.documentElement.clientHeight - r.bottom - 18 - edge) + 'px';
   pop.style.overflowY = 'auto';
   // …and when the anchor itself is near the bottom (a button pinned low on
   // the rail, on a short window) there is no room BELOW it at all: slide the
@@ -9273,7 +9277,7 @@ function togglePop(pop, anchor) {
   if (vh - r.bottom - 18 < 120 && r.bottom + 6 + h > vh - 8) {
     const top = Math.max(8, vh - h - 12);
     pop.style.top = top + 'px';
-    pop.style.maxHeight = Math.max(120, vh - top - 12) + 'px';
+    pop.style.maxHeight = Math.max(120, vh - top - 12 - edge) + 'px';
   }
 }
 // Anything whose own handler already toggles: clicking one of these must not
