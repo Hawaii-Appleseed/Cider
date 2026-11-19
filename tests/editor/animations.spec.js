@@ -26,6 +26,10 @@ const animCount = (page) => page.evaluate(() => window.__animCount || 0);
 
 test.describe('entrance animations', () => {
   test.beforeEach(async ({ page }) => {
+    // A tall window for every test here: they right-click a box and use its menu, which opens well
+    // below the pointer and has to clear the page strip over the canvas's foot (the docked rail
+    // narrows the canvas, which moves the pages a little).
+    await page.setViewportSize({ width: 1280, height: 1300 });
     await gotoEditor(page);
   });
 
