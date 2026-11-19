@@ -1,3 +1,23 @@
 {
-  "positions": {}
+  "positions": {},
+  "shapes": [],
+  "sections": {},
+  "boxes": [
+    {
+      "id": "t1",
+      "page": 1,
+      "x": 2.39,
+      "y": 1.19,
+      "w": 3,
+      "z": 2,
+      "md": "dasdas",
+      "style": {
+        "font": "Glober",
+        "tracking": -0.63
+      },
+      "h": 0.8
+    }
+  ],
+  "tables": [],
+  "masters": {}
 }
