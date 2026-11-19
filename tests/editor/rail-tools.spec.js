@@ -247,3 +247,49 @@ test.describe('the rail itself (screenshots for the eye, no assertions on pixels
     expect(true).toBe(true);
   });
 });
+
+// The rail is a slim single column (2026-11-19): 48px wide, buttons about 34px, so it takes little
+// of the canvas. Everything that hangs from its edge follows --rail-w.
+test.describe('a narrow rail', () => {
+  test.beforeEach(async ({ page }) => { await gotoEditor(page, PROJ); await defaultRail(page); });
+  test.afterEach(async ({ page }) => { await restoreRail(page).catch(() => {}); });
+
+  test('48px wide, one column of 32px-or-larger buttons, and the left ruler, tray and bar edge follow it', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 860 });
+    await page.evaluate(() => { if (!guidesOn) toggleGuides(); });
+    await settled(page);
+    const g = await page.evaluate(() => {
+      const rail = $('leftrail').getBoundingClientRect();
+      const btns = [...$('leftrail').querySelectorAll('button')].filter(b => b.offsetParent !== null && !b.closest('.pop'))
+        .map(b => b.getBoundingClientRect());
+      return { w: Math.round(rail.width), cssW: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-w')),
+        small: btns.filter(b => b.width < 32 || b.height < 20).length, n: btns.length,
+        column: btns.every(b => Math.abs((b.left + b.right) / 2 - (rail.left + rail.right) / 2) < 1.5),
+        inside: btns.every(b => b.left >= rail.left && b.right <= rail.right),
+        rulerL: Math.round($('ruler-l').getBoundingClientRect().left), railRight: Math.round(rail.right) };
+    });
+    expect(g.w).toBe(48);
+    expect(g.cssW).toBe(48);
+    expect(g.n).toBeGreaterThan(5);
+    expect(g.small, 'buttons under 32px').toBe(0);
+    expect(g.column, 'one centred column').toBe(true);
+    expect(g.inside).toBe(true);
+    // a tray opens against the rail's edge, clear of it
+    await page.click('#shape');
+    await expect(page.locator('#side')).toBeVisible();
+    const t = await page.evaluate(() => ({ side: Math.round($('side').getBoundingClientRect().left), rail: Math.round($('leftrail').getBoundingClientRect().right) }));
+    expect(t.side).toBe(t.rail);
+    await page.click('#shape');
+  });
+
+  test('a hover chip names a rail button and sits to the right of the narrow rail', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 860 });
+    await settled(page);
+    await page.locator('#tool-type').hover();
+    await expect(page.locator('#tt')).toBeVisible();
+    const r = await page.evaluate(() => { const c = $('tt').getBoundingClientRect(), b = $('tool-type').getBoundingClientRect();
+      return { tt: c.left, rail: $('leftrail').getBoundingClientRect().right, dy: Math.abs((c.top + c.bottom) / 2 - (b.top + b.bottom) / 2) }; });
+    expect(r.tt).toBeGreaterThanOrEqual(r.rail - 1);
+    expect(r.dy, 'centred on its button').toBeLessThanOrEqual(2);
+  });
+});
