@@ -297,9 +297,13 @@
   #ctl .ty-step { background:#F2F5F3; border-radius:8px; }
   #ctl .ty-step button { background:transparent; }
   #ctl #type .ty-step #cb-size { background:transparent; border:0; box-shadow:none; border-radius:0; }
-  /* the text/arrange controls fill the line beside the mode switch and wrap among
-     themselves, instead of dropping to a row of their own */
-  #ctl > #type, #ctl > #arrange { flex:1 1 0; min-width:0; }
+  /* the text/arrange controls fill the line beside the mode switch while they fit
+     there, and drop to a row of their own when they do not. They used to have a
+     flex-basis of 0, so they never dropped: whatever room was left on the first
+     line (121px, with a 12in-wide box selected) was all they got, and six buttons
+     stacked into a 138px column that hung over the canvas and covered the box's
+     own resize handle (every-field-opens, rxkids "tabs"). */
+  #ctl > #type, #ctl > #arrange { flex:1 1 auto; min-width:0; }
   #ctl .ty-sep, #ctl .bar-sep { width:1px; height:18px; margin:0 3px; background:#E3E9E5; }
   #ctl .ty-key, #ctl .ar-count { background:#EEF3EF; color:#6B7C74; border-radius:8px;
          padding:6px 10px; font:500 11.5px ui-monospace, monospace; }
