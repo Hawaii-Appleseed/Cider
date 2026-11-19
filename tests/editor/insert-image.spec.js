@@ -89,12 +89,29 @@ test.describe('insert image', () => {
   //  - with no viewport clamp a tall picker's bottom rows simply left the
   //    screen on a short window, unreachable by scroll or anything else.
   test('the picker stays reachable and clickable on a short window', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 520 });
+    // 680px: every pin still fits the rail (railFit), and the picker, hung from the
+    // image pin, reaches down over the page strip
+    await page.setViewportSize({ width: 1280, height: 680 });
     await gotoEditor(page);
     await page.click('#ar-img');
     await page.locator('#imgpop').waitFor({ state: 'visible' });
     const chooser = page.waitForEvent('filechooser', { timeout: 5000 });
     await page.click('#img-upload', { timeout: 5000 });
+    await chooser;
+  });
+
+  // Shorter still, the rail leaves out the pins that do not fit above the page strip
+  // (railFit); the + palette still reaches every one of them.
+  test('on a window too short for every pin, the palette still uploads an image', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 520 });
+    await gotoEditor(page);
+    expect(await page.evaluate(() => $('ar-img').offsetWidth)).toBe(0);      // not in the rail now
+    expect(await page.evaluate(() => ['tool-select', 'tool-type', 'tool-hand', 'insert', 'colors']
+      .every(id => $(id).getBoundingClientRect().bottom <= innerHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-h'))))).toBe(true);
+    await page.click('#insert');
+    await page.locator('#pal-q').fill('upload image');
+    const chooser = page.waitForEvent('filechooser', { timeout: 5000 });
+    await page.keyboard.press('Enter');
     await chooser;
   });
 });
