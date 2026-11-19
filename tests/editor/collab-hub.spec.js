@@ -29,7 +29,7 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { test, expect, settled, waitForFirstRender, openFileMenu, openShare, clickAddSection, fillDialog, submitDialog } = require('./fixtures/editor-test');
+const { test, expect, settled, waitForFirstRender, openFileMenu, openShare, clickAddSection, fillDialog, submitDialog, barField } = require('./fixtures/editor-test');
 const { claimPort } = require('./fixtures/ports');
 // Pyodide arrives once per run from disk, not once per context from the CDN
 // (fixtures/pyodide-cache.js): this spec opens a context per person and per
@@ -830,7 +830,10 @@ test('a comment on the selected element, from its own strip, marks it on the pag
   test.skip(!id, 'this project has no addressable elements');
   await a.evaluate(`docsync.api.select(${JSON.stringify(id)})`);
   // Whichever strip this element gets, its comment button is on it.
-  const btn = a.locator('#ar-comment:visible, #ty-comment:visible').first();
+  // (in a narrow window the strip's Comment is under the bar's More)
+  const which = await a.evaluate(`(['ar-comment', 'ty-comment'].find(i => { const e = document.getElementById(i);
+    return e && (e.closest('#ctl-more-body') ? getComputedStyle(e).display !== 'none' : e.offsetParent !== null); }) || 'ar-comment')`);
+  const btn = await barField(a, '#' + which);
   await expect(btn).toBeVisible();
   await btn.click();
   await expect(a.locator('#cpanel')).toBeVisible();
@@ -1013,7 +1016,10 @@ test('comments: on the document, a paragraph and an element - each anchored wher
 
   // An element, from its own strip.
   await a.evaluate(`docsync.api.select(${JSON.stringify(other.id)})`);
-  const btn = a.locator('#ar-comment:visible, #ty-comment:visible').first();
+  // (in a narrow window the strip's Comment is under the bar's More)
+  const which = await a.evaluate(`(['ar-comment', 'ty-comment'].find(i => { const e = document.getElementById(i);
+    return e && (e.closest('#ctl-more-body') ? getComputedStyle(e).display !== 'none' : e.offsetParent !== null); }) || 'ar-comment')`);
+  const btn = await barField(a, '#' + which);
   await btn.click();
   await a.locator('#cpanel-text').fill('Nudge this to the left.');
   await a.locator('#cpanel-add').click();

@@ -485,8 +485,24 @@ async function submitDialogIfPresent(page, timeout = 3000) {
   return true;
 }
 
+/** A control of the docked Control bar, by selector. The bar is one row, and a window too
+ *  narrow for every control lends them to its "More" pop-up (ctlFit); a spec that
+ *  reaches for a field must not care which. Opens More first when the field is in
+ *  it (and More is shut) and hands back the locator. Use it instead of page.locator
+ *  for any bar field a spec presses, types into or looks at.
+ *  Not for containers the bar draws no box for (#cb-geo, #cb-corner, #cb-frame…):
+ *  ask for a field inside them. */
+async function barField(page, sel) {
+  const where = await page.evaluate(s => {
+    const e = document.querySelector(s);
+    return !e ? 'none' : e.closest('#ctl-more-body') ? 'more' : 'row';
+  }, sel);
+  if (where === 'more' && await page.locator('#ctl-more-pop').isHidden()) await page.click('#ctl-more-btn');
+  return page.locator(sel).first();
+}
+
 module.exports = {
-  settled, afterRender,
+  settled, afterRender, barField,
   test, staticTest, warmTest, sharedTest, expect: base.expect, gotoEditor, waitForFirstRender, PING, EVENTS, UPDATE, openFileMenu, openSources, openShare, clickTool, openToolMenu, clickAddSection,
   blockDangerousLocalEndpoints, dialog, fillDialog, submitDialog, cancelDialog,
   submitDialogIfPresent, selectWithoutTyping,

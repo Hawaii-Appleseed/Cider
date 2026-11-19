@@ -5,7 +5,7 @@
 // text actually rendered. So a heading tracked at 0.5px opened claiming 0,
 // and the first nudge jumped it. Now both start from the rendered value, the
 // same rule the size stepper already followed.
-const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, barField } = require('./fixtures/editor-test');
 
 // What the popover shows for a slot, read straight off the controls.
 async function spacing(page, key) {
@@ -42,7 +42,7 @@ test.describe('spacing popover', () => {
 
   test('once set, the number box holds the real value, not a placeholder', async ({ page }) => {
     await page.evaluate(() => showType('whopays.p1'));
-    await page.click('#ty-spacebtn');
+    await (await barField(page, '#ty-spacebtn')).click();      // in More when the window is narrow
     await page.locator('#ty-lead-r').fill('1.9');
     await page.locator('#ty-lead-r').dispatchEvent('input');
     await page.locator('#ty-lead-r').dispatchEvent('change');

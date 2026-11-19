@@ -5,7 +5,7 @@
 // the page draws. The engine side — fold-in, validation, byte-identity — is
 // checked in docsync/test_docsync.py; this file is the editor's promise:
 // every verb writes ONE `use` or ONE style, and ⌘Z takes it back.
-const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -21,7 +21,7 @@ async function shape(page, kind, fill) {
 }
 
 async function saveAs(page, moreBtn, bodySel, name) {
-  await page.click(moreBtn);
+  await (await barField(page, moreBtn)).click();          // the opener may be under the bar's More
   await page.click(`${bodySel} .tp-btn:text("+ Save as a style")`);
   await page.waitForTimeout(300);
   await page.locator('dialog.dsdlg input[type="text"]').fill(name);
@@ -33,7 +33,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
   async ({ page }) => {
     await gotoEditor(page);
     const a = await shape(page, 'rect', '#C0392B');
-    await expect(page.locator('#ar-style')).toBeVisible();
+    await expect(await barField(page, '#ar-style')).toBeVisible();
     await expect(page.locator('#ar-style')).toHaveValue('');
 
     await saveAs(page, '#ar-style-more', '#ar-stylebody', 'Alert');
@@ -49,7 +49,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
 
     // A second shape wears it from the picker.
     const b = await shape(page, 'ellipse', '#6B9E78');
-    await page.selectOption('#ar-style', 'Alert');
+    await (await barField(page, '#ar-style')).selectOption('Alert');
     await page.waitForTimeout(1800);
     await expect(frame(page).locator(`[data-shape="${b}"]`)).toHaveAttribute('fill', '#C0392B');
     expect(await page.evaluate(id => layout.shapes.find(s => s.id === id).use, b)).toBe('Alert');
@@ -61,7 +61,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
     await page.evaluate(id => docsync.api.select(id), b);
     await settled(page);
     await expect(page.locator('#ar-style')).toHaveClass(/ty-style-over/);
-    await page.click('#ar-style-more');
+    await (await barField(page, '#ar-style-more')).click();
     await page.click('#ar-stylebody .tp-btn:text("Redefine")');
     await page.waitForTimeout(1800);
     expect(await page.evaluate(() => layout.objectStyles.Alert.fill)).toBe('#2F3E46');
@@ -87,8 +87,8 @@ test('a text box gets a Box panel: a rule, padding, columns — and the whole lo
     await page.waitForTimeout(800);
     // A text box is text: the type bar, with a Box button a slot never gets.
     await expect(page.locator('#type')).toBeVisible();
-    await expect(page.locator('#ty-box')).toBeVisible();
-    await page.click('#ty-box');
+    await expect(await barField(page, '#ty-box')).toBeVisible();
+    await (await barField(page, '#ty-box')).click();
     await expect(page.locator('#ty-boxpop')).toBeVisible();
 
     // A left rule in the palette's first colour.
@@ -141,7 +141,7 @@ test('a text box gets a Box panel: a rule, padding, columns — and the whole lo
       return got.id.replace(/^text\./, '');
     });
     await page.waitForTimeout(800);
-    await page.click('#ty-box');
+    await (await barField(page, '#ty-box')).click();
     await page.selectOption('#ty-boxstyle', 'Pull quote');
     await page.waitForTimeout(1800);
     await expect(frame(page).locator(`[data-el="text.${id2}"]`))

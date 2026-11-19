@@ -7,7 +7,7 @@
 // docsync/test_docsync.py; this is the editor's promise: anchoring never moves
 // the thing, moving the text does, dragging keeps the paragraph and changes
 // the distance, and releasing leaves it where it stands.
-const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -95,8 +95,8 @@ test('the Anchor button arms a click on the paragraph, and clicking it again rel
     }, { y: +(host.top + 0.3).toFixed(2), pg: host.page });
     await page.waitForTimeout(800);
     // A text box takes the type bar, and its Anchor button is there.
-    await expect(page.locator('#ty-anchor')).toBeVisible();
-    await page.click('#ty-anchor');
+    await expect(await barField(page, '#ty-anchor')).toBeVisible();   // in More in a narrow window
+    await (await barField(page, '#ty-anchor')).click();
     await expect(page.locator('#ty-anchor')).toHaveClass(/arming/);
     await expect(page.locator('#stat')).toContainText('click the paragraph');
     // The armed click names the paragraph — and does NOT select it.
@@ -110,14 +110,14 @@ test('the Anchor button arms a click on the paragraph, and clicking it again rel
     const before = await boxTop(page, id);
 
     // Release: the box stays exactly where the paragraph last put it.
-    await page.click('#ty-anchor');
+    await (await barField(page, '#ty-anchor')).click();
     await page.waitForTimeout(1800);
     expect(await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).anchor, id)).toBeUndefined();
     expect(Math.abs((await boxTop(page, id)) - before)).toBeLessThan(0.03);
     await expect(page.locator('#ty-anchor')).not.toHaveClass(/\bon\b/);
 
     // Esc disarms without anchoring.
-    await page.click('#ty-anchor');
+    await (await barField(page, '#ty-anchor')).click();
     await expect(page.locator('#ty-anchor')).toHaveClass(/arming/);
     await page.keyboard.press('Escape');
     await expect(page.locator('#ty-anchor')).not.toHaveClass(/arming/);

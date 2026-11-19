@@ -1,6 +1,6 @@
 // INDESIGN_PARITY.md 76 (style housekeeping), 79 (default styles for new
 // things), 81 (clear transformations) and 78 (span columns). Local mode.
-const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, barField } = require('./fixtures/editor-test');
 
 const api = (page, expr) => page.evaluate(`docsync.api.${expr}`);
 const addBox = async (page, md, extra = {}) => {
@@ -105,7 +105,7 @@ test.describe('76 style housekeeping', () => {
     await el.scrollIntoViewIfNeeded();
     await el.click();
     await page.waitForTimeout(700);
-    await page.click('#ty-style-more');
+    await (await barField(page, '#ty-style-more')).click();
     await expect(page.locator('#ty-stylebody .tp-btn:text("Highlighting overrides")')).toBeVisible();
     await page.click('#ty-stylebody .tp-btn:text("Clear overrides")');
     await page.waitForTimeout(1500);
@@ -165,7 +165,7 @@ test.describe('79 default styles for new things', () => {
     }, s.id);
     await page.evaluate(i => setSel($('out').contentDocument, [i]), s.id);
     await page.waitForTimeout(400);
-    await page.click('#ar-style-more');
+    await (await barField(page, '#ar-style-more')).click();
     await page.click('#ar-stylebody .tp-btn:text("Use for new shapes")');
     await page.waitForTimeout(1200);
     expect(await page.evaluate(() => layout.defaultStyles)).toEqual({ shape: 'Rule' });
@@ -197,7 +197,7 @@ test.describe('81 clear transformations', () => {
     // The object menu (the strip's ⋯ is the same menu as right-click).
     await page.evaluate(i => docsync.api.batch([{ verb: 'rotate', args: [i, 45] }, { verb: 'flip', args: [i, 'hv'] }]), s.id);
     await page.evaluate(i => setSel($('out').contentDocument, [i]), s.id);
-    await page.click('#ar-more');
+    await (await barField(page, '#ar-more')).click();
     await page.waitForTimeout(400);
     const frame = page.frameLocator('#out');
     await frame.locator('.ds-menu button.ds-sub', { hasText: 'Rotate and flip' }).hover();

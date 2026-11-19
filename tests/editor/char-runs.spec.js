@@ -6,7 +6,7 @@
 // kern InDesign makes); a run inside a named character style nests the one
 // way the engine reads; a size under the floor is refused. The engine's half
 // (content.py's CHAR_RUN_RE) is in test_docsync.py. Local mode.
-const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
 
 async function openBox(page, md) {
   const id = await page.evaluate(async m =>
@@ -40,10 +40,13 @@ const md = page => page.evaluate(() =>
   htmlToMd(document.querySelector('#out').contentDocument.querySelector('.ds-edit'), { allowLists: true }));
 // A press into the field, as a person makes it: the press is what holds the
 // words open (fill() alone focuses with no press, and the words would close).
+// barField: in a narrow window the field is under the bar's More (pressing More keeps
+// the words held, as pressing a field in the row does)
 const setField = async (page, id, v) => {
-  await page.locator(id).click();
-  await page.locator(id).fill(v);
-  await page.locator(id).press('Enter');
+  const f = await barField(page, id);
+  await f.click();
+  await f.fill(v);
+  await f.press('Enter');
 };
 
 test.describe('character settings on selected words', () => {
@@ -85,8 +88,9 @@ test.describe('character settings on selected words', () => {
     // A pick from a list, as a person makes it: the press holds the words.
     const pick = async (sel, v) => {
       await page.waitForTimeout(50);                     // the last control's let-go
-      await page.locator(sel).click();
-      await page.locator(sel).selectOption(v);
+      const f = await barField(page, sel);
+      await f.click();
+      await f.selectOption(v);
     };
     await selectChars(page, 6, 10);                       // "beta"
     await pick('#ty-font', 'Lora');
@@ -96,12 +100,12 @@ test.describe('character settings on selected words', () => {
     await pick('#ty-case', 'upper');
     await pick('#cb-smcp', 'small');
     await page.waitForTimeout(50);
-    await page.locator('#cb-strike').click();
+    await (await barField(page, '#cb-strike')).click();
     await setField(page, '#cb-shift', '3');
     expect(await md(page)).toBe('Alpha [beta]{font="Lora" weight=700 case=upper smcp=small strike=1 shift=3} gamma');
     // Colour from the pop: the words, not the box.
     await page.waitForTimeout(50);
-    await page.locator('#ty-colorbtn').click();
+    await (await barField(page, '#ty-colorbtn')).click();
     const sw = page.locator('#ty-swgrid .sw[data-c]').first();
     const c = await sw.getAttribute('data-c');
     await sw.click();
@@ -113,7 +117,7 @@ test.describe('character settings on selected words', () => {
     // Strike again takes it off.
     await page.waitForTimeout(50);
     await selectChars(page, 6, 10);
-    await page.locator('#cb-strike').click();
+    await (await barField(page, '#cb-strike')).click();
     expect(await md(page)).toBe(`Alpha [beta]{font="Lora" weight=700 color=${c} case=upper smcp=small shift=3} gamma`);
     // Leave the words: the page draws the run.
     await page.waitForTimeout(50);
