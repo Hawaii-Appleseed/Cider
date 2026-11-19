@@ -323,6 +323,8 @@
          border-radius:9px; background:#DCE6DF; color:#2F3E46; font:600 12px/18px system-ui; text-align:center; }
   #ctl-more-btn[aria-expanded=true] .cb-morecount { background:rgba(255,255,255,.22); color:#fff; }
   #ctl-more-btn svg { display:block; }
+  /* a phone: the count and the chevron say it, and the row keeps the room */
+  @media (max-width: 600px) { #ctl-more-btn .cb-morelab { display:none; } #ctl-more-btn { padding:0 8px; } }
   #ctl-more-pop { width:max-content; max-width:min(560px, calc(100vw - 32px)); box-sizing:border-box;
          padding:12px; white-space:normal; }
   #ctl-more-body { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
@@ -2993,7 +2995,7 @@
        MOVED here, never copied, so every id and handler works as it did in the
        row. Shown only while something is in it. -->
   <button id="ctl-more-btn" hidden aria-haspopup="true" aria-expanded="false"
-    aria-label="More controls — the ones that do not fit this window's width">More<span
+    aria-label="More controls — the ones that do not fit this window's width"><span class="cb-morelab">More</span><span
     class="cb-morecount" id="ctl-more-n"></span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"
     stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
     aria-hidden="true"><path d="M2 3.6l3 3 3-3"/></svg></button>
@@ -19076,8 +19078,9 @@ const CTL_KEEP = {
     '#cb-gapwrap', '#ar-style', '#ar-style-more', '#ar-comment', '#ar-anchor',
     '#cb-sxwrap', '#cb-sywrap', 'label:has(#cb-skew)', '#cb-pflag', '#ty-key', '#ar-count'],
   // A: the words themselves
-  char: ['#ty-font', '#ty-weight', '.ty-step', 'label:has(#cb-lead)', 'label:has(#cb-track)', 'label:has(#cb-kern)',
-    '#ty-marks', '#ty-i', '#ty-u', '#ty-colorbtn', '#ty-style', '#ty-style-more', '#ty-case',
+  // (B / I / U and the lists show only with words selected, and then they lead)
+  char: ['#ty-marks', '#ty-font', '#ty-weight', '.ty-step', 'label:has(#cb-lead)', 'label:has(#cb-track)', 'label:has(#cb-kern)',
+    '#ty-i', '#ty-u', '#ty-colorbtn', '#ty-style', '#ty-style-more', '#ty-case',
     'label:has(#cb-shift)', '#cb-strike', '#cb-smcp', '#ty-fx', '#ty-fxp', '#ty-spacebtn', '#ty-parabtn',
     '#ty-reset', '#ty-box', '#ty-comment', '#ar-fill', '#ar-pos', '#ar-more', '#ar-del', '#ar-lock', '#ar-dup',
     '#ar-border', '#ar-alpha', '#ar-fxbtn', '#arrange > .ty-seg', '#ar-comment', '#ty-anchor', '#ar-anchor', '#ty-key', '#ar-count'],
@@ -19090,6 +19093,7 @@ const CTL_KEEP = {
 const CTL_TOPS = ['type', 'cb-obj', 'arrange'];
 const CTL_TRANSP = '#type, #arrange, #cb-obj, #cb-geo, #cb-turn, #cb-corner, #cb-fitx, #cb-frame, #cb-paraf';
 let ctlU = null, ctlSeps = [], ctlFitting = false, ctlMoreW = 86, ctlMO = null;
+let ctlPress = 0, ctlFitLater = false;   // a press is down on the editor's chrome: refit after it
 /** Every control that can move: the pills inside the three strips, in the row's order.
  *  Found once, while each is still at home. */
 function ctlUnitsInit() {
@@ -19116,6 +19120,9 @@ function ctlUnitsInit() {
 }
 function ctlFit() {
   if (ctlFitting) return;
+  // Never under a press: a control that moved between mousedown and mouseup would lose
+  // its click (pressing B hides every pop-up, which refits). The press's end refits.
+  if (ctlPress && Date.now() - ctlPress < 10000) { ctlFitLater = true; return; }   // (a lost pointerup cannot freeze it)
   if (!ctlU) ctlUnitsInit();
   ctlFitting = true;
   const ctl = $('ctl'), btn = $('ctl-more-btn'), pop = $('ctl-more-pop'), body = $('ctl-more-body');
@@ -19143,7 +19150,9 @@ function ctlFit() {
     // While More is open nothing moves: the control a person is using in it must not jump
     // into the row (or out of it) under the pointer. Closing it refits.
     if (!pop.hidden && !btn.hidden) { btn.setAttribute('aria-expanded', 'true'); return; }
-    const mode = CTL_KEEP[ctl.dataset.mode] ? ctl.dataset.mode : 'obj';
+    // (words of the report's own, not a box, can be open with the bar still saying "empty":
+    // the type controls are up, so they rank as A or ¶ does)
+    const mode = CTL_KEEP[ctl.dataset.mode] ? ctl.dataset.mode : !$('type').hidden ? ctlTextMode : 'obj';
     CTL_TOPS.forEach(id => $(id).classList.remove('ctl-void'));
     ctlSeps.forEach(s => s.classList.remove('ctl-sep-off'));
     // A control whose strip is hidden, or that the mode hides, goes back to its strip: in
@@ -19216,17 +19225,39 @@ try {
   ctlMO = new MutationObserver(recs => {
     // a click away, or Escape, hides the pop: the button says so, and words held open for
     // it let go; any change of what is shown (ctlPaint toggles `hidden`, the mode is
-    // data-mode) refits the row
+    // data-mode) refits the row. Only a CHANGE: closing pop-ups rewrites `hidden` on
+    // every one of them, already hidden or not.
+    const changed = recs.some(r => r.attributeName === 'hidden'
+      ? (r.oldValue !== null) !== r.target.hasAttribute('hidden')
+      : r.oldValue !== r.target.getAttribute(r.attributeName));
+    if (!changed) return;
     if ($('ctl-more-pop').hidden && runCtx && runCtx.more) ctlRunLetGo();
     ctlFit();
   });
-  ctlMO.observe($('ctl'), { subtree: true, attributes: true, attributeFilter: ['hidden', 'data-mode'] });
+  ctlMO.observe($('ctl'), { subtree: true, attributes: true, attributeOldValue: true,
+    attributeFilter: ['hidden', 'data-mode'] });
+  addEventListener('pointerdown', () => { ctlPress = Date.now(); }, true);
+  const ctlPressEnd = () => {
+    if (!ctlPress) return;
+    ctlPress = 0;
+    if (ctlFitLater) { ctlFitLater = false; setTimeout(ctlFit, 0); }   // after the click lands
+  };
+  addEventListener('pointerup', ctlPressEnd, true);
+  addEventListener('pointercancel', ctlPressEnd, true);
+  addEventListener('blur', ctlPressEnd);
+  onEachDocument(d => d.addEventListener('pointerup', ctlPressEnd, true));   // let go over the page
   new ResizeObserver(() => ctlFit()).observe($('ctl'));
   $('ctl').addEventListener('change', () => ctlFit());      // a font's name is a different width
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ctlFit());
   $('ctl-more-btn').addEventListener('click', () => {
     togglePop($('ctl-more-pop'), $('ctl-more-btn'));
     $('ctl-more-btn').setAttribute('aria-expanded', String(!$('ctl-more-pop').hidden));
+  });
+  // A button in More is a menu item: once its own handlers have run, More closes (a
+  // field stays open for typing). Anchor then arms on the page with nothing over it,
+  // and Escape disarms it as it would from the row.
+  $('ctl-more-body').addEventListener('click', e => {
+    if (e.target.closest('button') && !$('ctl-more-pop').hidden) $('ctl-more-pop').hidden = true;
   });
   // Words being typed: pressing More must not end the edit, or a character setting
   // picked in it (case, small caps, strike, shift…) would dress the whole box instead
@@ -23117,7 +23148,7 @@ $('ty-marks').addEventListener('mousedown', e => e.preventDefault());
 // true forever, silently swallowing every later click ("can't change
 // anything"). Commit deterministically instead, the moment any non-marks
 // type control is touched.
-$('type').addEventListener('pointerdown', e => {
+function typeControlPress(e) {
   if (!richHost || e.target.closest('#ty-marks')) return;
   // The Character controls with words selected act on those words
   // (ctlRunHold): the words stay open, nothing renders under them. The
@@ -23126,6 +23157,11 @@ $('type').addEventListener('pointerdown', e => {
   if (runInp) { ctlRunHold(runInp); if (runCtx) { if (runInp.id === 'ty-colorbtn') runCtx.colour = true; return; } }
   if (runCtx && runCtx.colour && e.target.closest('#ty-colorpop')) return;
   richHost.blur();     // finish(true): commit + re-render (single-flight)
+}
+$('type').addEventListener('pointerdown', typeControlPress, true);
+// …and the same for a type control lent to the Control bar's More (ctlFit moves it out of #type)
+$('ctl-more-body').addEventListener('pointerdown', e => {
+  if (e.target.closest('#ctl-more-body > .cu-type')) typeControlPress(e);
 }, true);
 const richDo = fn => {
   if (!richHost) return;

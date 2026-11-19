@@ -7,7 +7,7 @@
 // those win, so a style is a starting point and never a cage. Resolution
 // lives in layout.py's resolve_style() and is mirrored in the editor only so
 // the toolbar can SHOW what the page does.
-const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, barField } = require('./fixtures/editor-test');
 
 /** Select a slot and open its type toolbar, the way a click does. These
  *  tests type px into the floating card's own size field, so the docked
@@ -40,7 +40,7 @@ test('a look is saved as a style, worn, and redefined for everything at once',
     await page.locator('#ty-size').fill('22');
     await page.locator('#ty-size').press('Enter');
     await page.waitForTimeout(1500);
-    await page.click('#ty-style-more');
+    await (await barField(page, '#ty-style-more')).click();
     await page.click('#ty-stylebody .tp-btn:text("+ Save as a style")');
     await page.waitForTimeout(400);
     await page.locator('dialog.dsdlg input[type="text"]').fill('Body');
@@ -65,7 +65,7 @@ test('a look is saved as a style, worn, and redefined for everything at once',
     await page.locator('#ty-size').fill('18');
     await page.locator('#ty-size').press('Enter');
     await page.waitForTimeout(1500);
-    await page.click('#ty-style-more');
+    await (await barField(page, '#ty-style-more')).click();
     await page.click('#ty-stylebody .tp-btn:text("Redefine")');
     await page.waitForTimeout(1800);
     expect(await page.evaluate(() => layout.textStyles.Body.size)).toBe(18);

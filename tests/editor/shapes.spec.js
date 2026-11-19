@@ -1,7 +1,7 @@
 // Shape creation, fill, and duplicate (docsync/editor/edit.html). A new shape
 // is a SOLID visible object (sage), recolourable from the toolbar Fill control
 // — not a near-invisible pale outline. Local mode.
-const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, barField } = require('./fixtures/editor-test');
 
 async function addShape(page, kind) {
   await page.click('#shape');
@@ -46,7 +46,7 @@ test.describe('shapes', () => {
     await expect(shapes).toHaveCount(1);
 
     await expect(page.locator('#ar-dup')).toBeEnabled();
-    await page.click('#ar-dup');
+    await (await barField(page, '#ar-dup')).click();
     await expect(shapes).toHaveCount(2);
     await expect(page.locator('#stat')).toContainText('duplicated');
   });
