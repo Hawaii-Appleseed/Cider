@@ -469,7 +469,11 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           ref=main
-          if [ -n "$BRANCH" ] && git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/Hawaii-Appleseed/staff-updates-internal.git" "$BRANCH" >/dev/null 2>&1; then
+          # Asked of the API with the hub token itself: a plain `git ls-remote`
+          # here went out under the credentials actions/checkout persisted for
+          # THIS repository, was refused by the private hub, and so always fell
+          # back to main (the first time a hub branch existed, 2026-11-19).
+          if [ -n "$BRANCH" ] && GH_TOKEN="$TOKEN" gh api "repos/Hawaii-Appleseed/staff-updates-internal/git/ref/heads/${BRANCH}" >/dev/null 2>&1; then
             ref="$BRANCH"
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
