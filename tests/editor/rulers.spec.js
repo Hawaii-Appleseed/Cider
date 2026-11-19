@@ -60,6 +60,14 @@ test.describe('rulers', () => {
       await page.evaluate(zz => setZoom(zz), z);
       await page.evaluate(() => $('out').contentDocument
         .querySelector('section.page[data-page="3"]').scrollIntoView({ block: 'start' }));
+      // The top ruler starts where the tool rail ends, as the left one always did, so
+      // an edge hidden behind the rail has no tick to read: bring it into the open.
+      await page.evaluate(id => {
+        const out = $('out'), or = out.getBoundingClientRect(), sc = or.width / out.offsetWidth;
+        const el = out.contentDocument.querySelector(`[data-shape="${id}"]`);
+        const edge = or.left + el.getBoundingClientRect().left * sc;
+        if (edge < 140) $('stage').scrollLeft -= (140 - edge);        // the stage scrolls sideways, in window px
+      }, id);
       await page.waitForTimeout(150);
       await shot(page, `rulers-zoom-${z}`);
       for (const side of ['x', 'y']) {
