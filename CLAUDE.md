@@ -74,7 +74,12 @@ fake ʻokina (a straight apostrophe in Hawaiʻi, say) refuses the commit, an edi
   pushing when the branch touches `docsync/editor/`, `collab/`,
   `report2027/tools/serve.py` or `tests/editor/collab*.spec.js` and the hub is
   beside the clone (or at `PRIMER_HUB_DIR`); a failure refuses the landing
-  (`--skip-hub-spec` overrides, loudly). No hub checkout: it says so in one line
+  (`--skip-hub-spec` overrides, loudly). The folder beside the clone is only
+  read, and at the hub's `origin/main` (fetched first), not at whatever branch
+  it has checked out: it is shared and was on a stale feature branch, which
+  failed a history test for every landing (2026-11-20). `PRIMER_HUB_REF`
+  names another hub ref, `PRIMER_HUB_REF=worktree` serves its files as they
+  are, and `PRIMER_HUB_DIR` is still used as it is. No hub checkout: it says so in one line
   and lands anyway. `tools/wt land <name> --check-only` runs just the gate;
   `tools/test-land-gate.sh <name>` tests it.
   **A new editor verb needs a change in the hub, and the `connector` job says so

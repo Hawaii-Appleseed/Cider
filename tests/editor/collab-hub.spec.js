@@ -37,9 +37,18 @@ const { claimPort } = require('./fixtures/ports');
 const { newContext } = require('./fixtures/pyodide-cache');
 
 const REPO = path.resolve(__dirname, '../..');
-// PRIMER_HUB_DIR is used as it is: vendored into, then served. Unset, the
-// checkout beside this repo is only READ — copied by copyHub in beforeAll.
+// PRIMER_HUB_DIR is used as it is: vendored into, then served (CI points it
+// at a fresh clone of the hub's main). Unset, the checkout beside this repo is
+// only READ — copied by copyHub in beforeAll, at PRIMER_HUB_REF.
 const HUB_GIVEN = process.env.PRIMER_HUB_DIR || null;
+// Which of that checkout's commits to serve: the hub's main by default, as CI
+// does. The folder beside the clone is shared and often sits on somebody's
+// feature branch; served as it stood, the spec tested that branch's hub, and a
+// history test failed for every landing on this Mac because the branch
+// (newsletter-templates, 394 commits behind on 2026-11-20) predated the
+// store fix the test exists to hold (hub 99672cb). Another ref names a hub
+// branch to test against; `worktree` serves the folder's files as they are.
+const HUB_REF = process.env.PRIMER_HUB_REF || 'origin/main';
 const HUB_SRC = HUB_GIVEN || path.resolve(REPO, '../staff-updates-internal');
 let HUB_DIR = HUB_GIVEN;
 // Its own ports, claimed in beforeAll (fixtures/ports.js): the relay from
@@ -65,8 +74,10 @@ let relay = null, pages = null;
 const proxies = [];
 let ctxA, ctxB, a, b, browser;
 
-/** The hub's files as its working tree holds them — tracked, and new files
- *  git does not ignore — in a fresh temporary directory. Vendoring rewrites
+/** The hub's files at HUB_REF (git archive, after fetching it when it is a
+ *  remote branch), or with PRIMER_HUB_REF=worktree as its working tree holds
+ *  them — tracked, and new files git does not ignore — in a fresh temporary
+ *  directory. The checkout's branch and files are never touched. Vendoring rewrites
  *  primer/**, and pointed at the real checkout it left ~50 files of this
  *  run's editor in the tree the hub deploys from, uncommitted, for whoever
  *  commits there next to sweep up. The copy leaves out .git, node_modules,
@@ -74,6 +85,26 @@ let ctxA, ctxB, a, b, browser;
  *  hub reads. */
 function copyHub(src) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'primer-hub-'));
+  if (HUB_REF !== 'worktree') {
+    const remote = /^origin\/(.+)$/.exec(HUB_REF);
+    if (remote) {
+      // Offline keeps the last fetched copy of the branch, which is still the
+      // hub's main as of then, not whatever the folder has checked out.
+      try { execFileSync('git', ['-C', src, 'fetch', '-q', 'origin', remote[1]], { stdio: 'ignore', timeout: 60_000 }); }
+      catch (e) { console.warn(`collab-hub: could not fetch ${HUB_REF} (${e.message.split('\n')[0]}); using the copy last fetched`); }
+    }
+    const tar = dir + '.tar';
+    try {
+      execFileSync('git', ['-C', src, 'archive', '--format=tar', '-o', tar, HUB_REF], { stdio: ['ignore', 'ignore', 'pipe'] });
+      execFileSync('tar', ['-x', '-f', tar, '-C', dir]);
+    } catch (e) {
+      throw new Error(`collab-hub: cannot take the hub at ${HUB_REF} from ${src}: ${String(e.stderr || e.message).trim()}`
+        + ' (PRIMER_HUB_REF names another ref; PRIMER_HUB_REF=worktree serves the folder as it is)');
+    } finally { fs.rmSync(tar, { force: true }); }
+    const sha = execFileSync('git', ['-C', src, 'rev-parse', '--short', HUB_REF]).toString().trim();
+    console.log(`collab-hub: serving the hub at ${HUB_REF} (${sha}), not the folder's checkout`);
+    return dir;
+  }
   const files = execFileSync('git', ['-C', src, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'])
     .toString().split('\0').filter(Boolean);
   for (const rel of files) {
