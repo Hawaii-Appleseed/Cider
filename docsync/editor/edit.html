@@ -32807,7 +32807,8 @@ function hubMarginWant(d, c, f, z, listTop, pageTop, rangeOf) {
   // kept while it is still in the page (a selector over the whole report on
   // every scrolled frame, for every such card, was most of what this cost).
   let t = hit ? hit.range : hubAnchorEls.get(c.anchor);
-  if (!t || (!hit && !t.isConnected)) {
+  // (Of THIS document: a swapped-out frame can stay in the page, and its elements stay connected.)
+  if (!t || (!hit && (t.ownerDocument !== d || !t.isConnected))) {
     t = hubCommentEl(d, c.anchor);
     if (t) hubAnchorEls.set(c.anchor, t); else hubAnchorEls.delete(c.anchor);
   }
