@@ -136,6 +136,10 @@ test.describe('sources panel', () => {
     await addSourceViaUi(page, 'src-a', 'Source A.', 'https://example.com/a');
     await addSourceViaUi(page, 'src-b', 'Source B.', 'https://example.com/b');
     await openSources(page);
+    // The arrows arrange the declared list, so they show in that order only
+    // (the panel opens in endnote order).
+    await expect(page.locator('#srcpanel .srcren', { hasText: '↑' })).toHaveCount(0);
+    await page.locator('#src-bynum').click();
 
     const ids = () => page.locator('#srcpanel .srcid').allTextContents();
     const before = (await ids()).map(t => t.split(']')[0] + ']');
