@@ -329,7 +329,7 @@ hub_gate() {  # hub_gate <dir> <name> <mode: auto|force|skip>
   [ -d "$dir/collab/node_modules" ] || { echo "Hub spec: npm ci --prefix collab ..."; npm ci --prefix "$dir/collab" >/dev/null 2>&1 \
     || die "npm ci --prefix collab failed; fix it, or land with --skip-hub-spec"; }
   port=$(alloc_port "cider:$name")
-  echo "Hub spec: running collab-hub.spec.js (hub $(short "$hub"), port $port, one retry) ..."
+  echo "Hub spec: running collab-hub.spec.js (hub $(short "$hub")${PRIMER_HUB_DIR:+ as it is}${PRIMER_HUB_DIR:- at ${PRIMER_HUB_REF:-origin/main}}, port $port, one retry) ..."
   if (cd "$dir" && PRIMER_HUB_DIR="${PRIMER_HUB_DIR:-}" PRIMER_TEST_PORT="$port" \
         ${WT_HUB_SPEC_CMD:-npx playwright test tests/editor/collab-hub.spec.js --retries=1}); then
     echo "Hub spec: passed."
