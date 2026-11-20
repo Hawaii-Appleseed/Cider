@@ -154,7 +154,9 @@ test.describe('control bar: two rows', () => {
     }
   });
 
-  test('both rows reach the bar\'s right edge and the columns leave no big hole, at 1280, 1397 and 1920', async ({ page }) => {
+  test('both rows reach the edge of the bar\'s content area and the columns leave no big hole, at 1280, 1397 and 1920', async ({ page }) => {
+    // The content area is at most 1500px and centred (control-bar-capped.spec.js); inside it the two rows
+    // still run to its right edge, so this is measured against the area, not the window.
     const ids = { rect: null, text: null };
     await addRect(page); ids.rect = 'cb-rect'; ids.text = await addText(page);
     for (const [w, h] of [[1280, 720], [1397, 719], [1920, 1000]]) {
@@ -162,22 +164,21 @@ test.describe('control bar: two rows', () => {
       for (const [mode] of MODES) {
         await inMode(page, mode, ids);
         const r = await page.evaluate(() => {
-          const bar = $('ctl').getBoundingClientRect(), out = { gap: 0 };
+          const cs = [...$('ctl-cols').children].map(c => c.getBoundingClientRect()), out = { gap: 0 };
+          const areaR = cs[cs.length - 1].right;
           for (const cls of ['ctl-top', 'ctl-bot']) {
             let m = 0;
             document.querySelectorAll('#ctl-cols .' + cls + ' > *').forEach(e => { if (e.offsetParent !== null) m = Math.max(m, e.getBoundingClientRect().right); });
-            out[cls] = Math.round(bar.right - m);
+            out[cls] = Math.round(areaR - m);
           }
           // the spaces between one column's right edge and the next one's left edge
-          const cs = [...$('ctl-cols').children].map(c => c.getBoundingClientRect());
           cs.forEach((c, i) => { if (i) out.gap = Math.max(out.gap, Math.round(c.left - cs[i - 1].right)); });
           out.scroll = $('ctl-cols').scrollWidth - $('ctl-cols').clientWidth;
           return out;
         });
-        if (process.env.DBGW) console.log('DBGW', w, mode, JSON.stringify(r), JSON.stringify(await page.evaluate(() => [...$('ctl-cols').children].map(c => Math.round(c.getBoundingClientRect().width) + ':' + [...c.querySelectorAll('.ctl-cell > *')].filter(e => e.offsetParent).map(e => e.id || e.className.toString().slice(0, 8)).join('+')))));
-        expect(r['ctl-top'], `${w} ${mode}: the top row ends ${r['ctl-top']}px short of the bar's edge`).toBeLessThanOrEqual(40);
-        expect(r['ctl-bot'], `${w} ${mode}: the bottom row ends ${r['ctl-bot']}px short of the bar's edge`).toBeLessThanOrEqual(40);
-        expect(r['ctl-top'], `${w} ${mode}: the top row runs off the bar`).toBeGreaterThanOrEqual(0);
+        expect(r['ctl-top'], `${w} ${mode}: the top row ends ${r['ctl-top']}px short of the content area's edge`).toBeLessThanOrEqual(40);
+        expect(r['ctl-bot'], `${w} ${mode}: the bottom row ends ${r['ctl-bot']}px short of the content area's edge`).toBeLessThanOrEqual(40);
+        expect(r['ctl-top'], `${w} ${mode}: the top row runs off the area`).toBeGreaterThanOrEqual(0);
         expect(r.gap, `${w} ${mode}: a ${r.gap}px hole between two columns`).toBeLessThanOrEqual(110);
         expect(r.scroll, `${w} ${mode}: scrolls at a window this wide`).toBeLessThanOrEqual(0);
         expect((await geometry(page)).h, `${w} ${mode}`).toBe(58);
