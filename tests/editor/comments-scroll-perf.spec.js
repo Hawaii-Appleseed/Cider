@@ -64,11 +64,13 @@ async function openMargin(page) {
  *  with the style and layout it leaves behind, forced by a read at its end). */
 async function instrument(page) {
   await page.evaluate(() => {
-    window.__perf = { layout: [], render: [], frames: [], leaderWrites: 0 };
-    const L = hubMarginLayout, R = hubCommentsRender;
+    window.__perf = { layout: [], render: [], paint: [], frames: [], leaderWrites: 0 };
+    const L = hubMarginLayout, R = hubCommentsRender, P = hubCommentsPaint;
     hubMarginLayout = function (...a) {
       const t0 = performance.now();
       const r = L.apply(this, a);
+      // A layout that was not asked to glide must leave the cards unable to (the scrolled frame).
+      if (!a[0] && document.getElementById('cpanel-list').classList.contains('anim')) window.__perf.glideOnScroll = (window.__perf.glideOnScroll || 0) + 1;
       void document.getElementById('cpanel').offsetHeight;     // pay for whatever the writes dirtied
       void document.getElementById('cmt-leader').getBoundingClientRect();
       window.__perf.layout.push(performance.now() - t0);
@@ -79,6 +81,12 @@ async function instrument(page) {
       const r = R.apply(this, a);
       void document.getElementById('cpanel').offsetHeight;
       window.__perf.render.push(performance.now() - t0);
+      return r;
+    };
+    hubCommentsPaint = function (...a) {
+      const t0 = performance.now();
+      const r = P.apply(this, a);
+      window.__perf.paint.push(performance.now() - t0);
       return r;
     };
     // Long animation frames, where the browser has them.
@@ -147,6 +155,19 @@ test.describe('comments margin performance', () => {
     expect(out.frame.p95).toBeLessThan(40);
     // The leader still points somewhere on the way.
     expect(res.ledShown).toBeGreaterThan(0);
+    // ...and is moved by transform alone: no left/top/width to lay the page out for.
+    const led = await page.evaluate(() => { const s = document.getElementById('cmt-leader').style; return { l: s.left, t: s.top, w: s.width, tf: s.transform }; });
+    expect(led).toMatchObject({ l: '', t: '', w: '' });
+    expect(led.tf).toContain('translate');
+    // The glide class is never on for a scrolled frame, even when a card's height change asked
+    // for one in the same frame (the ResizeObserver's request) - the scroll's wins.
+    expect(perf.glideOnScroll || 0).toBe(0);
+    const glided = await page.evaluate(async () => {
+      hubMarginQueue(true); hubMarginQueue(false);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return document.getElementById('cpanel-list').classList.contains('anim');
+    });
+    expect(glided).toBe(false);
   });
 
   test('a card click and the panel render', async ({ page }) => {
@@ -169,7 +190,7 @@ test.describe('comments margin performance', () => {
     // A full render with nothing changed (what a poll that found nothing does).
     for (let i = 0; i < 10; i++) await page.evaluate(() => hubCommentsRender());
     const perf = await page.evaluate(() => window.__perf);
-    const out = { comments: comments.length, click: stats(click), render: stats(perf.render), layout: stats(perf.layout) };
+    const out = { comments: comments.length, click: stats(click), render: stats(perf.render), paint: stats(perf.paint), layout: stats(perf.layout) };
     console.log('CLICK-PERF ' + JSON.stringify(out));
     expect(await renders0()).toBeGreaterThan(5);
     expect(out.render.p95).toBeLessThan(40);
