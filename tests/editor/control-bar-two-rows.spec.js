@@ -228,7 +228,9 @@ test.describe('control bar: two rows', () => {
             if (b.width < 4 || b.height < 4) return;
             for (const [fx, fy] of [[0.5, 0.08], [0.5, 0.5], [0.15, 0.5], [0.85, 0.5], [0.5, 0.92]]) {
               const x = b.left + b.width * fx, y = b.top + b.height * fy;
-              if (x < row.left || x > row.right) continue;          // scrolled out of the bar: not drawn
+              // scrolled out of the bar (or on its very edge, where a bar that scrolls cuts a control: a
+              // point on the window's last pixel answers null): not drawn
+              if (x < row.left + 1 || x > row.right - 1) continue;
               const hit = document.elementFromPoint(x, y);
               if (!hit || !(el === hit || el.contains(hit) || hit.contains(el))) { bad.push(`${el.id || el.className} (${fx},${fy}) under ${hit && (hit.id || hit.className)}`); break; }
             }
