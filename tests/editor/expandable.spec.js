@@ -4,7 +4,7 @@
 // editor lifecycle (insert as a wired grouped pair, delete-orphan cleanup,
 // paste rewiring), the rxkids report as the working host, and the REAL disk
 // build clicked open and closed. Local mode.
-const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -18,10 +18,9 @@ test.describe.configure({ mode: 'serial' });
 async function addPair(page) {
   const frame = page.frameLocator('#out');
   await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.click('#text');
-  await page.click('#textpop .txtpreset[data-k="expand"]');
-  await page.waitForTimeout(1200);
+  await afterRender(page, () => page.click('#textpop .txtpreset[data-k="expand"]'));
   return page.evaluate(() => {
     const btn = boxes().find(b => b.act === 'toggle');
     return { btn, content: boxes().find(b => b.id === btn.target) };
@@ -45,17 +44,17 @@ test.describe('expandable sections', () => {
       // insertion leaves the new pair selected; start from nothing so the
       // two-click sequence is the one being tested
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      await settled(page);
 
       // first click: the whole pair — the group's own corners, no piece's handles
       await el.click();
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => selIds.size)).toBe(2);
       await expect(frame.locator('.ds-handles:not(.ds-handles-group)')).toHaveCount(0);
 
       // second click, no movement: just this piece — and handles appear
       await el.click();
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => [...selIds])).toEqual([`text.${btn.id}`]);
       await expect(frame.locator('.ds-handles')).toHaveCount(1);
 
@@ -68,7 +67,7 @@ test.describe('expandable sections', () => {
       await page.mouse.down();
       await page.mouse.move(hb.x + hb.width / 2 + 90, hb.y + hb.height / 2, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(600);
+      await settled(page);
       const after = await page.evaluate(id =>
         boxes().find(b => b.id === id).w, btn.id);
       expect(after).toBeGreaterThan(before + 0.3);
@@ -85,11 +84,11 @@ test.describe('expandable sections', () => {
       const frame = page.frameLocator('#out');
       const el = frame.locator(`[data-el="text.${btn.id}"]`);
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      await settled(page);
       await el.click();                       // the group
-      await page.waitForTimeout(350);
+      await settled(page);
       await el.dblclick();                    // get inside
-      await page.waitForTimeout(600);
+      await settled(page);
 
       expect(await page.evaluate(() => [...selIds])).toEqual([`text.${btn.id}`]);
       expect(await page.evaluate(() => !!editing)).toBe(false);
@@ -99,7 +98,7 @@ test.describe('expandable sections', () => {
       // the piece is already the selection on its own
       await page.waitForTimeout(900);         // past the just-drilled window
       await el.dblclick();
-      await page.waitForTimeout(600);
+      await settled(page);
       expect(await page.evaluate(() => !!editing)).toBe(true);
     });
 
@@ -115,7 +114,7 @@ test.describe('expandable sections', () => {
       await expect(arrow).toHaveAttribute('data-el', `tglarrow.${btn.id}`);
 
       await arrow.click();
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => [...selIds]))
         .toEqual([`tglarrow.${btn.id}`]);
       // it is a colour target, and offers "Colour", not "Background"
@@ -143,7 +142,7 @@ test.describe('expandable sections', () => {
       await page.mouse.down();
       await page.mouse.move(ab.x + 120, ab.y + 90, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(500);
+      await settled(page);
       expect(await page.evaluate(id => layout.positions[id] || null,
         `tglarrow.${btn.id}`)).toBeNull();
     });
@@ -154,11 +153,11 @@ test.describe('expandable sections', () => {
       const frame = page.frameLocator('#out');
       const el = frame.locator(`[data-el="text.${content.id}"]`);
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      await settled(page);
       await el.click();                       // the group
-      await page.waitForTimeout(300);
+      await settled(page);
       await el.click();                       // drill in
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await page.evaluate(() => [...selIds])).toEqual([`text.${content.id}`]);
 
       // the south handle sets a min-height floor (never clips the words)
@@ -168,7 +167,7 @@ test.describe('expandable sections', () => {
       await page.mouse.down();
       await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2 + 80, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(600);
+      await settled(page);
       const box = await page.evaluate(id => boxes().find(b => b.id === id), content.id);
       expect(box.h).toBeGreaterThan(0.5);
       // the button was NOT dragged along with it
@@ -205,12 +204,11 @@ test.describe('expandable sections', () => {
   test('deleting the content demotes the button to a plain box instead of '
        + 'wedging the build', async ({ page }) => {
     const { btn, content } = await addPair(page);
-    await page.evaluate(async cid => {
+    await afterRender(page, () => page.evaluate(async cid => {
       const d = $('out').contentDocument;
       setSel(d, ['text.' + cid]);
       await deleteSel(d);
-    }, content.id);
-    await page.waitForTimeout(1500);
+    }, content.id));
     const after = await page.evaluate(id => boxes().find(b => b.id === id), btn.id);
     expect(after.act).toBeUndefined();
     expect(after.target).toBeUndefined();
@@ -223,13 +221,12 @@ test.describe('expandable sections', () => {
   test('duplicating the pair rewires the copy to its own content',
     async ({ page }) => {
       const { btn, content } = await addPair(page);
-      await page.evaluate(async ([b, c]) => {
+      await afterRender(page, () => page.evaluate(async ([b, c]) => {
         const d = $('out').contentDocument;
         setSel(d, ['text.' + b, 'text.' + c]);
         copySel(d);
         await pasteClip(d);
-      }, [btn.id, content.id]);
-      await page.waitForTimeout(1500);
+      }, [btn.id, content.id]));
       const wiring = await page.evaluate(() => {
         const togglers = boxes().filter(b => b.act === 'toggle');
         return togglers.map(t => ({ id: t.id, target: t.target,
@@ -247,7 +244,7 @@ test.describe('expandable sections', () => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').first()
         .waitFor({ state: 'visible', timeout: 75000 });
-      await page.waitForTimeout(800);
+      await settled(page);
 
       // rxkids' own bespoke expandables are intact in the editor preview —
       // however many it has; the invariant is that each keeps its handler.
@@ -313,12 +310,11 @@ test.describe('multi-kind targets', () => {
       await page.evaluate(ids => {
         setSel($('out').contentDocument, ids);
       }, ['text.' + m.btn.id, m.sid, 'table.' + m.tid]);
-      await page.waitForTimeout(400);
+      await settled(page);
       const frame = page.frameLocator('#out');
       await frame.locator(`[data-el="text.${m.btn.id}"]`).click({ button: 'right' });
-      await page.waitForTimeout(400);
-      await frame.locator('.ds-menu button', { hasText: 'Reveal the 2 selected' }).click();
-      await page.waitForTimeout(1500);
+      await settled(page);
+      await afterRender(page, () => frame.locator('.ds-menu button', { hasText: 'Reveal the 2 selected' }).click());
 
       const t = await page.evaluate(id =>
         boxes().find(b => b.id === id).target, m.btn.id);
@@ -334,23 +330,21 @@ test.describe('multi-kind targets', () => {
         markDirty();
       }, [m.btn.id, m.sid, m.tid]);
       // delete the shape: list prunes, button still a toggle
-      await page.evaluate(async sid => {
+      await afterRender(page, () => page.evaluate(async sid => {
         const d = $('out').contentDocument;
         setSel(d, [sid]);
         await deleteSel(d);
-      }, m.sid);
-      await page.waitForTimeout(1200);
+      }, m.sid));
       let bx = await page.evaluate(id => boxes().find(b => b.id === id), m.btn.id);
       expect(bx.act).toBe('toggle');
       expect(bx.target).toBe(m.tid);
       await expect(page.locator('#stat')).toContainText('still reveals the other');
       // delete the table too: nothing left, demoted
-      await page.evaluate(async tid => {
+      await afterRender(page, () => page.evaluate(async tid => {
         const d = $('out').contentDocument;
         setSel(d, ['table.' + tid]);
         await deleteSel(d);
-      }, m.tid);
-      await page.waitForTimeout(1200);
+      }, m.tid));
       bx = await page.evaluate(id => boxes().find(b => b.id === id), m.btn.id);
       expect(bx.act).toBeUndefined();
       expect(bx.target).toBeUndefined();
@@ -360,9 +354,8 @@ test.describe('multi-kind targets', () => {
     const { btn } = await addPair(page);
     const frame = page.frameLocator('#out');
     await frame.locator(`[data-el="text.${btn.id}"]`).click({ button: 'right' });
-    await page.waitForTimeout(400);
-    await frame.locator('.ds-menu button', { hasText: 'Stop revealing' }).click();
-    await page.waitForTimeout(1500);
+    await settled(page);
+    await afterRender(page, () => frame.locator('.ds-menu button', { hasText: 'Stop revealing' }).click());
     const bx = await page.evaluate(id => boxes().find(b => b.id === id), btn.id);
     expect(bx.act).toBeUndefined();
     expect(bx.target).toBeUndefined();
@@ -375,7 +368,6 @@ test.describe('multi-kind targets', () => {
 test('the published page expands and collapses for real', async ({ page }) => {
   try {
     await page.goto('start.html');
-    await page.waitForTimeout(600);
     await page.click('#new');
     await page.fill('#np-name', 'Expand Report');
     await page.fill('#np-slug', SLUG);

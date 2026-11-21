@@ -10,7 +10,7 @@
 // itself without leaving inline styles behind, and the speed control is
 // reachable exactly where the user asked for it — the mini toolbar, when the
 // group is selected.
-const { sharedTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, selectWithoutTyping, settled, afterRender } = require('./fixtures/editor-test');
 
 async function addExpandableSection(page) {
   return page.evaluate(async () => {
@@ -33,13 +33,13 @@ test.describe('expandable section: preview and speed', () => {
     await gotoEditor(page);
     await page.frameLocator('#out').locator('section.page').nth(3)
       .scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
   });
 
   test('selecting the button also selects its content, and the mini toolbar '
     + 'offers Preview and Expand speed', async ({ page }) => {
     const btnId = await addExpandableSection(page);
-    await page.waitForTimeout(400);
+    await settled(page);
     const frame = page.frameLocator('#out');
     // addExpandable() leaves the pair selected as a group — click a page
     // clicking the SAME already-fully-selected group is a documented "drill
@@ -50,9 +50,9 @@ test.describe('expandable section: preview and speed', () => {
     // (A click on a heading did the deselecting, and opened the heading's
     // words on its release, which the next click then had to commit.)
     await page.evaluate(() => clearSel(document.getElementById('out').contentDocument));
-    await page.waitForTimeout(200);
+    await settled(page);
     await frame.locator(`[data-el="text.${btnId}"]`).click();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     const state = await page.evaluate((id) => {
       const tb = boxes().find(b => b.id === id);
@@ -73,7 +73,7 @@ test.describe('expandable section: preview and speed', () => {
   test('a plain text box (no toggle) gets neither button', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await selectWithoutTyping(page, frame.locator('[data-el="basics.h1"]'));
-    await page.waitForTimeout(300);
+    await settled(page);
     const labels = await page.evaluate(() => {
       const bar = document.getElementById('out').contentDocument.querySelector('.ds-mini');
       return bar ? [...bar.querySelectorAll('button')].map(b => b.getAttribute('aria-label')) : [];
@@ -85,12 +85,12 @@ test.describe('expandable section: preview and speed', () => {
   test('Preview plays the real transition, then leaves nothing behind',
     async ({ page }) => {
       const btnId = await addExpandableSection(page);
-      await page.waitForTimeout(400);
+      await settled(page);
       await page.frameLocator('#out').locator(`[data-el="text.${btnId}"]`).click();
-      await page.waitForTimeout(300);
+      await settled(page);
 
       await miniBtn(page, 'Preview the expand animation');
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(100);           // a sample mid-flight of the .3s expand transition
       const mid = await page.evaluate((id) => {
         const d = document.getElementById('out').contentDocument;
         const tb = boxes().find(b => b.id === id);
@@ -139,22 +139,21 @@ test.describe('expandable section: preview and speed', () => {
       // testing that same suppression instead of the real behaviour.
       const target = frame.locator(`[data-el="text.${tb2}"]`);
       await target.dblclick();               // drills in
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(900);        // the suppression window described above has to pass
       await target.dblclick();               // now edits
-      await page.waitForTimeout(400);
       await expect(frame.locator('.ds-edit')).toHaveCount(1);
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      await settled(page);
     });
 
   test('Expand speed writes tglSpeed and the published button carries it',
     async ({ page }) => {
       const btnId = await addExpandableSection(page);
-      await page.waitForTimeout(400);
+      await settled(page);
       await page.frameLocator('#out').locator(`[data-el="text.${btnId}"]`).click();
-      await page.waitForTimeout(300);
+      await settled(page);
       await miniBtn(page, 'Expand speed…');
-      await page.waitForTimeout(300);
+      await settled(page);
 
       const before = await page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;
@@ -163,14 +162,13 @@ test.describe('expandable section: preview and speed', () => {
       });
       expect(before).toBe('0.3');               // the documented default
 
-      await page.evaluate(() => {
+      await afterRender(page, () => page.evaluate(() => {
         const d = document.getElementById('out').contentDocument;
         const r = d.querySelector('.ds-menu input[type=range]');
         r.value = '0.9';
         r.dispatchEvent(new Event('input', { bubbles: true }));
         r.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      await page.waitForTimeout(800);
+      }));
       expect(await page.evaluate(id => boxes().find(b => b.id === id).tglSpeed, btnId))
         .toBe(0.9);
 
@@ -182,9 +180,9 @@ test.describe('expandable section: preview and speed', () => {
   test('the shared __dsTgl driver ships once even with two expandable '
     + 'sections on the page', async ({ page }) => {
       await addExpandableSection(page);
-      await page.waitForTimeout(400);
+      await settled(page);
       await page.evaluate(async () => { await addExpandable(); });
-      await page.waitForTimeout(400);
+      await settled(page);
       const published = await page.evaluate(async () => await renderClean());
       const count = (published.match(/function __dsTgl/g) || []).length;
       expect(count).toBe(1);
@@ -201,7 +199,7 @@ test.describe('expandable section: preview and speed', () => {
   test('closeMenu fires once per outside click, even after several patches',
     async ({ page }) => {
       const btnId = await addExpandableSection(page);
-      await page.waitForTimeout(400);
+      await settled(page);
       // several incremental patches over the same document
       for (const y of [2.1, 2.4, 2.7]) {
         await page.evaluate(([id, yy]) => {
@@ -213,9 +211,9 @@ test.describe('expandable section: preview and speed', () => {
       await settled(page);
 
       await page.frameLocator('#out').locator(`[data-el="text.${btnId}"]`).click();
-      await page.waitForTimeout(300);
+      await settled(page);
       await miniBtn(page, 'Expand speed…');
-      await page.waitForTimeout(300);
+      await settled(page);
       expect(await page.evaluate(() =>
         !!document.getElementById('out').contentDocument.querySelector('.ds-menu')))
         .toBe(true);
@@ -232,7 +230,7 @@ test.describe('expandable section: preview and speed', () => {
       // One outside click on the canvas.
       const pg = page.frameLocator('#out').locator('section.page').nth(3);
       await pg.click({ position: { x: 5, y: 5 } });
-      await page.waitForTimeout(200);
+      await settled(page);
 
       expect(await page.evaluate(() => window.__closeCalls)).toBe(1);
       expect(await page.evaluate(() =>

@@ -5,7 +5,7 @@
 // the page draws. The engine side — fold-in, validation, byte-identity — is
 // checked in docsync/test_docsync.py; this file is the editor's promise:
 // every verb writes ONE `use` or ONE style, and ⌘Z takes it back.
-const { sharedTest: test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, barField, afterRender } = require('./fixtures/editor-test');
 
 const frame = page => page.frameLocator('#out');
 
@@ -16,17 +16,16 @@ async function shape(page, kind, fill) {
     await docsync.api.select(got.id);
     return got;
   }, { kind, fill });
-  await page.waitForTimeout(600);
+  await settled(page);
   return r.id;
 }
 
 async function saveAs(page, moreBtn, bodySel, name) {
   await (await barField(page, moreBtn)).click();          // the opener may be under the bar's More
   await page.click(`${bodySel} .tp-btn:text("+ Save as a style")`);
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.locator('dialog.dsdlg input[type="text"]').fill(name);
-  await page.locator('dialog.dsdlg form button').last().click();
-  await page.waitForTimeout(1800);
+  await afterRender(page, () => page.locator('dialog.dsdlg form button').last().click());
 }
 
 test('a shape\'s look is saved as a style, worn by another, and redefined for both',
@@ -49,8 +48,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
 
     // A second shape wears it from the picker.
     const b = await shape(page, 'ellipse', '#6B9E78');
-    await (await barField(page, '#ar-style')).selectOption('Alert');
-    await page.waitForTimeout(1800);
+    await afterRender(page, async () => (await barField(page, '#ar-style')).selectOption('Alert'));
     await expect(frame(page).locator(`[data-shape="${b}"]`)).toHaveAttribute('fill', '#C0392B');
     expect(await page.evaluate(id => layout.shapes.find(s => s.id === id).use, b)).toBe('Alert');
 
@@ -62,8 +60,7 @@ test('a shape\'s look is saved as a style, worn by another, and redefined for bo
     await settled(page);
     await expect(page.locator('#ar-style')).toHaveClass(/ty-style-over/);
     await (await barField(page, '#ar-style-more')).click();
-    await page.click('#ar-stylebody .tp-btn:text("Redefine")');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.click('#ar-stylebody .tp-btn:text("Redefine")'));
     expect(await page.evaluate(() => layout.objectStyles.Alert.fill)).toBe('#2F3E46');
     await expect(frame(page).locator(`[data-shape="${a}"]`)).toHaveAttribute('fill', '#2F3E46');
     expect(await page.evaluate(id => layout.shapes.find(s => s.id === id).fill, b)).toBeUndefined();
@@ -84,7 +81,7 @@ test('a text box gets a Box panel: a rule, padding, columns — and the whole lo
       await docsync.api.select(got.id);
       return got.id.replace(/^text\./, '');
     });
-    await page.waitForTimeout(800);
+    await settled(page);
     // A text box is text: the type bar, with a Box button a slot never gets.
     await expect(page.locator('#type')).toBeVisible();
     await expect(await barField(page, '#ty-box')).toBeVisible();
@@ -92,20 +89,16 @@ test('a text box gets a Box panel: a rule, padding, columns — and the whole lo
     await expect(page.locator('#ty-boxpop')).toBeVisible();
 
     // A left rule in the palette's first colour.
-    await page.locator('#ty-boxpop .bx-row .sw').first().click();
-    await page.waitForTimeout(1500);
-    await page.click('#ty-boxpop .ar-dashrow button:text("Left")');
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.locator('#ty-boxpop .bx-row .sw').first().click());
+    await afterRender(page, () => page.click('#ty-boxpop .ar-dashrow button:text("Left")'));
     let bx = await page.evaluate(id => layout.boxes.find(b => b.id === id), id);
     expect(bx.border.sides).toBe('left');
     expect(bx.border.color).toMatch(/^#/);
     // Padding through the slider (one history step, one render on release).
     await page.locator('#bx-pad').fill('0.2');
-    await page.locator('#bx-pad').dispatchEvent('change');
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.locator('#bx-pad').dispatchEvent('change'));
     // Two columns.
-    await page.selectOption('#bx-cols', '2');
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.selectOption('#bx-cols', '2'));
     bx = await page.evaluate(id => layout.boxes.find(b => b.id === id), id);
     expect(bx.pad).toBe(0.2);
     expect(bx.cols).toBe(2);
@@ -140,10 +133,9 @@ test('a text box gets a Box panel: a rule, padding, columns — and the whole lo
       await docsync.api.select(got.id);
       return got.id.replace(/^text\./, '');
     });
-    await page.waitForTimeout(800);
+    await settled(page);
     await (await barField(page, '#ty-box')).click();
-    await page.selectOption('#ty-boxstyle', 'Pull quote');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.selectOption('#ty-boxstyle', 'Pull quote'));
     await expect(frame(page).locator(`[data-el="text.${id2}"]`))
       .toHaveCSS('border-left-style', 'solid');
     expect(await page.evaluate(id => layout.boxes.find(b => b.id === id).use, id2)).toBe('Pull quote');
@@ -155,13 +147,11 @@ test('the blend picker rides the transparency pop, and a designed element does n
     const a = await shape(page, 'rect', '#6B9E78');
     await page.click('#ar-alpha');
     await expect(page.locator('#ar-blendrow')).toBeVisible();
-    await page.selectOption('#ar-blend', 'multiply');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.selectOption('#ar-blend', 'multiply'));
     expect(await page.evaluate(id => layout.shapes.find(s => s.id === id).blend, a)).toBe('multiply');
     await expect(frame(page).locator(`[data-shape="${a}"]`)).toHaveCSS('mix-blend-mode', 'multiply');
     // Back to normal is the ABSENCE of the key on a shape wearing no style.
     await page.click('#ar-alpha');
-    await page.selectOption('#ar-blend', 'normal');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.selectOption('#ar-blend', 'normal'));
     expect(await page.evaluate(id => layout.shapes.find(s => s.id === id).blend, a)).toBeUndefined();
   });

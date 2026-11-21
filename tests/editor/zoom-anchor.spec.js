@@ -3,7 +3,7 @@
 // each step re-anchors, and any drift compounds until the report lands
 // somewhere else entirely — reported as "it zooms in on the middle instead of
 // where I was". Local mode.
-const { sharedTest: test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
 
 // Where the middle of the pane is looking, in the report's own pixels —
 // independent of the scale, so it is comparable across zoom levels.
@@ -33,15 +33,15 @@ test.describe('zoom keeps its place', () => {
       // Look at something well down the report, not the top and not the middle.
       await page.frameLocator('#out').locator('section.page').nth(6)
         .scrollIntoViewIfNeeded();
-      await page.waitForTimeout(600);
+      await settled(page);
       const before = await centreY(page);
       expect(before).toBeGreaterThan(1000);     // genuinely scrolled away
 
       // out three rungs, then back in three
-      for (let i = 0; i < 3; i++) { await page.click('#zb-out'); await page.waitForTimeout(250); }
+      for (let i = 0; i < 3; i++) { await page.click('#zb-out'); await settled(page); }
       const zoomedOut = await page.evaluate(() => curScale);
-      for (let i = 0; i < 3; i++) { await page.click('#zb-in'); await page.waitForTimeout(250); }
-      await page.waitForTimeout(400);
+      for (let i = 0; i < 3; i++) { await page.click('#zb-in'); await settled(page); }
+      await settled(page);
 
       expect(await page.evaluate(() => curScale)).toBeCloseTo(1, 2);
       expect(zoomedOut).toBeLessThan(1);
@@ -62,7 +62,7 @@ test.describe('zoom keeps its place', () => {
       await openZoom(page);
       await page.frameLocator('#out').locator('section.page').last()
         .scrollIntoViewIfNeeded();
-      await page.waitForTimeout(700);
+      await settled(page);
       const before = await page.evaluate(() =>
         document.getElementById('out').contentDocument.scrollingElement.scrollTop);
       expect(before).toBeGreaterThan(600);
@@ -70,7 +70,7 @@ test.describe('zoom keeps its place', () => {
       // all the way out — far enough that the report fits and cannot scroll
       for (let i = 0; i < 10; i++) {
         if (await page.locator('#zb-out').isDisabled()) break;
-        await page.click('#zb-out'); await page.waitForTimeout(140);
+        await page.click('#zb-out'); await settled(page);
       }
       const fits = await page.evaluate(() => {
         const sc = document.getElementById('out').contentDocument.scrollingElement;
@@ -81,9 +81,9 @@ test.describe('zoom keeps its place', () => {
       // and back to where we started
       for (let i = 0; i < 20; i++) {
         if (await page.evaluate(() => curScale >= 1)) break;
-        await page.click('#zb-in'); await page.waitForTimeout(140);
+        await page.click('#zb-in'); await settled(page);
       }
-      await page.waitForTimeout(400);
+      await settled(page);
       const after = await page.evaluate(() =>
         document.getElementById('out').contentDocument.scrollingElement.scrollTop);
       // Exact in practice; the margin is for rounding at intermediate rungs.
@@ -94,10 +94,10 @@ test.describe('zoom keeps its place', () => {
   test('a single step out keeps the same point centred', async ({ page }) => {
     await page.frameLocator('#out').locator('section.page').nth(5)
       .scrollIntoViewIfNeeded();
-    await page.waitForTimeout(600);
+    await settled(page);
     const before = await centreY(page);
     await page.click('#zb-out');
-    await page.waitForTimeout(500);
+    await settled(page);
     const after = await centreY(page);
     expect(Math.abs(after - before)).toBeLessThan(300);
   });
@@ -120,11 +120,10 @@ test.describe('zoom keeps its place', () => {
     async ({ page }) => {
       await gotoEditor(page, '?project=tax-testimony');
       await openZoom(page);
-      await page.waitForTimeout(800);
       await page.evaluate(() => {
         document.getElementById('out').contentDocument.scrollingElement.scrollTop = 0;
       });
-      await page.waitForTimeout(400);
+      await settled(page);
 
       // Which page is actually under the middle of the pane — measured from
       // the document, not from the formula the anchoring itself uses.
@@ -142,9 +141,9 @@ test.describe('zoom keeps its place', () => {
         for (let i = 0; i < 30; i++) {
           if (await page.locator(btn).isDisabled()) break;
           await page.click(btn);
-          await page.waitForTimeout(160);
+          await settled(page);
         }
-        await page.waitForTimeout(400);
+        await settled(page);
       };
 
       await walk('#zb-in');                    // all the way in (200%)

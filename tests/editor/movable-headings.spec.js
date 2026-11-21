@@ -15,7 +15,7 @@ test.describe('movable headings', () => {
   test('a click beside a heading\'s words selects it as an object; on the words it types', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     const h1 = frame.locator('[data-el="basics.h1"]');
     await expect(h1).toHaveCount(1);
@@ -51,7 +51,7 @@ test.describe('movable headings', () => {
   test('dragging the heading records a position, and the flow below it stays put', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     const h1 = frame.locator('[data-el="basics.h1"]');
     await h1.scrollIntoViewIfNeeded();
@@ -60,7 +60,7 @@ test.describe('movable headings', () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 8 });
     await page.mouse.up();
-    await page.waitForTimeout(400);
+    await settled(page);
 
     const pos = await page.evaluate(() => layout.positions['basics.h1']);
     expect(pos).toBeTruthy();
@@ -75,7 +75,7 @@ test.describe('movable headings', () => {
   // Pin a prose block by dragging it, the way a person does. Returns the id.
   async function pin(page, frame, key, dy = 40) {
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
     const id = 'para.' + key;
     const el = frame.locator(`[data-el="${id}"]`);
     await el.scrollIntoViewIfNeeded();
@@ -84,7 +84,7 @@ test.describe('movable headings', () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + dy, { steps: 8 });
     await page.mouse.up();
-    await page.waitForTimeout(400);
+    await settled(page);
     return id;
   }
   const grow = (page, key, times) => page.evaluate(async ({ key, times }) => {
@@ -106,7 +106,7 @@ test.describe('movable headings', () => {
     const spacer = frame.locator(`.ds-spacer[data-spacer-for="${id}"]`);
     const before = (await el.boundingBox()).y, spBefore = (await spacer.boundingBox()).y;
     await grow(page, 'basics.p1', 3);          // the paragraph ABOVE the slot it left
-    await page.waitForTimeout(400);
+    await settled(page);
     const after = (await el.boundingBox()).y, spAfter = (await spacer.boundingBox()).y;
     expect(spAfter - spBefore).toBeGreaterThan(20);           // the flow moved...
     expect(Math.abs((after - before) - (spAfter - spBefore))).toBeLessThan(3);   // ...and it went along
@@ -120,7 +120,7 @@ test.describe('movable headings', () => {
     const r0 = await page.evaluate(id => layout.positions[id].reserve, id);
     expect(r0).toBeGreaterThan(0);
     await grow(page, 'basics.p2', 3);
-    await page.waitForTimeout(600);
+    await settled(page);
     const r1 = await page.evaluate(id => layout.positions[id].reserve, id);
     expect(r1).toBeGreaterThan(r0 + 0.2);
     const h = await frame.locator(`.ds-spacer[data-spacer-for="${id}"]`).evaluate(e => e.style.height);
@@ -130,7 +130,7 @@ test.describe('movable headings', () => {
   test('a resize handle sets a width override', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     const h1 = frame.locator('[data-el="basics.h1"]');
     await h1.click();
@@ -140,7 +140,7 @@ test.describe('movable headings', () => {
     await page.mouse.down();
     await page.mouse.move(hb.x - 80, hb.y + hb.height / 2, { steps: 8 });
     await page.mouse.up();
-    await page.waitForTimeout(400);
+    await settled(page);
 
     const pos = await page.evaluate(() => layout.positions['basics.h1']);
     expect(pos.w).toBeGreaterThan(0);
@@ -149,7 +149,7 @@ test.describe('movable headings', () => {
   test('double-clicking the heading text still opens the inline text editor', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     const text = frame.locator('[data-slot="basics.h1"]');
     await text.dblclick({ force: true });
@@ -173,7 +173,7 @@ test.describe('movable headings', () => {
     await page.mouse.move(b.x + 25, b.y + b.height / 2 + 30, { steps: 4 });
     await page.mouse.move(b.x + 40, b.y + b.height / 2 + 60, { steps: 6 });
     await page.mouse.up();
-    await page.waitForTimeout(400);
+    await settled(page);
     expect(await page.evaluate(() => layout.positions['cover.title'])).toBeTruthy();
     const live = await page.evaluate(() => _pilotMeasure('cover.title'));
     await page.evaluate(() => render());
@@ -214,13 +214,14 @@ test.describe('movable headings', () => {
         .toHaveAttribute('title', id);
 
       // Leaving the words re-renders the page; find the line again.
+      await settled(page);
       await el.scrollIntoViewIfNeeded();
       const box = await el.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
       await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 30, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(400);
+      await settled(page);
 
       // y, not x: a full-width line (the copyright) has no horizontal room —
       // placer clamps it back to 0 — so vertical is the axis that always
