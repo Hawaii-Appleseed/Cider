@@ -11945,11 +11945,11 @@ function renderChartCustomize(pop, s, c, isPie, mk) {
             placeholder: 'e.g. Budget figure', required: true },
         ]);
         if (!got || !got.name.trim()) return;
-        pushHistory();
-        layout.chartStyles = Object.assign({}, layout.chartStyles);
-        layout.chartStyles[got.name.trim()] = chartLookOf(c);
-        chartStyleName = got.name.trim();
-        markDirty();
+        await changeDoc(() => {
+          layout.chartStyles = Object.assign({}, layout.chartStyles);
+          layout.chartStyles[got.name.trim()] = chartLookOf(c);
+          chartStyleName = got.name.trim();
+        }, { render: false });
         renderChartPanel();
         $('stat').textContent = 'saved the look as "' + chartStyleName + '"';
       });
@@ -11959,23 +11959,23 @@ function renderChartCustomize(pop, s, c, isPie, mk) {
         if (!st) return;
         // One history entry and one redraw for the whole document — this is
         // "redefine across a report", and it should undo as one thing.
-        pushHistory();
-        const ids = layout.shapes.filter(x => x.kind === 'chart').map(x => x.id)
-          .concat(inlineChartIds());
-        ids.forEach(id => chartApply(id, ch => chartWearLook(ch, st)));
-        markDirty();
-        await render();
+        const ids = await changeDoc(() => {
+          const all = layout.shapes.filter(x => x.kind === 'chart').map(x => x.id)
+            .concat(inlineChartIds());
+          all.forEach(id => chartApply(id, ch => chartWearLook(ch, st)));
+          return all;
+        });
         renderChartPanel();
         $('stat').textContent = ids.length + ' charts now wear "'
           + chartStyleName + '"';
       }, !chartStyleName || !(layout.chartStyles || {})[chartStyleName]);
     mk(row2, 'Delete', 'Forget this saved look',
       () => {
-        pushHistory();
-        delete layout.chartStyles[chartStyleName];
-        if (!Object.keys(layout.chartStyles).length) delete layout.chartStyles;
-        chartStyleName = '';
-        markDirty();
+        changeDoc(() => {
+          delete layout.chartStyles[chartStyleName];
+          if (!Object.keys(layout.chartStyles).length) delete layout.chartStyles;
+          chartStyleName = '';
+        }, { render: false });
         renderChartPanel();
       }, !chartStyleName || !(layout.chartStyles || {})[chartStyleName]);
     const n = document.createElement('p');
@@ -12418,7 +12418,7 @@ function editChartText(d, node) {
         }
         const sh = layout.shapes.find(x => x.id === s.id && x.kind === 'chart')
           || s.shape;
-        pushHistory(); chartText(sh.chart, hook, val); markDirty();
+        await changeDoc(() => { chartText(sh.chart, hook, val); }, { render: false });
       }
       await render();
       renderChartPanel();
@@ -12462,20 +12462,19 @@ function dressNewChart(ch) {
 // is the bar chart; the Insert palette offers the others by name.
 async function addChartOfType(type = 'bar') {
   const page = visiblePageId();
-  pushHistory();
   const id = freeShapeId('chart');
-  layout.shapes.push({
-    id, page, kind: 'chart', x: placeX(4), y: 1.6, w: 4, h: 2.8, z: nextZ(2, page), fill: 'none',
-    chart: dressNewChart({
-      type,
-      labels: ['First', 'Second', 'Third'],
-      series: [{ name: 'Series 1', data: [12, 19, 8] }],
-      legend: false, values: true, grid: true,
-    }),
+  await changeDoc(() => {
+    layout.shapes.push({
+      id, page, kind: 'chart', x: placeX(4), y: 1.6, w: 4, h: 2.8, z: nextZ(2, page), fill: 'none',
+      chart: dressNewChart({
+        type,
+        labels: ['First', 'Second', 'Third'],
+        series: [{ name: 'Series 1', data: [12, 19, 8] }],
+        legend: false, values: true, grid: true,
+      }),
+    });
+    setSel($('out').contentDocument, [id]);
   });
-  setSel($('out').contentDocument, [id]);
-  markDirty();
-  await render();
   openChartPanel(id);
   $('stat').textContent = `${id} added to page ${page} — edit its data in the Chart panel`;
 }
@@ -12791,14 +12790,9 @@ async function removeCitationAt(where, sid, num) {
     $('stat').textContent = `could not tell which citation this is — click into the text and delete the ${num} there`;
     return false;
   }
-  pushHistory();
   const m = hits[k];
-  if (h.write(txt.slice(0, m.index) + txt.slice(m.index + m[0].length)) === false) {
-    withdrawStep();
-    return false;
-  }
-  markDirty();
-  await render();
+  const wrote = await changeDoc(() => h.write(txt.slice(0, m.index) + txt.slice(m.index + m[0].length)) !== false);
+  if (!wrote) return false;
   const left = citeCount(sid);
   $('stat').textContent = left
     ? `citation removed here; endnote [${sid}] is still cited ${left === 1 ? 'once' : left + ' times'} elsewhere`
@@ -13050,9 +13044,7 @@ function editEndnote(d, li, sid, at = null, opts = {}) {
       // Said past the render below, which would otherwise claim the row.
       sayNowAndAfterRender(emptyCitationRefusal(sid));
     } else if (keep && changed) {
-      pushHistory();
-      updateSource(sid, t, u);
-      markDirty();
+      await changeDoc(() => { updateSource(sid, t, u); }, { render: false });
     } else if (!endnoteRenderOwed) {
       // Nothing to write: put the entry back as it was drawn. A render here
       // redrew the whole report to show the same words.
@@ -13074,9 +13066,7 @@ function editEndnote(d, li, sid, at = null, opts = {}) {
     if (!t) { $('stat').textContent = emptyCitationRefusal(sid); return; }
     close();
     if (changed) {
-      pushHistory();
-      updateSource(sid, t, u);
-      markDirty();
+      changeDoc(() => { updateSource(sid, t, u); }, { render: false });
       endnoteRenderOwed = true;
       redraw(t, u);
     } else redraw();
@@ -13677,10 +13667,9 @@ async function findReplaceAll() {
   const n = findState.hits.length;
   // One history entry and one render for the whole change — a find/replace
   // that took forty undos to back out would not be one anybody trusted.
-  pushHistory();
   const done = new Set();
   let refused = 0, why = '';
-  findState.hits.forEach(h => {
+  await changeDoc(() => findState.hits.forEach(h => {
     if (done.has(h.target.key)) return;             // a target is rewritten once
     done.add(h.target.key);
     const ok = h.target.write(h.target.read().replace(findRe(findState.needle, findState),
@@ -13690,9 +13679,7 @@ async function findReplaceAll() {
     // line. "changed 1 hit in 1 place" then overwrote that, so the refusal
     // read as a success.
     if (ok === false) { refused++; why = $('stat').textContent; }
-  });
-  markDirty();
-  await render();
+  }));
   findRun();
   renderFindPanel();
   const changed = done.size - refused;
@@ -14650,13 +14637,14 @@ async function anchorSet(d, id, key, edge) {
   if (!hostEl) return { ok: false, error: `no paragraph '${key}' on this page` };
   if (hostEl === el || el.contains(hostEl) || hostEl.contains(el))
     return { ok: false, error: 'a thing cannot follow itself, or something inside it' };
-  pushHistory();
-  const st = ensureStore(d, el);        // a designed element is pinned where it stands
-  const box = inchBox(el, page), hb = anchorHostBox(d, page, key);
-  const from = edge === 'bottom' ? hb.y + hb.h : hb.y;
-  st.anchor = { to: key, dy: +(box.y - from).toFixed(3) };
-  if (edge === 'bottom') st.anchor.edge = 'bottom';
-  markDirty(); await render();
+  const st = await changeDoc(() => {
+    const st = ensureStore(d, el);        // a designed element is pinned where it stands
+    const box = inchBox(el, page), hb = anchorHostBox(d, page, key);
+    const from = edge === 'bottom' ? hb.y + hb.h : hb.y;
+    st.anchor = { to: key, dy: +(box.y - from).toFixed(3) };
+    if (edge === 'bottom') st.anchor.edge = 'bottom';
+    return st;
+  });
   const nd = $('out').contentDocument;
   // A designed element its renderer places through style() — a css string
   // with nowhere to hang an attribute — never receives data-anc, so the page
@@ -15117,29 +15105,30 @@ function renderBoxPanel() {
   bg.appendChild(small(eff.fill ? 'Change…' : 'Add…', false, () => openColorPanel(selected)));
   if (eff.fill) {
     bg.appendChild(small('None', false, async () => {
-      pushHistory();
-      // A fill that came from the style needs an explicit "none" to beat it;
-      // the box's own fill just goes.
-      delete bx.fill;
-      if (dressedObj(bx).fill) bx.fill = null;
-      await commit();
+      await changeDoc(() => {
+        // A fill that came from the style needs an explicit "none" to beat it;
+        // the box's own fill just goes.
+        delete bx.fill;
+        if (dressedObj(bx).fill) bx.fill = null;
+      });
+      refresh();
     }));
   }
 
   // Border: none, or a colour from the palette; then weight and which edge.
   const cur = eff.border && eff.border.style !== 'none' ? eff.border : null;
   const setBorder = async patch => {
-    pushHistory();
-    bx.border = { ...(cur || { w: 1, color: (M.palette || ['#52796F'])[0] }), ...patch };
-    await commit();
+    await changeDoc(() => { bx.border = { ...(cur || { w: 1, color: (M.palette || ['#52796F'])[0] }), ...patch }; });
+    refresh();
   };
   const br = row('Border');
   br.appendChild(small('None', !cur, async () => {
-    pushHistory();
-    delete bx.border;
-    // Wearing a style with a rule: the box says "no rule" of its own.
-    if (dressedObj(bx).border) bx.border = { style: 'none' };
-    await commit();
+    await changeDoc(() => {
+      delete bx.border;
+      // Wearing a style with a rule: the box says "no rule" of its own.
+      if (dressedObj(bx).border) bx.border = { style: 'none' };
+    });
+    refresh();
   }));
   const grid = document.createElement('div');
   grid.className = 'swgrid';
@@ -16206,10 +16195,11 @@ async function arApply(fid, v) {
   if (els.length !== 1 || typeof v !== 'number' || !isFinite(v)) return false;
   const el = els[0];
   const page = el.closest('section.page') || d.querySelector('section.page');
-  pushHistory();
-  const wantsRender = AR_APPLY[fid](d, el, page, v);
-  clearGuides(d);
-  markDirty();
+  const wantsRender = await changeDoc(() => {
+    const w = AR_APPLY[fid](d, el, page, v);
+    clearGuides(d);
+    return w;
+  }, { render: false });
   if (wantsRender) await render();
   paintSel($('out').contentDocument);
   return true;
@@ -16329,38 +16319,39 @@ function alignSel(d, mode, to = alignTo) {
     $('stat').textContent = 'no key object — click one of the selected things again to make it the key';
     return;
   }
-  pushHistory();
-  let ref;
-  if (key) {
-    ref = { ...key.b };
-  } else if (items.length === 1 || to === 'page') {
-    // The page as laid out, not PAGE_H_IN: a pageless document's PAGE_H_IN is
-    // a sentinel no report reaches (PAGELESS_H), so "align bottom" sent the
-    // piece a couple of hundred inches below the last line of the page.
-    const pageH = Math.min(PAGE_H_IN,
-      page.getBoundingClientRect().height / (DPI * zoomOf(page)));
-    ref = { x: MARGIN_IN, y: TOP_IN,
-            w: PAGE_W_IN - 2 * MARGIN_IN, h: pageH - TOP_IN - 0.9 };
-    if (mode === 'hcenter') { ref.x = 0; ref.w = PAGE_W_IN; }
-    if (mode === 'vcenter') { ref.y = 0; ref.h = pageH; }
-  } else {
-    const x1 = Math.min(...items.map(o => o.b.x)), y1 = Math.min(...items.map(o => o.b.y));
-    const x2 = Math.max(...items.map(o => o.b.x + o.b.w));
-    const y2 = Math.max(...items.map(o => o.b.y + o.b.h));
-    ref = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-  }
-  items.forEach(u => {
-    if (u === key) return;                 // the key object stays still
-    const { b } = u;
-    let { x, y } = b;
-    if (mode === 'left') x = ref.x;
-    if (mode === 'hcenter') x = ref.x + (ref.w - b.w) / 2;
-    if (mode === 'right') x = ref.x + ref.w - b.w;
-    if (mode === 'top') y = ref.y;
-    if (mode === 'vcenter') y = ref.y + (ref.h - b.h) / 2;
-    if (mode === 'bottom') y = ref.y + ref.h - b.h;
-    moveUnit(u, x, y);
-  });
+  changeDoc(() => {
+    let ref;
+    if (key) {
+      ref = { ...key.b };
+    } else if (items.length === 1 || to === 'page') {
+      // The page as laid out, not PAGE_H_IN: a pageless document's PAGE_H_IN is
+      // a sentinel no report reaches (PAGELESS_H), so "align bottom" sent the
+      // piece a couple of hundred inches below the last line of the page.
+      const pageH = Math.min(PAGE_H_IN,
+        page.getBoundingClientRect().height / (DPI * zoomOf(page)));
+      ref = { x: MARGIN_IN, y: TOP_IN,
+              w: PAGE_W_IN - 2 * MARGIN_IN, h: pageH - TOP_IN - 0.9 };
+      if (mode === 'hcenter') { ref.x = 0; ref.w = PAGE_W_IN; }
+      if (mode === 'vcenter') { ref.y = 0; ref.h = pageH; }
+    } else {
+      const x1 = Math.min(...items.map(o => o.b.x)), y1 = Math.min(...items.map(o => o.b.y));
+      const x2 = Math.max(...items.map(o => o.b.x + o.b.w));
+      const y2 = Math.max(...items.map(o => o.b.y + o.b.h));
+      ref = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
+    items.forEach(u => {
+      if (u === key) return;                 // the key object stays still
+      const { b } = u;
+      let { x, y } = b;
+      if (mode === 'left') x = ref.x;
+      if (mode === 'hcenter') x = ref.x + (ref.w - b.w) / 2;
+      if (mode === 'right') x = ref.x + ref.w - b.w;
+      if (mode === 'top') y = ref.y;
+      if (mode === 'vcenter') y = ref.y + (ref.h - b.h) / 2;
+      if (mode === 'bottom') y = ref.y + ref.h - b.h;
+      moveUnit(u, x, y);
+    });
+  }, { render: false });
   clearGuides(d);
   paintSel(d);
 }
@@ -16377,49 +16368,51 @@ function distributeSel(d, axis, gap = arrangeGap()) {
     .sort((a, q) => axis === 'h' ? a.b.x - q.b.x : a.b.y - q.b.y);
   if (gap != null) {
     if (items.length < 2) return;
-    pushHistory();
-    const [P, S] = axis === 'h' ? ['x', 'w'] : ['y', 'h'];
-    const ai = Math.max(0, items.indexOf(keyUnit(items)));
-    const at = u => axis === 'h' ? (v => moveUnit(u, v, u.b.y)) : (v => moveUnit(u, u.b.x, v));
-    let next = items[ai].b[P] + items[ai].b[S] + gap;
-    for (let i = ai + 1; i < items.length; i++) {
-      at(items[i])(next); next += items[i].b[S] + gap;
-    }
-    let prev = items[ai].b[P] - gap;
-    for (let i = ai - 1; i >= 0; i--) {
-      at(items[i])(prev - items[i].b[S]); prev -= items[i].b[S] + gap;
-    }
+    changeDoc(() => {
+      const [P, S] = axis === 'h' ? ['x', 'w'] : ['y', 'h'];
+      const ai = Math.max(0, items.indexOf(keyUnit(items)));
+      const at = u => axis === 'h' ? (v => moveUnit(u, v, u.b.y)) : (v => moveUnit(u, u.b.x, v));
+      let next = items[ai].b[P] + items[ai].b[S] + gap;
+      for (let i = ai + 1; i < items.length; i++) {
+        at(items[i])(next); next += items[i].b[S] + gap;
+      }
+      let prev = items[ai].b[P] - gap;
+      for (let i = ai - 1; i >= 0; i--) {
+        at(items[i])(prev - items[i].b[S]); prev -= items[i].b[S] + gap;
+      }
+    }, { render: false });
     clearGuides(d);
     paintSel(d);
     return;
   }
   if (items.length < 3) return;          // a group and one other thing: nothing to space
-  pushHistory();
-  // The span is the selection's own extent — leftmost edge to rightmost edge
-  // — not the first and last pieces by position: with a wide piece early in
-  // the order (a full-width caption among two small callouts) "the last
-  // one's right edge" stopped short of where the selection ends, and the
-  // spacing came out uneven.
-  const lo = axis === 'h' ? Math.min(...items.map(o => o.b.x)) : Math.min(...items.map(o => o.b.y));
-  const hi = axis === 'h' ? Math.max(...items.map(o => o.b.x + o.b.w))
-                          : Math.max(...items.map(o => o.b.y + o.b.h));
-  if (axis === 'h') {
-    const gap = ((hi - lo)
-               - items.reduce((s, o) => s + o.b.w, 0)) / (items.length - 1);
-    let x = lo;
-    items.forEach(u => {
-      moveUnit(u, x, u.b.y);
-      x += u.b.w + gap;
-    });
-  } else {
-    const gap = ((hi - lo)
-               - items.reduce((s, o) => s + o.b.h, 0)) / (items.length - 1);
-    let y = lo;
-    items.forEach(u => {
-      moveUnit(u, u.b.x, y);
-      y += u.b.h + gap;
-    });
-  }
+  changeDoc(() => {
+    // The span is the selection's own extent — leftmost edge to rightmost edge
+    // — not the first and last pieces by position: with a wide piece early in
+    // the order (a full-width caption among two small callouts) "the last
+    // one's right edge" stopped short of where the selection ends, and the
+    // spacing came out uneven.
+    const lo = axis === 'h' ? Math.min(...items.map(o => o.b.x)) : Math.min(...items.map(o => o.b.y));
+    const hi = axis === 'h' ? Math.max(...items.map(o => o.b.x + o.b.w))
+                            : Math.max(...items.map(o => o.b.y + o.b.h));
+    if (axis === 'h') {
+      const gap = ((hi - lo)
+                 - items.reduce((s, o) => s + o.b.w, 0)) / (items.length - 1);
+      let x = lo;
+      items.forEach(u => {
+        moveUnit(u, x, u.b.y);
+        x += u.b.w + gap;
+      });
+    } else {
+      const gap = ((hi - lo)
+                 - items.reduce((s, o) => s + o.b.h, 0)) / (items.length - 1);
+      let y = lo;
+      items.forEach(u => {
+        moveUnit(u, u.b.x, y);
+        y += u.b.h + gap;
+      });
+    }
+  }, { render: false });
   clearGuides(d);
   paintSel(d);
 }
@@ -16429,66 +16422,65 @@ function distributeSel(d, axis, gap = arrangeGap()) {
  *  the design's own placement stands again. */
 async function deleteSel(d) {
   if (!selIds.size) return;
-  pushHistory();
-  let touched = false;
-  const gone = [];
-  [...selIds].filter(id => !isLocked(id)).forEach(id => {
-    if (masterItemOf(id)) {
-      $('stat').textContent = `that is on the shared layout "${masterItemOf(id).name}" — right-click it for Remove from shared layout, or detach the layout to this page`;
-      return;
-    }
-    if (!!shapeOf(id)) {
-      layout.shapes = layout.shapes.filter(s => s.id !== id); touched = true; gone.push(id);
-    } else if (boxOf(id)) {
-      unlinkFrame(id);
-      layout.boxes = boxes().filter(b => b.id !== id.replace(/^text\./, '')); touched = true; gone.push(id);
-    } else if (tableOf(id)) {
-      layout.tables = tables().filter(t => t.id !== id.replace(/^table\./, '')); touched = true; gone.push(id);
-    } else if (isHidden(id)) {
-      // Deleting a ghost restores it — hiding is a toggle, not a loss.
-      layout.hidden = hiddenList().filter(x => x !== id);
-      if (!layout.hidden.length) delete layout.hidden;
-      touched = true;
-    } else if (layout.positions[id]) {
-      delete layout.positions[id]; touched = true;
-    } else if (d.querySelector(`[data-el="${CSS.escape(id)}"]`)) {
-      // A designed element in its designed place: Delete used to be a silent
-      // no-op here (nothing in layout.json matched, so there was nothing to
-      // remove). Now it hides — the element ghosts in the editor, publishes
-      // as display:none, and its markup keeps shipping so this is reversible.
-      hiddenList().push(id); touched = true;
-    }
-  });
-  forgetInGroups(gone);            // a group loses its deleted members
-  // A toggle whose CONTENT was just deleted must not survive as a wired
-  // button: its target would fail layout validation and the whole draft
-  // would refuse to build over one deletion. The button stays — nothing the
-  // person did not delete disappears — it just becomes a plain box again.
-  // Deleted ids by BARE store id, whatever the kind: boxes and tables carry
-  // prefixes in selIds, shapes do not — and a toggle's target list speaks
-  // bare ids for all three.
-  const goneBare = new Set(gone.map(x => x.replace(/^(text|table)\./, '')));
   let demoteNote = '';
-  if (goneBare.size) {
-    boxes().forEach(bx => {
-      if (bx.act !== 'toggle') return;
-      const kept = toggleTargets(bx).filter(t => !goneBare.has(t));
-      if (kept.length === toggleTargets(bx).length) return;
-      if (kept.length) {
-        bx.target = kept.length === 1 ? kept[0] : kept;
-        demoteNote = 'a revealed element was deleted — the button still '
-          + 'reveals the other' + (kept.length > 1 ? 's' : '');
-      } else {
-        delete bx.act; delete bx.target;
-        demoteNote = 'the section a button revealed was deleted — '
-          + 'the button is a plain text box now';
+  await changeDoc(() => {
+    let touched = false;
+    const gone = [];
+    [...selIds].filter(id => !isLocked(id)).forEach(id => {
+      if (masterItemOf(id)) {
+        $('stat').textContent = `that is on the shared layout "${masterItemOf(id).name}" — right-click it for Remove from shared layout, or detach the layout to this page`;
+        return;
+      }
+      if (!!shapeOf(id)) {
+        layout.shapes = layout.shapes.filter(s => s.id !== id); touched = true; gone.push(id);
+      } else if (boxOf(id)) {
+        unlinkFrame(id);
+        layout.boxes = boxes().filter(b => b.id !== id.replace(/^text\./, '')); touched = true; gone.push(id);
+      } else if (tableOf(id)) {
+        layout.tables = tables().filter(t => t.id !== id.replace(/^table\./, '')); touched = true; gone.push(id);
+      } else if (isHidden(id)) {
+        // Deleting a ghost restores it — hiding is a toggle, not a loss.
+        layout.hidden = hiddenList().filter(x => x !== id);
+        if (!layout.hidden.length) delete layout.hidden;
+        touched = true;
+      } else if (layout.positions[id]) {
+        delete layout.positions[id]; touched = true;
+      } else if (d.querySelector(`[data-el="${CSS.escape(id)}"]`)) {
+        // A designed element in its designed place: Delete used to be a silent
+        // no-op here (nothing in layout.json matched, so there was nothing to
+        // remove). Now it hides — the element ghosts in the editor, publishes
+        // as display:none, and its markup keeps shipping so this is reversible.
+        hiddenList().push(id); touched = true;
       }
     });
-  }
-  selIds.clear();
-  if (!touched) { withdrawStep(); return; }
-  markDirty();
-  await render();
+    forgetInGroups(gone);            // a group loses its deleted members
+    // A toggle whose CONTENT was just deleted must not survive as a wired
+    // button: its target would fail layout validation and the whole draft
+    // would refuse to build over one deletion. The button stays — nothing the
+    // person did not delete disappears — it just becomes a plain box again.
+    // Deleted ids by BARE store id, whatever the kind: boxes and tables carry
+    // prefixes in selIds, shapes do not — and a toggle's target list speaks
+    // bare ids for all three.
+    const goneBare = new Set(gone.map(x => x.replace(/^(text|table)\./, '')));
+    if (goneBare.size) {
+      boxes().forEach(bx => {
+        if (bx.act !== 'toggle') return;
+        const kept = toggleTargets(bx).filter(t => !goneBare.has(t));
+        if (kept.length === toggleTargets(bx).length) return;
+        if (kept.length) {
+          bx.target = kept.length === 1 ? kept[0] : kept;
+          demoteNote = 'a revealed element was deleted — the button still '
+            + 'reveals the other' + (kept.length > 1 ? 's' : '');
+        } else {
+          delete bx.act; delete bx.target;
+          demoteNote = 'the section a button revealed was deleted — '
+            + 'the button is a plain text box now';
+        }
+      });
+    }
+    selIds.clear();
+    if (!touched) return false;
+  });
   // AFTER the render: the pipeline writes its own status ("unsaved changes"),
   // and a note printed before it is a note nobody sees.
   if (demoteNote) $('stat').textContent = demoteNote;
@@ -16612,20 +16604,20 @@ async function duplicateSel(d) {
     }
   };
   if (!selIds.size) return;
-  pushHistory();
-  const wasGroup = selGroups().length === 1 && selGroups()[0].length === selIds.size
-    && selGroups()[0].every(id => selIds.has(id));
-  [...selIds].forEach(dup);
-  if (!copies.length) { withdrawStep(); return; }
-  // Duplicating a whole group hands back a group — the copy stays together,
-  // as Canva's does.
-  if (wasGroup && copies.length > 1) {
-    layout.groups = layout.groups || [];
-    layout.groups.push(copies);
-  }
-  setSel(d, copies);                       // the copies become the selection
-  markDirty();
-  await render();
+  const made = await changeDoc(() => {
+    const wasGroup = selGroups().length === 1 && selGroups()[0].length === selIds.size
+      && selGroups()[0].every(id => selIds.has(id));
+    [...selIds].forEach(dup);
+    if (!copies.length) return false;
+    // Duplicating a whole group hands back a group — the copy stays together,
+    // as Canva's does.
+    if (wasGroup && copies.length > 1) {
+      layout.groups = layout.groups || [];
+      layout.groups.push(copies);
+    }
+    setSel(d, copies);                       // the copies become the selection
+  });
+  if (made === false) return;
   $('stat').textContent = asBoxCount
     ? `duplicated ${copies.length} — a designed element's copy is a floating text box`
     : `duplicated ${copies.length} element${copies.length > 1 ? 's' : ''}`;
@@ -16666,62 +16658,61 @@ function copySel(d) {
 
 async function pasteClip(d, inPlace = false) {
   if (!clip || !clip.items.length) return;
-  pushHistory();
   const page = visiblePageId();
   // Repeated pastes cascade; Paste in Place (⌥⇧⌘V) lands on the original's
   // own x/y, on the page in view (InDesign's Edit > Paste in Place).
   const off = inPlace ? 0 : 0.2 * (++clip.pastes);
   const copies = [];
   const idMap = new Map();                   // original box id -> its copy's
-  // Pasting is how an object crosses pages, and an anchor cannot cross one:
-  // `to` names a paragraph that lives on the page it was copied from, and the
-  // runtime measures hosts on the object's own sheet only. Landing back on
-  // that same page the anchor is still true, and is kept.
-  const placeByPage = x => {
-    if (String(x.page) !== String(page)) {
-      delete x.anchor; delete x.wrap; delete x.wrapPad;
+  await changeDoc(() => {
+    // Pasting is how an object crosses pages, and an anchor cannot cross one:
+    // `to` names a paragraph that lives on the page it was copied from, and the
+    // runtime measures hosts on the object's own sheet only. Landing back on
+    // that same page the anchor is still true, and is kept.
+    const placeByPage = x => {
+      if (String(x.page) !== String(page)) {
+        delete x.anchor; delete x.wrap; delete x.wrapPad;
+      }
+      x.page = page;
+      return x;
+    };
+    clip.items.forEach(it => {
+      if (it.kind === 'shape') {
+        const nid = freeShapeId(it.data.kind);
+        layout.shapes.push(placeByPage({ ...it.data, id: nid,
+          x: Math.min(it.data.x + off, PAGE_W_IN - Math.min(it.data.w, PAGE_W_IN)),
+          y: Math.min(it.data.y + off, PAGE_H_IN - Math.min(it.data.h, PAGE_H_IN)) }));
+        idMap.set(it.data.id, nid);   // a toggle's target may be a shape too
+        copies.push(nid);
+      } else {
+        const nid = freeBoxId();
+        boxes().push(placeByPage({ ...it.data, id: nid,
+          x: Math.min(it.data.x + off, PAGE_W_IN - Math.min(it.data.w, PAGE_W_IN)),
+          y: Math.min(it.data.y + off, PAGE_H_IN - 0.4) }));
+        idMap.set(it.data.id, nid);
+        copies.push('text.' + nid);
+      }
+    });
+    // A copied toggle whose CONTENT came along in the same paste controls the
+    // COPY, not the original — otherwise duplicating an expandable pair made a
+    // second button wired to the first button's content, which reads as broken
+    // the moment either is moved. A toggle pasted alone keeps its target: one
+    // section with two buttons is a legitimate thing to build.
+    copies.forEach(cid => {
+      if (!cid.startsWith('text.')) return;
+      const bx = boxes().find(x => x.id === cid.slice(5));
+      if (!bx || bx.act !== 'toggle') return;
+      const mapped = toggleTargets(bx).map(t => idMap.get(t) || t);
+      if (mapped.some((t, i) => t !== toggleTargets(bx)[i])) {
+        bx.target = mapped.length === 1 ? mapped[0] : mapped;
+      }
+    });
+    if (clip.wasGroup && copies.length > 1) {   // a copied group pastes as a group
+      layout.groups = layout.groups || [];
+      layout.groups.push(copies);
     }
-    x.page = page;
-    return x;
-  };
-  clip.items.forEach(it => {
-    if (it.kind === 'shape') {
-      const nid = freeShapeId(it.data.kind);
-      layout.shapes.push(placeByPage({ ...it.data, id: nid,
-        x: Math.min(it.data.x + off, PAGE_W_IN - Math.min(it.data.w, PAGE_W_IN)),
-        y: Math.min(it.data.y + off, PAGE_H_IN - Math.min(it.data.h, PAGE_H_IN)) }));
-      idMap.set(it.data.id, nid);   // a toggle's target may be a shape too
-      copies.push(nid);
-    } else {
-      const nid = freeBoxId();
-      boxes().push(placeByPage({ ...it.data, id: nid,
-        x: Math.min(it.data.x + off, PAGE_W_IN - Math.min(it.data.w, PAGE_W_IN)),
-        y: Math.min(it.data.y + off, PAGE_H_IN - 0.4) }));
-      idMap.set(it.data.id, nid);
-      copies.push('text.' + nid);
-    }
+    setSel(d, copies);
   });
-  // A copied toggle whose CONTENT came along in the same paste controls the
-  // COPY, not the original — otherwise duplicating an expandable pair made a
-  // second button wired to the first button's content, which reads as broken
-  // the moment either is moved. A toggle pasted alone keeps its target: one
-  // section with two buttons is a legitimate thing to build.
-  copies.forEach(cid => {
-    if (!cid.startsWith('text.')) return;
-    const bx = boxes().find(x => x.id === cid.slice(5));
-    if (!bx || bx.act !== 'toggle') return;
-    const mapped = toggleTargets(bx).map(t => idMap.get(t) || t);
-    if (mapped.some((t, i) => t !== toggleTargets(bx)[i])) {
-      bx.target = mapped.length === 1 ? mapped[0] : mapped;
-    }
-  });
-  if (clip.wasGroup && copies.length > 1) {   // a copied group pastes as a group
-    layout.groups = layout.groups || [];
-    layout.groups.push(copies);
-  }
-  setSel(d, copies);
-  markDirty();
-  await render();
   $('stat').textContent = `pasted ${copies.length} element${copies.length > 1 ? 's' : ''}`
     + `${inPlace ? ' in place' : ''} onto page ${page}`;
 }
@@ -16764,12 +16755,13 @@ async function stepRepeatDialog(d) {
   ], { okLabel: 'Repeat' });
   if (got == null) return;
   const n = Math.max(1, Math.min(100, Math.round(+got.count) || 1));
-  pushHistory();
-  const made = stepRepeatIds(ids, n, +got.dx || 0, +got.dy || 0);
-  if (!made.length) { withdrawStep(); return; }
-  setSel(d, [...ids, ...made]);
-  markDirty();
-  await render();
+  const made = await changeDoc(() => {
+    const m = stepRepeatIds(ids, n, +got.dx || 0, +got.dy || 0);
+    if (!m.length) return false;
+    setSel(d, [...ids, ...m]);
+    return m;
+  });
+  if (!made) return;
   $('stat').textContent = `made ${made.length} cop${made.length > 1 ? 'ies' : 'y'}`;
 }
 
@@ -16955,13 +16947,13 @@ function applyStyleClip(d, styleClip, targets) {
 
 function toggleLockSel(d) {
   if (!selIds.size) return;
-  pushHistory();
   const all = [...selIds];
   const locked = all.every(isLocked);
-  layout.locked = locked ? lockedList().filter(id => !selIds.has(id))
-                         : [...new Set([...lockedList(), ...all])];
-  if (!layout.locked.length) delete layout.locked;
-  markDirty();
+  changeDoc(() => {
+    layout.locked = locked ? lockedList().filter(id => !selIds.has(id))
+                           : [...new Set([...lockedList(), ...all])];
+    if (!layout.locked.length) delete layout.locked;
+  }, { render: false });
   paintSel(d);
   $('stat').textContent = locked ? 'unlocked' : 'locked — drag is off until unlocked';
 }
@@ -16974,13 +16966,13 @@ function toggleLockSel(d) {
 function groupSel(d) {
   const ids = [...selIds];
   if (ids.length < 2) return;
-  pushHistory();
   const set = new Set(ids);
-  layout.groups = (layout.groups || [])
-    .map(g => g.filter(m => !set.has(m)))
-    .filter(g => g.length >= 2);
-  layout.groups.push(ids);
-  markDirty();
+  changeDoc(() => {
+    layout.groups = (layout.groups || [])
+      .map(g => g.filter(m => !set.has(m)))
+      .filter(g => g.length >= 2);
+    layout.groups.push(ids);
+  }, { render: false });
   paintSel(d);
   $('stat').textContent = `grouped ${ids.length} elements — they move as one`;
 }
@@ -16988,10 +16980,10 @@ function groupSel(d) {
 function ungroupSel(d) {
   const gs = selGroups();
   if (!gs.length) return;
-  pushHistory();
-  layout.groups = (layout.groups || []).filter(g => !gs.includes(g));
-  if (!layout.groups.length) delete layout.groups;
-  markDirty();
+  changeDoc(() => {
+    layout.groups = (layout.groups || []).filter(g => !gs.includes(g));
+    if (!layout.groups.length) delete layout.groups;
+  }, { render: false });
   paintSel(d);
   $('stat').textContent = 'ungrouped';
 }
@@ -17839,9 +17831,9 @@ async function pageSectionDialog(pid) {
     validate: v => (+v.start >= 1 && +v.start <= 9999 && Number.isInteger(+v.start)) ? (/[<>&{}"'\\]/.test(v.prefix) || v.prefix.length > 12 ? 'a prefix is up to 12 plain characters' : '') : 'start at a whole number from 1',
   });
   if (got == null) return;
-  pushHistory();
-  setPageSection(n, got.remove === 'remove' ? null : { start: +got.start, style: got.style, prefix: got.prefix });
-  await render();
+  await changeDoc(() => {
+    setPageSection(n, got.remove === 'remove' ? null : { start: +got.start, style: got.style, prefix: got.prefix });
+  });
   railRender();
 }
 
@@ -18217,31 +18209,32 @@ function railInsert(at) {
  *  The strip's × asks first; the pilot's removePage says what went in its
  *  answer. Returns the ids that went with the page. */
 async function deleteBlankPage(pid) {
-  pushHistory();
-  const blanks = pageBlanks().filter(b => b.id !== pid);
-  writeOrder(pageOrder().filter(p => p !== pid), blanks);
-  if (layout.pageMasters) {
-    delete layout.pageMasters[String(pid)];
-    if (!Object.keys(layout.pageMasters).length) delete layout.pageMasters;
-  }
-  // Nothing can render on a page that no longer exists — orphaned shapes/
-  // boxes/tables would otherwise sit invisible in layout.json and silently
-  // reappear if a future blank page reused this same id.
-  const gone = [];
-  layout.shapes = layout.shapes.filter(s => {
-    if (s.page !== pid) return true; gone.push(s.id); return false;
+  const gone = await changeDoc(() => {
+    const blanks = pageBlanks().filter(b => b.id !== pid);
+    writeOrder(pageOrder().filter(p => p !== pid), blanks);
+    if (layout.pageMasters) {
+      delete layout.pageMasters[String(pid)];
+      if (!Object.keys(layout.pageMasters).length) delete layout.pageMasters;
+    }
+    // Nothing can render on a page that no longer exists — orphaned shapes/
+    // boxes/tables would otherwise sit invisible in layout.json and silently
+    // reappear if a future blank page reused this same id.
+    const gone = [];
+    layout.shapes = layout.shapes.filter(s => {
+      if (s.page !== pid) return true; gone.push(s.id); return false;
+    });
+    boxes().filter(b => b.page === pid).forEach(b => unlinkFrame(b.id));
+    layout.boxes = boxes().filter(b => {
+      if (b.page !== pid) return true; gone.push('text.' + b.id); return false;
+    });
+    layout.tables = tables().filter(t => {
+      if (t.page !== pid) return true; gone.push('table.' + t.id); return false;
+    });
+    forgetInGroups(gone);
+    gone.forEach(id => selIds.delete(id));
+    if (layout.locked) layout.locked = layout.locked.filter(id => !gone.includes(id));
+    return gone;
   });
-  boxes().filter(b => b.page === pid).forEach(b => unlinkFrame(b.id));
-  layout.boxes = boxes().filter(b => {
-    if (b.page !== pid) return true; gone.push('text.' + b.id); return false;
-  });
-  layout.tables = tables().filter(t => {
-    if (t.page !== pid) return true; gone.push('table.' + t.id); return false;
-  });
-  forgetInGroups(gone);
-  gone.forEach(id => selIds.delete(id));
-  if (layout.locked) layout.locked = layout.locked.filter(id => !gone.includes(id));
-  await render();
   $('stat').textContent = `page deleted`;
   return gone;
 }
@@ -18252,23 +18245,21 @@ async function deleteBlankPage(pid) {
  *  chrome no longer offers it (see chip()); the pilot does, for the connector,
  *  which otherwise had to reach into the page with a script to drop a page. */
 async function hideDesignedPage(pid) {
-  pushHistory();
-  writeOrder(pageOrder().filter(p => p !== pid), pageBlanks());
-  await render();
+  await changeDoc(() => { writeOrder(pageOrder().filter(p => p !== pid), pageBlanks()); });
   $('stat').textContent = `page ${pid} taken out of the report — the page strip's Hidden group shows it again`;
 }
 
 /** Put a hidden DESIGNED page back, at its designed position among the
  *  visible pages: the Hidden group's 👁, and the pilot's showPage. */
 async function showDesignedPage(pid) {
-  pushHistory();
-  const order = pageOrder().slice();
-  const before = designedPages.filter(p => p.id < pid).map(p => p.id);
-  let at = 0;
-  for (let k = 0; k < order.length; k++) if (before.includes(order[k])) at = k + 1;
-  order.splice(at, 0, pid);
-  writeOrder(order, pageBlanks());
-  await render();
+  await changeDoc(() => {
+    const order = pageOrder().slice();
+    const before = designedPages.filter(p => p.id < pid).map(p => p.id);
+    let at = 0;
+    for (let k = 0; k < order.length; k++) if (before.includes(order[k])) at = k + 1;
+    order.splice(at, 0, pid);
+    writeOrder(order, pageBlanks());
+  });
 }
 
 function chip(pid, pos, label, isHidden) {
@@ -18361,12 +18352,12 @@ function chip(pid, pos, label, isHidden) {
       const from = e.dataTransfer.getData('text/plain');
       const fromPid = /^\d+$/.test(from) ? +from : from;
       if (fromPid === pid) return;
-      pushHistory();
-      let order = pageOrder().filter(p => p !== fromPid);
-      const at = order.indexOf(pid);
-      order.splice(at, 0, fromPid);
-      writeOrder(order, pageBlanks());
-      await render();
+      await changeDoc(() => {
+        let order = pageOrder().filter(p => p !== fromPid);
+        const at = order.indexOf(pid);
+        order.splice(at, 0, fromPid);
+        writeOrder(order, pageBlanks());
+      });
     });
   }
   return c;
@@ -18466,18 +18457,18 @@ async function masterFromPage(pid, name) {
   c.tables = c.tables.filter(t => !t.flow);           // a flow table stays in its text
   if (!c.boxes.length && !c.shapes.length && !c.tables.length)
     return { ok: false, error: `nothing placed on page ${pageLabel(pid)} to share` };
-  pushHistory();
-  // A shared layout cannot thread; the page's frames leave their threads first.
-  c.boxes.forEach(b => unlinkFrame(b.id));
-  const strip = x => { const y = clone(x); delete y.page; delete y.anchor; delete y.wrap; delete y.act; delete y.target; delete y.next; return y; };
-  // Re-read: unlinking may have handed a story to a frame on this page.
-  masters()[name] = { boxes: pageContents(pid).boxes.map(strip), shapes: c.shapes.map(strip) };
-  if (c.tables.length) masters()[name].tables = c.tables.map(strip);
-  layout.boxes = boxes().filter(b => String(b.page) !== String(pid));
-  layout.shapes = layout.shapes.filter(s => String(s.page) !== String(pid));
-  layout.tables = tables().filter(t => t.flow || String(t.page) !== String(pid));
-  pageMasters()[String(pid)] = name;
-  markDirty(); await render();
+  await changeDoc(() => {
+    // A shared layout cannot thread; the page's frames leave their threads first.
+    c.boxes.forEach(b => unlinkFrame(b.id));
+    const strip = x => { const y = clone(x); delete y.page; delete y.anchor; delete y.wrap; delete y.act; delete y.target; delete y.next; return y; };
+    // Re-read: unlinking may have handed a story to a frame on this page.
+    masters()[name] = { boxes: pageContents(pid).boxes.map(strip), shapes: c.shapes.map(strip) };
+    if (c.tables.length) masters()[name].tables = c.tables.map(strip);
+    layout.boxes = boxes().filter(b => String(b.page) !== String(pid));
+    layout.shapes = layout.shapes.filter(s => String(s.page) !== String(pid));
+    layout.tables = tables().filter(t => t.flow || String(t.page) !== String(pid));
+    pageMasters()[String(pid)] = name;
+  });
   if (selPage != null) pageBar($('out').contentDocument);
   const n = c.boxes.length + c.shapes.length + c.tables.length;
   $('stat').textContent = `"${name}" is a shared layout now — ${n} item${n === 1 ? '' : 's'}; give it to other pages from their strip`;
@@ -18488,24 +18479,24 @@ async function masterFromPage(pid, name) {
 async function masterDetach(pid) {
   const name = masterNameOf(pid);
   if (!name) return { ok: false, error: `page ${pageLabel(pid)} uses no shared layout` };
-  pushHistory();
   const m = masters()[name];
   const label = pageLabel(pid);
   let n = 0;
-  (m.boxes || []).forEach(b => {
-    const x = clone(b); x.id = freeTId(); x.page = pid;
-    x.md = String(x.md || '').replace(/\{page\}/g, label);
-    boxes().push(x); n++;
+  await changeDoc(() => {
+    (m.boxes || []).forEach(b => {
+      const x = clone(b); x.id = freeTId(); x.page = pid;
+      x.md = String(x.md || '').replace(/\{page\}/g, label);
+      boxes().push(x); n++;
+    });
+    (m.shapes || []).forEach(sh => {
+      const x = clone(sh); x.id = freeTId(); x.page = pid; layout.shapes.push(x); n++;
+    });
+    (m.tables || []).forEach(t => {
+      const x = clone(t); x.id = freeTableId(); x.page = pid; tables().push(x); n++;
+    });
+    delete pageMasters()[String(pid)];
+    if (!Object.keys(pageMasters()).length) delete layout.pageMasters;
   });
-  (m.shapes || []).forEach(sh => {
-    const x = clone(sh); x.id = freeTId(); x.page = pid; layout.shapes.push(x); n++;
-  });
-  (m.tables || []).forEach(t => {
-    const x = clone(t); x.id = freeTableId(); x.page = pid; tables().push(x); n++;
-  });
-  delete pageMasters()[String(pid)];
-  if (!Object.keys(pageMasters()).length) delete layout.pageMasters;
-  markDirty(); await render();
   if (selPage != null) pageBar($('out').contentDocument);
   $('stat').textContent = `page ${label} has its own copies now — ${n} item${n === 1 ? '' : 's'} — and no shared layout`;
   return { ok: true, page: pid, items: n };
@@ -18719,25 +18710,24 @@ function adoptSnapshot(snap) {
  *  content too, as a copy the person can edit. */
 async function duplicatePage(pid) {
   const designed = designedPages.some(p2 => String(p2.id) === String(pid));
-  pushHistory();
   const order = pageOrder();
   const blanks = pageBlanks();
   let n = 1;
   while (blanks.some(b => b.id === 'p' + n)) n++;
   const bid = 'p' + n;
-  let snap = null;
-  if (designed) snap = await designedPageSnapshot(pid, bid);
-  else if (pageCopyOf(pid)) snap = copiedPageSnapshot(pid, bid);
-  const at = order.findIndex(x => String(x) === String(pid));
-  order.splice(at >= 0 ? at + 1 : order.length, 0, bid);
-  const entry = snap ? { id: bid, copy: { of: pid, html: snap.html } } : { id: bid };
-  writeOrder(order, [...blanks, entry]);
-  const c = pageContents(pid);
-  const moved = pastePageContents(bid, c);
-  if (snap) adoptSnapshot(snap);
-  if (masterNameOf(pid)) pageMasters()[bid] = masterNameOf(pid);
-  markDirty();
-  await render();
+  let snap = null, moved = 0;
+  await changeDoc(async () => {
+    if (designed) snap = await designedPageSnapshot(pid, bid);
+    else if (pageCopyOf(pid)) snap = copiedPageSnapshot(pid, bid);
+    const at = order.findIndex(x => String(x) === String(pid));
+    order.splice(at >= 0 ? at + 1 : order.length, 0, bid);
+    const entry = snap ? { id: bid, copy: { of: pid, html: snap.html } } : { id: bid };
+    writeOrder(order, [...blanks, entry]);
+    const c = pageContents(pid);
+    moved = pastePageContents(bid, c);
+    if (snap) adoptSnapshot(snap);
+    if (masterNameOf(pid)) pageMasters()[bid] = masterNameOf(pid);
+  });
   setSelPage($('out').contentDocument, bid);
   $('stat').textContent = snap
     ? `page duplicated — everything on it is a copy you can edit here; a chart in the copy `
@@ -18750,19 +18740,19 @@ async function duplicatePage(pid) {
 }
 
 async function addBlankPage(at) {
-  pushHistory();
-  const order = pageOrder();
-  const blanks = pageBlanks();
-  let n = 1;
-  while (blanks.some(b => b.id === 'p' + n)) n++;
-  const bid = 'p' + n;
-  if (at === undefined) {
-    const i = order.indexOf(visiblePageId());
-    at = i >= 0 ? i + 1 : order.length;
-  }
-  order.splice(Math.max(0, Math.min(at, order.length)), 0, bid);
-  writeOrder(order, [...blanks, { id: bid }]);
-  await render();
+  await changeDoc(() => {
+    const order = pageOrder();
+    const blanks = pageBlanks();
+    let n = 1;
+    while (blanks.some(b => b.id === 'p' + n)) n++;
+    const bid = 'p' + n;
+    if (at === undefined) {
+      const i = order.indexOf(visiblePageId());
+      at = i >= 0 ? i + 1 : order.length;
+    }
+    order.splice(Math.max(0, Math.min(at, order.length)), 0, bid);
+    writeOrder(order, [...blanks, { id: bid }]);
+  });
   $('stat').textContent = `blank page added — drag boxes, shapes and images onto it`;
 }
 
