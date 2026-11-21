@@ -704,6 +704,24 @@
      of the session rather than a note about the report. */
   .ds-note.ds-offline { background:#EEF2EF; color:#334049; border-bottom-color:#C9D6CD; }
   .ds-note.ds-offline::before { content:'○'; color:#5B6E66; }
+  /* A failure, a result: said here because the status line cannot hold it. */
+  .ds-flag { align-items:center; font-size:13px; }
+  .ds-flag-t { flex:1; min-width:0; }
+  .ds-flag-t a { color:inherit; font-weight:600; }
+  .ds-flag-bad { background:#FBE9E7; color:#7A1F17; border-bottom-color:#F0C4BE; }
+  .ds-flag-bad::before { content:'!'; flex:none; width:18px; height:18px; border-radius:50%;
+         background:#B3261E; color:#fff; font:700 12px/18px system-ui; text-align:center; }
+  .ds-flag-bad::before, .ds-flag-act, .ds-flag .ds-note-x { align-self:flex-start; }
+  .ds-flag-ok { background:#E6F2EA; color:#23513A; border-bottom-color:#C4DDCD; }
+  .ds-flag-info { background:#EEF2EF; color:#334049; border-bottom-color:#C9D6CD; }
+  .ds-flag details { margin-top:4px; }
+  .ds-flag summary { cursor:pointer; font-size:12px; opacity:.8; }
+  .ds-flag pre { margin:6px 0 2px; max-height:140px; overflow:auto; white-space:pre-wrap;
+         font:11.5px/1.5 ui-monospace,monospace; opacity:.9; }
+  .ds-flag-act { flex:none; border:1px solid currentColor; background:#fff; color:inherit;
+         border-radius:6px; padding:4px 10px; font:600 12.5px system-ui; cursor:pointer; }
+  .ds-flag-act:hover { background:rgba(255,255,255,.6); }
+  .ds-flag .ds-note-x { margin-left:0; color:inherit; }
   .ds-note-all { flex:none; border:0; background:none; color:#8A7433;
          cursor:pointer; font:11.5px system-ui; text-decoration:underline; }
   /* Which build is running. Deliberately the quietest thing in the bar — it is
@@ -17679,9 +17697,75 @@ function checkImmovable(d) {
   return stuck;
 }
 
+// --- lasting messages above the page ---------------------------------------
+// #stat is one line, clipped to the toolbar and overwritten by the next drag
+// frame: a Save that failed, a draft that will not build, a public site that
+// was not updated were each said there once and gone. flag() puts a message in
+// the band above the page, where it STAYS until what it reports is no longer
+// true (keep: the code that set it takes it down) or the person dismisses it.
+// One message per key, so a second failure replaces the first.
+const flags = new Map(), flagTimers = {};
+function flag(key, text, opts = {}) {
+  flags.set(key, { text, kind: opts.kind || 'bad', detail: opts.detail || '', link: opts.link || '',
+                   actions: opts.actions || [], keep: !!opts.keep });
+  clearTimeout(flagTimers[key]);
+  if (opts.forMs) flagTimers[key] = setTimeout(() => unflag(key), opts.forMs);
+  flagsSync();
+}
+function unflag(key) { clearTimeout(flagTimers[key]); if (flags.delete(key)) flagsSync(); }
+function flagsSync() {
+  const d = $('out') && $('out').contentDocument;
+  renderNotices(d && d.body ? d : null);
+}
+/** The reason alone, from an error that may be a Python traceback or a
+ *  hook's eleven lines: its last line, without the exception's class. */
+function plainWhy(e) {
+  const lines = String(e && e.message || e).split('\n').filter(l => l.trim()).map(l => l.trim());
+  // A Python error's message starts at its "SomeError:" line and may run on
+  // (the offending line of the document under it): all of that, not the last line alone.
+  const NAMED = /^[A-Za-z_][\w.]*(?:Error|Exception):\s*/;
+  let at = -1;
+  lines.forEach((l, i) => { if (NAMED.test(l)) at = i; });
+  const said = at < 0 ? (lines[lines.length - 1] || 'no reason was given') : lines.slice(at).join(' ');
+  return said.replace(NAMED, '').replace(/[.:\s]+$/, '');
+}
+function flagRow(key, f) {
+  const row = document.createElement('div');
+  row.className = 'ds-note ds-flag ds-flag-' + f.kind;
+  row.dataset.flag = key;
+  if (f.kind === 'bad') row.setAttribute('role', 'alert');
+  const txt = document.createElement('span'); txt.className = 'ds-flag-t';
+  txt.textContent = f.text;
+  if (f.link) {
+    const a = document.createElement('a');
+    a.href = f.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open it ↗';
+    txt.append(' ', a);
+  }
+  if (f.detail) {
+    const det = document.createElement('details'), sum = document.createElement('summary'), pre = document.createElement('pre');
+    sum.textContent = 'Details'; pre.textContent = f.detail;
+    det.append(sum, pre); txt.append(det);
+  }
+  row.appendChild(txt);
+  f.actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'ds-flag-act'; b.textContent = a.label;
+    b.onclick = () => a.run();
+    row.appendChild(b);
+  });
+  if (!f.keep) {
+    const x = document.createElement('button');
+    x.className = 'ds-note-x'; x.textContent = '×';
+    x.setAttribute('aria-label', 'Dismiss this message');
+    x.onclick = () => unflag(key);
+    row.appendChild(x);
+  }
+  return row;
+}
+
 function renderNotices(d) {
   const host = $('notices');
-  const el = d.getElementById('ds-notices');
+  const el = d && d.getElementById('ds-notices');
   let msgs = [];
   if (el) { try { msgs = JSON.parse(el.textContent) || []; } catch (e) { swallowed('renderer notices are not JSON', e); } }
   const seen = notesSeen();
@@ -17692,7 +17776,8 @@ function renderNotices(d) {
   // session is back, and the edits made meanwhile go with it.
   const offline = collabInfo && collabInfo.on && collabInfo.status === 'offline';
   const paused = typeof hubAutosaveHold !== 'undefined' && hubAutosaveHold && hubAutosaveHoldWhy && !offline;
-  host.hidden = !show.length && !offline && !paused;
+  host.hidden = !show.length && !offline && !paused && !flags.size;
+  flags.forEach((f, key) => host.appendChild(flagRow(key, f)));
   if (offline) {
     const row = document.createElement('div'); row.className = 'ds-note ds-offline';
     const txt = document.createElement('span');
@@ -17703,7 +17788,10 @@ function renderNotices(d) {
     const row = document.createElement('div'); row.className = 'ds-note ds-offline';
     const txt = document.createElement('span');
     txt.textContent = `Autosave is paused — a save failed (${hubAutosaveHoldWhy}). Press Save to try again.`;
-    row.appendChild(txt); host.appendChild(row);
+    const again = document.createElement('button');
+    again.className = 'ds-flag-act'; again.textContent = 'Save now';
+    again.onclick = () => $('save').click();
+    row.append(txt, again); host.appendChild(row);
   }
   if (!show.length) return;
   show.forEach(msg => {
@@ -26395,6 +26483,7 @@ function markDirty() {
   // Stepping edits back is undo's job; Discard has no place on the bar.
   $('revert').hidden = true;
   $('save').classList.toggle('dirty', dirty);
+  if (!dirty) unflag('save');          // undone back to the saved state: nothing is unsaved
   // A drop, a nudge and every other commit that does not render arrive here,
   // and renderOnce() is not the only door into the room any more: without
   // this a moved piece lived only in this tab's `layout` until the next
@@ -30008,13 +30097,25 @@ open('/repo/' + OUT).read()
 `);
     engineDirty = false;      // the fresh engine is imported; renders may reuse it
     renderFailed = false;     // this one built; a previous failure is history
+    unflag('build');
   } catch (e) {
     // A validation failure is the guardrail working — show it and keep the
     // source, so the edit that broke it can be fixed rather than lost.
     const tail = String(e.message || e).split('\n').filter(l => l.trim()).slice(-6).join('\n');
-    $('out').srcdoc = `<pre style="color:#b00020;white-space:pre-wrap;padding:24px;
+    // The last page that DID build stays on screen, with the reason above it:
+    // replacing twelve pages with six lines of traceback took away the very
+    // thing the person needed to find and fix the edit. Only a first render
+    // has no page to keep, and shows the error where the report would be.
+    const liveDoc = $('out').contentDocument;
+    const havePage = !!lastHtml && !!(liveDoc && liveDoc.body && liveDoc.body.childElementCount);
+    if (!havePage) $('out').srcdoc = `<pre style="color:#b00020;white-space:pre-wrap;padding:24px;
       font:12px/1.5 ui-monospace,monospace">This draft does not build:\n\n${
       tail.replace(/&/g,'&amp;').replace(/</g,'&lt;')}\n\nYour text is still here — fix it and it recovers.</pre>`;
+    const canUndo = $('undo') && !$('undo').disabled;
+    flag('build', 'The last change can’t be drawn: ' + plainWhy(e) + '. '
+      + (havePage ? 'The page below is from before it, and your words are kept. ' : 'Your words are kept. ')
+      + (canUndo ? 'Undo it, or fix it and the page comes back.' : 'Fix it and the page comes back.'),
+      { keep: true, detail: tail, actions: canUndo ? [{ label: 'Undo it', run: () => undo() }] : [] });
     // The warm-boot preview sits ON TOP of #out, and only the successful swap
     // below ever takes it down — so a FIRST render that fails painted this
     // error underneath the stand-in and left the last render on screen under
@@ -30026,7 +30127,8 @@ open('/repo/' + OUT).read()
     $('stat').textContent = 'draft does not build';
     // What stands in #out is now an error page, not a render — so the next
     // successful one has nothing to diff against and must swap in full.
-    lastHtml = null;
+    // (A page that was kept is still the last render, and is diffed against.)
+    if (!havePage) lastHtml = null;
     renderFailed = true;
     renderError = String(e.message || e).split('\n').filter(l => l.trim()).slice(-1)[0] || '';
     return;
@@ -35111,6 +35213,7 @@ async function docStorePublish() {
       { okLabel: 'Publish' })) return;
   $('publish').disabled = true;
   $('stat').textContent = 'publishing…';
+  unflag('publish'); unflag('site');
   try {
     const r = await fetch(`${docStore()}/publish`, { method: 'POST' });
     const j = await hubJson(r);
@@ -35123,6 +35226,7 @@ async function docStorePublish() {
     if (siteOf() && j.version) docStoreAwaitSite(j.version, head, j.status === 'unchanged');
   } catch (e) {
     $('stat').textContent = 'publish failed: ' + e.message;
+    flag('publish', 'Not published: ' + plainWhy(e) + '. What is saved on the hub is unchanged.');
   } finally {
     $('publish').disabled = false;
   }
@@ -35154,17 +35258,23 @@ function siteLine(site) {
 async function docStoreAwaitSite(version, head, unchanged) {
   // The site's answer first: the status line is clipped to the toolbar's width,
   // and it is the part people are waiting for. All of it on hover.
-  const say = ([short, full]) => { $('stat').textContent = short; $('stat').title = full + ' · ' + head; };
+  // ...and all of it above the page, where no hover is needed: a failure
+  // stays until dismissed, good news goes by itself.
+  const say = ([short, full], kind = 'info', url = '') => {
+    $('stat').textContent = short; $('stat').title = full + ' · ' + head;
+    flag('site', full[0].toUpperCase() + full.slice(1).replace(/ — https?:\S+$/, ''),
+         { kind, link: url, keep: kind === 'info', forMs: kind === 'ok' ? 20000 : 0 });
+  };
   const tries = unchanged ? 1 : 30;                       // 30 x 10 s = 5 minutes
   for (let i = 0; i < tries; i++) {
     const site = await docStoreSite();
-    if (site && site.version === version) { say(siteLine(site)); return; }
+    if (site && site.version === version) { say(siteLine(site), site.ok ? 'ok' : 'bad', site.ok && site.url || ''); return; }
     if (unchanged) break;
     if (i === 0) say(['site: publishing…', 'public site: publishing… (about a minute)']);
     await new Promise(res => setTimeout(res, 10000));
   }
   say(unchanged ? ['site: no report — hover', 'public site: no report for this version — Publish again after an edit to rebuild it']
-                : ['site: no report — hover', 'public site: no report after 5 minutes — look at the repository\'s Actions tab']);
+                : ['site: no report — hover', 'public site: no report after 5 minutes — look at the repository\'s Actions tab'], 'bad');
 }
 
 /** The hub's answer as JSON — or the reason it is not one. An Access
@@ -35289,12 +35399,19 @@ async function docStoreSave(layoutText, force = false, auto = false, leaving = f
         // choice to a press of Save.
         hubAutosaveHold = true;
         $('stat').textContent = `not saved — the document changed outside this session${who}; press Save to choose`;
+        flag('save', `Not saved. This document was saved somewhere else${who}${when}, so autosave has stopped. Press Save to choose which to keep.`,
+             { keep: true, actions: [{ label: 'Save…', run: () => $('save').click() }] });
         markDirty(); return false;
       }
       const ok = await dsConfirm(`This document was saved outside this session${who}${when}.\n\n`
         + 'Saving replaces that with what everyone here sees.',
         { okLabel: 'Save over it', danger: true });
-      if (!ok) { $('stat').textContent = 'not saved — the document changed outside this session'; markDirty(); return false; }
+      if (!ok) {
+        $('stat').textContent = 'not saved — the document changed outside this session';
+        flag('save', `Not saved. This document was saved somewhere else${who}${when}. Your edits are still here; Save again to replace that version.`,
+             { keep: true, actions: [{ label: 'Save…', run: () => $('save').click() }] });
+        markDirty(); return false;
+      }
       return docStoreSave(layoutText, true);
     }
     if (!r.ok) throw new Error(j.error || `the store answered ${r.status}`);
@@ -35309,6 +35426,7 @@ async function docStoreSave(layoutText, force = false, auto = false, leaving = f
     original = sent; layoutOrig = layoutText;
     clearDraftCache();
     hubAutosaveHold = false; hubAutosaveFails = 0; hubAutosaveHoldWhy = '';   // a Save that landed: automatic ones may resume
+    unflag('save');
     hubAutosaveNoticeSync();
     hubSavedAt = Date.now();
     markDirty();
@@ -35336,7 +35454,11 @@ async function docStoreSave(layoutText, force = false, auto = false, leaving = f
         hubAutosaveNoticeSync();
       }
     }
-    else $('stat').textContent = 'save failed: ' + e.message;
+    else {
+      $('stat').textContent = 'save failed: ' + e.message;
+      flag('save', 'Not saved: ' + plainWhy(e) + '. Your edits are still in this window.',
+           { keep: true, actions: [{ label: 'Try again', run: () => $('save').click() }] });
+    }
     markDirty();
     return false;
   } finally {
@@ -35634,6 +35756,7 @@ $('save').onclick = async () => {
       original = sent; layoutOrig = layoutText;
       $('stat').textContent = j.message || 'saved';
       $('stat').title = '';
+      unflag('save');
       saving = false;
       markDirty();                   // false now, unless something came after `sent`
       setPushState(j.ahead);
@@ -35643,6 +35766,10 @@ $('save').onclick = async () => {
       // nothing of the fix — the whole message rides the tooltip.
       $('stat').textContent = 'save failed: ' + e.message.replace(/\s+/g, ' ');
       $('stat').title = e.message;
+      // ...and the tooltip is found by nobody: the whole of it, above the page.
+      const first = String(e.message).split('\n').find(l => l.trim()) || 'no reason was given';
+      flag('save', 'Not saved: ' + first.trim().replace(/[.:]$/, '') + '.',
+           { keep: true, detail: /\n/.test(e.message.trim()) ? e.message : '', actions: [{ label: 'Try again', run: () => $('save').click() }] });
       saving = false;
       markDirty();                   // always recoverable — never a dead spinner
       setPushState(lastAhead);
@@ -37603,6 +37730,7 @@ async function exportPdfInBrowser(pages, spec) {
   const name = `${exportBasename()}${spec ? '-p' + spec.replace(/,/g, '_') : ''}.pdf`;
   let frame = null;
   try {
+    unflag('export');
     stat('making the PDF… (a full report takes a moment)');
     await tick();
     const doc = new DOMParser().parseFromString(await renderClean(), 'text/html');
@@ -37695,6 +37823,7 @@ async function exportPdfInBrowser(pages, spec) {
   } catch (e) {
     stat('PDF failed: ' + (e.message || e));
     $('stat').title = String(e && e.stack || e);
+    flag('export', 'The PDF was not made: ' + plainWhy(e) + '.', { detail: String(e && e.stack || '') });
   } finally {
     if (frame) frame.remove();
     pdfBusy = false;
@@ -37718,6 +37847,7 @@ async function doExport(fmt) {
   const slug = exportBasename();
   const name = fmt === 'pdf' ? `${slug}${spec ? '-p' + spec.replace(/,/g, '_') : ''}.pdf` : `${slug}-pages.zip`;
   $('stat').textContent = `rendering the ${fmt.toUpperCase()}… (a full report takes a moment)`;
+  unflag('export');
   try {
     const r = await fetch('/__export', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -37729,6 +37859,7 @@ async function doExport(fmt) {
   } catch (e) {
     $('stat').textContent = 'export failed: ' + e.message;
     $('stat').title = e.message;
+    flag('export', `The ${fmt === 'pdf' ? 'PDF' : 'download'} was not made: ` + plainWhy(e) + '.');
   }
 }
 
