@@ -6941,13 +6941,13 @@ async function applySchemeColor(to) {
       ? 'the report is already in that scheme'
       : 'no scheme colour is in use here — fill the cover pages with one first' };
   }
-  pushHistory();
-  const swapped = schemeColorWalk(from, TO);
-  const pi = (M.palette || []).findIndex(c => c.toUpperCase() === from);
-  if (pi >= 0) M.palette[pi] = TO;
-  else (M.palette = M.palette || []).unshift(TO);
-  markDirty();
-  await render();
+  const swapped = await changeDoc(() => {
+    const n = schemeColorWalk(from, TO);
+    const pi = (M.palette || []).findIndex(c => c.toUpperCase() === from);
+    if (pi >= 0) M.palette[pi] = TO;
+    else (M.palette = M.palette || []).unshift(TO);
+    return n;
+  });
   paintSel($('out').contentDocument);
   return { ok: true, from, to: TO, swapped };
 }
@@ -7219,7 +7219,7 @@ function fillRow(d, m, id) {
   m.appendChild(modesWrap);
   m.appendChild(body);
 
-  const commit = async v => { pushHistory(); t.set(v); markDirty(); closeMenu(d); await render(); };
+  const commit = async v => { await changeDoc(() => { t.set(v); closeMenu(d); }); };
 
   function toGrad(type) {
     if (val && typeof val === 'object') return { ...val, type };
@@ -7688,10 +7688,7 @@ async function editMdAlt(at) {
   if (got == null) return;
   if (cleanAlt(got.words) === at.alt) return;
   if (at.kind === 'slot') collabWarnShared(at.key, 'description');
-  pushHistory();
-  const alt = writeMdAlt(at, got.words);
-  markDirty();
-  await render();
+  const alt = await changeDoc(() => writeMdAlt(at, got.words));
   $('stat').textContent = alt ? 'image description saved'
     : 'image marked as decoration — a screen reader skips it';
 }
@@ -7762,10 +7759,8 @@ function _pilotApplyFit(id, mode, align) {
  *  bar's fitting buttons): one undo step, then a render. `fn` is one of the
  *  appliers above; a refusal ({ok:false}) leaves nothing changed. */
 async function applyFitting(id, fn) {
-  pushHistory();
-  const r = fn();
-  if (r && r.ok === false) { withdrawStep(); $('stat').textContent = r.error; return r; }
-  markDirty(); await render();
+  const r = await changeDoc(fn);
+  if (r && r.ok === false) $('stat').textContent = r.error;
   return r;
 }
 /** Fit Frame to Content: the frame's height becomes what the picture's own
@@ -7892,10 +7887,11 @@ function layerMenu(d, el, e) {
     head.textContent = `${id} · locked`;
     m.appendChild(head);
     item('Unlock', () => {
-      pushHistory();
-      layout.locked = lockedList().filter(x => x !== id);
-      if (!layout.locked.length) delete layout.locked;
-      markDirty(); paintSel(d);
+      changeDoc(() => {
+        layout.locked = lockedList().filter(x => x !== id);
+        if (!layout.locked.length) delete layout.locked;
+      }, { render: false });
+      paintSel(d);
     });
     d.body.appendChild(m); menuUp(true);
     return;
@@ -8047,10 +8043,8 @@ function layerMenu(d, el, e) {
     if (clip) item('Paste in place', () => pasteClip(d, true));
     if (boxOf(id) && /[\t|,]/.test(boxOf(id).md || '') && !/!\[/.test(boxOf(id).md || ''))
       item('Convert text to table', async () => {
-        pushHistory();
-        const r = textToTable(id);
-        if (r.error) { withdrawStep(); $('stat').textContent = r.error; return; }
-        markDirty(); await render();
+        const r = await changeDoc(() => { const t = textToTable(id); return t.error ? { ...t, ok: false } : t; });
+        if (r.error) { $('stat').textContent = r.error; return; }
         setSel($('out').contentDocument, [r.id]);
         $('stat').textContent = `${r.rows} rows × ${r.cols} columns`;
       });
@@ -8100,7 +8094,7 @@ function layerMenu(d, el, e) {
        ['Flip horizontal', o => turnObjects(d, turnIds, { flip: 'h' })],
        ['Flip vertical', o => turnObjects(d, turnIds, { flip: 'v' })],
        ['Clear transformations', async o => {
-         pushHistory(); const n = clearTransforms(turnIds); markDirty(); await render();
+         const n = await changeDoc(() => clearTransforms(turnIds));
          $('stat').textContent = n ? `straightened ${n}` : 'nothing was turned, skewed, flipped or scaled';
        }]].forEach(([label, fn]) => {
         const b = d.createElement('button'); b.textContent = label;
@@ -8118,11 +8112,11 @@ function layerMenu(d, el, e) {
       });
     item('Select next below', () => { setSel(d, [id]); selectNextObject(d, -1); });
     item(isLocked(id) ? 'Unlock' : 'Lock', () => {
-      pushHistory();
-      layout.locked = isLocked(id) ? lockedList().filter(x => x !== id)
-                                   : [...lockedList(), id];
-      if (!layout.locked.length) delete layout.locked;
-      markDirty();
+      changeDoc(() => {
+        layout.locked = isLocked(id) ? lockedList().filter(x => x !== id)
+                                     : [...lockedList(), id];
+        if (!layout.locked.length) delete layout.locked;
+      }, { render: false });
       paintSel(d);
     });
     // Opacity, live while sliding, committed through the renderer on release.
@@ -8345,9 +8339,9 @@ function layerMenu(d, el, e) {
           const b = d.createElement('button');
           b.textContent = label;
           b.addEventListener('click', async () => {
-            closeMenu(d); pushHistory();
-            const r = _pathfinderApply(sel, op);
-            markDirty(); await render(); setSel($('out').contentDocument, [r.id]);
+            closeMenu(d);
+            const r = await changeDoc(() => _pathfinderApply(sel, op));
+            setSel($('out').contentDocument, [r.id]);
           });
           sub.appendChild(b);
         });
@@ -8382,7 +8376,7 @@ function layerMenu(d, el, e) {
       });
     });
     if (one && one.kind === 'compound') item('Release compound', async () => {
-      pushHistory(); const r = _releaseApply(id); markDirty(); await render();
+      const r = await changeDoc(() => _releaseApply(id));
       setSel($('out').contentDocument, r.released);
     });
     if (one && one.kind === 'path') item('Edit points', () => {
@@ -8393,15 +8387,15 @@ function layerMenu(d, el, e) {
     if (one && shapeTakesImage(one)) {
       const pic = [...selIds].map(i => boxPictureSrc(i) && i).find(Boolean);
       if (pic && selIds.size === 2) item('Put the picture inside this shape', async () => {
-        closeMenu(d); pushHistory();
-        const r = _pasteIntoApply(id, pic);
-        markDirty(); await render(); setSel($('out').contentDocument, [r.id]);
+        closeMenu(d);
+        const r = await changeDoc(() => _pasteIntoApply(id, pic));
+        setSel($('out').contentDocument, [r.id]);
         $('stat').textContent = 'the picture is inside the shape — right-click it for Fill or Fit';
       });
       submenuRow(d, m, 'Picture inside ▸', sub => {
         const btn = (label, fn) => { const b = d.createElement('button'); b.textContent = label;
           b.addEventListener('click', async () => { closeMenu(d); await fn(); }); sub.appendChild(b); };
-        const put = async im => { pushHistory(); _shapeImageApply(id, im); markDirty(); await render(); };
+        const put = async im => { await changeDoc(() => { _shapeImageApply(id, im); }); };
         projectImages().slice(0, 30).forEach(n => btn(n, () => put({ ...(one.image || {}), src: 'assets/' + n })));
         btn('Upload a picture…', () => uploadImageFile($('out').contentDocument, path => put({ ...(one.image || {}), src: path })));
         if (one.image) {
@@ -8420,10 +8414,8 @@ function layerMenu(d, el, e) {
     const b = inchBox(el, pg);
     const mount = pg && pg.querySelector('[data-ds-mount]');
     const pid = mount ? (/^\d+$/.test(mount.dataset.dsMount) ? +mount.dataset.dsMount : mount.dataset.dsMount) : visiblePageId();
-    pushHistory();
-    const r = _pilotApplyAddTextBox({ page: pid, x: +b.x.toFixed(2), y: +(b.y + b.h + 0.06).toFixed(2), w: +b.w.toFixed(2),
-      md: `{caption:${id}}`, style: { italic: true, size: 12 } });
-    markDirty(); await render();
+    const r = await changeDoc(() => _pilotApplyAddTextBox({ page: pid, x: +b.x.toFixed(2), y: +(b.y + b.h + 0.06).toFixed(2), w: +b.w.toFixed(2),
+      md: `{caption:${id}}`, style: { italic: true, size: 12 } }));
     $('stat').textContent = 'caption added — it shows the image\'s description (right-click the image ▸ Description to change it)';
     void r;
   });
@@ -8451,9 +8443,8 @@ function layerMenu(d, el, e) {
             const b = d.createElement('button');
             b.title = a2; b.className = (cur.align || 'center') === a2 ? 'on' : '';
             b.addEventListener('click', async () => {
-              closeMenu(d); pushHistory();
-              _pilotApplyFit(id, cur.fit, a2 === 'center' ? null : a2);
-              markDirty(); await render();
+              closeMenu(d);
+              await changeDoc(() => { _pilotApplyFit(id, cur.fit, a2 === 'center' ? null : a2); });
             });
             grid.appendChild(b);
           });
@@ -8508,9 +8499,7 @@ function layerMenu(d, el, e) {
       });
     } else {
       item('Break thread after this frame', async () => {
-        pushHistory();
-        const r = _unthreadApply(id);
-        markDirty(); await render();
+        const r = await changeDoc(() => _unthreadApply(id));
         $('stat').textContent = r.removed
           ? `thread broken — ${r.removed} empty frame${r.removed === 1 ? '' : 's'} after it removed`
           : 'thread broken';
@@ -10056,13 +10045,12 @@ $('ar-table').addEventListener('click', () => openTablePanel(selectedTableId()))
 
 $('table').onclick = async () => {
   const page = visiblePageId();
-  pushHistory();
   const id = freeTableId();
-  tables().push(wearDefaults('table', { id, page, x: placeX(3.5), y: 2, w: 3.5, z: 2, header: true,
-                  rows: [['Column 1', 'Column 2'], ['', ''], ['', '']] }));
-  setSel($('out').contentDocument, ['table.' + id]);
-  markDirty();
-  await render();
+  await changeDoc(() => {
+    tables().push(wearDefaults('table', { id, page, x: placeX(3.5), y: 2, w: 3.5, z: 2, header: true,
+                    rows: [['Column 1', 'Column 2'], ['', ''], ['', '']] }));
+    setSel($('out').contentDocument, ['table.' + id]);
+  });
   // Land on the styling panel, the way Canva drops you into the new table's
   // controls rather than making you hunt for them.
   openTablePanel('table.' + id);
@@ -10170,13 +10158,12 @@ function tableCellKey(e) {
   }
   if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault();
-    pushHistory();
-    cellKeys(t).forEach(k => {
-      const [rr, cc] = k.split(',').map(Number);
-      t.rows[rr][cc] = '';
-    });
-    markDirty();
-    render().then(() => { paintCells($('out').contentDocument); renderTablePanel(); });
+    changeDoc(() => {
+      cellKeys(t).forEach(k => {
+        const [rr, cc] = k.split(',').map(Number);
+        t.rows[rr][cc] = '';
+      });
+    }).then(() => { paintCells($('out').contentDocument); renderTablePanel(); });
     return true;
   }
   // Any printable character starts editing WITH that character.
@@ -10358,9 +10345,7 @@ function editCell(d, td, seed) {
       if (moved && settled === 'mine') {
         await collabFieldFirstTheirs();
         const tt = tableOf(tid) || t;      // re-found: see collabFieldFirstTheirs
-        pushHistory();
-        if (tt.rows[ri]) tt.rows[ri][ci] = newVal;
-        markDirty();
+        await changeDoc(() => { if (tt.rows[ri]) tt.rows[ri][ci] = newVal; }, { render: false });
       }
       await render();
       collabFieldNote(settled, 'table cell');
@@ -10529,8 +10514,8 @@ function tableMenu(d, td, e) {
       for (let r = rg.r0; r <= rg.r1; r++) for (let c = rg.c0; c <= rg.c1; c++) keys.push(`${r},${c}`);
       const cur = ((t.cells || {})[`${ri},${ci}`] || {}).use;
       const row = (label, fn) => { const b = d.createElement('button'); b.textContent = label;
-        b.addEventListener('click', async () => { closeMenu(d); pushHistory(); const ok = await fn(); if (ok === false) { withdrawStep(); return; }
-          markDirty(); await render(); paintCells($('out').contentDocument); }); sub.appendChild(b); };
+        b.addEventListener('click', async () => { closeMenu(d); const ok = await changeDoc(fn); if (ok === false) return;
+          paintCells($('out').contentDocument); }); sub.appendChild(b); };
       Object.keys(cellStyles()).sort().forEach(n => row((cur === n ? '✓ ' : '') + n, () => applyCellStyle(t, keys, n)));
       row('No cell style', () => applyCellStyle(t, keys, null));
       row('Save this cell’s look as…', async () => {
