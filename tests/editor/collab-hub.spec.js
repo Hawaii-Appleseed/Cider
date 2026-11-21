@@ -2249,7 +2249,7 @@ test('history: a version saved with a layout and no words opens and restores, an
 // stopped drawing for the whole session, and a move or delete by id went to
 // whichever came first. Two editors adding six shapes each collided on all six.
 const placedIds = page => page.evaluate(`[...(layout.shapes || []), ...(layout.boxes || []), ...(layout.tables || [])].map(x => x.id)`);
-const builds = page => page.evaluate(`!/does not build/.test($('out').contentDocument.body.textContent)`);
+const builds = page => page.evaluate(`!renderFailed && !/does not build/.test($('out').contentDocument.body.textContent)`);
 const sameOnBoth = async what => {
   await expect.poll(async () => JSON.stringify(await a.evaluate(what)) === JSON.stringify(await b.evaluate(what)), { timeout: 20_000 }).toBe(true);
 };
