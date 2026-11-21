@@ -515,6 +515,10 @@ jobs:
       # The shard planner: every spec file on exactly one shard, and even.
       - name: Shard planner
         run: node --test tools/ci-shard.test.mjs
+      # Document changes go through changeDoc(); the bare pushHistory() calls
+      # still to be moved over may only go down (tools/edit-ratchet.json).
+      - name: Edit ratchet
+        run: node tools/edit-ratchet.mjs
 
   # The engine grew and no published report moved — or the change says which
   # did, and why. Two sweeps against `base`, the commit this push or pull
