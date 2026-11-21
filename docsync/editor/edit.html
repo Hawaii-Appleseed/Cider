@@ -28928,20 +28928,22 @@ async function inlineHubFonts(doc) {
   const used = Object.keys(hubFonts || {}).filter(fam =>
     doc.documentElement.outerHTML.includes(`'${fam}'`));
   if (!used.length) return;
-  const uris = {};
+  const uris = {}, files = [];
   for (const [fam, f] of Object.entries(hubFonts)) {
-    if (!used.includes(fam)) continue;
-    for (const [file] of f.faces) {
-      try {
-        const r = await fetchWithin(f.dir + file);
-        if (!r.ok) continue;
+    if (used.includes(fam)) for (const [file] of f.faces) files.push(f.dir + file);
+  }
+  await Promise.all(files.map(async u => {            // together, and once a session
+    try {
+      uris[u] = await fetchedOnce('hub ' + u, async () => {
+        const r = await fetchWithin(u);
+        if (!r.ok) throw new Error('font ' + r.status);
         const buf = await r.blob();
-        uris[f.dir + file] = await new Promise(ok => {
+        return new Promise(ok => {
           const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(buf);
         });
-      } catch (e) { swallowed('inlineHubFonts', e); }
-    }
-  }
+      });
+    } catch (e) { swallowed('inlineHubFonts', e); }
+  }));
   const css = hubFontCss(used, u => uris[u] || u);
   const st = doc.createElement('style');
   st.setAttribute('data-ds-fonts', '');
@@ -36869,7 +36871,9 @@ open('/repo/' + OUT).read()
 }
 
 const asDataUrl = async url => {
-  const r = await fetch(url);
+  // It gives up: one picture that never answers held the whole export, with
+  // the status line saying "making the PDF" for as long as the browser waited.
+  const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw new Error(url);
   const blob = await r.blob();
   return new Promise(res => {
@@ -36905,19 +36909,23 @@ async function inlineEverything(doc, opts = {}) {
       link.replaceWith(st);
     } catch (e) { /* leave the <link>: a broken style beats a broken export */ }
   }
-  for (const img of [...doc.querySelectorAll('img')]) {
+  // Every picture is asked for at once, and a file used twice is fetched once.
+  // One after another, a report of forty pictures waited forty round trips.
+  const jobs = [];
+  for (const img of doc.querySelectorAll('img')) {
     const src = img.getAttribute('src') || '';
-    if (/^(data:|https?:)/i.test(src)) continue;
-    try {
-      img.setAttribute('src', localImages.get(src) || await asDataUrl(withBase(src)));
-    } catch (e) { /* keep the relative path rather than lose the image tag */ }
+    if (!/^(data:|https?:)/i.test(src)) jobs.push({ el: img, attr: 'src', src });
   }
-  for (const img of [...doc.querySelectorAll('image[href]')]) {     // a picture in a shape (58)
+  for (const img of doc.querySelectorAll('image[href]')) {          // a picture in a shape (58)
     const src = img.getAttribute('href') || '';
-    if (/^(data:|https?:|#)/i.test(src)) continue;
-    try { img.setAttribute('href', localImages.get(src) || await asDataUrl(withBase(src))); }
-    catch (e) { /* keep the relative path */ }
+    if (!/^(data:|https?:|#)/i.test(src)) jobs.push({ el: img, attr: 'href', src });
   }
+  const got = new Map();
+  await Promise.all([...new Set(jobs.map(j => j.src))].map(async src => {
+    try { got.set(src, localImages.get(src) || await asDataUrl(withBase(src))); }
+    catch (e) { /* keep the relative path rather than lose the image tag */ }
+  }));
+  for (const j of jobs) if (got.has(j.src)) j.el.setAttribute(j.attr, got.get(j.src));
   return res;
 }
 
@@ -36937,45 +36945,70 @@ async function inlineEverything(doc, opts = {}) {
 // README says so, exactly as for a refusal.
 let FONT_FETCH_MS = 10000;
 const fetchWithin = (url, ms = FONT_FETCH_MS) => fetch(url, { signal: AbortSignal.timeout(ms) });
+// A font file never changes at its address, so it is fetched once a session:
+// the second Download in a sitting asks the network for no font at all. A
+// fetch that failed is forgotten, so the next export tries again.
+const fontFetched = new Map();
+function fetchedOnce(key, get) {
+  let p = fontFetched.get(key);
+  if (!p) {
+    p = get();
+    fontFetched.set(key, p);
+    p.catch(() => fontFetched.delete(key));
+  }
+  return p;
+}
 async function inlineWebFonts(doc, res) {
-  for (const link of [...doc.querySelectorAll('link[rel~="stylesheet"]')]) {
+  // The stylesheets together, and each one's faces together: a report with
+  // two families in six weights is some thirty files, which came one by one.
+  const links = [...doc.querySelectorAll('link[rel~="stylesheet"]')].filter(link =>
+    /^(https?:)?\/\/fonts\.googleapis\.com\//i.test(link.getAttribute('href') || ''));
+  const done = await Promise.all(links.map(async link => {
     const href = link.getAttribute('href') || '';
-    if (!/^(https?:)?\/\/fonts\.googleapis\.com\//i.test(href)) continue;
     try {
-      const r = await fetchWithin(href.startsWith('//') ? 'https:' + href : href);
-      if (!r.ok) throw new Error('css ' + r.status);
-      const css = await r.text();
-      const faces = [];
+      const cssUrl = href.startsWith('//') ? 'https:' + href : href;
+      const css = await fetchedOnce('css ' + cssUrl, async () => {
+        const r = await fetchWithin(cssUrl);
+        if (!r.ok) throw new Error('css ' + r.status);
+        return r.text();
+      });
+      const specs = [];
       for (const m of css.matchAll(/(?:\/\*\s*([\w-]+)\s*\*\/\s*)?@font-face\s*{([^}]*)}/g)) {
         if (m[1] && !/^latin(-ext)?$/.test(m[1])) continue;
         const body = m[2];
         const get = k => ((new RegExp(k + '\\s*:\\s*([^;]+)', 'i')).exec(body) || [])[1];
         const url = /url\((['"]?)(https?:[^'")]+)\1\)/.exec(body);
         if (!url) continue;
-        const fr = await fetchWithin(url[2]);
-        if (!fr.ok) throw new Error('font ' + fr.status);
-        const buf = new Uint8Array(await fr.arrayBuffer());
-        faces.push({ family: (get('font-family') || 'font').replace(/['"]/g, '').trim(),
+        specs.push({ family: (get('font-family') || 'font').replace(/['"]/g, '').trim(),
                      weight: (get('font-weight') || '400').trim(),
                      style: (get('font-style') || 'normal').trim(),
-                     subset: m[1] || '', url: url[2], bytes: buf, rule: m[0].replace(/^\/\*[^*]*\*\/\s*/, '') });
+                     subset: m[1] || '', url: url[2], rule: m[0].replace(/^\/\*[^*]*\*\/\s*/, '') });
       }
-      if (!faces.length) throw new Error('no faces');
-      let inline = '';
-      for (const f of faces) {
-        const uri = await new Promise(ok => {
-          const fr = new FileReader();
-          fr.onload = () => ok(fr.result);
-          fr.readAsDataURL(new Blob([f.bytes], { type: 'font/woff2' }));
+      if (!specs.length) throw new Error('no faces');
+      const faces = await Promise.all(specs.map(async f => {
+        const got = await fetchedOnce('face ' + f.url, async () => {
+          const fr = await fetchWithin(f.url);
+          if (!fr.ok) throw new Error('font ' + fr.status);
+          const bytes = new Uint8Array(await fr.arrayBuffer());
+          const uri = await new Promise(ok => {
+            const rd = new FileReader();
+            rd.onload = () => ok(rd.result);
+            rd.readAsDataURL(new Blob([bytes], { type: 'font/woff2' }));
+          });
+          return { bytes, uri };
         });
-        inline += f.rule.replace(f.url, uri) + '\n';
-      }
-      const st = doc.createElement('style');
-      st.setAttribute('data-ds-fonts', '');
-      st.textContent = inline;
-      link.replaceWith(st);
-      res.fonts.push(...faces);
-    } catch (e) { res.fontsLinked.push(href); }     // keep the <link>
+        return { ...f, bytes: got.bytes, uri: got.uri };
+      }));
+      return { link, faces, inline: faces.map(f => f.rule.replace(f.url, f.uri) + '\n').join('') };
+    } catch (e) { return { link, href }; }          // keep the <link>
+  }));
+  for (const d of done) {                           // in the document's order, as before
+    if (!d.faces) { res.fontsLinked.push(d.href); continue; }
+    const st = doc.createElement('style');
+    st.setAttribute('data-ds-fonts', '');
+    st.textContent = d.inline;
+    d.link.replaceWith(st);
+    res.fonts.push(...d.faces.map(({ uri, ...f }) => f));
   }
 }
 
@@ -37670,25 +37703,48 @@ function canvasSignature(cv) {
  *  moment later is right. So it is painted again, after `settle` ms and then
  *  every 40, until two paints in a row are the same pixels. */
 async function drawSvg(svg, cw, ch, settle = 80) {
+  // As a blob: the picture is megabytes (the report's fonts ride in it), and a
+  // data: address made of it had to be percent-encoded, three bytes for one,
+  // for every page. Some browsers also refuse an address that long, which is
+  // one way a page "could not be drawn". A browser that will not read a
+  // canvas painted from a blob gets the data: address, as before.
+  const blobUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+  try {
+    try { return await paintSvg(blobUrl, cw, ch, settle); }
+    catch (e) {
+      return await paintSvg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), cw, ch, settle);
+    }
+  } finally { URL.revokeObjectURL(blobUrl); }
+}
+async function paintSvg(src, cw, ch, settle) {
   const img = new Image();
   const loaded = new Promise((ok, no) => {
     img.onload = ok;
     img.onerror = () => no(new Error('the browser could not draw this page'));
   });
-  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  img.src = src;
   await loaded;
-  const cv = document.createElement('canvas');
-  cv.width = cw; cv.height = ch;
-  const g = cv.getContext('2d', { willReadFrequently: true });
+  // Whether two paints agree is asked of a SMALL painting (a quarter of the
+  // sheet's width at most): reading back the full 288 dpi canvas, some thirty
+  // megabytes, up to eight times a page was most of the time a page took.
+  const k = Math.min(1, 640 / cw);
+  const probe = document.createElement('canvas');
+  probe.width = Math.max(1, Math.round(cw * k)); probe.height = Math.max(1, Math.round(ch * k));
+  const pg = probe.getContext('2d', { willReadFrequently: true });
   let last = null;
-  for (let i = 0; i < 8; i++) {
-    g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch);    // a JPEG has no transparency
-    g.drawImage(img, 0, 0, cw, ch);
-    const sig = canvasSignature(cv);
+  for (let i = 0; i < 20; i++) {
+    pg.fillStyle = '#fff'; pg.fillRect(0, 0, probe.width, probe.height);
+    pg.drawImage(img, 0, 0, probe.width, probe.height);
+    const sig = canvasSignature(probe);            // throws if the canvas may not be read
     if (sig === last) break;
     last = sig;
     await new Promise(r => setTimeout(r, i ? 40 : settle));
   }
+  const cv = document.createElement('canvas');
+  cv.width = cw; cv.height = ch;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch);      // a JPEG has no transparency
+  g.drawImage(img, 0, 0, cw, ch);
   return cv;
 }
 
@@ -37831,7 +37887,7 @@ function buildPdf(pages, title) {
 /** File > Download > PDF without a server. `pages` is the sorted list of
  *  sheet numbers (null: all), `spec` what the person typed for them. */
 async function exportPdfInBrowser(pages, spec) {
-  if (pdfBusy) return;
+  if (pdfBusy) { $('stat').textContent = 'still making the PDF… it will download when it is ready'; return; }
   pdfBusy = true;
   const stat = t => { $('stat').textContent = t; };
   const tick = () => new Promise(r => setTimeout(r, 0));
@@ -37877,7 +37933,10 @@ async function exportPdfInBrowser(pages, spec) {
     });
     const d = frame.contentDocument;
     void d.body.offsetHeight;                          // lay out, so the fonts start loading
-    try { await d.fonts.ready; } catch (e) { /* an engine without it: draw anyway */ }
+    // …and wait for them, but not for ever: a face that never arrives left
+    // this promise pending and the export with it.
+    try { await Promise.race([d.fonts.ready, new Promise(r => setTimeout(r, 8000))]); }
+    catch (e) { /* an engine without it: draw anyway */ }
     await Promise.all([...d.images].map(im => im.complete ? 0
       : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 8000); })));
     await new Promise(r => setTimeout(r, 150));        // a script's first paint
@@ -37889,6 +37948,13 @@ async function exportPdfInBrowser(pages, spec) {
     const rootPx = parseFloat(d.defaultView.getComputedStyle(d.documentElement).fontSize) || 16;
     const out = [];
     let blank = 0;
+    // The head (every style, and the fonts inside them) is the same for every
+    // sheet: written out once, where it was cloned and written per page.
+    const ser = new XMLSerializer();
+    const headCopy = d.head.cloneNode(true);
+    headCopy.querySelectorAll('script').forEach(s => s.remove());
+    const headXml = ser.serializeToString(headCopy);
+    const htmlOpen = ser.serializeToString(d.documentElement.cloneNode(false)).replace(/(\s*\/>|><\/html>)$/, '>');
     for (const [i, n] of want.entries()) {
       stat(`making the PDF… page ${i + 1} of ${want.length}`);
       await tick();
@@ -37898,7 +37964,7 @@ async function exportPdfInBrowser(pages, spec) {
       sheets.forEach(s => { if (s !== sheet) s.style.setProperty('display', 'none', 'important'); });
       const sr = sheet.getBoundingClientRect();
       const words = sheetWords(d, sheet, sr), links = sheetLinks(sheet, sr);
-      const copy = d.documentElement.cloneNode(true);
+      const copy = d.body.cloneNode(true);
       sheets.forEach((s, j) => { was[j] === null ? s.removeAttribute('style') : s.setAttribute('style', was[j]); });
       if (sr.width < 1 || sr.height < 1) continue;     // a sheet that is not drawn is not printed
       copy.querySelectorAll('script').forEach(s => s.remove());
@@ -37909,9 +37975,12 @@ async function exportPdfInBrowser(pages, spec) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}" `
         + `viewBox="${sr.left} ${sr.top} ${w} ${h}" style="font-size:${rootPx}px">`
         + `<foreignObject x="0" y="0" width="${Math.max(pw, Math.ceil(sr.left + w))}" height="${Math.ceil(sr.top + h)}">`
-        + new XMLSerializer().serializeToString(copy) + '</foreignObject></svg>';
+        + htmlOpen + headXml + ser.serializeToString(copy) + '</html></foreignObject></svg>';
       // The first sheet waits longest: its fonts are the ones nobody has loaded.
-      const cv = await drawSvg(svg, cw, ch, out.length ? 80 : 250);
+      // A sheet that would not draw is tried once more before the export fails.
+      let cv;
+      try { cv = await drawSvg(svg, cw, ch, out.length ? 80 : 250); }
+      catch (e) { await new Promise(r => setTimeout(r, 300)); cv = await drawSvg(svg, cw, ch, 250); }
       if (words.length && looksBlank(cv)) blank++;
       const jpeg = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.92));
       out.push({ w, h, iw: cw, ih: ch, words, links, jpeg: new Uint8Array(await jpeg.arrayBuffer()) });
@@ -37928,7 +37997,7 @@ async function exportPdfInBrowser(pages, spec) {
     $('stat').textContent += ` — ${out.length} page${out.length === 1 ? '' : 's'}, ${(blob.size / 1048576).toFixed(1)} MB`
       + (notes.length ? '; ' + notes.join('; ') : '');
   } catch (e) {
-    stat('PDF failed: ' + (e.message || e));
+    stat('PDF failed: ' + (e.message || e) + '. Try again, or download one page at a time (PDF pages)');
     $('stat').title = String(e && e.stack || e);
   } finally {
     if (frame) frame.remove();
