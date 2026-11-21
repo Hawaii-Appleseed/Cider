@@ -3,7 +3,7 @@
 // plays immediately, presentation mode replays a slide's entrances on entry.
 // Published: observer-triggered, script-applied hiding, reduced-motion and
 // print always show content. Engine faces pinned in test_docsync.py. Local.
-const { warmTest: test, expect, gotoEditor, settled: pageSettled, clickTool } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled: pageSettled, clickTool, afterRender } = require('./fixtures/editor-test');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -23,6 +23,10 @@ const armListener = (page) => page.evaluate(() => {
   }, true);
 });
 const animCount = (page) => page.evaluate(() => window.__animCount || 0);
+/** Wait for the entrance to START (the event the tests count), not for a
+ *  fixed time; a count that never arrives falls through to the assertion. */
+const animsStarted = (page, n) => page.waitForFunction(k => (window.__animCount || 0) >= k, n,
+  { timeout: 5000 }).catch(() => {});
 
 test.describe('entrance animations', () => {
   test.beforeEach(async ({ page }) => {
@@ -37,11 +41,11 @@ test.describe('entrance animations', () => {
     async ({ page }) => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await pageSettled(page);
       await page.click('#shape');
       await page.click('#shapepop .shp[data-k="rect"]');
       await frame.locator('[data-shape]').first().waitFor({ state: 'attached', timeout: 20000 });
-      await page.waitForTimeout(800);
+      await pageSettled(page);
       const sid = await page.evaluate(async () => {
         pushHistory();
         layout.shapes[0].rot = 20;          // the collision case the keyframes avoid
@@ -52,11 +56,10 @@ test.describe('entrance animations', () => {
 
       const el = frame.locator(`[data-shape="${sid}"]`);
       await el.click({ button: 'right' });
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-      await page.waitForTimeout(400);
-      await frame.locator('.ds-submenu button', { hasText: 'Rise' }).click();
-      await page.waitForTimeout(1500);
+      await pageSettled(page);
+      await afterRender(page, () => frame.locator('.ds-submenu button', { hasText: 'Rise' }).click());
 
       const st = await page.evaluate(id =>
         layout.shapes.find(x => x.id === id), sid);
@@ -84,14 +87,13 @@ test.describe('entrance animations', () => {
     async ({ page }) => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await pageSettled(page);
       const h1 = frame.locator('[data-el="basics.h1"]');
       await h1.click({ button: 'right' });
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-      await page.waitForTimeout(400);
-      await frame.locator('.ds-submenu button', { hasText: 'Fade in' }).click();
-      await page.waitForTimeout(1500);
+      await pageSettled(page);
+      await afterRender(page, () => frame.locator('.ds-submenu button', { hasText: 'Fade in' }).click());
 
       const pos = await page.evaluate(() => layout.positions['basics.h1']);
       expect(pos.anim.kind).toBe('fade');
@@ -118,7 +120,7 @@ test.describe('entrance animations', () => {
     async ({ page }) => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await pageSettled(page);
       const id = await page.evaluate(async () => {
         pushHistory();
         const tid = freeTId();
@@ -138,11 +140,10 @@ test.describe('entrance animations', () => {
 
       // pick one from the menu — it plays once, on the box itself
       await frame.locator(`[data-el="${id}"]`).click({ button: 'right' });
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-      await page.waitForTimeout(400);
-      await frame.locator('.ds-submenu button', { hasText: 'Rise' }).click();
-      await page.waitForTimeout(1500);
+      await pageSettled(page);
+      await afterRender(page, () => frame.locator('.ds-submenu button', { hasText: 'Rise' }).click());
 
       const played = await page.evaluate(k => {
         const d = document.getElementById('out').contentDocument;
@@ -171,11 +172,11 @@ test.describe('entrance animations', () => {
       expect(settled).toBe(true);
       await armListener(page);
       await play.click();
-      await page.waitForTimeout(900);
+      await animsStarted(page, 1);
       expect(await animCount(page)).toBeGreaterThanOrEqual(1);
       // and twice in a row, so it is repeatable rather than a one-off
       await play.click();
-      await page.waitForTimeout(900);
+      await animsStarted(page, 2);
       expect(await animCount(page)).toBeGreaterThanOrEqual(2);
     });
 
@@ -186,7 +187,7 @@ test.describe('entrance animations', () => {
     await page.setViewportSize({ width: 1280, height: 1300 });
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await pageSettled(page);
     const id = await page.evaluate(async () => {
       pushHistory();
       const tid = freeTId();
@@ -198,9 +199,9 @@ test.describe('entrance animations', () => {
     await pageSettled(page);
 
     await frame.locator(`[data-el="${id}"]`).click({ button: 'right' });
-    await page.waitForTimeout(400);
+    await pageSettled(page);
     await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-    await page.waitForTimeout(400);
+    await pageSettled(page);
     // Drag the speed slider with a REAL mouse, left to right. Dispatching
     // input/change by hand passes even when the control is unusable: every
     // menu cancels mousedown to protect the editor's caret, and cancelling
@@ -212,7 +213,7 @@ test.describe('entrance animations', () => {
     await page.mouse.down();
     await page.mouse.move(sb.x + sb.width * 0.85, sb.y + sb.height / 2, { steps: 10 });
     await page.mouse.up();
-    await page.waitForTimeout(1800);
+    await pageSettled(page);
 
     // committed to the store, and played again at whatever the drag chose
     const out = await page.evaluate(k => {
@@ -233,7 +234,7 @@ test.describe('entrance animations', () => {
     async ({ page }) => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await pageSettled(page);
       const id = await page.evaluate(async () => {
         pushHistory();
         const sid = freeShapeId('chart');
@@ -247,13 +248,12 @@ test.describe('entrance animations', () => {
       await pageSettled(page);
 
       await frame.locator(`[data-shape="${id}"]`).click({ button: 'right' });
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-      await page.waitForTimeout(400);
+      await pageSettled(page);
       const bars = frame.locator('.ds-submenu button', { hasText: 'Bars grow in' });
       await expect(bars).toHaveCount(1);
-      await bars.click();
-      await page.waitForTimeout(1500);
+      await afterRender(page, () => bars.click());
 
       expect(await page.evaluate(i => layout.shapes.find(s => s.id === i).anim, id))
         .toEqual({ kind: 'bars', duration: 0.6, delay: 0 });
@@ -281,7 +281,7 @@ test.describe('entrance animations', () => {
   test('a pie chart is not offered bars — it has none', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await pageSettled(page);
     const id = await page.evaluate(async () => {
       pushHistory();
       const sid = freeShapeId('chart');
@@ -294,9 +294,8 @@ test.describe('entrance animations', () => {
     });
     await pageSettled(page);
     await frame.locator(`[data-shape="${id}"]`).click({ button: 'right' });
-    await page.waitForTimeout(400);
+    await pageSettled(page);
     await frame.locator('.ds-menu button.ds-sub', { hasText: 'Animate' }).hover();
-    await page.waitForTimeout(400);
     await expect(frame.locator('.ds-submenu button', { hasText: 'Bars grow in' }))
       .toHaveCount(0);
     // the whole-element entrances are still all there
@@ -308,7 +307,7 @@ test.describe('entrance animations', () => {
     async ({ page }) => {
       const frame = page.frameLocator('#out');
       await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await pageSettled(page);
       await page.evaluate(async () => {
         pushHistory();
         const id = freeTId();
@@ -321,18 +320,19 @@ test.describe('entrance animations', () => {
       await armListener(page);
 
       await clickTool(page, 'present');
-      await page.waitForTimeout(900);
+      await animsStarted(page, 1);
+      await pageSettled(page);
       const onEntry = await animCount(page);
       expect(onEntry).toBeGreaterThanOrEqual(1);
 
       // leave the slide and come back: it plays again
       await page.keyboard.press('ArrowLeft');
-      await page.waitForTimeout(500);
+      await pageSettled(page);
       await page.keyboard.press('ArrowRight');
-      await page.waitForTimeout(900);
+      await animsStarted(page, onEntry + 1);
       expect(await animCount(page)).toBeGreaterThan(onEntry);
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(400);
+      await pageSettled(page);
     });
 });
 
@@ -343,7 +343,6 @@ test('the published page reveals on scroll, and respects reduced motion',
   async ({ page }) => {
     try {
       await page.goto('start.html');
-      await page.waitForTimeout(600);
       await page.click('#new');
       await page.fill('#np-name', 'Anim Report');
       await page.fill('#np-slug', SLUG);

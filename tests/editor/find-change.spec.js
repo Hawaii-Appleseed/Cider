@@ -6,18 +6,21 @@
 //
 // Everything works on the AUTHORED text, not the rendered HTML, because that
 // is what a replace has to write back.
-const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
+
+// The Find field searches 160ms after the last keystroke (a debounce, so the
+// caret is not taken by a repaint per letter); nothing says when it has run.
+const FIND_BEAT = 260;
 
 test('⌘F opens it, and a word is found where it actually lives',
   async ({ page }) => {
     await gotoEditor(page);
     await page.keyboard.press('Meta+f');
-    await page.waitForTimeout(600);
     await expect(page.locator('#side-title')).toHaveText('Find & Change');
 
     // A word the primer certainly contains.
     await page.locator('#find-needle').fill('budget');
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(FIND_BEAT);
     const hits = await page.evaluate(() => findState.hits.length);
     expect(hits).toBeGreaterThan(3);
     // Grouped by where they are: "12 hits" is only useful if you can see
@@ -30,13 +33,13 @@ test('⌘F opens it, and a word is found where it actually lives',
 test('case and whole-word narrow it', async ({ page }) => {
   await gotoEditor(page);
   await page.keyboard.press('Meta+f');
-  await page.waitForTimeout(600);
+  await settled(page);
   await page.locator('#find-needle').fill('budget');
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(FIND_BEAT);
   const loose = await page.evaluate(() => findState.hits.length);
 
   await page.locator('.find-opt:has-text("Match case") input').check();
-  await page.waitForTimeout(500);
+  await settled(page);
   const cased = await page.evaluate(() => findState.hits.length);
   expect(cased).toBeLessThan(loose);            // "Budget" drops out
   expect(await page.evaluate(() => findState.hits.every(h => h.hit === 'budget')))
@@ -44,13 +47,13 @@ test('case and whole-word narrow it', async ({ page }) => {
 
   // Whole words: "budgets" and "budgeting" stop counting.
   await page.locator('.find-opt:has-text("Match case") input').uncheck();
-  await page.waitForTimeout(400);
+  await settled(page);
   await page.locator('#find-needle').fill('budge');
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(FIND_BEAT);
   const partial = await page.evaluate(() => findState.hits.length);
   expect(partial).toBeGreaterThan(0);
   await page.locator('.find-opt:has-text("Whole words") input').check();
-  await page.waitForTimeout(500);
+  await settled(page);
   expect(await page.evaluate(() => findState.hits.length)).toBeLessThan(partial);
 });
 
@@ -64,14 +67,13 @@ test('Change all rewrites every hit as one undo step', async ({ page }) => {
   const id = await page.evaluate(() => layout.boxes[layout.boxes.length - 1].id);
 
   await page.keyboard.press('Meta+f');
-  await page.waitForTimeout(600);
+  await settled(page);
   await page.locator('#find-needle').fill('Fiscal Year 2026');
   await page.locator('#find-repl').fill('FY2026');
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(FIND_BEAT);
   expect(await page.evaluate(() => findState.hits.length)).toBeGreaterThanOrEqual(2);
 
-  await page.click('#find-all');
-  await page.waitForTimeout(2200);
+  await afterRender(page, () => page.click('#find-all'));
   expect(await page.evaluate(i => layout.boxes.find(b => b.id === i).md, id))
     .toBe('FY2026 and FY2026');
   // One undo step for the whole change — a find/replace that took forty undos
@@ -92,15 +94,14 @@ test('a table cell is searched too', async ({ page }) => {
   await page.evaluate(() => render());
   await settled(page);
   await page.keyboard.press('Meta+f');
-  await page.waitForTimeout(600);
+  await settled(page);
   await page.locator('#find-needle').fill('Sprocket');
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(FIND_BEAT);
   // Found, and named by its cell rather than just by the table.
   expect(await page.evaluate(() => findState.hits.map(h => h.target.label)))
     .toContain('zz-find r1c2');
   await page.locator('#find-repl').fill('Cog');
-  await page.click('#find-all');
-  await page.waitForTimeout(2200);
+  await afterRender(page, () => page.click('#find-all'));
   expect(await page.evaluate(() =>
     layout.tables.find(t => t.id === 'zz-find').rows[0][1])).toBe('Cog');
 });
