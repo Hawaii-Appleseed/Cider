@@ -647,6 +647,20 @@
   :is(#leftrail > button, #rail-pins > button) svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.5;
                      stroke-linecap:round; stroke-linejoin:round; }
   :is(#leftrail > button, #rail-pins > button) svg .fl { fill:currentColor; stroke:none; }
+  /* Three kinds of thing live on the rail, and each now looks like what it is.
+     The TOOLS are one choice of three, so they are one segmented control: a
+     shared ground with the tool in use filled, where they were three loose
+     buttons that looked like the insert buttons under them. The + and what is
+     pinned from it ADD something. And the control that puts the rail away sits
+     at its foot, where the right dock keeps its own. Every button is still
+     34px; the tools only close the 3px between them. */
+  #leftrail > .tool { background:rgba(255,255,255,.07); border-radius:0; }
+  #leftrail > .tool + .tool { margin-top:-3px; }
+  #leftrail > #tool-select { border-radius:var(--r-ctl) var(--r-ctl) 0 0; }
+  #leftrail > #tool-hand { border-radius:0 0 var(--r-ctl) var(--r-ctl); }
+  #leftrail > .tool:hover { background:rgba(255,255,255,.16); }
+  #leftrail > .tool.on, #leftrail > .tool.on:hover { background:var(--sage); border-radius:var(--r-ctl); }
+  #leftrail > .rail-end { margin-top:auto; }
   /* + : the way into everything else. Filled, so it reads as the one action. */
   #leftrail #insert { width:38px; height:38px; border-radius:var(--r-card); color:#fff;
                      background:linear-gradient(180deg,#7DB08A,#5E906E);
@@ -661,7 +675,8 @@
     :is(#leftrail > button, #rail-pins > button) svg { width:17px; height:17px; }
     #leftrail #insert { width:34px; height:34px; border-radius:var(--r-card); }
     #leftrail .rsep { margin:2px 0; }
-    #leftrail .rail-end { height:20px; margin-top:0; }
+    #leftrail .rail-end { height:20px; }
+    #leftrail > .tool + .tool { margin-top:-1px; }
     #rail-pins { gap:1px; }
   }
 
@@ -3863,8 +3878,10 @@
          binds to them. railPins() moves a pinned one up into #rail-pins and
          back here when it is unpinned, so an unpinned one is simply hidden. -->
     <div id="rail-cmds">
+      <!-- A heading over lines of body: text STYLES. It wore the Type tool's T,
+           so a rail with Text pinned showed the same letter twice, four buttons apart. -->
       <button id="text" aria-label="Text styles: heading, subheading, body">
-        <svg viewBox="0 0 14 14"><path d="M2 3.2V2h10v1.2M7 2v10M5.2 12h3.6"/></svg></button>
+        <svg viewBox="0 0 14 14"><path d="M2 3h8" stroke-width="2.3"/><path d="M2 6.9h10M2 9.5h10M2 12.1h6"/></svg></button>
       <button id="shape" aria-label="Shapes: pick one to place on the page in view">
         <svg viewBox="0 0 14 14"><rect x="1.2" y="3.4" width="8" height="8" rx="1.4"/><circle cx="10" cy="4.4" r="2.9"/></svg></button>
       <button id="icon" aria-label="Icons: search thousands of open-source icons">
