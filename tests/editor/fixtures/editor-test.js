@@ -458,7 +458,12 @@ async function fillDialog(page, values) {
   const d = await dialog(page);
   for (const [name, value] of Object.entries(values)) {
     const f = d.locator(`[name="${name}"]`);
-    const tag = await f.evaluate(el => el.tagName);
+    // A field folded under "More details" (dsForm's `more`) opens its fold first.
+    const tag = await f.evaluate(el => {
+      const fold = el.closest('details');
+      if (fold) fold.open = true;
+      return el.tagName;
+    });
     if (tag === 'SELECT') await f.selectOption(value);
     else await f.fill(value);
   }
