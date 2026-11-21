@@ -1121,6 +1121,17 @@
      reads as the drop target going away. Set by the same drag handlers that
      already track the reorder. */
   @media (prefers-reduced-motion:reduce) { #rail { transition:none; } }
+  /* Out of the way while the thing in hand reaches under it: a menu, an open
+     field, a selected object near the foot of the window (stripYield). The
+     band already passes clicks; its chips are what used to take them. */
+  /* Faded and hidden, not slid away: a strip moved below the window made the
+     whole window scroll (a 600px-tall one grew to 686) and left its buttons
+     off screen. And at once, with no fade out: for the length of a fade
+     the strip was still drawn but took no clicks, under a tool rail that had
+     already grown over its corner. */
+  #rail.yield { opacity:0; visibility:hidden; transition:none; }
+  #rail.yield > * { pointer-events:none; }
+  body.ds-strip-yield #leftrail { height:100%; }
   .open-row { display:flex; align-items:center; }
   .open-row .shp { flex:1; min-width:0; }
   .open-forget { flex:none; border:0; background:none; color:#8A9A92; cursor:pointer;
@@ -2010,9 +2021,18 @@
   #pf-count.warn { background:#B54708; }
   #preflightpop, #hyperlinkspop { min-width:320px; max-width:420px; max-height:460px; overflow-y:auto; }
   .pf-group { margin:6px 0 2px; font-size:11px; font-weight:600; color:#374151; }
-  .pf-row { display:grid; grid-template-columns:10px 1fr; gap:7px; align-items:start; padding:4px 2px;
+  .pf-row { display:grid; grid-template-columns:10px 1fr auto; gap:7px; align-items:start; padding:4px 2px;
             border-top:1px solid rgba(0,0,0,.07); font-size:12px; cursor:pointer; }
   .pf-row:hover { background:rgba(0,0,0,.04); }
+  .pf-what { color:#1f2937; }
+  .pf-ig { font:11px system-ui; color:#5B6E66; background:none; border:1px solid transparent;
+           border-radius:var(--r-ctl); padding:1px 6px; cursor:pointer; visibility:hidden; }
+  .pf-row:hover .pf-ig, .pf-ig:focus-visible, .pf-row.ignored .pf-ig { visibility:visible; }
+  .pf-ig:hover { border-color:#C9D6CD; background:#fff; color:#2F3E46; }
+  .pf-row.ignored .pf-what, .pf-row.ignored .pf-note { color:#9CA3AF; }
+  .pf-row.ignored .pf-dot { background:#D1D5DB; }
+  .pf-off { margin-top:8px; }
+  .pf-off > summary { font-size:11px; font-weight:600; color:#6b7280; cursor:pointer; padding:4px 0; }
   .pf-dot { width:8px; height:8px; border-radius:50%; margin-top:4px; background:#B54708; }
   .pf-row.error .pf-dot { background:#B42318; }
   .pf-note { color:#6b7280; font-size:11px; }
@@ -7169,7 +7189,82 @@ function closeMenu(d) {
  *  and could land over the menu opened beside it (the Animate submenu's speed
  *  slider sat under the type bar). While a menu is open the card stands
  *  aside; closeMenu, and a fresh document, bring it back. */
-const menuUp = on => document.body.classList.toggle('ds-menu-up', on);
+const menuUp = on => {
+  document.body.classList.toggle('ds-menu-up', on);
+  if (on) fitMenuInView();
+  stripYield();
+};
+
+/** Every menu is opened at the pointer and then shown with menuUp(true); this
+ *  pulls the newest one back inside the frame's visible box. Most builders
+ *  nudged their own menu, but the object menu (layerMenu, ~35 rows) did not,
+ *  and opened off the bottom of the window with its last half unreachable. */
+function fitMenuInView() {
+  const f = $('out'), d = f && f.contentDocument;
+  if (!d) return;
+  const ms = d.querySelectorAll('.ds-menu:not(.ds-submenu)');
+  const m = ms[ms.length - 1];
+  if (!m) return;
+  const win = d.defaultView || window, r = m.getBoundingClientRect();
+  if (r.bottom > win.innerHeight - 4) {
+    m.style.top = (Math.max(4, r.top - (r.bottom - win.innerHeight) - 4) + win.scrollY) + 'px';
+  }
+  if (r.right > win.innerWidth - 4) {
+    m.style.left = (Math.max(4, r.left - (r.right - win.innerWidth) - 4) + win.scrollX) + 'px';
+  }
+}
+
+/** The page strip floats over the canvas's foot, translucent, and passes
+ *  clicks everywhere but on its chips. That was fine for reading and wrong for
+ *  working: a right-click menu's last rows, a note card, the words being typed
+ *  and the handles of a selected box all landed under the chips, and a click
+ *  meant for them picked a page instead. So while any of those reaches below
+ *  the strip's top edge, the strip slides down out of the way, and it comes
+ *  back the moment nothing does. Not while the pointer is on the strip: that
+ *  is someone using it. Checked on every menu open/close and four times a
+ *  second (selections, edits and scrolls have no single place to hook). */
+function stripYield() {
+  const rail = $('rail'), f = $('out');
+  if (!rail || !f) return;
+  let want = false;
+  if (!rail.hidden && !rail.matches(':hover') && !rail.classList.contains('dragging')) {
+    const d = f.contentDocument;
+    // Nothing that could reach under it: stop before measuring anything. A
+    // measurement here forces a layout four times a second, and with nothing
+    // open that cost showed up as slower scrolling (comments-scroll-perf).
+    const SEL = '.ds-menu, .ds-edit, .ds-endnote-edit, .ds-sel, .ds-grouped';
+    if (!d || !d.body || !d.querySelector(SEL)) return stripYieldSet(rail, false);
+    // Where the strip's top edge RESTS (it is bottom:0 in its parent), not
+    // where it is drawn: measured mid-slide or slid away, the edge is lower,
+    // nothing is "under" it any more, and it would come straight back.
+    const host = rail.offsetParent;
+    const top = (host ? host.getBoundingClientRect().bottom : innerHeight) - rail.offsetHeight;
+    const fr = f.getBoundingClientRect();
+    const k = f.offsetWidth ? fr.width / f.offsetWidth : 1;
+    if (d && d.body) {
+      const under = (el, edgeOnly) => {
+        const r = el.getBoundingClientRect();
+        if (!r.width && !r.height) return false;
+        const t = fr.top + r.top * k, b = fr.top + r.bottom * k;
+        // A selection only needs its FOOT clear (the bottom handles live
+        // there): a tall box selected mid-scroll would otherwise keep the
+        // strip away for as long as it is selected.
+        return edgeOnly ? b > top && b < fr.bottom + 4 : b > top && t < fr.bottom;
+      };
+      want = [...d.querySelectorAll('.ds-menu, .ds-edit, .ds-endnote-edit')].some(el => under(el, false))
+        || [...d.querySelectorAll('.ds-sel, .ds-grouped')].some(el => under(el, true));
+    }
+  }
+  stripYieldSet(rail, want);
+}
+function stripYieldSet(rail, want) {
+  if (rail.classList.contains('yield') === want) return;
+  rail.classList.toggle('yield', want);
+  // The tool rail stops at the strip's top; with the strip away it runs
+  // down to the foot, or the corner under it shows bare.
+  document.body.classList.toggle('ds-strip-yield', want);
+}
+setInterval(() => { if (!document.hidden) stripYield(); }, 250);
 
 /** Every menu cancels mousedown to keep the editor focused: without it the
  *  click blurs the text being edited, commits it, and the caret the menu was
@@ -23032,7 +23127,70 @@ function preflightIssues() {
     [...d.fonts].filter(f => f.status === 'error').forEach(f =>
       issues.push({ kind: 'font-failed', ids: [], note: `${f.family.replace(/^["']|["']$/g, '')} ${f.weight} ${f.style} — the page shows a fallback` }));
   } catch (e) { /* no FontFaceSet */ }
-  return issues.map(i => ({ ...i, severity: PF_ERRORS.has(i.kind) ? 'error' : 'warning' }));
+  const off = new Set(pfIgnored());
+  return issues.map(i => ({ ...i, severity: PF_ERRORS.has(i.kind) ? 'error' : 'warning',
+    ...(off.has(pfKey(i)) ? { ignored: true } : {}) }));
+}
+
+/** A finding's identity for Ignore: its kind and the things it names. Never
+ *  its note, whose numbers (a contrast ratio, a ppi) move with every edit and
+ *  would bring an ignored finding straight back. */
+const pfKey = i => i.kind + '|' + ((i.ids || []).filter(Boolean).slice().sort().join(',')
+  || String(i.page ?? '') + ':' + (i.note || ''));
+/** Findings the person has said are fine (a cover photo meant to sit behind
+ *  the title). Kept in layout.json beside the guides: editor-only, never
+ *  read by the renderer, so a published byte cannot move. */
+const pfIgnored = () => (layout.preflight && Array.isArray(layout.preflight.ignore))
+  ? layout.preflight.ignore : [];
+async function setPfIgnored(i, on) {
+  const s = new Set(pfIgnored()), k = pfKey(i);
+  if (on === s.has(k)) return;
+  pushHistory();
+  if (on) s.add(k); else s.delete(k);
+  if (s.size) layout.preflight = { ...(layout.preflight || {}), ignore: [...s] };
+  else delete layout.preflight;
+  markDirty();
+  await render();
+  $('stat').textContent = on ? 'ignored — it stays listed under Ignored in Preflight'
+    : 'brought back into Preflight';
+}
+
+/** What to call an object in a list a person reads: its kind and its first
+ *  words, never its internal id ("text.tpl-photo"). The id stays on title=. */
+function plainName(id) {
+  const d = $('out').contentDocument;
+  if (!id) return '';
+  if (id.startsWith('endnote.')) {
+    const n = pageNoteNumbers().get(id.slice(8));
+    return n ? `Endnote ${n}` : 'An endnote';
+  }
+  const el = d && d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"], [data-slot="${CSS.escape(id)}"]`);
+  const words = el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  const quote = words ? ` “${words.length > 36 ? words.slice(0, 34).replace(/\s+\S*$/, '') + '…' : words}”` : '';
+  const sh = shapeOf(id);
+  if (sh) {
+    if (sh.kind === 'chart') return 'Chart';
+    if (sh.kind === 'icon') return 'Icon';
+    return ({ line: 'Line', ellipse: 'Circle', triangle: 'Triangle', arrow: 'Arrow' })[sh.kind] || 'Shape';
+  }
+  if (id.startsWith('table.') || tableOf(id)) return 'Table' + quote;
+  const img = el && (el.tagName === 'IMG' ? el : el.querySelector('img'));
+  if (img && !words) {
+    const alt = (img.getAttribute('alt') || '').trim();
+    return 'Picture' + (alt ? ` “${alt}”` : ` (${imgSrcOf(img).split('/').pop()})`);
+  }
+  if (boxOf(id)) return 'Text box' + quote;
+  return (el && el.dataset.slot && !el.dataset.el ? 'Text' : 'Object') + quote;
+}
+
+/** The page an issue is on, as the page strip numbers it. */
+function pfPageOf(i) {
+  const d = $('out').contentDocument;
+  const id = (i.ids || [])[0];
+  const el = d && id && d.querySelector(`[data-el="${CSS.escape(id)}"], [data-shape="${CSS.escape(id)}"], [data-slot="${CSS.escape(id)}"]`);
+  const pg = el && el.closest('section.page');
+  const pid = pg ? pageNumOf(d, pg) : i.page;
+  return pid != null ? pageLabel(pid) : null;
 }
 let pfTimer = null;
 function schedulePreflight() {
@@ -23040,7 +23198,9 @@ function schedulePreflight() {
   pfTimer = setTimeout(() => {
     if (presenting || editing) return;
     let list;
-    try { list = preflightIssues(); } catch (e) { return; }
+    let all;
+    try { all = preflightIssues(); } catch (e) { return; }
+    list = all.filter(i => !i.ignored);   // an ignored finding does not keep the badge up
     const b = $('pf-count');
     const errs = list.filter(i => i.severity === 'error').length;
     b.hidden = !list.length;
@@ -23048,7 +23208,7 @@ function schedulePreflight() {
     b.classList.toggle('warn', !errs);
     $('preflight').title = list.length ? `${errs} error${errs === 1 ? '' : 's'}, ${list.length - errs} warning${list.length - errs === 1 ? '' : 's'}` : 'no problems found';
     syncCheckBadge();
-    if (!$('preflightpop').hidden) preflightRender(list);
+    if (!$('preflightpop').hidden) preflightRender(all);
   }, 1200);
 }
 function goToIssue(i) {
@@ -23064,10 +23224,37 @@ function goToIssue(i) {
   if (sheet) sheet.pg.scrollIntoView({ block: 'start' });
   else if (i.kind === 'uncited-source') $('stat').textContent = `${id}: cite it, or delete it from the sources`;
 }
-function preflightRender(list = preflightIssues()) {
+function preflightRender(all = preflightIssues()) {
   const box = $('pf-list');
   box.textContent = '';
-  if (!list.length) { const ok = document.createElement('p'); ok.className = 'pf-ok'; ok.textContent = 'No problems found.'; box.appendChild(ok); return; }
+  const list = all.filter(i => !i.ignored), off = all.filter(i => i.ignored);
+  if (!list.length) { const ok = document.createElement('p'); ok.className = 'pf-ok'; ok.textContent = 'No problems found.'; box.appendChild(ok); }
+  const row = (i, k, host) => {
+    const r = document.createElement('div');
+    r.className = 'pf-row ' + i.severity + (i.ignored ? ' ignored' : '');
+    r.dataset.kind = k;
+    const dot = document.createElement('span'); dot.className = 'pf-dot';
+    const t = document.createElement('div');
+    const a = document.createElement('div');
+    a.className = 'pf-what';
+    const pg = pfPageOf(i);
+    const names = (i.ids || []).filter(Boolean).map(plainName);
+    const what = names.length > 2 ? `${names.slice(0, 2).join(' and ')} and ${names.length - 2} more`
+      : names.join(' and ');
+    a.textContent = [pg != null ? `Page ${pg}` : '', what].filter(Boolean).join(' · ');
+    a.title = (i.ids || []).join(', ');
+    const nt = document.createElement('div'); nt.className = 'pf-note'; nt.textContent = i.note || '';
+    t.append(a, nt);
+    const ig = document.createElement('button');
+    ig.type = 'button';
+    ig.className = 'pf-ig';
+    ig.textContent = i.ignored ? 'Restore' : 'Ignore';
+    ig.title = i.ignored ? 'Count this again' : 'This is fine: stop counting it (saved with the report; ⌘Z undoes)';
+    ig.addEventListener('click', async ev => { ev.stopPropagation(); await setPfIgnored(i, !i.ignored); preflightRender(); schedulePreflight(); });
+    r.append(dot, t, ig);
+    r.addEventListener('click', () => goToIssue(i));
+    host.appendChild(r);
+  };
   const kinds = [...new Set(list.map(i => i.kind))]
     .sort((a, b) => (PF_ERRORS.has(b) - PF_ERRORS.has(a)));
   kinds.forEach(k => {
@@ -23076,21 +23263,17 @@ function preflightRender(list = preflightIssues()) {
     h.className = 'pf-group';
     h.textContent = `${PF_LABEL[k] || k} · ${rows.length}`;
     box.appendChild(h);
-    rows.slice(0, 25).forEach(i => {
-      const r = document.createElement('div');
-      r.className = 'pf-row ' + i.severity;
-      r.dataset.kind = k;
-      const dot = document.createElement('span'); dot.className = 'pf-dot';
-      const t = document.createElement('div');
-      const a = document.createElement('div');
-      a.textContent = (i.ids || []).join(', ') || (i.page != null ? `page ${i.page}` : '');
-      const nt = document.createElement('div'); nt.className = 'pf-note'; nt.textContent = i.note || '';
-      t.append(a, nt);
-      r.append(dot, t);
-      r.addEventListener('click', () => goToIssue(i));
-      box.appendChild(r);
-    });
+    rows.slice(0, 25).forEach(i => row(i, k, box));
   });
+  if (off.length) {
+    const det = document.createElement('details');
+    det.className = 'pf-off';
+    const sum = document.createElement('summary');
+    sum.textContent = `Ignored · ${off.length}`;
+    det.appendChild(sum);
+    off.forEach(i => row(i, i.kind, det));
+    box.appendChild(det);
+  }
 }
 $('preflight').addEventListener('click', () => {
   const pop = $('preflightpop');
@@ -40429,7 +40612,10 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
    *  severity (error / warning). */
   preflight() {
     const issues = preflightIssues();
-    return { ok: true, issues, errors: issues.filter(i => i.severity === 'error').length,
+    // An ignored finding is still listed (marked ignored: true) but counts
+    // toward neither errors nor the badge.
+    return { ok: true, issues, errors: issues.filter(i => i.severity === 'error' && !i.ignored).length,
+             ignored: issues.filter(i => i.ignored).length,
              counts: issues.reduce((m, i) => ({ ...m, [i.kind]: (m[i.kind] || 0) + 1 }), {}) };
   },
   /** Hyperlinks: hyperlinks() lists every link by address (uses, state);
