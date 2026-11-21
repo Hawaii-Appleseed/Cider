@@ -22,7 +22,7 @@ Saving the Working Families Tax Credit Expansions
 What Hawaiʻi’s working families lose when the 2023 expansions of the state earned income tax credit, the food/excise tax credit and the child and dependent care tax credit expire after 2027, and what renewing them would cost.
 
 [[ha-est-meta.p-1]]
-Hawaiʻi Appleseed · Model run November 19, 2026 · Tax years 2028 to 2031
+Hawaiʻi Appleseed · Model run November 20, 2026 · Tax years 2028 to 2031
 
 [[ha-est-stat-label.div-1]]
 in **lost credits** for working families in 2028 (give or take about $1 million), which is also what renewing them would cost the state.
@@ -58,16 +58,16 @@ The food/excise credit’s amounts and income limits are not adjusted for inflat
 Figure 1. Credit Dollars Working Families Lose Each Year, Hawaiʻi (2028 to 2031)
 
 [[ha-est-col-val.span-1]]
-$84M
+$86M
 
 [[ha-est-col-val.span-2]]
-$84M
-
-[[ha-est-col-val.span-3]]
 $85M
 
+[[ha-est-col-val.span-3]]
+$86M
+
 [[ha-est-col-val.span-4]]
-$87M
+$88M
 
 [[ha-est-source.p-2]]
 Source: Hawaiʻi Appleseed estimates, Census-Forecaster tax model. Millions of dollars.
@@ -91,13 +91,13 @@ THE LOSS FALLS HARDEST ON FAMILIES WITH CHILDREN
 Figure 2. Average Loss per Household That Loses a Credit, by Family Type, Hawaiʻi (Tax Year 2028)
 
 [[ha-est-hbar-val.span-1]]
-$906
+$888
 
 [[ha-est-hbar-cat.div-1]]
 Couple with children
 
 [[ha-est-hbar-val.span-2]]
-$779
+$790
 
 [[ha-est-hbar-val.span-3]]
 $130
@@ -115,16 +115,16 @@ Table 3. Loss by Family Type, Tax Year 2028
 Table 4. Loss by Fifth of Households, Tax Year 2028
 
 [[ha-est-source.p-4]]
-Households are ranked by the combined income of everyone in them. Many Hawaiʻi households include several tax filers, so a grown child or grandparent with a low income can qualify on their own return in a household near the top of the ranking; that is why 27 percent of the top fifth lose some credit.
+Households are ranked by the combined income of everyone in them. Many Hawaiʻi households include several tax filers, so a grown child or grandparent with a low income can qualify on their own return in a household near the top of the ranking; that is why 28 percent of the top fifth lose some credit.
 
 [[ha-est-section-inner.h2-4]]
 More Families in Poverty
 
 [[ha-est-lead-in.span-4]]
-LOSING THE EXPANSIONS PUSHES
+LOSING THE EXPANSIONS DEEPENS POVERTY
 
 [[ha-est-section-inner.p-3]]
-These figures use the Census Bureau’s Supplemental Poverty Measure, which counts tax credits and public benefits as income and adjusts for Hawaiʻi’s cost of living. Because the counts come from a survey sample, they are rounded to the nearest hundred and carry a wide margin of error, with a 90 percent range of 600 to 3,100 people and 0 to 1,000 children (Table 8). The estimate is static and does not count parents who leave work when the credit shrinks, which the model’s separate analysis of the state earned income tax credit finds would add to the total.
+These figures use the Census Bureau’s Supplemental Poverty Measure, which counts tax credits and public benefits as income and adjusts for Hawaiʻi’s cost of living. Because the counts come from a survey sample, they are rounded to the nearest hundred and carry a wide margin of error, with a 90 percent range of 900 to 3,300 people and 100 to 1,000 children (Table 8). The count is the average over 2,000 simulations of which families claim each credit, so it does not hinge on any one household near the line. The estimate is static and does not count parents who leave work when the credit shrinks, which the model’s separate analysis of the state earned income tax credit finds would add to the total.
 
 [[ha-est-section-inner.h2-5]]
 How These Estimates Are Calculated
@@ -157,7 +157,7 @@ These estimates can be off for two reasons. The first is that they start from a 
 Table 8. Sampling Error of the Tax Year 2028 Estimates (90 Percent Confidence)
 
 [[ha-est-section-inner.p-7]]
-The second reason is that the model itself can be wrong, which a survey sample cannot measure. Table 5 checks it instead by comparing the model with the Department of Taxation’s records, and in years the model was not set to match, it came within 5 percent of the Department’s dollars for the earned income and food/excise credits, and within 12 percent for the smaller child and dependent care credit. Neither check covers the chance that incomes grow differently than the Congressional Budget Office projects, or that families respond to the change in ways the model does not capture.
+The second reason is that the model itself can be wrong, which a survey sample cannot measure. Table 5 checks it instead by comparing the model with the Department of Taxation’s records, and in years the model was not set to match, it came within 5 percent of the Department’s dollars for all three credits. Neither check covers the chance that incomes grow differently than the Congressional Budget Office projects, or that families respond to the change in ways the model does not capture.
 
 [[ha-est-section-inner.h3-1]]
 Download the data
@@ -187,7 +187,7 @@ All three expansions were temporary. Act 163 is repealed on December 31, 2027, a
 The state earned income tax credit stays refundable, but at 20 percent of the federal credit.
 
 [[ha-est-section-inner.p-txt-6]]
-working families will receive about $84 million less in tax year 2028, with $42.9 million coming from the state earned income tax credit, $33.8 million from the food/excise tax credit and $7.7 million from the child and dependent care tax credit. Renewing all three would cost the state the same amount, about $339 million over tax years 2028 to 2031.[^n5-hawaii-appleseed-forecast]
+working families will receive about $86 million less in tax year 2028, with $42.9 million coming from the state earned income tax credit, $33.8 million from the food/excise tax credit and $9.1 million from the child and dependent care tax credit. Renewing all three would cost the state the same amount, about $346 million over tax years 2028 to 2031.[^n5-hawaii-appleseed-forecast]
 
 [[ha-est-section-inner.p-txt-7]]
 Sampling error puts the 2028 loss within about $1 million either way (Table 8).
@@ -199,13 +199,13 @@ State earned income tax credit
 Food/excise tax credit
 
 [[ha-est-section-inner.p-txt-8]]
-and on the lowest incomes. Among the 20 percent of households with the lowest incomes, 74 percent would lose part of a credit in 2028, an average of $487 each, and that group would take 42 percent of the total loss. Single-parent households that lose part of a credit give up more, an average of $906 each, as Figure 2 shows.
+and on the lowest incomes. Among the 20 percent of households with the lowest incomes, 75 percent would lose part of a credit in 2028, an average of $479 each, and that group would take 41 percent of the total loss. Single-parent households that lose part of a credit give up more, an average of $888 each, as Figure 2 shows.
 
 [[ha-est-section-inner.p-txt-9]]
-an estimated 1,800 more people below the poverty line in 2028, about 500 of them children, and deepens poverty for families already below it by $16 million. The state poverty rate rises from 8.7 percent to 8.8 percent. For single parents and their children it rises from 19.1 percent to 19.7 percent.
+in 2028: families below the poverty line would fall a combined $16 million further short of it, and an estimated 2,100 more people would drop below the line, about 600 of them children. The state poverty rate rises from 8.7 percent to 8.8 percent, and for single parents and their children from 19.2 percent to 19.7 percent.
 
 [[ha-est-section-inner.p-txt-10]]
-with Hawaiʻi households from the Census Bureau’s 2024 American Community Survey, which records the age and relationship of each household member, and it grows their incomes forward using Congressional Budget Office projections. It then calculates the federal earned income tax credit for each household, adjusted to match IRS counts of Hawaiʻi claimants, and uses the statute’s own schedules to calculate each state credit under both laws. For the child and dependent care tax credit, it uses what similar families with young children spend on child care in the Census Bureau’s Current Population Survey.
+with Hawaiʻi households from the Census Bureau’s 2024 American Community Survey, which records the age and relationship of each household member, and it grows their incomes forward using Congressional Budget Office projections. It then calculates the federal earned income tax credit for each household, adjusted to match IRS counts of Hawaiʻi claimants, and uses the statute’s own schedules to calculate each state credit under both laws. For the child and dependent care tax credit, it uses what families with young children spend on child care in four years of the Census Bureau’s Current Population Survey, with the share of families who pay for care at each income level set from IRS records of the federal child care credit.
 
 [[ha-est-section-inner.p-txt-11]]
 Because not every eligible household claims a credit, the model sets how many do by matching what the Department of Taxation actually paid, using the latest year the Department reports for each credit, which is 2024 for the state earned income tax credit (the new credit claimed that year)[^n6-hawaii-department-of]
@@ -214,7 +214,7 @@ Because not every eligible household claims a credit, the model sets how many do
 and 2023 for the food/excise and child and dependent care credits.[^n7-hawaii-department-of]
 
 [[ha-est-section-inner.p-txt-13]]
-The model then keeps that claim rate the same in every later year. As a test, the same rate applied to 2022, before the expansion, comes within 2 percent of what the Department paid for the food/excise credit that year under the old table, and comes out 12 percent above what it paid for the child and dependent care credit under the old limits (Table 5).
+The model then keeps that claim rate the same in every later year. As a test, the same rate applied to 2022, before the expansion, comes within 2 percent of what the Department paid for the food/excise credit that year under the old table, and within 1 percent of what it paid for the child and dependent care credit under the old limits (Table 5).
 
 [[ha-est-downloads.li-txt-1]]
 : standard errors and 90 percent ranges for the loss and household figures (Table 8)
@@ -241,13 +241,13 @@ The model then keeps that claim rate the same in every later year. As a test, th
 : run parameters, inputs and code version
 
 [[ha-est-stat-num.div-1]]
-$84 million
+$86 million
 
 [[ha-est-stat-num.div-2]]
-182,000
+184,000
 
 [[ha-est-stat-num.div-3]]
-$906
+$888
 
 [[sources]]
 [n1-hawaii-state-legislature]: Hawaiʻi State Legislature, Act 163, Session Laws of Hawaiʻi 2023, §§2, 3 and 5 (repeal and reenactment on December 31, 2027).
