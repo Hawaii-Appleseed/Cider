@@ -225,7 +225,7 @@
          flex:var(--cg, 0) 1 auto; max-width:var(--cmax, none); min-width:min-content; padding:0 7px; align-items:center;
          border-left:1px solid var(--hairline); }
   /* nothing selected, or a page: a few columns, centred in the bar rather than left in a clump */
-  #ctl-cols[data-mode=empty] { justify-content:center; gap:28px; }
+  #ctl-cols[data-mode=empty] { justify-content:safe center; gap:28px; }   /* safe: in a window narrower than the hint it starts at the left edge, where plain centring cut the page-size pill in half and no scroll could reach it */
   #ctl-cols[data-mode=empty] .ctl-col:last-child .ctl-cell { justify-content:flex-start; }
   /* a phone scrolls the bar: B / I / U, which show with words selected, lead it rather than sit
      four swipes along (audit3.spec.js) */
@@ -1148,11 +1148,14 @@
           display:flex; align-items:flex-end; gap:10px;
           overflow-x:auto; overflow-y:hidden; scrollbar-width:thin;
           padding:10px 12px;
-          background:rgba(51,64,73,.68);
-          -webkit-backdrop-filter:blur(16px) saturate(1.15);
-          backdrop-filter:blur(16px) saturate(1.15);
+          /* 2026-11-21: the frost moved to a backing of its own (body::before, below). The strip
+             is dimmed with opacity, and opacity applies to the element AND its backdrop filter:
+             at .6, two fifths of the page came through unblurred, so a cover's headline could be
+             read behind the thumbnails, one thing drawn on another. The strip is still
+             translucent and still dimmed at rest; what is under it is now only colour. */
+          background:rgba(51,64,73,.82);
           border-top:1px solid rgba(255,255,255,.09);
-          opacity:.6;
+          opacity:.79;
           transition:opacity var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
           /* The band passes clicks; only the CONTROLS in it take them. Floating
              an opaque-behaviour bar over the canvas would swallow every click
@@ -1165,7 +1168,19 @@
   /* :focus-within as well as :hover — reaching the strip by keyboard has to
      bring it up too, or Tab lands you on a control you cannot see. */
   #rail:hover, #rail:focus-within, #rail.dragging {
-          opacity:1; background:rgba(51,64,73,.86); }
+          opacity:1; background:rgba(51,64,73,.92); }
+  /* The strip's frost: the band of canvas under the open strip, blurred until nothing in it
+     can be read, and nothing else (no fill, no clicks). Just under the strip in the same
+     layer (it comes first in the body, as the strip is the body's own child), as wide as the strip is in every arrangement. */
+  body::before { content:""; position:absolute; left:0; right:0; bottom:0; height:var(--strip-h, 0px);
+          z-index:var(--z-strip); pointer-events:none;
+          -webkit-backdrop-filter:blur(22px) saturate(1.1);
+          backdrop-filter:blur(22px) saturate(1.1); }
+  body:has(> #rail.folded)::before, body:has(> #rail[hidden])::before,
+  body.ds-present::before, body.ds-focus::before { display:none; }
+  body.ds-dock::before { right:var(--dock-w); }
+  body.cmt-margin::before { right:var(--cmt-gutter, 384px); }
+  body.ds-dock.cmt-margin::before { right:calc(var(--cmt-gutter, 384px) + var(--dock-w)); }
   /* Nobody wants a fade mid-drag: a chip dragged across a dimming strip
      reads as the drop target going away. Set by the same drag handlers that
      already track the reorder. */
@@ -1227,7 +1242,6 @@
      turns off what it does not want: the ground, the blur, the dim (there is
      nothing left to dim but a word and a chevron) and the clicks. */
   #rail.folded { background:transparent; border-top-color:transparent;
-          -webkit-backdrop-filter:none; backdrop-filter:none;
           opacity:1; pointer-events:none; }
   #rail.folded:hover, #rail.folded:focus-within { background:transparent; }
   #rail.folded #rail-list, #rail.folded #rail-add { display:none; }
@@ -1321,7 +1335,7 @@
           background:#fff; color:var(--ink); }
   #dock-panel[hidden] { display:none; }
   #dock:not(.pinned) #dock-panel { position:absolute; right:40px; top:0; bottom:var(--strip-h, 0px);
-          border-radius:var(--r-edge) 0 0 var(--r-edge); box-shadow:var(--shadow-sheet-r); }
+          border-radius:var(--r-edge) 0 0 var(--r-edge); box-shadow:-1px 0 0 var(--edge), var(--shadow-sheet-r); }
   #dock.pinned #dock-panel { border-right:1px solid var(--surface); }
   #dock.pinned:has(#dock-panel:not([hidden])) { border-left-color:var(--edge); }
   #dock-head { display:flex; align-items:center; gap:2px; padding:8px 6px 7px 14px;
@@ -1379,7 +1393,9 @@
              as the rail it sits against, so the two read as one assembly
              rather than two panels that happen to touch. */
           border-radius:0 var(--r-edge) var(--r-edge) 0;
-          box-shadow:var(--shadow-sheet);
+          /* a hairline edge under the shadow: over a pale page the shadow alone left a white
+             tray with no outline against a near-white sheet */
+          box-shadow:1px 0 0 var(--edge), var(--shadow-sheet);
           /* visible, so the fold chevron can sit on the outer edge */
           overflow:visible;  }
   #side[hidden] { display:none; }
@@ -1387,8 +1403,10 @@
      the rail, still there to pull the same panel out again. */
   #side.folded { width:0; border-right:0; box-shadow:none; }
   #side.folded #side-head, #side.folded #side-body { display:none; }
-  #side-fold { position:absolute; right:-13px; top:50%; margin-top:-26px;
-          width:26px; height:52px; padding:0; z-index:var(--z-raise); cursor:pointer;
+  /* The tab hangs wholly OUTSIDE the tray's edge (it used to straddle it, 13px in and 13px
+     out, and lay over the right ends of the tray's own rows: the Apply buttons, a swatch). */
+  #side-fold { position:absolute; right:-20px; top:50%; margin-top:-24px;
+          width:20px; height:48px; padding:0; z-index:var(--z-raise); cursor:pointer;
           display:flex; align-items:center; justify-content:center;
           font:15px system-ui; line-height:1; color:#5B6E66;
           background:#fff; border:1px solid var(--edge); border-left:0;
@@ -1406,7 +1424,7 @@
      tool the middle of the rail happened to reach (Chart, at most heights).
      Pushed out by its full width instead, so it begins exactly where the rail
      ends and covers nothing. */
-  #side.folded #side-fold { right:-26px;
+  #side.folded #side-fold { right:-20px;
           background:var(--chrome2); border-color:var(--line); border-left:0;
           color:var(--dim); box-shadow:var(--shadow-edge); }
   #side.folded #side-fold span { transform:rotate(180deg); }
@@ -2529,6 +2547,17 @@
   .dsimp-how { font:11px system-ui; color:#84968D; margin:2px 0 0; }
   .dsimp-how.guess { color:#B7791F; }
   .dsimp-note { font:12px/1.5 system-ui; color:#5B6E66; margin:0; }
+
+  /* ---- a narrow window (a phone) ------------------------------------------
+     A pop-up is never wider than the window: Position & arrange is 430px by its id and ran off
+     the right edge of a 390px one, its last field cut. :is() carries an id, so this outranks
+     the pop-ups' own id rules without !important. And the Insert palette drops what a phone
+     has no room or use for (each row's category, the keyboard hints), which had wrapped a
+     row's name and note onto five lines. */
+  @media (max-width:480px) {
+    :is(#bar, #ctl, #leftrail, #work, #dock) .pop:not(.docked) { max-width:calc(100vw - 42px); min-width:0; }
+    #pal-list .pal-grp, #pal-foot { display:none; }
+  }
 
   /* ---- motion -------------------------------------------------------------
      What moves, and how. A surface ARRIVES with a short fade (--dur-2); the
