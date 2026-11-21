@@ -11,10 +11,13 @@
     "test:ui": "playwright test --ui",
     "test:collab": "node --test collab/serialize.test.mjs",
     "test:shards": "node --test tools/ci-shard.test.mjs",
-    "test:hub-verbs": "node --test tools/hub-verbs.test.mjs"
+    "test:hub-verbs": "node --test tools/hub-verbs.test.mjs",
+    "typecheck": "node tools/typecheck-editor.mjs",
+    "test:typecheck": "node --test tools/typecheck-editor.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
-    "acorn": "^8.18.0"
+    "acorn": "^8.18.0",
+    "typescript": "^5.9.3"
   }
 }
