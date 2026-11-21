@@ -512,6 +512,14 @@ jobs:
           python-version: "3.12"
       - run: pip install --quiet pyyaml
       - run: python3 -m docsync.check
+      # The editor's script, read by TypeScript as JavaScript: a name that does
+      # not exist, a call with the wrong number of arguments, a function
+      # declared twice. Errors may only go down (tools/typecheck-editor.json).
+      - name: Editor typecheck
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --test tools/typecheck-editor.test.mjs
+          npm run typecheck
       # The shard planner: every spec file on exactly one shard, and even.
       - name: Shard planner
         run: node --test tools/ci-shard.test.mjs
