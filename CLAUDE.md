@@ -325,7 +325,15 @@ Rules that bite:
   `CHORDS` in edit.html, and both key listeners — the page's (`keysFor`) and
   the chrome's — do their own field guards and then call `objectChord`.
   Never add a chord to a listener: add a row, and `tests/editor/seams.spec.js`
-  presses it from both documents. Every width or height lands through
+  presses it from both documents. Every change to the document goes
+  through `changeDoc(() => { … })` (2026-11-21): it marks the undo step, runs
+  the change, marks it for saving and renders (`{ render: false }` for a
+  change that only repaints); a change that returns `false` or `{ ok: false }`
+  or throws, having changed nothing, leaves no step. Never write
+  `pushHistory(); …; markDirty(); await render()` at a new site:
+  `tools/edit-ratchet.mjs` counts the bare `pushHistory()` calls still to be
+  moved over and CI fails when the count rises (`--write` lowers the bar
+  after a batch). Every width or height lands through
   `commitSize(d, el, {w, h})` — a handle drag, a group's corner, the pilot's
   `place()` — which knows where each kind keeps its size (a text box's
   height floor, a paragraph's `hmin`, a table's width only). Never write
