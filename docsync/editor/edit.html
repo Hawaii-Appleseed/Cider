@@ -1124,8 +1124,12 @@
   /* Out of the way while the thing in hand reaches under it: a menu, an open
      field, a selected object near the foot of the window (stripYield). The
      band already passes clicks; its chips are what used to take them. */
-  #rail.yield { opacity:0; transform:translateY(100%);
-          transition:opacity .12s ease, transform .16s ease; }
+  /* Faded and hidden, not slid away: a strip moved below the window made the
+     whole window scroll (a 600px-tall one grew to 686) and left its buttons
+     off screen. And at once, with no fade out: for the length of a fade
+     the strip was still drawn but took no clicks, under a tool rail that had
+     already grown over its corner. */
+  #rail.yield { opacity:0; visibility:hidden; transition:none; }
   #rail.yield > * { pointer-events:none; }
   body.ds-strip-yield #leftrail { height:100%; }
   .open-row { display:flex; align-items:center; }
