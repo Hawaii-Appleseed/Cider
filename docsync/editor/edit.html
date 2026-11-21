@@ -671,7 +671,7 @@
   #palette[hidden] { display:none; }
   #pal-scrim { position:absolute; inset:0; background:rgba(33,46,52,.16); }
   #pal-card { position:absolute; left:calc(var(--rail-w) + var(--ruler-w) + 10px); top:calc(var(--ruler-w) + 12px); width:min(500px, calc(100% - var(--rail-w) - var(--ruler-w) - 24px));
-              max-height:calc(100% - 24px); display:flex; flex-direction:column; background:#fff; color:var(--ink);
+              max-height:calc(100% - 24px - var(--strip-h, 0px)); display:flex; flex-direction:column; background:#fff; color:var(--ink);
               border-radius:var(--r-card); overflow:hidden;
               box-shadow:var(--shadow-modal); }
   #pal-search { flex:none; display:flex; align-items:center; gap:12px; height:60px; padding:0 18px;
@@ -1366,6 +1366,8 @@
   #dock-body .ty-seg button:disabled, #dock-body .ar-posrows > button:disabled { opacity:.45; cursor:default; }
   #dock-body .ar-posrows select { height:26px; padding:0 6px; font:12.5px system-ui; color:var(--ink);
           border:1px solid var(--edge); border-radius:var(--r-ctl); background:var(--surface); }
+  #dock-body .ar-posrows > .ar-pos:not(.ar-multi) { flex-basis:calc((100% - 8px) / 2); }
+  #dock-body .ar-posrows > .ty-sep:not(#ar-possep) { display:none; }   /* a rule that ends a wrapped row divides nothing */
   #dock .pop-h.dk-dup { display:none; }   /* the dock's head already says it */
   body.ds-dock #rail { right:var(--dock-w); }
   body.ds-dock #context { right:var(--dock-w); }
@@ -1442,7 +1444,10 @@
      67px thumbnail, its label, and the band's own padding). Without this the
      bottom section of a long panel is visible and unclickable, which is worse
      than being hidden. */
-  #side-body { flex:1; min-height:0; overflow-y:auto; padding:0 14px 24px; }
+  #side-body { flex:1; min-height:0; overflow-y:auto; padding:0 14px 24px;
+          /* the last row fades out at the scroll edge instead of being cut through its letters */
+          -webkit-mask-image:linear-gradient(#000 calc(100% - 20px), transparent);
+          mask-image:linear-gradient(#000 calc(100% - 20px), transparent); }
   #side-body h4 { display:flex; align-items:center; gap:7px; font:600 12.5px system-ui;
           margin:16px 0 9px; color:var(--ink); }
   #side-search { width:100%; box-sizing:border-box; font:13px system-ui;
@@ -1756,6 +1761,16 @@
   .ar-dashrow button.on { background:#2F3E46; color:#fff; border-color:#2F3E46; }
   #ar-pospop { width:430px; }
   .ar-posrows { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  /* The numbers are a table, not a run of words: the rule before them is a line break, and
+     the fields sit in equal columns (four in the pop-up: place and size, then the turns; two
+     in the dock's narrow panel), each a fixed column for its letter and the rest for its box.
+     Wrapped as words, the last field sat alone on a row and X ended a row of buttons. */
+  .ar-posrows > [hidden] { display:none; }   /* out of #arrange (docked) nothing else hides them */
+  .ar-posrows > #ar-possep { flex:0 0 100%; height:0; margin:0; background:none; }
+  .ar-posrows > .ar-pos:not(.ar-multi) { display:grid; grid-template-columns:14px minmax(0, 1fr); gap:4px;
+        flex:0 0 calc((100% - 24px) / 4); min-width:0; margin:2px 0; box-sizing:border-box; }
+  .ar-posrows > .ar-pos:not(.ar-multi) input { width:100% !important; min-width:0; box-sizing:border-box; }
+  .ar-posrows > .ar-pos:not(.ar-multi)[hidden] { display:none; }
   #type[hidden], #arrange[hidden] { display:none; }
   /* Same trap one level down: a styled button's display beats the hidden
      attribute's UA display:none, so a "hidden" control kept rendering. */
@@ -2522,6 +2537,7 @@
   .dsdlg-btns button { font:600 12.5px system-ui; padding:7px 15px; border-radius:var(--r-ctl);
         cursor:pointer; border:1px solid var(--edge); background:#fff; color:var(--ink); }
   .dsdlg-btns button:hover { border-color:var(--sage); background:var(--hover); }
+  .dsdlg-btns button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
   .dsdlg .dsdlg-ok, .dsdlg-btns button.dsdlg-ok { background:var(--sage); border-color:var(--sage); color:#fff; }
   .dsdlg .dsdlg-ok:hover, .dsdlg-btns button.dsdlg-ok:hover { background:var(--deep); border-color:var(--deep); }
   .dsdlg .dsdlg-ok.danger, .dsdlg-btns button.dsdlg-ok.danger { background:#C0392B; border-color:#C0392B; }
