@@ -7229,6 +7229,11 @@ function stripYield() {
   let want = false;
   if (!rail.hidden && !rail.matches(':hover') && !rail.classList.contains('dragging')) {
     const d = f.contentDocument;
+    // Nothing that could reach under it: stop before measuring anything. A
+    // measurement here forces a layout four times a second, and with nothing
+    // open that cost showed up as slower scrolling (comments-scroll-perf).
+    const SEL = '.ds-menu, .ds-edit, .ds-endnote-edit, .ds-sel, .ds-grouped';
+    if (!d || !d.body || !d.querySelector(SEL)) return stripYieldSet(rail, false);
     // Where the strip's top edge RESTS (it is bottom:0 in its parent), not
     // where it is drawn: measured mid-slide or slid away, the edge is lower,
     // nothing is "under" it any more, and it would come straight back.
@@ -7250,12 +7255,14 @@ function stripYield() {
         || [...d.querySelectorAll('.ds-sel, .ds-grouped')].some(el => under(el, true));
     }
   }
-  if (rail.classList.contains('yield') !== want) {
-    rail.classList.toggle('yield', want);
-    // The tool rail stops at the strip's top; with the strip away it runs
-    // down to the foot, or the corner under it shows bare.
-    document.body.classList.toggle('ds-strip-yield', want);
-  }
+  stripYieldSet(rail, want);
+}
+function stripYieldSet(rail, want) {
+  if (rail.classList.contains('yield') === want) return;
+  rail.classList.toggle('yield', want);
+  // The tool rail stops at the strip's top; with the strip away it runs
+  // down to the foot, or the corner under it shows bare.
+  document.body.classList.toggle('ds-strip-yield', want);
 }
 setInterval(() => { if (!document.hidden) stripYield(); }, 250);
 
