@@ -2575,6 +2575,81 @@
     #pal-list .pal-grp, #pal-foot { display:none; }
   }
 
+  /* ---- the menu bar and what it opens ------------------------------------
+     The top row is a MENU BAR and a few actions, and it was drawn as one run
+     of identical outlined buttons. Now: the menus (File, View, Check, the
+     zoom level, the editing mode) are plain names on the chrome that take a
+     ground when reached for and keep it while their menu is open; the acts
+     (Save, Push, Publish and the notices) keep their filled or outlined
+     shapes, so the eye finds them. Heights and gaps are unchanged. */
+  #bar > :is(#file, #view, #check, #zoombtn, #mode) { background:transparent; border-color:transparent;
+        font-size:13px; font-weight:500; padding:5px 9px; }
+  #bar > :is(#file, #view, #check, #zoombtn, #mode):hover { background:var(--chrome-hover); border-color:transparent; }
+  #bar:has(#filepop:not([hidden]), #openpop:not([hidden]), #resizepop:not([hidden]), #downloadpop:not([hidden])) > #file,
+  #bar:has(#viewpop:not([hidden])) > #view, #bar:has(#checkpop:not([hidden])) > #check,
+  #bar:has(#zoompop:not([hidden])) > #zoombtn { background:var(--ctl-hover); border-color:var(--ctl-line); color:#fff; }
+  #bar > button:focus-visible { outline:2px solid #BFE0C7; outline-offset:1px; }
+  /* Undo and redo: drawn arrows. The two characters they were (U+21B6, U+21B7)
+     come from whatever font has them, and here that was a thin hook a third
+     the size of its button. The characters stay in the markup for a reader
+     without the stylesheet; the button's name is its aria-label. */
+  #bar > :is(#undo, #redo) { font-size:0; width:30px; justify-content:center; padding:0;
+        background:transparent; border-color:transparent; }
+  #bar > :is(#undo, #redo):hover:not(:disabled) { background:var(--chrome-hover); border-color:transparent; }
+  #bar > :is(#undo, #redo):disabled { background:transparent; border-color:transparent; opacity:.38; }
+  #bar > :is(#undo, #redo)::before { content:''; width:16px; height:16px; background:currentColor;
+        -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%23000%27 stroke-width=%271.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 3.5L3 6.5l3 3%27/%3E%3Cpath d=%27M3.2 6.5h6.3a3.5 3.5 0 0 1 0 7H7%27/%3E%3C/svg%3E") center/contain no-repeat;
+        mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%23000%27 stroke-width=%271.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 3.5L3 6.5l3 3%27/%3E%3Cpath d=%27M3.2 6.5h6.3a3.5 3.5 0 0 1 0 7H7%27/%3E%3C/svg%3E") center/contain no-repeat; }
+  #bar > #redo::before { -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%23000%27 stroke-width=%271.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M10 3.5l3 3-3 3%27/%3E%3Cpath d=%27M12.8 6.5H6.5a3.5 3.5 0 0 0 0 7H9%27/%3E%3C/svg%3E"); mask-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27none%27 stroke=%27%23000%27 stroke-width=%271.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M10 3.5l3 3-3 3%27/%3E%3Cpath d=%27M12.8 6.5H6.5a3.5 3.5 0 0 0 0 7H9%27/%3E%3C/svg%3E"); }
+  /* Check's count sits IN the button, after its name. Hung on the corner of a
+     button that no longer has an outline, it lay over the menu's own arrow. */
+  #check-count { position:static; min-width:17px; height:17px; padding:0 5px; margin-left:1px; border-radius:99px;
+        font:600 10.5px/17px system-ui, sans-serif; }
+  .pop.menu .shp-k { font:500 11.5px system-ui; color:#7C9188; letter-spacing:.4px;
+        padding:1px 5px; border-radius:5px; background:var(--surface-2); }
+  .pop.menu .shp:hover .shp-k { background:var(--surface); }
+  /* History: a time is one line. */
+  #histpop .hrow .ht { width:auto; min-width:74px; white-space:nowrap; }
+  /* The panels Check opens, the Download footer and Find & Change: every small
+     button and field in them is the editor's own light control. They were the
+     browser's (a grey bevel, a black outline, a blue ring) beside styled rows. */
+  :is(#hl-tools, .hl-acts, #cl-tools, .cl-acts, .lk-acts, .nt-acts, .dl-pages) button {
+        flex:none; height:26px; padding:0 10px; font:600 11.5px system-ui; white-space:nowrap; cursor:pointer;
+        border:1px solid var(--edge); border-radius:var(--r-ctl); background:var(--surface); color:var(--ink);
+        transition:background-color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease); }
+  :is(#hl-tools, .hl-acts, #cl-tools, .cl-acts, .lk-acts, .nt-acts, .dl-pages) button:hover:not(:disabled) {
+        background:var(--hover); border-color:var(--sage); }
+  :is(#hl-tools, .hl-acts, #cl-tools, .cl-acts, .lk-acts, .nt-acts, .dl-pages) button:active:not(:disabled) { background:var(--pressed); }
+  :is(#hl-tools, .hl-acts, #cl-tools, .cl-acts, .lk-acts, .nt-acts, .dl-pages) button:disabled { opacity:.5; cursor:default; }
+  #hl-tools { display:flex; gap:6px; margin:2px 0 8px; }
+  .pop.menu .dl-pages input, #findpop select {
+        height:28px; box-sizing:border-box; padding:0 8px; font:12.5px system-ui; color:var(--ink);
+        border:1px solid var(--edge); border-radius:var(--r-ctl); background:var(--surface); }
+  .pop.menu .dl-pages input:focus, #findpop select:focus, #findpop input.ch-title:focus {
+        outline:2px solid var(--focus); outline-offset:-1px; border-color:var(--sage); }
+  .pop.menu .dl-pages { gap:8px; }
+  .pop.menu .dl-pages input { flex:1; min-width:0; width:auto; }
+  /* A long address gives way to its button: 1fr alone is as wide as the
+     address, which pushed Change… out of the panel. */
+  .hl-row { grid-template-columns:minmax(0, 1fr) auto; gap:8px; padding:7px 4px; align-items:center; }
+  .hl-row > :first-child, .lk-row > :nth-child(2) { min-width:0; }
+  .lk-row, .cl-row, .nt-row { padding-left:4px; padding-right:4px; }
+  .pf-row { padding:5px 6px; border-radius:var(--r-ctl); }
+  .pf-group { margin:10px 0 3px; font-size:11.5px; }
+  .pf-row:hover { background:var(--hover); }
+  /* Find & Change sits in the 252px tray: its rows wrap, its fields take the
+     tray's width and no more (they ran under its right edge), and a choice of
+     style is a full-width field. */
+  #findpop.docked { min-width:0; }
+  #findpop .tp-row { flex-wrap:wrap; gap:8px 12px; margin-bottom:10px; }
+  #findpop .find-opt { flex:0 1 auto; min-width:0; font-size:12px; }
+  #findpop .find-opt:has(select) { flex:1 1 100%; }
+  #findpop select { width:100%; min-width:0; }
+  #findpop input.ch-title { width:100%; box-sizing:border-box; }
+  #findpop .find-font { flex-wrap:nowrap; }
+  #findpop .find-font > .find-opt { flex:0 0 40%; }
+  #findpop .find-font > select { flex:1 1 0; width:auto; }
+  #findpop #find-all { flex:1 1 100%; }
   /* ---- motion -------------------------------------------------------------
      What moves, and how. A surface ARRIVES with a short fade (--dur-2); the
      veiled cards and dialogs also rise 3% to size. A surface leaves at once:
