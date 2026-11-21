@@ -12,7 +12,7 @@
 // leave those with two of everything. Two mousedown handlers is two
 // startDrags, two pushHistorys, and an undo that needs pressing twice — so
 // the tests count undo steps, which is where that would surface.
-const { sharedTest: test, expect, gotoEditor, selectWithoutTyping, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, selectWithoutTyping, settled, afterRender } = require('./fixtures/editor-test');
 
 /** The report document's identity, as a token that changes when it reloads. */
 const docToken = (page) => page.evaluate(() => {
@@ -37,13 +37,13 @@ test.describe('incremental rendering', () => {
     await gotoEditor(page);
     await page.frameLocator('#out').locator('section.page').nth(3)
       .scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
   });
 
   test('an ordinary edit patches the page in place — the document never reloads',
     async ({ page }) => {
       const id = await addBox(page);
-      await page.waitForTimeout(600);
+      await settled(page);
       const before = await docToken(page);
 
       const moved = await page.evaluate(async (i) => {
@@ -62,8 +62,7 @@ test.describe('incremental rendering', () => {
       const before = await docToken(page);
       const was = await page.frameLocator('#out').locator('section.page').count();
       // A blank page changes the section count, which patchPages will not touch.
-      await page.evaluate(async () => { await addBlankPage(); });
-      await page.waitForTimeout(1200);
+      await afterRender(page, () => page.evaluate(async () => { await addBlankPage(); }));
       expect(await docToken(page)).not.toBe(before);   // full swap, as designed
       await expect(page.frameLocator('#out').locator('section.page'))
         .toHaveCount(was + 1);
@@ -83,7 +82,7 @@ test.describe('incremental rendering', () => {
       const frame = page.frameLocator('#out');
       const el = frame.locator(`[data-el="text.${id}"]`);
       await el.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(400);
+      await settled(page);
       const beforeDepth = await page.evaluate(() => past.length);
       const box = await el.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -91,7 +90,7 @@ test.describe('incremental rendering', () => {
       await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 40,
         { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(600);
+      await settled(page);
 
       // Exactly one: a doubled dragify would have pushed two.
       expect(await page.evaluate(() => past.length)).toBe(beforeDepth + 1);
@@ -122,14 +121,14 @@ test.describe('incremental rendering', () => {
       const frame = page.frameLocator('#out');
       const h1 = frame.locator('[data-el="basics.h1"]');
       await h1.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(400);
+      await settled(page);
       const depth = await page.evaluate(() => past.length);
       const b = await h1.boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await page.mouse.down();
       await page.mouse.move(b.x + b.width / 2 + 60, b.y + b.height / 2 + 70, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(600);
+      await settled(page);
 
       expect(await page.evaluate(() => past.length)).toBe(depth + 1);
       expect(await page.evaluate(() => layout.positions['basics.h1'])).toBeTruthy();
@@ -151,7 +150,7 @@ test.describe('incremental rendering', () => {
       // selection works on the replaced section (without opening the box's
       // words, which the dblclick below would first have to commit)
       await selectWithoutTyping(page, frame.locator(`[data-el="text.${id}"]`));
-      await page.waitForTimeout(300);
+      await settled(page);
       expect(await page.evaluate(() => [...selIds])).toEqual([`text.${id}`]);
 
       // and click-to-edit prose on that same page — the [data-slot] wiring
@@ -159,10 +158,9 @@ test.describe('incremental rendering', () => {
       const slot = frame.locator('[data-slot]').first();
       await slot.scrollIntoViewIfNeeded();
       await slot.dblclick();
-      await page.waitForTimeout(500);
       await expect(frame.locator('.ds-edit')).toHaveCount(1);
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(400);
+      await settled(page);
     });
 
   // The live DOM drifts from the last render by routes that write no data:
@@ -177,11 +175,9 @@ test.describe('incremental rendering', () => {
     await slot.scrollIntoViewIfNeeded();
     const key = await slot.getAttribute('data-slot');
     await slot.dblclick();
-    await page.waitForTimeout(500);
     await expect(frame.locator('.ds-edit')).toHaveCount(1);
     // Escape with nothing typed: the next render is byte-for-byte the last.
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     await expect(frame.locator('.ds-edit')).toHaveCount(0);
     await expect(frame.locator(`[data-slot="${key}"]`)).toHaveCount(1);
   });
@@ -189,11 +185,11 @@ test.describe('incremental rendering', () => {
   test('undo after a drag really moves the element back on screen',
     async ({ page }) => {
       const id = await addBox(page);
-      await page.waitForTimeout(500);
+      await settled(page);
       const frame = page.frameLocator('#out');
       const el = frame.locator(`[data-el="text.${id}"]`);
       await el.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
+      await settled(page);
       const startLeft = await el.evaluate(n => n.style.left);
 
       const b = await el.boundingBox();
@@ -201,21 +197,20 @@ test.describe('incremental rendering', () => {
       await page.mouse.down();
       await page.mouse.move(b.x + b.width / 2 + 90, b.y + b.height / 2, { steps: 8 });
       await page.mouse.up();
-      await page.waitForTimeout(500);
+      await settled(page);
       expect(await el.evaluate(n => n.style.left)).not.toBe(startLeft);
 
       // A drag paints the node directly and does not re-render, so this undo
       // renders the state the page already displayed BEFORE the drag — the
       // same bytes. The element still has to go back where it was.
-      await page.keyboard.press('Control+z');
-      await page.waitForTimeout(1200);
+      await afterRender(page, () => page.keyboard.press('Control+z'));
       expect(await frame.locator(`[data-el="text.${id}"]`)
         .evaluate(n => n.style.left)).toBe(startLeft);
     });
 
   test('the reader keeps their place — a patch scrolls nothing', async ({ page }) => {
     const id = await addBox(page);
-    await page.waitForTimeout(500);
+    await settled(page);
     const where = () => page.evaluate(() =>
       document.getElementById('out').contentDocument.scrollingElement.scrollTop);
     const before = await where();

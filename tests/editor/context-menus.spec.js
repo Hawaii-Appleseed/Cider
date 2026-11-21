@@ -3,7 +3,7 @@
 // the common case ("a new source") was buried under a dozen existing ones.
 // Local mode.
 const { test, expect, gotoEditor, dialog, fillDialog, submitDialog,
-        cancelDialog, selectWithoutTyping } = require('./fixtures/editor-test');
+        cancelDialog, selectWithoutTyping, settled, afterRender } = require('./fixtures/editor-test');
 
 const labels = (page, sel) => page.evaluate(s => {
   const d = document.getElementById('out').contentDocument;
@@ -16,12 +16,10 @@ test.describe('text context menu', () => {
     const frame = page.frameLocator('#out');
     const p = frame.locator('[data-slot="basics.p1"]').first();
     await p.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
     await p.dblclick();
-    await page.waitForTimeout(700);
     await expect(frame.locator('.ds-edit')).toHaveCount(1);
     await frame.locator('.ds-edit').click({ button: 'right' });
-    await page.waitForTimeout(400);
+    await frame.locator('.ds-menu').first().waitFor();
   });
 
   test('offers formatting as well as endnotes', async ({ page }) => {
@@ -38,7 +36,6 @@ test.describe('text context menu', () => {
     const frame = page.frameLocator('#out');
     await expect(frame.locator('.ds-submenu')).toHaveCount(0);
     await frame.locator('.ds-menu button.ds-sub', { hasText: 'Existing endnote' }).hover();
-    await page.waitForTimeout(400);
     await expect(frame.locator('.ds-submenu')).toHaveCount(1);
     // Numbered in READING order, with the citation beside it — the number is
     // the only handle most people have on an endnote, and a list that jumped
@@ -69,14 +66,14 @@ test.describe('headings behave like text boxes', () => {
     await gotoEditor(page);
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(2).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(400);
+    await settled(page);
     // Select it WITHOUT opening its words: a render never swaps over an open
     // editor, and on a CI run that failed (twice, the retry too) the trace had
     // the inline editor open after a plain click, and the render after the
     // drag sitting in the hidden twin frame while the heading on screen kept
     // the drag's preview style.
     await selectWithoutTyping(page, frame.locator('[data-el="basics.h1"]'));
-    await page.waitForTimeout(600);
+    await settled(page);
     for (const dir of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
       await expect(frame.locator(`.ds-handles .ds-h-${dir}`)).toHaveCount(1);
     }
@@ -86,7 +83,7 @@ test.describe('headings behave like text boxes', () => {
     await page.mouse.down();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + 60, { steps: 8 });
     await page.mouse.up();
-    await page.waitForTimeout(1200);
+    await settled(page);
 
     const pos = await page.evaluate(() => layout.positions['basics.h1']);
     expect(pos.h).toBeGreaterThan(0);
@@ -116,9 +113,8 @@ test.describe('a figure description', () => {
     const frame = page.frameLocator('#out');
     const g = frame.locator(`[data-el="${GID}"]`);
     await g.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
     await g.click({ button: 'right' });
-    await page.waitForTimeout(400);
+    await frame.locator('.ds-menu').first().waitFor();
     return frame;
   };
 
@@ -145,8 +141,7 @@ test.describe('a figure description', () => {
       await page.locator('#out').contentFrame()
         .getByRole('button', { name: 'Description (for screen readers)…' }).click();
       await fillDialog(page, { words: 'A tick mark rising over a circle' });
-      await submitDialog(page);
-      await page.waitForTimeout(1200);
+      await afterRender(page, () => submitDialog(page));
       await expect(frame.locator(`[data-el="${GID}"] svg`))
         .toHaveAttribute('aria-label', 'A tick mark rising over a circle');
     });
@@ -183,7 +178,6 @@ test.describe('a way into the menu that is not right-click', () => {
         .toHaveAttribute('aria-label', /right-click/);
       await expect(frame.locator('.ds-menu')).toHaveCount(0);
       await page.click('#ar-more');
-      await page.waitForTimeout(400);
       await expect(frame.locator('.ds-menu')).toHaveCount(1);
       const l = await labels(page, '.ds-menu button');
       expect(l).toContain('Lock');
@@ -202,9 +196,9 @@ test.describe('a way into the menu that is not right-click', () => {
       expect(await hidden()).toEqual([]);
       await page.evaluate(() => { const d = $('out').contentDocument;
         setSel(d, []); setSelPage(d, pageOrder()[0]); });
-      await page.waitForTimeout(400);
+      await settled(page);
       await selectLogo(page);
-      await page.waitForTimeout(400);
+      await settled(page);
       expect(await hidden()).toEqual([]);
     });
 });

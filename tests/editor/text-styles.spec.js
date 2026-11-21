@@ -7,7 +7,7 @@
 // those win, so a style is a starting point and never a cage. Resolution
 // lives in layout.py's resolve_style() and is mirrored in the editor only so
 // the toolbar can SHOW what the page does.
-const { sharedTest: test, expect, gotoEditor, barField } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, barField, settled, afterRender } = require('./fixtures/editor-test');
 
 /** Select a slot and open its type toolbar, the way a click does. These
  *  tests type px into the floating card's own size field, so the docked
@@ -16,9 +16,14 @@ async function pickSlot(page, key) {
   await page.evaluate(() => toggleCtlBar(false));
   const frame = page.frameLocator('#out');
   const el = frame.locator(`[data-slot="${key}"]`).first();
-  await el.scrollIntoViewIfNeeded();
+  // To the middle of the pane, not merely into view: the page strip floats
+  // over the foot of the canvas, and a slot left down there was clicked
+  // through one of its thumbnails whenever the strip had painted in time.
+  await el.evaluate(e => e.scrollIntoView({ block: 'center' }));
   await el.click();
-  await page.waitForTimeout(700);
+  // The type row is this slot's once `selected` says so.
+  await page.waitForFunction(k => selected === k, key);
+  await settled(page);
   await expect(page.locator('#type')).toBeVisible();
 }
 
@@ -38,14 +43,12 @@ test('a look is saved as a style, worn, and redefined for everything at once',
     // Style one slot by hand, then name that look.
     await pickSlot(page, a);
     await page.locator('#ty-size').fill('22');
-    await page.locator('#ty-size').press('Enter');
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.locator('#ty-size').press('Enter'));
     await (await barField(page, '#ty-style-more')).click();
     await page.click('#ty-stylebody .tp-btn:text("+ Save as a style")');
-    await page.waitForTimeout(400);
+    await settled(page);
     await page.locator('dialog.dsdlg input[type="text"]').fill('Body');
-    await page.locator('dialog.dsdlg form button').last().click();
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.locator('dialog.dsdlg form button').last().click());
 
     // The style holds the look; the slot that defined it now WEARS it rather
     // than keeping a copy — otherwise the one slot a style came from is the
@@ -55,19 +58,16 @@ test('a look is saved as a style, worn, and redefined for everything at once',
 
     // A second slot wears it from the picker.
     await pickSlot(page, b);
-    await page.selectOption('#ty-style', 'Body');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.selectOption('#ty-style', 'Body'));
     expect(await page.evaluate(k => layout.text[k], b)).toEqual({ use: 'Body' });
     // And the toolbar shows the size the STYLE gives it, not a blank field.
     expect(await page.locator('#ty-size').inputValue()).toBe('22');
 
     // Redefine from this slot: one edit, and everything wearing it follows.
     await page.locator('#ty-size').fill('18');
-    await page.locator('#ty-size').press('Enter');
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.locator('#ty-size').press('Enter'));
     await (await barField(page, '#ty-style-more')).click();
-    await page.click('#ty-stylebody .tp-btn:text("Redefine")');
-    await page.waitForTimeout(1800);
+    await afterRender(page, () => page.click('#ty-stylebody .tp-btn:text("Redefine")'));
     expect(await page.evaluate(() => layout.textStyles.Body.size)).toBe(18);
     expect(await page.evaluate(k => layout.text[k], b)).toEqual({ use: 'Body' });
     // The OTHER slot never moved, and renders at the new size.
@@ -86,11 +86,9 @@ test('a slot can override the style it wears, and say so', async ({ page }) => {
     layout.textStyles = { Body: { size: 22 } };
     showType(selected);
   });
-  await page.selectOption('#ty-style', 'Body');
-  await page.waitForTimeout(1800);
+  await afterRender(page, () => page.selectOption('#ty-style', 'Body'));
   await page.locator('#ty-size').fill('30');
-  await page.locator('#ty-size').press('Enter');
-  await page.waitForTimeout(1800);
+  await afterRender(page, () => page.locator('#ty-size').press('Enter'));
 
   // Both are kept: the style it follows, and the one thing it disagrees about.
   expect(await page.evaluate(k => layout.text[k], a)).toEqual({ use: 'Body', size: 30 });
@@ -101,8 +99,7 @@ test('a slot can override the style it wears, and say so', async ({ page }) => {
 
   // Unlink keeps the look and stops following.
   await page.click('#ty-style-more');
-  await page.click('#ty-stylebody .tp-btn:text("Unlink")');
-  await page.waitForTimeout(1800);
+  await afterRender(page, () => page.click('#ty-stylebody .tp-btn:text("Unlink")'));
   expect(await page.evaluate(k => layout.text[k].use, a)).toBeUndefined();
   expect(await page.evaluate(k => layout.text[k].size, a)).toBe(30);
 });
@@ -115,10 +112,8 @@ test('Reset takes the style with it', async ({ page }) => {
     layout.textStyles = { Body: { size: 22 } };
     showType(selected);
   });
-  await page.selectOption('#ty-style', 'Body');
-  await page.waitForTimeout(1800);
-  await page.click('#ty-reset');
-  await page.waitForTimeout(1800);
+  await afterRender(page, () => page.selectOption('#ty-style', 'Body'));
+  await afterRender(page, () => page.click('#ty-reset'));
   // Back to what the report designed — a Reset that left the slot silently
   // following Body would be a lie.
   expect(await page.evaluate(k => (layout.text || {})[k], a)).toBeUndefined();

@@ -11,14 +11,13 @@
 //
 // rxkids-fiscal: two designed pages declared to the strip, every chart label
 // an svg_text slot, page 2's how-it-works chart the one with plain words.
-const { sharedTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
 
 const PROJECT = '?project=rxkids-fiscal';
 
 test.describe('duplicating a designed page', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page, PROJECT);
-    await page.waitForTimeout(800);
   });
 
   test('the copy carries the page\'s content as its own editable slots and elements',
@@ -103,7 +102,7 @@ test.describe('duplicating a designed page', () => {
       expect(pub.viewBox).toBeGreaterThan(0);
 
       // Three edits, three undos, and the document is what it was.
-      for (let i = 0; i < 3; i++) { await page.evaluate(() => docsync.api.undo()); await page.waitForTimeout(700); }
+      for (let i = 0; i < 3; i++) { await page.evaluate(() => docsync.api.undo()); await settled(page); }
       const back = await page.evaluate(() => ({
         pages: layout.pages || null, copies: (source.match(/\[\[copy\./g) || []).length,
         sheets: document.getElementById('out').contentDocument.querySelectorAll('section.page').length }));
@@ -113,10 +112,9 @@ test.describe('duplicating a designed page', () => {
   test('the strip\'s Duplicate page button does the same, and a copy of a copy renames its keys',
     async ({ page }) => {
       await page.evaluate(() => setSelPage(document.getElementById('out').contentDocument, 2));
-      await page.waitForTimeout(400);
+      await settled(page);
       await expect(page.locator('#ar-pagedup')).toBeVisible();
-      await page.click('#ar-pagedup');
-      await page.waitForTimeout(2500);
+      await afterRender(page, () => page.click('#ar-pagedup'));
       const first = await page.evaluate(() => ({ order: pageOrder().map(String), sel: selPage,
         stat: document.getElementById('stat').textContent }));
       expect(first.order).toEqual(['1', '2', 'p1']);
@@ -143,14 +141,13 @@ test.describe('duplicating a designed page', () => {
 test.describe('editing a label drawn inside a chart', () => {
   test.beforeEach(async ({ page }) => {
     await gotoEditor(page, PROJECT);
-    await page.waitForTimeout(800);
   });
 
   /** The label's centre in main-frame coordinates, scrolled into view. */
   async function labelPoint(page, key) {
     const loc = page.frameLocator('#out').locator(`svg text[data-slot="${key}"]`);
     await loc.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(400);
+    await settled(page);
     const b = await loc.boundingBox();
     return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   }
@@ -159,7 +156,6 @@ test.describe('editing a label drawn inside a chart', () => {
     async ({ page }) => {
       const pt = await labelPoint(page, 'chart.how.s1.label');
       await page.mouse.dblclick(pt.x, pt.y);
-      await page.waitForTimeout(500);
       const inp = page.frameLocator('#out').locator('.ds-svg-edit');
       await expect(inp).toBeVisible();
       await expect(inp).toHaveValue('Sign up');
@@ -176,8 +172,7 @@ test.describe('editing a label drawn inside a chart', () => {
       expect(where.dy).toBeLessThan(6);
       await page.keyboard.press('Meta+a');
       await page.keyboard.type('Enroll');
-      await page.keyboard.press('Enter');
-      await page.waitForTimeout(1200);
+      await afterRender(page, () => page.keyboard.press('Enter'));
       const after = await page.evaluate(() => ({
         editing, slot: docsync.api.getSlot('chart.how.s1.label').md,
         drawn: document.getElementById('out').contentDocument
@@ -198,7 +193,7 @@ test.describe('editing a label drawn inside a chart', () => {
         source = source.replace(slotRe('chart.how.s2.desc'), '');
         await render();
       });
-      await page.waitForTimeout(1000);
+      await settled(page);
       const gone = await page.evaluate(() => ({
         has: slotRe('chart.how.s2.desc').test(source),
         drawn: document.getElementById('out').contentDocument
@@ -207,22 +202,19 @@ test.describe('editing a label drawn inside a chart', () => {
 
       const pt = await labelPoint(page, 'chart.how.s2.desc');
       await page.mouse.dblclick(pt.x, pt.y);
-      await page.waitForTimeout(500);
       const inp = page.frameLocator('#out').locator('.ds-svg-edit');
       await expect(inp).toHaveValue('prenatal payment');      // seeded from the page, not empty
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(500);
+      await settled(page);
       expect(await page.evaluate(() => ({ editing, has: slotRe('chart.how.s2.desc').test(source) })))
         .toEqual({ editing: false, has: false });              // nothing typed: nothing written
 
       // Commit once, and the first edit CREATES the block.
       const pt2 = await labelPoint(page, 'chart.how.s2.desc');
       await page.mouse.dblclick(pt2.x, pt2.y);
-      await page.waitForTimeout(500);
       await page.keyboard.press('Meta+a');
       await page.keyboard.type('first payment');
-      await page.keyboard.press('Enter');
-      await page.waitForTimeout(1200);
+      await afterRender(page, () => page.keyboard.press('Enter'));
       expect(await page.evaluate(() => docsync.api.getSlot('chart.how.s2.desc').md)).toBe('first payment');
     });
 });

@@ -3,7 +3,7 @@
 // Delete shape and Reset to its designed place could not be undone, and a
 // right-click opened a menu about one thing while the selection — and the
 // strip — stayed on another.
-const { warmTest: test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { warmTest: test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
 
 const P = 'para.groc.lead', SLOT = 'groc.lead';
 
@@ -15,15 +15,15 @@ const select = (page, ids) => page.evaluate(i => {
 async function clickWords(page, id) {
   const b = await page.frameLocator('#out').locator(`[data-el="${id}"] [data-slot]`).first().boundingBox();
   await page.mouse.click(b.x + b.width * 0.4, b.y + 8);
-  await page.waitForTimeout(600);
+  await settled(page);
 }
 async function rightClick(page, css) {
   const el = page.frameLocator('#out').locator(css).first();
   // (the bar's two rows leave the canvas less height: the box can sit below the fold, or under the page strip)
   await el.evaluate(e => e.scrollIntoView({ block: 'center' }));
   const b = await el.boundingBox();
-  await page.mouse.click(b.x + Math.min(40, b.width / 2), b.y + Math.min(10, b.height / 2), { button: 'right' });
-  await page.waitForTimeout(700);
+  await afterRender(page, () => page.mouse.click(b.x + Math.min(40, b.width / 2), b.y + Math.min(10, b.height / 2), { button: 'right' }),
+                    { maybe: true });   // a right-click renders only when it commits open words
 }
 const menuItem = (page, label) => page.frameLocator('#out')
   .locator('.ds-menu button', { hasText: label }).first();
@@ -35,8 +35,7 @@ test.describe('Escape keeps what was typed', () => {
     const was = await page.evaluate(k => readSlot(k), SLOT);
     await clickWords(page, P);
     await page.keyboard.type('Zq');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     expect(await page.evaluate(k => ({ editing, sel: [...selIds], kept: readSlot(k).includes('Zq') }), SLOT))
       .toEqual({ editing: false, sel: [P], kept: true });
     await page.evaluate(() => undo());
@@ -50,8 +49,7 @@ test.describe('Escape keeps what was typed', () => {
     const src0 = await page.evaluate(() => source);
     await clickWords(page, P);
     expect(await page.evaluate(() => editing)).toBe(true);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     expect(await page.evaluate(src0 => ({ editing, same: source === src0, dirty }), src0))
       .toEqual({ editing: false, same: true, dirty: false });
   });
@@ -68,21 +66,19 @@ test.describe('Escape keeps what was typed', () => {
     await center(page, ids.box);
     const bb = await page.frameLocator('#out').locator(`[data-el="${ids.box}"]`).boundingBox();
     await page.mouse.click(bb.x + bb.width - 6, bb.y + bb.height / 2);
-    await page.waitForTimeout(600);
+    await settled(page);
     expect(await page.evaluate(() => editing)).toBe(true);
     await page.keyboard.press('End');
     await page.keyboard.type(' kept');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     expect(await page.evaluate(id => layout.boxes.find(b => 'text.' + b.id === id).md, ids.box))
       .toContain('kept');
 
     await page.frameLocator('#out').locator(`[data-el="${ids.table}"] td[data-cell="1,0"]`).dblclick();
-    await page.waitForTimeout(500);
+    await settled(page);
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.type('WIC');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     expect(await page.evaluate(id => tableOf(id).rows[1][0], ids.table)).toBe('WIC');
   });
 });
@@ -93,7 +89,7 @@ test.describe('⌘S saves', () => {
     page.on('request', r => { if (r.url().includes('/__save')) saves.push(r.url()); });
     await gotoEditor(page, '?project=uhero-trc-summary');
     await page.keyboard.press('ControlOrMeta+s');
-    await page.waitForTimeout(500);
+    await settled(page);
     expect(saves).toHaveLength(0);
     await expect(page.locator('#stat')).toContainText('nothing to save');
 
@@ -115,8 +111,7 @@ test.describe('the menu actions that could not be undone', () => {
     await page.evaluate(i => $('out').contentDocument.querySelector(`[data-shape="${i}"]`)
       .scrollIntoView({ block: 'center' }), id);
     await rightClick(page, `[data-shape="${id}"]`);
-    await menuItem(page, 'Delete shape').click();
-    await page.waitForTimeout(800);
+    await afterRender(page, () => menuItem(page, 'Delete shape').click());
     expect(await page.evaluate(i => layout.shapes.some(s => s.id === i), id)).toBe(false);
     await page.evaluate(() => undo());
     await settled(page);
@@ -130,8 +125,7 @@ test.describe('the menu actions that could not be undone', () => {
     const moved = await page.evaluate(id => JSON.stringify(layout.positions[id]), P);
     await center(page, P);
     await rightClick(page, `[data-el="${P}"]`);
-    await menuItem(page, 'Reset to its designed place').click();
-    await page.waitForTimeout(800);
+    await afterRender(page, () => menuItem(page, 'Reset to its designed place').click());
     expect(await page.evaluate(id => layout.positions[id] || null, P)).toBeNull();
     await page.evaluate(() => undo());
     await settled(page);
@@ -172,7 +166,7 @@ test.describe('right-click selects what it hits', () => {
     await clickWords(page, P);
     await page.keyboard.type('Zq');
     await rightClick(page, '[data-el="para.groc.pay.p"]');
-    await page.waitForTimeout(500);
+    await settled(page);
     expect(await page.evaluate(k => ({ editing, sel: [...selIds], kept: readSlot(k).includes('Zq') }), SLOT))
       .toEqual({ editing: false, sel: ['para.groc.pay.p'], kept: true });
     await expect(page.frameLocator('#out').locator('.ds-menu')).toBeVisible();
