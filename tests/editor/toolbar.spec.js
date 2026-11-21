@@ -4,7 +4,7 @@
 // the #ty-marks group (B / I / lists) acting on the live selection in the
 // iframe — mousedown on the chrome is prevented so the editor never blurs.
 // Local mode.
-const { test, expect, gotoEditor } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
 
 async function addRect(page) {
   await page.evaluate(async () => {
@@ -15,7 +15,7 @@ async function addRect(page) {
     await render();
     setSel($('out').contentDocument, ['tb-rect']);
   });
-  await page.waitForTimeout(300);
+  await settled(page);
 }
 
 test.describe('contextual toolbar', () => {
@@ -70,14 +70,12 @@ test.describe('contextual toolbar', () => {
   test('the border popover sets stroke colour and dash', async ({ page }) => {
     await addRect(page);
     await page.click('#ar-border');
-    await page.locator('#ar-bswgrid .sw').nth(1).click();   // first palette colour
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.locator('#ar-bswgrid .sw').nth(1).click());   // first palette colour
     let sh = await page.evaluate(() => layout.shapes.find(x => x.id === 'tb-rect'));
     expect(sh.stroke).toBe('#6B9E78');
 
     await page.click('#ar-border');
-    await page.locator('#ar-dashrow button', { hasText: 'Dashed' }).click();
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.locator('#ar-dashrow button', { hasText: 'Dashed' }).click());
     sh = await page.evaluate(() => layout.shapes.find(x => x.id === 'tb-rect'));
     expect(sh.dash).toEqual([0.08, 0.05]);
   });
@@ -86,8 +84,7 @@ test.describe('contextual toolbar', () => {
     await addRect(page);
     await page.click('#ar-alpha');
     await page.locator('#ar-alphain').fill('0.5');
-    await page.locator('#ar-alphain').dispatchEvent('change');
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.locator('#ar-alphain').dispatchEvent('change'));
     const sh = await page.evaluate(() => layout.shapes.find(x => x.id === 'tb-rect'));
     expect(sh.alpha).toBeCloseTo(0.5, 5);
   });
@@ -95,15 +92,13 @@ test.describe('contextual toolbar', () => {
   test('Effects adds and removes a shadow', async ({ page }) => {
     await addRect(page);
     await page.click('#ar-fxbtn');
-    await page.locator('#ar-fxpop button', { hasText: 'Add shadow' }).click();
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.locator('#ar-fxpop button', { hasText: 'Add shadow' }).click());
     let sh = await page.evaluate(() => layout.shapes.find(x => x.id === 'tb-rect'));
     expect(sh.shadow).toBeTruthy();
     expect(sh.shadow.blur).toBeGreaterThan(0);
 
     await page.click('#ar-fxbtn');
-    await page.locator('#ar-fxpop button', { hasText: 'Remove shadow' }).click();
-    await page.waitForTimeout(800);
+    await afterRender(page, () => page.locator('#ar-fxpop button', { hasText: 'Remove shadow' }).click());
     sh = await page.evaluate(() => layout.shapes.find(x => x.id === 'tb-rect'));
     expect(sh.shadow).toBeUndefined();
   });
@@ -143,7 +138,7 @@ test.describe('contextual toolbar', () => {
     const frame = page.frameLocator('#out');
     const slot = frame.locator('[data-slot="basics.p1"], [data-slot="spent.p1"]').first();
     await slot.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
     await slot.dblclick({ force: true });
     await frame.locator('.ds-edit').waitFor({ state: 'visible' });
     // The strip NAMES the thing now ("paragraph"); the key it stands for is on
@@ -163,21 +158,20 @@ test.describe('contextual toolbar', () => {
     await page.evaluate(() => clearSel(document.querySelector('#out').contentDocument));
     const h1 = frame.locator('[data-el="basics.h1"]');
     await h1.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(200);
+    await settled(page);
     await h1.click();
     await page.waitForFunction(() => selIds.has('basics.h1'), null, { timeout: 5000 });
   });
 
   test('the Appleseed logo recolours from the strip and renders inline', async ({ page }) => {
     await page.evaluate(() => setSel($('out').contentDocument, ['cover.logo']));
-    await page.waitForTimeout(200);
+    await settled(page);
     const fill = page.locator('#ar-fill');
     await expect(fill).toBeVisible();
     await expect(fill).toHaveAttribute('aria-label', 'Colour');
 
     await fill.click();
-    await page.locator('#side-body .cdot[title="#2F3E46"]').first().click();
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.locator('#side-body .cdot[title="#2F3E46"]').first().click());
 
     expect(await page.evaluate(() => layout.fill['cover.logo'])).toBe('#2F3E46');
     // The <img> became an inline svg painted the chosen colour.
@@ -188,9 +182,8 @@ test.describe('contextual toolbar', () => {
 
     // And "Original artwork" puts the plain <img> back.
     await page.evaluate(() => setSel($('out').contentDocument, ['cover.logo']));
-    await page.waitForTimeout(300);
-    await page.locator('#side-body .cdot.none').click();
-    await page.waitForTimeout(1500);
+    await settled(page);
+    await afterRender(page, () => page.locator('#side-body .cdot.none').click());
     await expect(frame.locator('[data-el="cover.logo"] img.logo-img')).toHaveCount(1);
   });
 });

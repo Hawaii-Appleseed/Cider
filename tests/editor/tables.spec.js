@@ -1,7 +1,7 @@
 // Tables (docsync/editor/edit.html + layout.py tables_html): a placed,
 // draggable, editable grid. The "Table" button creates one; cells edit in
 // place on double-click; right-click a cell for rows & columns. Local mode.
-const { test, expect, gotoEditor, settled } = require('./fixtures/editor-test');
+const { test, expect, gotoEditor, settled, afterRender } = require('./fixtures/editor-test');
 
 async function addTable(page) {
   // Create on a CONTENT page — the cover (page 1) has a full-bleed overlay
@@ -9,12 +9,12 @@ async function addTable(page) {
   // visiblePageId() targets it.
   const frame = page.frameLocator('#out');
   await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.click('#table');
   const tbl = frame.locator('table.ds-table[data-el]').first();
   await tbl.waitFor({ state: 'attached', timeout: 20000 });
   await tbl.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(1000);
+  await settled(page);
   return tbl;
 }
 
@@ -80,17 +80,17 @@ test.describe('tables', () => {
   test('a table added after a text box gets its own id, and the draft still builds', async ({ page }) => {
     const frame = page.frameLocator('#out');
     await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
+    await settled(page);
 
     await page.click('#text');
     await page.click('#textpop .txtpreset[data-k="body"]');
     await frame.locator('.ds-textbox').first().waitFor({ state: 'attached', timeout: 20000 });
-    await page.waitForTimeout(600);
+    await settled(page);
 
     await page.click('#table');
     await frame.locator('table.ds-table[data-el]').first()
       .waitFor({ state: 'attached', timeout: 20000 });
-    await page.waitForTimeout(800);
+    await settled(page);
 
     const ids = await page.evaluate(() => ({
       boxes: (layout.boxes || []).map(b => b.id),
@@ -124,7 +124,7 @@ test.describe('table styling', () => {
     // than starting a drag of the whole table.
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,0"]').click();
-    await page.waitForTimeout(200);
+    await settled(page);
     expect(await page.evaluate(() => cellSel && [cellSel.r0, cellSel.c0])).toEqual([1, 0]);
     await expect(frame.locator('td.ds-cell-sel')).toHaveCount(1);
     await expect(page.locator('.tp-scope')).toContainText('Cell selected');
@@ -134,12 +134,11 @@ test.describe('table styling', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,1"]').click();
-    await page.waitForTimeout(200);
+    await settled(page);
 
     // Second swatch: the first is "none". Pick whatever colour it carries.
     const sw = page.locator('#tablepop .tp-sw').first().locator('.tp-swatch').nth(1);
-    await sw.click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => sw.click());
 
     const cells = await page.evaluate(() => layout.tables[0].cells);
     expect(Object.keys(cells)).toEqual(['1,1']);
@@ -156,8 +155,7 @@ test.describe('table styling', () => {
   test('borders write a spec and render as real edges; "Outer" drops the gridlines', async ({ page }) => {
     await addTable(page);
     const frame = page.frameLocator('#out');
-    await page.locator('#tablepop .tp-btn', { hasText: 'Outer' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#tablepop .tp-btn', { hasText: 'Outer' }).click());
 
     expect(await page.evaluate(() => layout.tables[0].border.sides)).toBe('outer');
     // Top-left cell: outer edges drawn, inner edges explicitly off.
@@ -172,14 +170,12 @@ test.describe('table styling', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,0"]').click();
-    await page.waitForTimeout(200);
-    await page.locator('#tablepop .tp-sw').first().locator('.tp-swatch').nth(1).click();
-    await page.waitForTimeout(1200);
+    await settled(page);
+    await afterRender(page, () => page.locator('#tablepop .tp-sw').first().locator('.tp-swatch').nth(1).click());
     const before = await page.evaluate(() => layout.tables[0].cells['1,0'].fill);
 
     // Insert a row ABOVE the filled one: its override must follow to row 2.
-    await page.locator('#tablepop .tp-btn', { hasText: '↑ Row' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#tablepop .tp-btn', { hasText: '↑ Row' }).click());
 
     const cells = await page.evaluate(() => layout.tables[0].cells);
     expect(cells['2,0'].fill).toBe(before);
@@ -189,8 +185,7 @@ test.describe('table styling', () => {
 
   test('adding a column keeps the grid rectangular and the draft building', async ({ page }) => {
     await addTable(page);
-    await page.locator('#tablepop .tp-btn', { hasText: '→ Col' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#tablepop .tp-btn', { hasText: '→ Col' }).click());
 
     const widths = await page.evaluate(() => layout.tables[0].rows.map(r => r.length));
     expect(widths.every(w => w === 3)).toBe(true);
@@ -202,8 +197,7 @@ test.describe('table styling', () => {
   test('with nothing selected the panel styles the whole table', async ({ page }) => {
     await addTable(page);
     await expect(page.locator('.tp-scope')).toContainText('whole table');
-    await page.locator('#tablepop .tp-sw').first().locator('.tp-swatch').nth(1).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#tablepop .tp-sw').first().locator('.tp-swatch').nth(1).click());
     // One table-wide property, not a per-cell override for all six cells.
     const t = await page.evaluate(() => layout.tables[0]);
     expect(t.fill).toMatch(/^#/);
@@ -224,18 +218,16 @@ test.describe('table cells edit directly', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,0"]').click();
-    await page.waitForTimeout(200);
+    await settled(page);
     expect(await page.evaluate(() => cellSel && [cellSel.r0, cellSel.c0])).toEqual([1, 0]);
 
     await page.keyboard.type('Revenue');
-    await page.waitForTimeout(300);
     // The first keystroke opened the editor AND was kept, rather than being
     // swallowed opening it.
     await expect(frame.locator('.ds-cell-edit')).toHaveText('Revenue');
 
     // Escape keeps what was typed, as InDesign's does, and leaves the cell selected.
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(900);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     expect(await page.evaluate(() => layout.tables[0].rows[1][0])).toBe('Revenue');
     expect(await page.evaluate(() => editing)).toBe(false);
   });
@@ -244,18 +236,16 @@ test.describe('table cells edit directly', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,0"]').click();
-    await page.waitForTimeout(200);
+    await settled(page);
 
     await page.keyboard.type('one');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => page.keyboard.press('Enter'));
     expect(await page.evaluate(() => layout.tables[0].rows[1][0])).toBe('one');
     // Enter landed on the cell below.
     expect(await page.evaluate(() => cellSel && [cellSel.r0, cellSel.c0])).toEqual([2, 0]);
 
     await page.keyboard.type('two');
-    await page.keyboard.press('Tab');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => page.keyboard.press('Tab'));
     expect(await page.evaluate(() => layout.tables[0].rows[2][0])).toBe('two');
     expect(await page.evaluate(() => cellSel && [cellSel.r0, cellSel.c0])).toEqual([2, 1]);
   });
@@ -264,7 +254,7 @@ test.describe('table cells edit directly', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('th[data-cell="0,0"]').click();
-    await page.waitForTimeout(200);
+    await settled(page);
 
     await page.keyboard.press('ArrowRight');
     expect(await page.evaluate(() => [cellSel.r0, cellSel.c0])).toEqual([0, 1]);
@@ -276,8 +266,7 @@ test.describe('table cells edit directly', () => {
     expect(await page.evaluate(() => [cellSel.r0, cellSel.c0])).toEqual([0, 1]);
 
     // Delete on a selected CELL clears its text; the table survives.
-    await page.keyboard.press('Delete');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => page.keyboard.press('Delete'));
     expect(await page.evaluate(() => layout.tables[0].rows[0][1])).toBe('');
     expect(await page.evaluate(() => layout.tables.length)).toBe(1);
   });
@@ -288,8 +277,7 @@ test.describe('table cells edit directly', () => {
     // Give row 1 a marker so the move is observable.
     await frame.locator('td[data-cell="1,0"]').click();
     await page.keyboard.type('marker');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.keyboard.press('Escape'));
     await page.evaluate(() => { layout.tables[0].rows[1][0] = 'marker'; });
     await page.evaluate(() => render());
     await settled(page);
@@ -303,8 +291,7 @@ test.describe('table cells edit directly', () => {
                          'Move column right', 'Table styles…']) {
       await expect(menu.locator('.ds-mi-lab', { hasText: label }).first()).toBeVisible();
     }
-    await menu.locator('button', { hasText: 'Move row down' }).click();
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => menu.locator('button', { hasText: 'Move row down' }).click());
     expect(await page.evaluate(() => layout.tables[0].rows[2][0])).toBe('marker');
   });
 
@@ -312,8 +299,7 @@ test.describe('table cells edit directly', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('td[data-cell="1,0"]').click({ button: 'right' });
-    await frame.locator('.ds-menu button', { hasText: 'Fit columns to content' }).click();
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => frame.locator('.ds-menu button', { hasText: 'Fit columns to content' }).click());
 
     const colw = await page.evaluate(() => layout.tables[0].colw);
     expect(colw).toHaveLength(2);
@@ -342,8 +328,7 @@ test.describe('table style presets', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     // Index 5 = the first palette colour's "banded" variant.
-    await page.locator('#tablepop .tp-preset').nth(5).click();
-    await page.waitForTimeout(1600);
+    await afterRender(page, () => page.locator('#tablepop .tp-preset').nth(5).click());
 
     const t = await page.evaluate(() => layout.tables[0]);
     expect(t.headerFill).toMatch(/^#/);
@@ -415,7 +400,7 @@ test.describe('table context menu consistency', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('table.ds-table').scrollIntoViewIfNeeded();
-    await page.waitForTimeout(400);
+    await settled(page);
     // Coordinates via boundingBox, which is top-document space and already
     // accounts for the iframe's offset AND the canvas scale — computing them
     // from inside the frame aims at the wrong pixel entirely.
@@ -425,7 +410,7 @@ test.describe('table context menu consistency', () => {
       await clearMenus(page);
       await page.mouse.click(tbl.x + tbl.width * fx, tbl.y + tbl.height * fy,
                              { button: 'right' });
-      await page.waitForTimeout(350);
+      await settled(page);
       const r = await menuInfo(page);
       expect(r.menu, `at ${fx},${fy}`).toBe('TABLE');
       expect(r.addCol, `Add column at ${fx},${fy}`).toBe(true);
@@ -441,15 +426,14 @@ test.describe('table context menu consistency', () => {
     await addTable(page);
     const frame = page.frameLocator('#out');
     await frame.locator('table.ds-table').scrollIntoViewIfNeeded();
-    await page.waitForTimeout(400);
+    await settled(page);
 
     await frame.locator('td[data-cell="1,0"]').dblclick();
-    await page.waitForTimeout(600);
+    await settled(page);
     expect(await page.evaluate(() => editing)).toBe(true);
 
     await clearMenus(page);
-    await frame.locator('td[data-cell="1,0"]').click({ button: 'right' });
-    await page.waitForTimeout(900);
+    await afterRender(page, () => frame.locator('td[data-cell="1,0"]').click({ button: 'right' }));
     const r = await menuInfo(page);
     expect(r.menu).toBe('TABLE');
     expect(r.addCol).toBe(true);

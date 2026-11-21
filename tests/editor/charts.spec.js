@@ -4,7 +4,7 @@
 // renders inside the per-page <svg> layer every report renderer already emits,
 // so no report had to add a call to show one. Drawn as plain SVG with no
 // library, so the same markup serves the browser preview and the offline PDF.
-const { sharedTest: test, expect, gotoEditor, settled, barField } = require('./fixtures/editor-test');
+const { sharedTest: test, expect, gotoEditor, settled, barField, afterRender } = require('./fixtures/editor-test');
 
 // Mirrors CHART_KINDS in edit.html. A number here rather than a magic 13,
 // so adding a type is one edit and not a puzzle in a failing assertion.
@@ -13,11 +13,11 @@ const CHART_KINDS = 16;
 async function addChart(page) {
   const frame = page.frameLocator('#out');
   await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.click('#chart');
   await frame.locator('[data-shape] rect').first()
     .waitFor({ state: 'attached', timeout: 20000 });
-  await page.waitForTimeout(900);
+  await settled(page);
   return page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').id);
 }
 
@@ -27,11 +27,11 @@ async function addChart(page) {
  *  rather than assumed. */
 async function customize(page, sectionLabel) {
   await page.locator('#chartpop .ch-tab', { hasText: 'Customize' }).click();
-  await page.waitForTimeout(200);
+  await settled(page);
   const head = page.locator('#chartpop .ch-sec', { hasText: sectionLabel });
   if (!(await head.evaluate(el => el.classList.contains('open')))) {
     await head.click();
-    await page.waitForTimeout(200);
+    await settled(page);
   }
 }
 
@@ -72,8 +72,7 @@ test.describe('charts', () => {
     await page.evaluate(() => render());
     await settled(page);
 
-    await page.selectOption('#chartpop .ch-typesel', 'pie');
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => page.selectOption('#chartpop .ch-typesel', 'pie'));
     const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
     expect(c.type).toBe('pie');
     expect(c.series[0].data).toEqual([30, 70]);      // data survived the switch
@@ -90,8 +89,7 @@ test.describe('charts', () => {
     // never running — it is the reason the grid went untested.
     const firstVal = page.locator('#chartpop .ch-grid input.ch-num').first();
     await firstVal.fill('99');
-    await firstVal.blur();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => firstVal.blur());
     const data = await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.series[0].data);
     expect(data[0]).toBe(99);
@@ -99,20 +97,17 @@ test.describe('charts', () => {
 
   test('rows and series can be added, and a pie hides series controls', async ({ page }) => {
     await addChart(page);
-    await page.locator('#chartpop .tp-btn', { hasText: '+ Row' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#chartpop .tp-btn', { hasText: '+ Row' }).click());
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.labels.length)).toBe(4);
 
-    await page.locator('#chartpop .tp-btn', { hasText: '+ Series' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#chartpop .tp-btn', { hasText: '+ Series' }).click());
     const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
     expect(c.series).toHaveLength(2);
     expect(c.series[1].data).toHaveLength(4);        // padded to the label count
 
     // A pie reads one series, so offering "+ Series" there would be a lie.
-    await page.selectOption('#chartpop .ch-typesel', 'pie');
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => page.selectOption('#chartpop .ch-typesel', 'pie'));
     await expect(page.locator('#chartpop .tp-btn', { hasText: '+ Series' })).toHaveCount(0);
   });
 
@@ -120,13 +115,11 @@ test.describe('charts', () => {
     const id = await addChart(page);
     // Duplicate is the shape toolbar's, not anything chart-specific.
     await expect(page.locator('#ar-dup')).toBeEnabled();
-    await (await barField(page, '#ar-dup')).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, async () => (await barField(page, '#ar-dup')).click());
     expect(await page.evaluate(() =>
       layout.shapes.filter(s => s.kind === 'chart').length)).toBe(2);
 
-    await (await barField(page, '#ar-del')).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, async () => (await barField(page, '#ar-del')).click());
     expect(await page.evaluate(() =>
       layout.shapes.filter(s => s.kind === 'chart').length)).toBe(1);
     // ...and the survivor still renders.
@@ -140,8 +133,7 @@ test.describe('charts', () => {
     const before = await texts();
 
     await customize(page, 'Text');
-    await switchFor(page, 'Legend').click();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => switchFor(page, 'Legend').click());
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.legend)).toBe(true);
     expect(await texts()).toBeGreaterThan(before);   // legend added labels
@@ -156,12 +148,10 @@ test.describe('chart colours and labels', () => {
 
   test('a palette swatch recolours the whole chart in one click', async ({ page }) => {
     await addChart(page);
-    await page.locator('#chartpop .tp-btn', { hasText: '+ Series' }).click();
-    await page.waitForTimeout(1200);
+    await afterRender(page, () => page.locator('#chartpop .tp-btn', { hasText: '+ Series' }).click());
     // The ramp is the swatch row directly under "Series colours".
     await customize(page, 'Series colours');
-    await page.locator('#chartpop .tp-sw .tp-swatch').first().click();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => page.locator('#chartpop .tp-sw .tp-swatch').first().click());
 
     const cols = await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.series.map(s2 => s2.color));
@@ -177,17 +167,15 @@ test.describe('chart colours and labels', () => {
     await customize(page, 'Text');
     const ti = page.locator('#chartpop input[data-ck="title"]');
     await ti.fill('Budget');
-    await ti.blur();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => ti.blur());
 
     // Set the ink through the control, not by poking layout — that is the path
     // a person takes, and it is what keeps the panel's own state in step.
     const setInk = async (label, hex) => {
-      await colorRow(page, label)
+      await afterRender(page, () => colorRow(page, label)
         .locator('.ch-colsw').evaluate((el, v) => {
           el.value = v; el.dispatchEvent(new Event('change', { bubbles: true }));
-        }, hex);
-      await page.waitForTimeout(1300);
+        }, hex));
     };
     await setInk('Title colour', '#123456');
     await setInk('Label colour', '#B23A48');
@@ -198,8 +186,7 @@ test.describe('chart colours and labels', () => {
       .toHaveAttribute('fill', '#B23A48');
 
     // The reset arrow drops the override back to the report default.
-    await colorRow(page, 'Title colour').locator('.ch-reset').click();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => colorRow(page, 'Title colour').locator('.ch-reset').click());
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.titleColor)).toBeUndefined();
     await expect(frame.locator(`g[data-shape="${id}"] [data-ch="title"]`))
@@ -216,8 +203,7 @@ test.describe('chart colours and labels', () => {
     const inp = frame.locator('.ds-ch-edit');
     await expect(inp).toBeVisible();
     await inp.fill('Renamed');
-    await inp.press('Enter');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => inp.press('Enter'));
 
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.labels[1])).toBe('Renamed');
@@ -231,8 +217,7 @@ test.describe('chart colours and labels', () => {
     await frame.locator(`g[data-shape="${id}"] [data-ch="label:0"]`).dblclick();
     const inp = frame.locator('.ds-ch-edit');
     await inp.fill('Kept');
-    await inp.press('Escape');
-    await page.waitForTimeout(700);
+    await afterRender(page, () => inp.press('Escape'));
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').chart.labels[0])).toBe('Kept');
     expect(await page.evaluate(() => editing)).toBe(false);
@@ -242,15 +227,13 @@ test.describe('chart colours and labels', () => {
     await addChart(page);
     await customize(page, 'Series colours');
     const row = colorRow(page, 'Background');
-    await row.locator('.ch-colsw').evaluate(el => {
+    await afterRender(page, () => row.locator('.ch-colsw').evaluate(el => {
       el.value = '#EEF4EF'; el.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await page.waitForTimeout(1300);
+    }));
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').fill)).toBe('#EEF4EF');
 
-    await row.locator('.ch-reset').click();
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => row.locator('.ch-reset').click());
     expect(await page.evaluate(() =>
       layout.shapes.find(s => s.kind === 'chart').fill)).toBe('none');
   });
@@ -275,13 +258,13 @@ async function dragChart(page, id, dx, dy) {
   const frame = page.frameLocator('#out');
   const g = frame.locator(`g[data-shape="${id}"]`);
   await g.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
   const b = await g.boundingBox();
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(b.x + b.width / 2 + dx, b.y + b.height / 2 + dy, { steps: 10 });
   await page.mouse.up();
-  await page.waitForTimeout(1400);
+  await settled(page);
 }
 
 test('dragging a chart moves the DRAWING, not just its stored x/y', async ({ page }) => {
@@ -299,7 +282,7 @@ test('a chart tracks the cursor mid-drag, with its ring on it', async ({ page })
   const id = await addChart(page);
   const frame = page.frameLocator('#out');
   await frame.locator(`g[data-shape="${id}"]`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
 
   // Read the chart's OWN box (its background rect), not the <g> bbox — the
   // bbox includes axis labels that sit outside the declared box.
@@ -320,7 +303,7 @@ test('a chart tracks the cursor mid-drag, with its ring on it', async ({ page })
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(b.x + b.width / 2 + 100, b.y + b.height / 2 + 50, { steps: 8 });
-  await page.waitForTimeout(150);
+  await settled(page);
   const mid = await read();
   // It must travel WITH the cursor, not freeze and teleport on drop — and it
   // must not wear the lift's scale instead of its own translate.
@@ -329,7 +312,8 @@ test('a chart tracks the cursor mid-drag, with its ring on it', async ({ page })
   expect(mid.ringX).toBe(mid.x);                // ...and the ring comes along
 
   await page.mouse.up();
-  await page.waitForTimeout(1400);
+
+  await settled(page);
   const end = await read();
   expect(end.ringX).toBe(end.x);
   expect(end.ringW).toBe(end.w);
@@ -338,14 +322,13 @@ test('a chart tracks the cursor mid-drag, with its ring on it', async ({ page })
 test('a chart on a BLANK page moves too', async ({ page }) => {
   await gotoEditor(page);
   const frame = page.frameLocator('#out');
-  await page.click('#rail-add');
-  await page.waitForTimeout(1500);
+  await afterRender(page, () => page.click('#rail-add'));
   const bid = await page.evaluate(() => layout.pages.blanks[0].id);
   await frame.locator(`section[data-page="${bid}"]`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
   await page.click('#chart');
   await frame.locator('g[data-shape]').first().waitFor({ state: 'attached', timeout: 20000 });
-  await page.waitForTimeout(1200);
+  await settled(page);
   const id = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').id);
   expect(await page.evaluate(() =>
     layout.shapes.find(s => s.kind === 'chart').page)).toBe(bid);
@@ -366,10 +349,10 @@ test('a chart under the report\'s sticky toolbar is still grabbable', async ({ p
   await gotoEditor(page);
   const frame = page.frameLocator('#out');
   await frame.locator('section.page').nth(3).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
+  await settled(page);
   await page.click('#chart');
   await frame.locator('g[data-shape]').first().waitFor({ state: 'attached', timeout: 20000 });
-  await page.waitForTimeout(1000);
+  await settled(page);
   await page.evaluate(() => {
     layout.shapes.find(s => s.kind === 'chart').chart.title = 'Title';
   });
@@ -379,7 +362,7 @@ test('a chart under the report\'s sticky toolbar is still grabbable', async ({ p
   const id = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').id);
   const g = frame.locator(`g[data-shape="${id}"]`);
   await g.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
 
   // The chrome must not be what answers a hit test over the chart.
   const hit = await page.evaluate(() => {
@@ -400,7 +383,7 @@ test('a chart under the report\'s sticky toolbar is still grabbable', async ({ p
   await page.mouse.down();
   await page.mouse.move(tb.x + tb.width / 2 + 40, tb.y + tb.height / 2 + 25, { steps: 8 });
   await page.mouse.up();
-  await page.waitForTimeout(1300);
+  await settled(page);
 
   const after = await page.evaluate(() => {
     const s = layout.shapes.find(x => x.kind === 'chart');
@@ -439,8 +422,7 @@ test('every chart type in the dropdown renders something', async ({ page }) => {
   expect(opts).toHaveLength(CHART_KINDS);
 
   for (const val of opts) {
-    await page.selectOption('#chartpop .ch-typesel', val);
-    await page.waitForTimeout(1500);
+    await afterRender(page, () => page.selectOption('#chartpop .ch-typesel', val));
     const r = await page.evaluate((cid) => {
       const d = document.getElementById('out').contentDocument;
       const g = d.querySelector(`g[data-shape="${cid}"]`);
@@ -467,11 +449,9 @@ test('the panel adapts to what a type can actually do', async ({ page }) => {
 
   // A treemap reads one value per label, and has no axes to speak of.
   await page.locator('#chartpop .ch-tab', { hasText: 'Data' }).click();
-  await page.selectOption('#chartpop .ch-typesel', 'treemap');
-  await page.waitForTimeout(1500);
+  await afterRender(page, () => page.selectOption('#chartpop .ch-typesel', 'treemap'));
   await expect(page.locator('#chartpop .tp-btn', { hasText: '+ Series' })).toHaveCount(0);
   await page.locator('#chartpop .ch-tab', { hasText: 'Customize' }).click();
-  await page.waitForTimeout(200);
   await expect(page.locator('#chartpop .ch-sec', { hasText: 'Axis & grid' })).toHaveCount(0);
   await expect(page.locator('#chartpop .ch-sec', { hasText: 'Slice colours' })).toHaveCount(1);
 });
@@ -484,17 +464,16 @@ test('the panel adapts to what a type can actually do', async ({ page }) => {
 test('a chart with no renderer stamp still drags, ring and all', async ({ page }) => {
   await gotoEditor(page);
   const frame = page.frameLocator('#out');
-  await page.click('#rail-add');                        // a blank page, as reported
-  await page.waitForTimeout(1500);
+  await afterRender(page, () => page.click('#rail-add'));   // a blank page, as reported
   const bid = await page.evaluate(() => layout.pages.blanks[0].id);
   await frame.locator(`section[data-page="${bid}"]`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
   await page.click('#chart');
   await frame.locator('g[data-shape]').first().waitFor({ state: 'attached', timeout: 20000 });
-  await page.waitForTimeout(1200);
+  await settled(page);
   const id = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').id);
   await frame.locator(`g[data-shape="${id}"]`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(400);
+  await settled(page);
 
   // Strip the stamp: this is exactly what an older engine renders.
   await page.evaluate((cid) => {
@@ -516,10 +495,10 @@ test('a chart with no renderer stamp still drags, ring and all', async ({ page }
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(b.x + b.width / 2 + 100, b.y + b.height / 2 + 40, { steps: 8 });
-  await page.waitForTimeout(150);
+  await settled(page);
   const mid = await read();
   await page.mouse.up();
-  await page.waitForTimeout(1300);
+  await settled(page);
   const after = await read();
 
   expect(mid.x).toBeGreaterThan(before.x + 50);      // the DRAWING travelled
@@ -539,7 +518,6 @@ test('the stale-editor notice is raised only when it should be, and persists', a
   const fs = require('fs');
   const path = require('path');
   await gotoEditor(page);
-  await page.waitForTimeout(700);
   expect(await page.evaluate(() => buildStamp !== null)).toBe(true);
   expect(await page.evaluate(() => buildChangedOnDisk())).toBe(false);
 
@@ -577,7 +555,6 @@ test('the stale-editor notice is raised only when it should be, and persists', a
 // producing a rebuild.
 test('a dead server watcher is reported, and an old server is not judged', async ({ page }) => {
   await gotoEditor(page);
-  await page.waitForTimeout(600);
 
   await page.evaluate(() => watchHealth({ watchAge: 0.4 }));
   await expect(page.locator('#stat')).not.toContainText('live reload has stopped');
@@ -618,11 +595,10 @@ test('a reset arrow appears only where there is something to reset', async ({ pa
     .locator('.ch-reset').evaluate(el => getComputedStyle(el).visibility);
   expect(await vis('Title colour')).toBe('hidden');       // nothing overridden yet
 
-  await page.locator('#chartpop .ch-colrow', { hasText: 'Title colour' })
+  await afterRender(page, () => page.locator('#chartpop .ch-colrow', { hasText: 'Title colour' })
     .locator('.ch-colsw').evaluate(el => {
       el.value = '#B23A48'; el.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-  await page.waitForTimeout(1300);
+    }));
   expect(await vis('Title colour')).toBe('visible');
   expect(await vis('Label colour')).toBe('hidden');       // still untouched
 });
@@ -638,10 +614,9 @@ test('"no background" does not look like a white background', async ({ page }) =
   await expect(sw).toHaveClass(/unset/);
   expect(await sw.getAttribute('title')).toBe('No background');
 
-  await sw.evaluate(el => {
+  await afterRender(page, () => sw.evaluate(el => {
     el.value = '#EEF4EF'; el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await page.waitForTimeout(1300);
+  }));
   await expect(sw).not.toHaveClass(/unset/);
   expect(await sw.getAttribute('title')).toContain('#EEF4EF');
 });
@@ -659,8 +634,7 @@ const fieldFor = (page, label) =>
 async function setField(page, label, value) {
   const f = fieldFor(page, label);
   await f.fill(value);
-  await f.blur();
-  await page.waitForTimeout(1300);
+  await afterRender(page, () => f.blur());
 }
 
 test('a negative value is drawn below the zero line, not flattened', async ({ page }) => {
@@ -669,8 +643,7 @@ test('a negative value is drawn below the zero line, not flattened', async ({ pa
   // Type a negative into the data grid the way a person would.
   const cells = page.locator('#chartpop .ch-grid input.ch-num');
   await cells.nth(1).fill('-40');
-  await cells.nth(1).blur();
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => cells.nth(1).blur());
 
   const stored = await page.evaluate(i =>
     layout.shapes.find(s => s.id === i).chart.series[0].data[1], id);
@@ -702,8 +675,8 @@ test('the axis can be pinned, and the tick count obeyed', async ({ page }) => {
   expect(ticks).toContain('500');
   // Clearing a field returns the axis to automatic rather than writing a zero.
   const maxF = fieldFor(page, 'Max');
-  await maxF.fill(''); await maxF.blur();
-  await page.waitForTimeout(1300);
+  await maxF.fill('');
+  await afterRender(page, () => maxF.blur());
   expect(await page.evaluate(i =>
     'axisMax' in layout.shapes.find(s => s.id === i).chart, id)).toBe(false);
 });
@@ -715,8 +688,7 @@ test('a number format reaches the axis, and the sample says so first',
     await customize(page, 'Numbers');
     await setField(page, 'Before', '$');
     const scale = fieldFor(page, 'Scale');
-    await scale.selectOption('K');
-    await page.waitForTimeout(1300);
+    await afterRender(page, () => scale.selectOption('K'));
 
     // The sample under the fields shows the effect before you read the chart.
     await expect(page.locator('#chartpop .ch-eg b')).toHaveText('$1,234.57K');
@@ -735,8 +707,7 @@ test('a label splits onto two lines, and survives a round trip', async ({ page }
   // is now the row's colour swatch.
   const label = page.locator('#chartpop .ch-grid input[data-ck="l0"]');
   await label.fill('Second 20% ¶ $21,900-$44,200');
-  await label.blur();
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => label.blur());
 
   // Stored as a real newline...
   expect(await page.evaluate(i =>
@@ -758,8 +729,7 @@ test('tooltips are opt-in, and the editor itself stays free of them',
     await gotoEditor(page);
     const id = await addChart(page);
     await customize(page, 'Text');
-    await switchFor(page, 'Hover tooltips').click();
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => switchFor(page, 'Hover tooltips').click());
 
     expect(await page.evaluate(i =>
       layout.shapes.find(s => s.id === i).chart.tips, id)).toBe(true);
@@ -787,14 +757,12 @@ test('an inline chart opens the Chart panel and edits as an override',
     const fig = frame.locator('[data-chart="whopays.fig6"]');
     await fig.scrollIntoViewIfNeeded();
     await fig.click();
-    await page.waitForTimeout(600);
 
     // It is a chart to the toolbar, even though it is not a shape.
     await expect(page.locator('#ar-chart')).toBeVisible();
     expect(await page.evaluate(() => layout.shapes.length)).toBe(0);
 
     await page.click('#ar-chart');
-    await page.waitForTimeout(500);
     await expect(page.locator('#side-title')).toHaveText('Chart');
     // The panel is showing what the RENDERER computed, which only the render
     // knows — it travels out on data-chart-spec.
@@ -804,8 +772,7 @@ test('an inline chart opens the Chart panel and edits as an override',
 
     // An edit lands in layout.charts, not layout.shapes...
     await customize(page, 'Text');
-    await switchFor(page, 'Legend').click();
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => switchFor(page, 'Legend').click());
     const over = await page.evaluate(() => layout.charts['whopays.fig6']);
     expect(over.legend).toBe(true);
     // ...and records ONLY what changed, so a rebuild with new numbers still
@@ -821,9 +788,9 @@ test('an inline chart has no background control, having no shape behind it',
     const fig = frame.locator('[data-chart="whopays.fig6"]');
     await fig.scrollIntoViewIfNeeded();
     await fig.click();
-    await page.waitForTimeout(600);
+    await settled(page);
     await page.click('#ar-chart');
-    await page.waitForTimeout(500);
+    await settled(page);
     await customize(page, 'Series colours');
     await expect(
       page.locator('#chartpop .ch-colrow', { hasText: 'Background' })).toHaveCount(0);
@@ -843,17 +810,15 @@ test('one bar can be picked out of a single-series chart', async ({ page }) => {
   // a budget chart, and the reason figure 2 is hand-written SVG.
   const sw = page.locator('#chartpop .ch-grid .ch-dotsw');
   await expect(sw).toHaveCount(3);
-  await sw.nth(2).evaluate(el => {
+  await afterRender(page, () => sw.nth(2).evaluate(el => {
     el.value = '#FF0000';
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await page.waitForTimeout(1400);
+  }));
   const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.colors[2]).toBe('#FF0000');
 
   // A second series and the colour means the SERIES again, so the swatch goes.
-  await page.click('#chartpop .tp-btn:text("+ Series")');
-  await page.waitForTimeout(1200);
+  await afterRender(page, () => page.click('#chartpop .tp-btn:text("+ Series")'));
   await expect(page.locator('#chartpop .ch-grid .ch-dotsw')).toHaveCount(0);
 });
 
@@ -863,14 +828,13 @@ test('a block of spreadsheet cells fills the table', async ({ page }) => {
   // Until now this landed in ONE cell, where chartNumber refused it — so the
   // way to get a table of numbers into a chart was to retype it.
   await page.locator('#chartpop .ch-grid input[data-ck="l0"]').click();
-  await page.evaluate(() => {
+  await afterRender(page, () => page.evaluate(() => {
     const el = document.querySelector('#chartpop .ch-grid input[data-ck="l0"]');
     const dt = new DataTransfer();
     dt.setData('text/plain',
       'Label\tGeneral\tSpecial\nFY25\t6\t3\nFY26\t7\t3\nFY27\t8\t4\nFY28\t9\t5');
     el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
-  });
-  await page.waitForTimeout(1500);
+  }));
   const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.labels).toEqual(['FY25', 'FY26', 'FY27', 'FY28']);
   expect(c.series).toHaveLength(2);
@@ -882,15 +846,13 @@ test('a reference line is added, labelled and taken off again', async ({ page })
   await gotoEditor(page);
   const id = await addChart(page);
   await customize(page, 'Reference lines');
-  await page.click('#chartpop .tp-btn:text("+ Reference line")');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => page.click('#chartpop .tp-btn:text("+ Reference line")'));
   let c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.rules).toHaveLength(1);
 
   const val = page.locator('#chartpop .ch-rule input[data-ck="rv0"]');
   await val.fill('15');
-  await val.press('Enter');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => val.press('Enter'));
   c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.rules[0].value).toBe(15);
   // Drawn across the plot, over the bars it is there to be read against.
@@ -898,8 +860,7 @@ test('a reference line is added, labelled and taken off again', async ({ page })
     .locator(`g[data-shape="${id}"]`).innerHTML();
   expect(txt).toContain('Target');
 
-  await page.click('#chartpop .ch-rule .ch-rowdel');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => page.click('#chartpop .ch-rule .ch-rowdel'));
   c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.rules).toBeUndefined();          // the last one takes the key with it
 });
@@ -912,15 +873,12 @@ test('the legend can move off the bottom, and the axes can be named',
     // The position picker only exists once there IS a legend to place.
     await expect(page.locator('#chartpop .ch-field', { hasText: 'Legend at' }))
       .toHaveCount(0);
-    await switchFor(page, 'Legend').click();
-    await page.waitForTimeout(1400);
-    await page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => switchFor(page, 'Legend').click());
+    await afterRender(page, () => page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right'));
 
     const t = page.locator('#chartpop input[data-ck="axisTitle"]');
     await t.fill('Millions of dollars');
-    await t.press('Enter');
-    await page.waitForTimeout(1400);
+    await afterRender(page, () => t.press('Enter'));
     const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
     expect(c.legendPos).toBe('right');
     expect(c.axisTitle).toBe('Millions of dollars');
@@ -929,17 +887,14 @@ test('the legend can move off the bottom, and the axes can be named',
 test('a series can be drawn as a line against its own scale', async ({ page }) => {
   await gotoEditor(page);
   const id = await addChart(page);
-  await page.click('#chartpop .tp-btn:text("+ Series")');
-  await page.waitForTimeout(1200);
+  await afterRender(page, () => page.click('#chartpop .tp-btn:text("+ Series")'));
   // The section only appears once there is more than one series to tell
   // apart — a combo chart needs two things to combine.
   await customize(page, 'Bars & lines');
   const row = page.locator('#chartpop .ch-secbody[data-sec="series"] .ch-colrow')
     .nth(1);
-  await row.locator('select').first().selectOption('line');
-  await page.waitForTimeout(1400);
-  await row.locator('select').nth(1).selectOption('right');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => row.locator('select').first().selectOption('line'));
+  await afterRender(page, () => row.locator('select').nth(1).selectOption('right'));
   const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.series[1].type).toBe('line');
   expect(c.series[1].axis).toBe('right');
@@ -957,12 +912,10 @@ test('labels can be turned, and the bars can be made wider', async ({ page }) =>
   await gotoEditor(page);
   const id = await addChart(page);
   await customize(page, 'Axis & grid');
-  await page.selectOption('#chartpop .ch-field:has-text("Labels") select', '-45');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => page.selectOption('#chartpop .ch-field:has-text("Labels") select', '-45'));
   const gap = page.locator('#chartpop .ch-field:has-text("Bar gap") input');
   await gap.fill('0.05');
-  await gap.press('Enter');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => gap.press('Enter'));
   const c = await page.evaluate(() => layout.shapes.find(s => s.kind === 'chart').chart);
   expect(c.labelAngle).toBe(-45);
   expect(c.barGap).toBe(0.05);
@@ -977,18 +930,16 @@ test('a look is saved, applied to every chart, and deleted', async ({ page }) =>
   // Give the chart something to remember: a legend down the right and one
   // recoloured bar.
   await customize(page, 'Text');
-  await switchFor(page, 'Legend').click();
-  await page.waitForTimeout(1400);
-  await page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right');
-  await page.waitForTimeout(1400);
+  await afterRender(page, () => switchFor(page, 'Legend').click());
+  await afterRender(page, () => page.selectOption('#chartpop .ch-field:has-text("Legend at") select', 'right'));
 
   await customize(page, 'Style');
   await page.click('#chartpop .tp-btn:text("+ Save this look")');
-  await page.waitForTimeout(400);
+  await settled(page);
   await page.locator('dialog.dsdlg input[type="text"]').fill('House');
   await page.locator('dialog.dsdlg button[type="submit"], dialog.dsdlg form button')
     .last().click();
-  await page.waitForTimeout(900);
+  await settled(page);
   expect(await page.evaluate(() => Object.keys(layout.chartStyles || {})))
     .toEqual(['House']);
   expect(await page.evaluate(() => layout.chartStyles.House.legendPos)).toBe('right');
@@ -998,12 +949,11 @@ test('a look is saved, applied to every chart, and deleted', async ({ page }) =>
 
   // Applied across the document — the primer's own figure 6 included, which
   // is an INLINE chart and records its look as an override.
-  await page.click('#chartpop .tp-btn:text("Apply to all")');
-  await page.waitForTimeout(2500);
+  await afterRender(page, () => page.click('#chartpop .tp-btn:text("Apply to all")'));
   expect(await page.evaluate(() => (layout.charts['whopays.fig6'] || {}).legendPos))
     .toBe('right');
 
   await page.click('#chartpop .tp-btn:text("Delete")');
-  await page.waitForTimeout(900);
+  await settled(page);
   expect(await page.evaluate(() => layout.chartStyles)).toBeUndefined();
 });
