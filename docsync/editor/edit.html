@@ -19332,8 +19332,8 @@ function guideLine(d, pg, axis, idx, pos) {
 function addGuideHere(axis, at) {
   if (!guidesOn) toggleGuides();
   if (!guidesShown) { guidesShown = true; try { localStorage.setItem('ds-guides-vis', '1'); } catch (e) { /* file: */ } }
-  pushHistory();
-  const v = addGuide(axis, at);
+  let v;
+  changeDoc(() => { v = addGuide(axis, at); }, { render: false });
   drawGuideLayer($('out').contentDocument);
   chromeSync();
   $('stat').textContent = `${axis === 'x' ? 'vertical' : 'horizontal'} guide at ${v}in — drag it to move, drag it onto a ruler to remove it`;
@@ -19341,10 +19341,8 @@ function addGuideHere(axis, at) {
 /** Right-click ▸ Add a spacer here: a gap marker with its top-left corner where you clicked. */
 async function addSpacerHere(pid, x, y) {
   const w = 3, h = SPACER_IN;
-  pushHistory();
-  const r = _pilotApplyAddShape({ kind: 'spacer', page: pid, x: round2(Math.max(0, Math.min(PAGE_W_IN - w, x))),
-                                  y: round2(Math.max(0, Math.min(PAGE_H_IN - h, y))), w, h });
-  markDirty(); await render();
+  const r = await changeDoc(() => _pilotApplyAddShape({ kind: 'spacer', page: pid, x: round2(Math.max(0, Math.min(PAGE_W_IN - w, x))),
+                                  y: round2(Math.max(0, Math.min(PAGE_H_IN - h, y))), w, h }));
   setSel($('out').contentDocument, [r.id]);
   $('stat').textContent = `spacer holding ${h}in — drag its edge to size the gap; things it touches keep it when one moves`;
 }
@@ -19391,9 +19389,10 @@ async function moveGuideDialog(axis, idx) {
     validate: v => { const n = parseLen(v.at); return isFinite(n) && n >= 0 && n <= span ? '' : `a position from 0 to ${span} inches`; },
   });
   if (got == null) return;
-  pushHistory();
-  arr[idx] = round2(parseLen(got.at));
-  if (axis === 'v') setGuides(arr, guidesY()); else setGuides(guidesX(), arr);
+  await changeDoc(() => {
+    arr[idx] = round2(parseLen(got.at));
+    if (axis === 'v') setGuides(arr, guidesY()); else setGuides(guidesX(), arr);
+  }, { render: false });
   drawGuideLayer($('out').contentDocument);
 }
 /** View ▸ Add a guide…: type the line's place instead of dragging it. */
@@ -19409,8 +19408,7 @@ async function addGuideDialog() {
   if (got == null) return;
   if (!guidesOn) toggleGuides();
   if (!guidesShown) { guidesShown = true; try { localStorage.setItem('ds-guides-vis', '1'); } catch (e) { /* file: */ } }
-  pushHistory();
-  const v = addGuide(got.axis === 'v' ? 'x' : 'y', parseLen(got.at));
+  const v = await changeDoc(() => addGuide(got.axis === 'v' ? 'x' : 'y', parseLen(got.at)), { render: false });
   drawGuideLayer($('out').contentDocument);
   chromeSync();
   $('stat').textContent = `${got.axis === 'v' ? 'vertical' : 'horizontal'} guide at ${v}in`;
@@ -19418,9 +19416,10 @@ async function addGuideDialog() {
 function clearAllGuides() {
   const n = guidesX().length + guidesY().length;
   if (!n) { $('stat').textContent = 'no guides to clear'; return; }
-  pushHistory();
-  selGuide = null;
-  setGuides([], []);
+  changeDoc(() => {
+    selGuide = null;
+    setGuides([], []);
+  }, { render: false });
   drawGuideLayer($('out').contentDocument);
   $('stat').textContent = `${n} guide${n === 1 ? '' : 's'} cleared — ⌘Z brings ${n === 1 ? 'it' : 'them'} back`;
 }
@@ -19440,10 +19439,12 @@ function deleteSelGuide() {
   const { axis, idx } = selGuide;
   const arr = (axis === 'v' ? guidesX() : guidesY()).slice();
   if (idx >= arr.length) { selGuide = null; return false; }
-  pushHistory();
-  const [gone] = arr.splice(idx, 1);
-  selGuide = null;
-  if (axis === 'v') setGuides(arr, guidesY()); else setGuides(guidesX(), arr);
+  let gone;
+  changeDoc(() => {
+    [gone] = arr.splice(idx, 1);
+    selGuide = null;
+    if (axis === 'v') setGuides(arr, guidesY()); else setGuides(guidesX(), arr);
+  }, { render: false });
   drawGuideLayer($('out').contentDocument);
   $('stat').textContent = `guide at ${gone}in removed`;
   return true;
@@ -19751,8 +19752,7 @@ function startRulerGuide(axis, e0) {
     guideTip(null);
     if (ghost) ghost.remove();
     if (pos == null) { $('stat').textContent = 'no guide placed'; return; }
-    pushHistory();
-    addGuide(axis === 'v' ? 'x' : 'y', pos);
+    changeDoc(() => { addGuide(axis === 'v' ? 'x' : 'y', pos); }, { render: false });
     drawGuideLayer(d);
     $('stat').textContent = `guide at ${pos}in — objects snap to it; drag it onto a ruler to remove`;
   };
@@ -19776,8 +19776,8 @@ function startRulerGuide(axis, e0) {
   if (along < 0 || along > span) { $('stat').textContent = 'double-click on the page’s own stretch of the ruler to add a guide'; return; }
   const d = F.d;
   const snap = guideSnap(pgInfo.pg, horiz ? 'v' : 'h', along, e, -1, pgInfo.pxIn / (DPI * zoomOf(pgInfo.pg)));
-  pushHistory();
-  const v = addGuide(horiz ? 'x' : 'y', snap.v);
+  let v;
+  changeDoc(() => { v = addGuide(horiz ? 'x' : 'y', snap.v); }, { render: false });
   drawGuideLayer(d);
   $('stat').textContent = `${horiz ? 'vertical' : 'horizontal'} guide at ${v}in — double-click it to retype, right-click for more`;
 }));
@@ -20050,9 +20050,10 @@ async function marginsDialog(pid) {
     options: [{ value: 'master', label: `Pages using “${name}”` }, { value: 'all', label: 'The whole report' }] });
   const got = await dsForm('Margins and columns', fields, { okLabel: 'Apply' });
   if (got == null) return;
-  pushHistory();
-  const { scope, ...mg } = got;
-  setMargins(mg, name && scope === 'master' ? name : null);
+  await changeDoc(() => {
+    const { scope, ...mg } = got;
+    setMargins(mg, name && scope === 'master' ? name : null);
+  }, { render: false });
   showGuidesNow();
   drawGuideLayer($('out').contentDocument);
   $('stat').textContent = 'margins and columns set — objects snap to them while guides show';
@@ -20090,10 +20091,8 @@ async function readingOrderDialog(pid) {
     },
   });
   if (got == null) return;
-  pushHistory();
   const ids = got.ids.split('\n').map(x => x.trim()).filter(Boolean);
-  setReadingOrder(pid, ids.join() === all.join() ? null : ids);
-  await render();
+  await changeDoc(() => { setReadingOrder(pid, ids.join() === all.join() ? null : ids); });
   $('stat').textContent = ids.length ? `reading order set for page ${pageLabel(pid)}` : 'reading order cleared';
 }
 async function createGuidesDialog(pid) {
@@ -20105,9 +20104,8 @@ async function createGuidesDialog(pid) {
       options: [{ value: 'margins', label: 'Margins' }, { value: 'page', label: 'Page' }] },
   ], { okLabel: 'Create' });
   if (got == null) return;
-  pushHistory();
-  const n = createGuides({ rows: Math.round(+got.rows) || 0, columns: Math.round(+got.columns) || 0,
-                           gutter: Math.max(0, +got.gutter || 0), fit: got.fit, pid });
+  const n = await changeDoc(() => createGuides({ rows: Math.round(+got.rows) || 0, columns: Math.round(+got.columns) || 0,
+                           gutter: Math.max(0, +got.gutter || 0), fit: got.fit, pid }), { render: false });
   showGuidesNow();
   drawGuideLayer($('out').contentDocument);
   $('stat').textContent = `added ${n.x + n.y} guide${n.x + n.y === 1 ? '' : 's'}`;
@@ -21268,10 +21266,11 @@ function ctlTextRead(inp) {
  *  type card's own handlers take none (an edit there joins the step its
  *  selection opened); a value set from the bar is an act of its own. */
 function ctlTextWrite(src, value) {
-  pushHistory();
-  if (src.type === 'checkbox') src.checked = !!value; else src.value = value;
-  src.dispatchEvent(new Event('input', { bubbles: true }));
-  src.dispatchEvent(new Event('change', { bubbles: true }));
+  changeDoc(() => {
+    if (src.type === 'checkbox') src.checked = !!value; else src.value = value;
+    src.dispatchEvent(new Event('input', { bubbles: true }));
+    src.dispatchEvent(new Event('change', { bubbles: true }));
+  }, { render: false });
 }
 // ---- the selected words (phase 5)
 // With words selected in an open text, size, leading, tracking and kerning
@@ -21813,33 +21812,33 @@ function pieceFromSelection(name) {
  *  report lacks first, then the objects with fresh ids — one undo step. */
 async function placePiece(piece, at) {
   const d = $('out').contentDocument;
-  pushHistory();
-  const merged = mergeStyles(piece.styles || {}, { textStyles: 'add', objectStyles: 'add', cellStyles: 'add', swatches: 'add' });
-  const page = visiblePageId();
-  const ox = at && at.x != null ? +at.x : Math.max(0, (PAGE_W_IN - (piece.w || 0)) / 2);
-  const oy = at && at.y != null ? +at.y : 1;
   const ids = [];
-  piece.items.forEach(it => {
-    const x = +Math.min(Math.max(0, ox + it.data.x), PAGE_W_IN - Math.min(+it.data.w || 0.5, PAGE_W_IN)).toFixed(3);
-    const y = +Math.min(Math.max(0, oy + it.data.y), PAGE_H_IN - Math.min(+it.data.h || 0.4, PAGE_H_IN)).toFixed(3);
-    if (it.kind === 'shape') {
-      const nid = freeShapeId(it.data.kind);
-      layout.shapes = layout.shapes || [];
-      layout.shapes.push({ ...clone(it.data), id: nid, page, x, y });
-      ids.push(nid);
-    } else if (it.kind === 'box') {
-      const nid = freeBoxId();
-      boxes().push({ ...clone(it.data), id: nid, page, x, y });
-      ids.push('text.' + nid);
-    } else if (it.kind === 'table') {
-      const nid = freeTableId();
-      tables().push({ ...clone(it.data), id: nid, page, x, y });
-      ids.push('table.' + nid);
-    }
+  const merged = await changeDoc(() => {
+    const merged = mergeStyles(piece.styles || {}, { textStyles: 'add', objectStyles: 'add', cellStyles: 'add', swatches: 'add' });
+    const page = visiblePageId();
+    const ox = at && at.x != null ? +at.x : Math.max(0, (PAGE_W_IN - (piece.w || 0)) / 2);
+    const oy = at && at.y != null ? +at.y : 1;
+    piece.items.forEach(it => {
+      const x = +Math.min(Math.max(0, ox + it.data.x), PAGE_W_IN - Math.min(+it.data.w || 0.5, PAGE_W_IN)).toFixed(3);
+      const y = +Math.min(Math.max(0, oy + it.data.y), PAGE_H_IN - Math.min(+it.data.h || 0.4, PAGE_H_IN)).toFixed(3);
+      if (it.kind === 'shape') {
+        const nid = freeShapeId(it.data.kind);
+        layout.shapes = layout.shapes || [];
+        layout.shapes.push({ ...clone(it.data), id: nid, page, x, y });
+        ids.push(nid);
+      } else if (it.kind === 'box') {
+        const nid = freeBoxId();
+        boxes().push({ ...clone(it.data), id: nid, page, x, y });
+        ids.push('text.' + nid);
+      } else if (it.kind === 'table') {
+        const nid = freeTableId();
+        tables().push({ ...clone(it.data), id: nid, page, x, y });
+        ids.push('table.' + nid);
+      }
+    });
+    if (piece.wasGroup && ids.length > 1) { layout.groups = layout.groups || []; layout.groups.push(ids); }
+    return merged;
   });
-  if (piece.wasGroup && ids.length > 1) { layout.groups = layout.groups || []; layout.groups.push(ids); }
-  markDirty();
-  await render();
   setSel($('out').contentDocument, ids);
   const added = Object.values(merged).reduce((n, v) => n + v.added.length, 0);
   $('stat').textContent = `${piece.name} placed — ${ids.length} object${ids.length === 1 ? '' : 's'}`
@@ -21982,11 +21981,12 @@ function openStoryEditor() {
       ta.addEventListener('input', () => size(ta));
       ta.addEventListener('change', async () => {
         if (ta.value === ta.dataset.was) return;
-        pushHistory();
-        if (!storyWrite(it.key, ta.value)) { withdrawStep(); box.classList.add('bad'); return; }
-        box.classList.remove('bad');
-        ta.dataset.was = ta.value;
-        markDirty(); await render();
+        const ok = await changeDoc(() => {
+          if (!storyWrite(it.key, ta.value)) return false;
+          box.classList.remove('bad');
+          ta.dataset.was = ta.value;
+        });
+        if (ok === false) box.classList.add('bad');
       });
       box.append(lab, ta);
       list.appendChild(box);
@@ -22476,10 +22476,10 @@ async function addNoteDialog(k, i = null) {
   const got = await dsForm(i == null ? `Note on ${k}` : `Edit note on ${k}`, [{ name: 'text', type: 'textarea',
     label: 'Only the editor shows it — never the page, the PDF or the web', value: i == null ? '' : cur[i] }], { okLabel: 'Save' });
   if (got == null) return;
-  pushHistory();
-  if (i == null) cur.push(got.text); else cur[i] = got.text;
-  setSlotNotes(k, cur);
-  await render();
+  await changeDoc(() => {
+    if (i == null) cur.push(got.text); else cur[i] = got.text;
+    setSlotNotes(k, cur);
+  });
   if (!$('notespop').hidden) notesRender();
 }
 /** Marks are placed by measuring their words, so they are measured again
@@ -22533,7 +22533,7 @@ function notesRender() {
       const btn = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.addEventListener('click', fn); acts.appendChild(b); };
       btn('Go to', () => { const el = $('out').contentDocument.querySelector(`[data-slot="${CSS.escape(n.key)}"]`); if (el) el.scrollIntoView({ block: 'center' }); });
       btn('Edit…', () => addNoteDialog(n.key, i));
-      btn('Delete', async () => { pushHistory(); const cur = slotNotes(n.key).map(NOTE_BODY); cur.splice(i, 1); setSlotNotes(n.key, cur); await render(); notesRender(); });
+      btn('Delete', async () => { await changeDoc(() => { const cur = slotNotes(n.key).map(NOTE_BODY); cur.splice(i, 1); setSlotNotes(n.key, cur); }); notesRender(); });
       row.appendChild(acts);
     }
     box.appendChild(row);
@@ -22935,9 +22935,7 @@ async function loadStylesDialog() {
   if (!fields.length) { $('stat').textContent = `${name(pick.pid)} has no styles to load`; return; }
   const how = await dsForm(`Load from ${name(pick.pid)}`, fields, { okLabel: 'Load' });
   if (how == null) return;
-  pushHistory();
-  const r = mergeStyles(src, how);
-  markDirty(); await render();
+  const r = await changeDoc(() => mergeStyles(src, how));
   const n = Object.values(r).reduce((a, x) => a + x.added.length + x.replaced.length, 0);
   $('stat').textContent = `loaded ${n} from ${name(pick.pid)}`;
 }
@@ -23160,9 +23158,7 @@ async function deleteUnusedDialog() {
   if (!how) return;
   const kinds = Object.keys(how).filter(k => how[k] === 'delete');
   if (!kinds.length) return;
-  pushHistory();
-  const gone = deleteUnusedStyles(kinds);
-  markDirty(); await render();
+  const gone = await changeDoc(() => deleteUnusedStyles(kinds));
   const n = Object.values(gone).reduce((a, x) => a + x.length, 0);
   $('stat').textContent = `deleted ${n} unused`;
 }
@@ -23782,9 +23778,10 @@ $('ar-border').addEventListener('click', () => {
   grid.innerHTML = '';
   const strokePaint = async c => {
     $('ar-borderpop').hidden = true;
-    pushHistory();
-    shp.stroke = c;
-    if (c !== 'none' && (shp.sw ?? 0) < 0.005) shp.sw = 0.02;
+    await changeDoc(() => {
+      shp.stroke = c;
+      if (c !== 'none' && (shp.sw ?? 0) < 0.005) shp.sw = 0.02;
+    }, { render: false });
     await commit();
   };
   const none = document.createElement('button');
@@ -23818,9 +23815,10 @@ $('ar-border').addEventListener('click', () => {
     b.textContent = kk;
     b.classList.toggle('on', kk === cur);
     b.addEventListener('click', async () => {
-      pushHistory();
-      if (presets[kk]) shp.dash = presets[kk]; else delete shp.dash;
-      $('ar-borderpop').hidden = true;
+      await changeDoc(() => {
+        if (presets[kk]) shp.dash = presets[kk]; else delete shp.dash;
+        $('ar-borderpop').hidden = true;
+      }, { render: false });
       await commit();
     });
     drow.appendChild(b);
@@ -23891,9 +23889,11 @@ function fxExtras(body, owner, commit, isShape, rebuild) {
     const r = document.createElement('input'); r.type = 'range'; r.min = 0.02; r.max = 0.5; r.step = 0.01;
     r.value = (owner[k] || defs[k]).size; r.disabled = !owner[k];
     cb.addEventListener('change', async () => {
-      pushHistory();
-      if (cb.checked) owner[k] = { ...defs[k] }; else delete owner[k];
-      rebuild(); await commit();
+      await changeDoc(() => {
+        if (cb.checked) owner[k] = { ...defs[k] }; else delete owner[k];
+        rebuild();
+      }, { render: false });
+      await commit();
     });
     r.addEventListener('pointerdown', () => pushHistory());
     r.addEventListener('change', async () => { owner[k].size = +r.value; await commit(); });
@@ -23924,11 +23924,13 @@ function fxExtras(body, owner, commit, isShape, rebuild) {
     fr.value = owner.fade ? owner.fade.from ?? 0.4 : 0.4;
     dir.disabled = fr.disabled = !owner.fade;
     fcb.addEventListener('change', async () => {
-      pushHistory();
-      if (fcb.checked) owner.fade = { angle: +dir.value, from: +fr.value, to: 1 }; else delete owner.fade;
-      rebuild(); await commit();
+      await changeDoc(() => {
+        if (fcb.checked) owner.fade = { angle: +dir.value, from: +fr.value, to: 1 }; else delete owner.fade;
+        rebuild();
+      }, { render: false });
+      await commit();
     });
-    dir.addEventListener('change', async () => { pushHistory(); owner.fade.angle = +dir.value; await commit(); });
+    dir.addEventListener('change', async () => { await changeDoc(() => { owner.fade.angle = +dir.value; }, { render: false }); await commit(); });
     fr.addEventListener('pointerdown', () => pushHistory());
     fr.addEventListener('change', async () => { owner.fade.from = +fr.value; await commit(); });
     fw.append(fcb, document.createTextNode('Fade to clear'), dir, fr);
@@ -23957,9 +23959,11 @@ $('ar-fxbtn').addEventListener('click', () => {
       add.className = 'sw-default';
       add.textContent = 'Add shadow';
       add.addEventListener('click', async () => {
-        pushHistory();
-        owner.shadow = { offset: 0.06, direction: 135, blur: 0.08, alpha: 0.35 };
-        build(); await commit();
+        await changeDoc(() => {
+          owner.shadow = { offset: 0.06, direction: 135, blur: 0.08, alpha: 0.35 };
+          build();
+        }, { render: false });
+        await commit();
       });
       body.appendChild(add);
       fxExtras(body, owner, commit, !!shapeOf(id), build);
@@ -23989,11 +23993,13 @@ $('ar-fxbtn').addEventListener('click', () => {
     rm.className = 'sw-default';
     rm.textContent = 'Remove shadow';
     rm.addEventListener('click', async () => {
-      pushHistory();
-      delete owner.shadow;
-      // A shadow that came from the style needs an explicit no to beat it.
-      if (shadowOf()) owner.shadow = null;
-      build(); await commit();
+      await changeDoc(() => {
+        delete owner.shadow;
+        // A shadow that came from the style needs an explicit no to beat it.
+        if (shadowOf()) owner.shadow = null;
+        build();
+      }, { render: false });
+      await commit();
     });
     body.appendChild(rm);
     fxExtras(body, owner, commit, !!shapeOf(id), build);
@@ -24104,8 +24110,7 @@ function openColorPanel(id) {
   // moment a colour exists to clear, instead of staying stuck on whatever
   // was true when the panel opened.
   const apply = async v => {
-    pushHistory(); fillTargets(id).set(v); markDirty();
-    await render();
+    await changeDoc(() => { fillTargets(id).set(v); });
     paintSel($('out').contentDocument);
     // Refresh which swatch reads as current — but NOT by rebuilding the
     // panel, which would tear down an open picker the user is still using.
@@ -26496,9 +26501,7 @@ function penWire(d) {
     d.querySelectorAll('.ds-penpreview').forEach(x => x.remove());
     d.documentElement.classList.remove('ds-pen-arm');
     if (!p || p.pts.length < 2) { $('stat').textContent = 'pen put away — a path needs two points'; return; }
-    pushHistory();
-    const r = _pilotApplyAddPath({ page: p.pid, points: p.pts, closed });
-    markDirty(); await render();
+    const r = await changeDoc(() => _pilotApplyAddPath({ page: p.pid, points: p.pts, closed }));
     setSel($('out').contentDocument, [r.id]);
     $('stat').textContent = `path drawn — ${p.pts.length} points; double-click it to move its points`;
   };
@@ -26936,16 +26939,12 @@ $('shapepop').querySelector('[data-qr]').addEventListener('click', async () => {
     { okLabel: 'Add', validate: v => !v.data.trim() || v.data.trim() === 'https://' ? 'what should it open?'
       : new TextEncoder().encode(v.data.trim()).length > 213 ? 'that is longer than a QR code here carries (213 bytes)' : '' });
   if (got == null) return;
-  pushHistory();
-  const r = _pilotApplyAddShape({ kind: 'qr', data: got.data.trim(), w: 1.2, h: 1.2 });
-  markDirty(); await render();
+  const r = await changeDoc(() => _pilotApplyAddShape({ kind: 'qr', data: got.data.trim(), w: 1.2, h: 1.2 }));
   setSel($('out').contentDocument, [r.id]);
 });
 $('shapepop').querySelector('[data-spacer]').addEventListener('click', async () => {
   const d = $('out').contentDocument;
-  pushHistory();
-  const r = _pilotApplyAddShape(spacerUnder(d) || spacerInView(d) || { kind: 'spacer' });
-  markDirty(); await render();
+  const r = await changeDoc(() => _pilotApplyAddShape(spacerUnder(d) || spacerInView(d) || { kind: 'spacer' }));
   setSel($('out').contentDocument, [r.id]);
   const sh = shapeOf(r.id);
   $('stat').textContent = `spacer holding ${sh.h}in — size it to the gap you want; things it touches keep it when one moves`;
@@ -31580,8 +31579,8 @@ stroke-width="2" stroke-linecap="round"/></svg>') 10 10, grab; }
       return b;
     };
     const sibs = extraKeys(pageOf(key)), pos = sibs.indexOf(key);
-    const up = mk('↑', 'Move section up', '', () => { pushHistory(); moveExtra(key, -1); markDirty(); render(); });
-    const dn = mk('↓', 'Move section down', '', () => { pushHistory(); moveExtra(key, 1); markDirty(); render(); });
+    const up = mk('↑', 'Move section up', '', () => { changeDoc(() => { moveExtra(key, -1); }); });
+    const dn = mk('↓', 'Move section down', '', () => { changeDoc(() => { moveExtra(key, 1); }); });
     mk('⇄', 'Move to another page', '', async () => {
       const r = await dsForm('Move this section', [{
         name: 'page', label: `Move to which page? (now on: ${pageOf(key)})`, type: 'select',
@@ -31589,11 +31588,11 @@ stroke-width="2" stroke-linecap="round"/></svg>') 10 10, grab; }
         options: EXTRA_PAGES.map(([id, l]) => ({ value: id, label: l })),
       }], { okLabel: 'Move' });
       if (!r) return;
-      pushHistory(); moveSectionToPage(key, r.page); markDirty(); render();
+      changeDoc(() => { moveSectionToPage(key, r.page); });
     });
     mk('✕', 'Delete this section', 'del', async () => {
       if (!await dsConfirm('Delete this whole section?', { okLabel: 'Delete', danger: true })) return;
-      pushHistory(); removeExtra(key); markDirty(); render();
+      changeDoc(() => { removeExtra(key); });
     });
     up.disabled = pos <= 0;
     dn.disabled = pos === sibs.length - 1;
@@ -31709,11 +31708,8 @@ const isStandInEndnote = el =>
 async function addEndnotesSection({ silent = false } = {}) {
   const existing = endnotesBox();
   if (existing) return existing;
-  pushHistory();
   const pageless = isPageless();
-  const box = makeEndnotesSection();
-  markDirty();
-  await render();
+  const box = await changeDoc(() => makeEndnotesSection());
   if (!silent) {
     $('stat').textContent = pageless
       ? 'endnotes section added at the end — every citation you make lists itself here'
@@ -32002,9 +31998,9 @@ function renderSources() {
     // that is the order on show: in endnote order a press moved nothing.
     if (!srcByNumber) {
       mkb('↑', 'Move up', idx === 0, () => {
-        pushHistory(); moveSource(s.id, -1); markDirty(); render(); renderSources(); });
+        changeDoc(() => { moveSource(s.id, -1); }); renderSources(); });
       mkb('↓', 'Move down', idx === all.length - 1, () => {
-        pushHistory(); moveSource(s.id, 1); markDirty(); render(); renderSources(); });
+        changeDoc(() => { moveSource(s.id, 1); }); renderSources(); });
     }
     mkb('rename', 'Rename this id everywhere it is cited', false, async () => {
       const r = await dsForm(`Rename [${s.id}]`, [{
@@ -32019,7 +32015,7 @@ function renderSources() {
       if (!r) return;
       const neu = r.id.trim();
       if (neu === s.id) return;
-      pushHistory(); renameSource(s.id, neu); markDirty(); render(); renderSources();
+      changeDoc(() => { renameSource(s.id, neu); }); renderSources();
     });
     // Delete joins the hover cluster instead of holding a column open on every
     // row. Class and disabled-when-cited behaviour are unchanged.
@@ -32063,7 +32059,7 @@ function renderSources() {
       // The citation must say something; the LINK is optional — a book or an
       // interview has none, and a source that had one must be able to lose it.
       if (!t) { $('stat').textContent = emptyCitationRefusal(s.id); txt.value = s.text; return; }
-      pushHistory(); updateSource(s.id, t, u); markDirty(); render();
+      changeDoc(() => { updateSource(s.id, t, u); });
     };
     txt.addEventListener('change', commit);       // fires on blur only when changed
     url.addEventListener('change', commit);
@@ -32071,7 +32067,7 @@ function renderSources() {
     del.addEventListener('click', async () => {
       if (!await dsConfirm(`Delete source [${s.id}]? This cannot be undone from here.`,
           { okLabel: 'Delete', danger: true })) return;
-      pushHistory(); deleteSource(s.id); markDirty(); render(); renderSources();
+      changeDoc(() => { deleteSource(s.id); }); renderSources();
     });
     row.append(id, txt, urlWrap);
     list.appendChild(row);
@@ -32208,11 +32204,10 @@ $('add').onclick = async () => {
   if (!slug) return;
   const base = slug;
   for (let n = 2; source.includes(`[[extra.${page}.${slug}]]`); n++) slug = `${base}-${n}`;
-  pushHistory();
-  pendingEdit = addExtra(page, slug);
-  markDirty();
-  $('stat').textContent = `new section on ${label} — write it below`;
-  render();
+  changeDoc(() => {
+    pendingEdit = addExtra(page, slug);
+    $('stat').textContent = `new section on ${label} — write it below`;
+  });
 };
 
 /** True Canva-style editing: a contenteditable surface that shows exactly
@@ -35058,15 +35053,14 @@ async function suggestAccept(c) {
       { okLabel: 'Apply anyway', danger: true })) return;
   suggestApplying = true;
   try {
-    pushHistory();
-    for (const [k, v] of Object.entries(ch.content || {})) {
-      if (v.after == null || !cur.has(k)) continue;   // a slot cannot be removed or invented from here
-      writeSlot(k, v.after);
-    }
-    for (const e of ch.layout || []) suggestApplyLayout(e);
-    syncPageSize();
-    markDirty();
-    await render();
+    await changeDoc(() => {
+      for (const [k, v] of Object.entries(ch.content || {})) {
+        if (v.after == null || !cur.has(k)) continue;   // a slot cannot be removed or invented from here
+        writeSlot(k, v.after);
+      }
+      for (const e of ch.layout || []) suggestApplyLayout(e);
+      syncPageSize();
+    });
     await hubCommentPatch(c.id, { status: 'accepted' });
     $('stat').textContent = 'suggestion accepted — it is on the page for everyone; Save keeps it';
   } finally { suggestApplying = false; }
@@ -40349,9 +40343,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     const next = order.filter(p => p !== pid);
     next.splice(n, 0, pid);
     if (next.every((v, i) => v === order[i])) return { ...docsync.api.status(), page: pid, unchanged: true, pageOrder: order };
-    pushHistory();
-    writeOrder(next, pageBlanks());
-    await render();
+    await changeDoc(() => { writeOrder(next, pageBlanks()); });
     return { ...docsync.api.status(), page: pid, pageOrder: pageOrder() };
   },
 
@@ -40388,8 +40380,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
       }
     }
     if (!d) return { ok: false, error: `setPageSize: one of ${DOC_SIZES.map(x => x.id).join(', ')}, or {w, h} in inches from 2 to 60 (h null for no fixed height)` };
-    pushHistory();
-    await applyDocSize(d);
+    await changeDoc(async () => { await applyDocSize(d); }, { render: false });
     const pg = layout.page || M.page || {};
     return { ...docsync.api.status(), page: { w: pg.w, h: pg.h ?? null } };
   },
@@ -40410,10 +40401,7 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async editSource(id, patch) {
     const v = _pilotValidateEditSource(id, patch);
     if (!v.ok) return v;
-    pushHistory();
-    const r = _pilotApplyEditSource(id, patch);
-    markDirty();
-    await render();
+    const r = await changeDoc(() => _pilotApplyEditSource(id, patch));
     return { ...docsync.api.status(), source: r };
   },
 
@@ -40660,11 +40648,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
   async fitFrame(id) {
     if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
     if (!fitKind(id)) return { ok: false, error: `'${id}' is not an image` };
-    pushHistory();
-    const r = _pilotApplyFitFrame(id);
+    const r = await changeDoc(() => _pilotApplyFitFrame(id));
     if (r.ok === false) return r;
-    markDirty();
-    await render();
     return { ...docsync.api.status(), ...r };
   },
 
@@ -41034,9 +41019,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
     const v = _pilotValidateExists(id);
     if (!v.ok) return v;
-    pushHistory();
-    const r = _pilotApplyLock(id, on);
-    markDirty();
+    let r;
+    changeDoc(() => (r = _pilotApplyLock(id, on)), { render: false });
     paintSel($('out').contentDocument);   // lock is chrome, not content — no render
     return { ...docsync.api.status(), ...r };
   },
@@ -41048,9 +41032,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
     const v = _pilotValidateGroup(ids);
     if (!v.ok) return v;
-    pushHistory();
-    const r = _pilotApplyGroup(ids);
-    markDirty();
+    let r;
+    changeDoc(() => (r = _pilotApplyGroup(ids)), { render: false });
     paintSel($('out').contentDocument);
     return { ...docsync.api.status(), ...r };
   },
@@ -41058,9 +41041,8 @@ window.docsync = Object.assign(window.docsync || {}, { api: {
     if (editing) return { ok: false, error: 'an inline text editor is open — close it first' };
     const v = _pilotValidateUngroup(id);
     if (!v.ok) return v;
-    pushHistory();
-    const r = _pilotApplyUngroup(id);
-    markDirty();
+    let r;
+    changeDoc(() => (r = _pilotApplyUngroup(id)), { render: false });
     paintSel($('out').contentDocument);
     return { ...docsync.api.status(), ...r };
   },
