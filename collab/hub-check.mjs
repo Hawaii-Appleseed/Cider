@@ -72,7 +72,7 @@ const eq = (label, got, want) =>
 /* ------------------------------------------------------------- the hub */
 
 /** `wrangler pages dev` over the hub repo, with the relay's class bound. */
-export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000, relayName = 'primer-collab' }) {
+export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000, relayName = 'primer-collab', vars = {} }) {
   const persistDir = mkdtempSync(pathJoin(tmpdir(), 'hub-check-'));
   // Run from the hub's directory, with this repo's wrangler binary. From
   // here, `wrangler pages dev` would read collab/wrangler.jsonc and merge in
@@ -92,6 +92,9 @@ export async function startPages({ port, hubDir = HUB_DIR, timeoutMs = 120_000, 
     // The document store (functions/api/docs/), local R2 emulation.
     '--r2', 'PRIMER_DOCS',
     '--persist-to', persistDir, '--log-level', 'warn',
+    // Plain variables and secrets the Functions read (the connector's
+    // MCP_TOKEN_SECRET, its MEASURER_URL), as the dashboard would set them.
+    ...Object.entries(vars).flatMap(([k, v]) => ['--binding', `${k}=${v}`]),
     // Its own process group: wrangler spawns workerd, and killing only the
     // parent leaves workerd holding the port — which then looks like "address
     // already in use" on the next run rather than like a leak here.

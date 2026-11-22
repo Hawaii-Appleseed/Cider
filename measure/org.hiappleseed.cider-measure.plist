@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The headless editor on the Mac mini (measure/README.md). Copy to
+     ~/Library/LaunchAgents and `launchctl bootstrap gui/$(id -u) <it>`. -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>org.hiappleseed.cider-measure</string>
+  <key>WorkingDirectory</key><string>/Users/devinthomas/repos/cider-measure</string>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>measure/run.sh</string></array>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>MEASURE_PORT</key><string>8797</string>
+  </dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/devinthomas/Library/Logs/cider-measure.log</string>
+  <key>StandardErrorPath</key><string>/Users/devinthomas/Library/Logs/cider-measure.log</string>
+</dict></plist>
