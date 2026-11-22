@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The editor keeps ONE undo history (`history` in docsync/editor/edit.html)
+// The editor keeps ONE undo history (`history` in the editor (docsync/editor/edit.html and its parts))
 // with two backends behind it: snapshot stacks when editing alone, the shared
 // document's Y.UndoManager in a session. They live between the markers
 //   // history backends: begin   …   // history backends: end
@@ -23,9 +23,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// The editor as a browser gets it: edit.html with its parts inlined
+// (tools/editor-source.cjs); a line is reported in the file a person edits.
+const { assembled, loc } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/undo-ratchet.json');
 
 const INTERNALS = /\bcollab\.(mark|undo|redo|canUndo|canRedo|undoManager|forgetHistory)\b|\b(past|future)\.(length|push|pop|shift)\b|\bstepTimes\.|\bcollabStepBefore\b|\bcollabSteps\b/;
@@ -50,8 +54,9 @@ export function reachIns(text) {
   return out;
 }
 
+let ED;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const found = reachIns(readFileSync(SRC, 'utf8'));
+  const found = reachIns((ED = assembled()).text);
   const allowed = JSON.parse(readFileSync(BASE, 'utf8')).reachIns;
   if (process.argv.includes('--write')) {
     if (found.length > allowed) {
@@ -61,10 +66,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify({ reachIns: found.length }, null, 2) + '\n');
     console.log(`undo-ratchet: bar set to ${found.length} (was ${allowed}).`);
   } else if (found.length > allowed) {
-    console.error(`undo-ratchet: ${found.length} lines in docsync/editor/edit.html reach into an undo backend; ${allowed} allowed.`);
+    console.error(`undo-ratchet: ${found.length} lines in the editor (docsync/editor/edit.html and its parts) reach into an undo backend; ${allowed} allowed.`);
     console.error('Undo goes through `history` (open, withdraw, undo, redo, canUndo, canRedo, steps, clear…),');
     console.error('which works the same alone and in a shared session. Lines that reach past it:');
-    for (const f of found) console.error(`  ${f.line}: ${f.text.slice(0, 120)}`);
+    for (const f of found) console.error(`  ${loc(ED, f.line)}: ${f.text.slice(0, 120)}`);
     process.exit(1);
   } else {
     console.log(`undo-ratchet: ${found.length} reach-ins outside the history backends (bar ${allowed})`
