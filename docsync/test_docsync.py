@@ -4098,6 +4098,18 @@ check_eq("every part edit.html includes exists, and none is left out",
          sorted(n for n, _ in _es.segments(_es.EDITOR.read_text(), lambda n: (_es.EDITOR_DIR / n).read_text()
                                            if (_es.EDITOR_DIR / n).is_file() else None) if n != "edit.html"),
          sorted(f"parts/{p.name}" for p in _es.PARTS.glob("*") if p.is_file()) if _es.PARTS.is_dir() else [])
+# A tool that reads the raw edit.html sees an editor with its parts missing: a
+# ratchet that counts nothing in them, a typecheck that checks half a script.
+# Every Node tool that names the file and reads files reads it assembled.
+_root_es = Path(__file__).resolve().parent.parent
+_raw_readers = []
+for _f in sorted([*(_root_es / "tools").glob("*.mjs"), *(_root_es / "tools").glob("*.js"),
+                  *(_root_es / "tests" / "editor" / "fixtures").glob("*.js")]):
+    _t = _f.read_text()
+    _code = re.sub(r"^\s*(//|\*|/\*).*$", "", _t, flags=re.M)
+    if re.search(r"docsync/editor/edit\.html'|'editor', 'edit\.html'", _code) and "readFileSync" in _code and "editor-source" not in _t:
+        _raw_readers.append(str(_f.relative_to(_root_es)))
+check_eq("every tool that reads the editor reads it assembled (tools/editor-source.cjs)", _raw_readers, [])
 if _shutil_es.which("node"):
     _node = _sp_es.run(["node", "-e", "process.stdout.write(require('./tools/editor-source.cjs').assembled().text)"],
                            cwd=Path(__file__).resolve().parent.parent, capture_output=True)
