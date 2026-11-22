@@ -27,6 +27,10 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import ts from 'typescript';
+import { createRequire } from 'node:module';
+
+// edit.html with its parts inlined, as a browser gets it (tools/editor-source.cjs).
+const { assembled } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(root, 'docsync/editor/edit.html');
@@ -211,7 +215,7 @@ export function baselineOf(errors) {
   };
 }
 
-const show = (e, rel) => `  ${rel}:${e.line}:${e.col}  ${typeof e.code === 'number' ? 'TS' + e.code : e.code}  ${e.message}`;
+const show = (e, ed) => `  ${(w => `${w.file}:${w.line}`)(ed.where(e.line))}:${e.col}  ${typeof e.code === 'number' ? 'TS' + e.code : e.code}  ${e.message}`;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
@@ -219,7 +223,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const src = fi >= 0 ? resolve(argv[fi + 1]) : SRC;
   const rel = fi >= 0 ? argv[fi + 1] : 'docsync/editor/edit.html';
   const t0 = Date.now();
-  const all = diagnose(extractScript(readFileSync(src, 'utf8')).code);
+  const ed = assembled(src);                          // line numbers are the assembled text's; ed.where() maps back
+  const all = diagnose(extractScript(ed.text).code);
   const errors = checked(all);
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   const baseline = JSON.parse(readFileSync(BASE, 'utf8'));
@@ -228,7 +233,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   if (argv.includes('--every') || argv.includes('--all')) {
     const list = argv.includes('--every') ? all : errors;
-    for (const e of list) console.log(show(e, rel));
+    for (const e of list) console.log(show(e, ed));
     console.log(`typecheck: ${list.length} errors`
       + (argv.includes('--every') ? ` of every kind (${total} of the kinds checked)` : ' of the kinds checked') + `, ${secs}s.`);
   } else if (argv.includes('--write')) {
@@ -240,10 +245,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify(baselineOf(errors), null, 2) + '\n');
     console.log(`typecheck: bar set to ${total} (was ${bar}).`);
   } else if (risen.length) {
-    console.error(`typecheck: new errors in ${rel} (${secs}s).`);
+    console.error(`typecheck: new errors in ${rel} or its parts (${secs}s).`);
     for (const r of risen) {
       console.error(`\n${typeof r.errors[0].code === 'number' ? 'TS' + r.code : r.code}: ${CODES[r.code]}. ${r.now} now, ${r.allowed} allowed:`);
-      for (const e of r.errors) console.error(show(e, rel));
+      for (const e of r.errors) console.error(show(e, ed));
     }
     console.error('\nFix them. Each is a line a browser would only trip over when it ran.');
     console.error('A name that really comes from outside the script is declared in tools/typecheck-editor.d.ts.');

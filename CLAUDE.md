@@ -286,11 +286,25 @@ Rules that bite:
   untracked. Edit `docsync/editor/edit.html` and re-stage; never edit a staged
   copy. Only the editor's shell — `start.html`, `sw.js`, icons, the manifest —
   is tracked under `docs/`.
-- **`edit.html`'s stylesheet is a JS template literal** — a backtick or `${…}`
-  even in a CSS comment kills the whole script (editor hangs at "loading the
-  render engine…", no console error). After any edit: `npx playwright test
-  boot-errors.spec.js`, or minimum `node --check` the inline script
-  (`report2027/tools/test_render.py` does this).
+- **The editor is written as several files and served as ONE (2026-11-22).**
+  `docsync/editor/edit.html` includes its areas from `docsync/editor/parts/`
+  with a line that holds only `//@include parts/x.js` (in the script) or
+  `/*@include parts/x.css*/` (in the stylesheet); `docsync/editor_source.py`
+  inlines them, and `stage` and `docsync.hub` write that assembled file, so a
+  browser, the service worker and the hub's version check see byte for byte
+  the single file they always did (same globals, same hoisting, one script).
+  Every Node tool that reads the editor as text (the four ratchets, the
+  typecheck, the test picker, the impact map, the spec fixture) reads
+  `tools/editor-source.cjs`'s `assembled()` and reports lines as
+  `parts/x.js:N`; test_docsync.py checks the two assemblers agree. Edit the
+  part, never a staged copy. To move another area out, `python3
+  tools/editor-extract.py parts/<name>.js --from '<its banner>' --to '<the next
+  banner>'` (it refuses a cut that changes the assembled bytes). The old note
+  that the stylesheet was a JS template literal was stale: it is a plain
+  `<style>` (now `parts/editor.css`). After any editor edit still run
+  `npx playwright test boot-errors.spec.js`, or minimum
+  `python3 report2027/tools/test_render.py` (`node --check` of the assembled
+  script).
 - **Everything visible has a handle.** `docsync.check` reads the markup
   (words, slots, drawings, images); `every-element-has-a-handle.spec.js`
   reads the drawn page (painted cards/bands/rules, CSS-drawn words, script-

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The editor changes a document one way: changeDoc() in docsync/editor/edit.html,
+// The editor changes a document one way: changeDoc() in the editor (docsync/editor/edit.html and its parts),
 // which marks the undo step, runs the change, marks it for saving and redraws.
 // A change that spans two events (a drag, a slider) takes beginChange() instead.
 // Before it, every feature ran those steps itself (pushHistory(), the change,
@@ -16,9 +16,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// The editor as a browser gets it: edit.html with its parts inlined
+// (tools/editor-source.cjs); a line is reported in the file a person edits.
+const { assembled, loc } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/edit-ratchet.json');
 
 /** Lines that call pushHistory() themselves: not comments, not its own
@@ -41,8 +45,9 @@ export function bareCalls(text) {
   return out;
 }
 
+let ED;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const calls = bareCalls(readFileSync(SRC, 'utf8'));
+  const calls = bareCalls((ED = assembled()).text);
   const allowed = JSON.parse(readFileSync(BASE, 'utf8')).pushHistory;
   if (process.argv.includes('--write')) {
     if (calls.length > allowed) {
@@ -52,10 +57,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify({ pushHistory: calls.length }, null, 2) + '\n');
     console.log(`edit-ratchet: bar set to ${calls.length} (was ${allowed}).`);
   } else if (calls.length > allowed) {
-    console.error(`edit-ratchet: ${calls.length} bare pushHistory() calls in docsync/editor/edit.html; ${allowed} allowed.`);
+    console.error(`edit-ratchet: ${calls.length} bare pushHistory() calls in the editor (docsync/editor/edit.html and its parts); ${allowed} allowed.`);
     console.error('A change to the document goes through changeDoc(() => { ... }), which does the undo step,');
     console.error('the save mark and the redraw itself. Lines that call pushHistory() directly:');
-    console.error('  ' + calls.join(', '));
+    console.error('  ' + calls.map(n => loc(ED, n)).join(', '));
     process.exit(1);
   } else {
     console.log(`edit-ratchet: ${calls.length} bare pushHistory() calls (bar ${allowed})`

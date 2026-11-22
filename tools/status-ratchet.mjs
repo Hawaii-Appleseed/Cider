@@ -18,9 +18,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// The editor as a browser gets it: edit.html with its parts inlined
+// (tools/editor-source.cjs); a line is reported in the file a person edits.
+const { assembled, loc } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/status-ratchet.json');
 
 const EL = String.raw`\$\(\s*['"]stat['"]\s*\)|document\.getElementById\(\s*['"]stat['"]\s*\)`;
@@ -50,8 +54,9 @@ export function directWrites(text) {
   return out;
 }
 
+let ED;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const writes = directWrites(readFileSync(SRC, 'utf8'));
+  const writes = directWrites((ED = assembled()).text);
   const allowed = JSON.parse(readFileSync(BASE, 'utf8')).statWrites;
   if (process.argv.includes('--write')) {
     if (writes.length > allowed) {
@@ -61,10 +66,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify({ statWrites: writes.length }, null, 2) + '\n');
     console.log(`status-ratchet: bar set to ${writes.length} (was ${allowed}).`);
   } else if (writes.length > allowed) {
-    console.error(`status-ratchet: ${writes.length} direct writes to #stat in docsync/editor/edit.html; ${allowed} allowed.`);
+    console.error(`status-ratchet: ${writes.length} direct writes to #stat in the editor (docsync/editor/edit.html and its parts); ${allowed} allowed.`);
     console.error('The status line is said through tell(text, { kind, title, ms, sticky, keep, flash, click }),');
     console.error('which owns its words, look and timers. Lines that write #stat directly:');
-    console.error('  ' + writes.join(', '));
+    console.error('  ' + writes.map(n => loc(ED, n)).join(', '));
     process.exit(1);
   } else {
     console.log(`status-ratchet: ${writes.length} direct status-line writes (bar ${allowed})`

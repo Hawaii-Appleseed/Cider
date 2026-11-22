@@ -115,7 +115,13 @@ function repoSource(url) {
     : fs.existsSync(path.join(ROOT, 'docsync/editor', base)) && base.endsWith('.js') ? `docsync/editor/${base}`
     : null;
   if (!rel) return null;
-  if (!(rel in SOURCES)) SOURCES[rel] = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  if (!(rel in SOURCES)) {
+    // edit.html is served assembled (its parts inlined), and the map keeps that
+    // file's lines: tools/affected.mjs reads the same assembled text.
+    SOURCES[rel] = rel === 'docsync/editor/edit.html'
+      ? require('../../../tools/editor-source.cjs').assembled().text
+      : fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  }
   return { rel, text: SOURCES[rel] };
 }
 
