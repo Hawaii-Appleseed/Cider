@@ -27225,10 +27225,13 @@ function sayIdle() {
  *    tell(text, { flash: '#F2B8A8', ms })    tinted for ms (default 6s)
  *    tell(text, { click: fn })               the line becomes a button (pointer)
  *
- *  Which message wins: an error or warning holds the line for STAT_HOLD_MS
- *  (or its own `ms`, if shorter); a routine line that arrives in that time is
- *  kept and said when the hold ends (the latest one only). A sticky error
- *  holds it until untell(). `force: true` says a routine line regardless.
+ *  Which message wins: an error holds the line for STAT_HOLD_MS (or its own
+ *  `ms`, if shorter); a routine line that arrives in that time is kept and
+ *  said when the hold ends (the latest one only). A sticky error holds it
+ *  until untell(). A warning is red but holds nothing. `force: true` says a
+ *  routine line regardless; `passing: true` (the render's own "rendering…"
+ *  and hint, which nobody asked for) is dropped during a hold, never kept,
+ *  so it cannot replace a held Save confirmation.
  *  A plain error's red comes off when the next routine line replaces it.
  *  `title` is set only when given ('' clears it). Returns the text, so an
  *  old `x = el.textContent = t` reads the same as `x = tell(t)`. */
@@ -27242,7 +27245,7 @@ function tell(text, o = {}) {
   if (!el) return text;
   const loud = o.kind === 'error' || o.kind === 'warn';
   if (!loud && !o.force && (statSticky || Date.now() < statHoldUntil)) {
-    statHeld = [text, o];
+    if (!o.passing) statHeld = [text, o];
     return text;
   }
   statHeld = null;
@@ -27257,6 +27260,7 @@ function tell(text, o = {}) {
     statSticky = !!o.sticky;
     clearTimeout(statHoldTimer); statHoldTimer = null;
     if (statSticky) statHoldUntil = 0;
+    else if (o.kind === 'warn') statHoldUntil = 0;
     else {
       const hold = Math.min(o.ms || STAT_HOLD_MS, STAT_HOLD_MS);
       statHoldUntil = Date.now() + hold;
@@ -30395,7 +30399,7 @@ function renderSays(msg) {
   if ($('stat').textContent !== statFromRender) return;   // someone else is talking
   if (sayAfterRender && Date.now() - sayAfterRenderAt < 4000) { msg = sayAfterRender; }
   sayAfterRender = '';
-  tell(statFromRender = msg);
+  tell(statFromRender = msg, { passing: true });
 }
 function sayNowAndAfterRender(msg) {
   tell(msg);
@@ -30415,7 +30419,7 @@ async function renderOnce() {
   // restore), that was said later and on purpose: the held one is old news, and
   // saying it after this render replaced the Save's confirmation.
   if (sayAfterRender && ![sayAfterRender, statFromRender].includes($('stat').textContent)) sayAfterRender = '';
-  tell(statFromRender = 'rendering…');
+  tell(statFromRender = 'rendering…', { passing: true });
   // Every mutation in this file ends in a render, so this is the one place a
   // local edit becomes a document transaction the room can see. Idempotent:
   // a render that follows an adopted remote change finds nothing to write.
