@@ -332,6 +332,48 @@ test('prerendered from the list, an editor fetches and paints but joins nobody a
   await expect(a.locator('#collab')).toHaveText(/2 here/, { timeout: 20_000 });
 });
 
+// The reopened tab that did not count (2026-11-22). The hub's connector
+// decides "is anybody there?" by the room's connection count, and a tab that
+// was back on screen sometimes was not in it: the editor closed its session
+// for good on `pagehide`, which is also what makes a page eligible for the
+// back/forward cache, and a page restored from there keeps its scripts and
+// state (so `collab` is set and startCollab refuses to start another) but
+// not its socket. It showed the report, said nothing, and counted as nobody.
+// Driven with the events Chrome fires in that order, and the page FROZEN
+// between them as the cache freezes it (CDP's web lifecycle state), since
+// Playwright's Chromium does not keep pages in the back/forward cache. A
+// page left running would wake its own session (its presence poll counts as
+// use) and the room would never see it go.
+test('a tab back from the back/forward cache rejoins the room and counts as open', async () => {
+  const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
+  const here = async () => (await (await fetch(`${hubAs(ADA_PORT)}/api/collab/here?rooms=${room}`)).json())[room].open_now;
+  const page = await ctxA.newPage();
+  await page.goto(`${hubAs(ADA_PORT)}/primer/edit.html?project=${PROJECT}`);
+  await waitForFirstRender(page);
+  await waitLive(page);
+  await expect.poll(here, { timeout: 20_000 }).toBe(3);
+  const shown = v => page.evaluate(v => {
+    Object.defineProperty(document, 'visibilityState', { value: v ? 'visible' : 'hidden', configurable: true });
+    Object.defineProperty(document, 'hidden', { value: !v, configurable: true });
+    if (v) window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    document.dispatchEvent(new Event('visibilitychange'));
+    if (!v) window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+  }, v);
+  const cdp = await page.context().newCDPSession(page);
+  await shown(false);                                   // into the cache: it lets go of the room
+  await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
+  await expect.poll(here, { timeout: 20_000 }).toBe(2);
+  await cdp.send('Page.setWebLifecycleState', { state: 'active' });
+  await shown(true);                                    // back: it must be in the room again
+  await waitLive(page);
+  await expect.poll(here, { timeout: 20_000 }).toBe(3);
+  await expect(a.locator('#collab')).toHaveText(/3 here/, { timeout: 20_000 });
+  // And it can still be handed the connector's ops: it said hello again.
+  expect(await page.evaluate('collab.state.status')).toBe('live');
+  await page.close();
+  await expect.poll(here, { timeout: 20_000 }).toBe(2);
+});
+
 test('an image uploads to the store and is served at the project path', async () => {
   // A 1x1 PNG. The editor compresses uploads; a tiny one comes back as is.
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
