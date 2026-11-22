@@ -341,9 +341,16 @@ test('prerendered from the list, an editor fetches and paints but joins nobody a
 // not its socket. It showed the report, said nothing, and counted as nobody.
 // Driven with the events Chrome fires in that order, and the page FROZEN
 // between them as the cache freezes it (CDP's web lifecycle state), since
-// Playwright's Chromium does not keep pages in the back/forward cache. A
-// page left running would wake its own session (its presence poll counts as
-// use) and the room would never see it go.
+// Playwright's Chromium does not keep pages in the back/forward cache.
+//
+// "It let go" is read IN the page, in the same task as the pagehide: the
+// session asleep, its socket gone. It used to be read off the room's count,
+// which raced (main's run after #203, issue #125): a real cache freezes the
+// page before any more script runs, but here the page runs on until the CDP
+// freeze arrives, and hiding it changes what the editor reports as its
+// presence, which the session counts as use; on a slow runner it woke and
+// rejoined first, and the room never showed 2. The count still says the part
+// that matters: back on screen, the tab is in the room.
 test('a tab back from the back/forward cache rejoins the room and counts as open', async () => {
   const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   const here = async () => (await (await fetch(`${hubAs(ADA_PORT)}/api/collab/here?rooms=${room}`)).json())[room].open_now;
@@ -352,21 +359,33 @@ test('a tab back from the back/forward cache rejoins the room and counts as open
   await waitForFirstRender(page);
   await waitLive(page);
   await expect.poll(here, { timeout: 20_000 }).toBe(3);
-  const shown = v => page.evaluate(v => {
-    Object.defineProperty(document, 'visibilityState', { value: v ? 'visible' : 'hidden', configurable: true });
-    Object.defineProperty(document, 'hidden', { value: !v, configurable: true });
-    if (v) window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
-    document.dispatchEvent(new Event('visibilitychange'));
-    if (!v) window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
-  }, v);
   const cdp = await page.context().newCDPSession(page);
-  await shown(false);                                   // into the cache: it lets go of the room
+  // Into the cache: hidden, then pagehide (persisted), and what the session
+  // did about it, read before anything else in the page can run.
+  const away = await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+    // The socket's close EVENT comes later; what can be read now is that the
+    // session stopped wanting one and the browser has started closing it.
+    const ws = collab.provider.ws;
+    return { asleep: collab.asleep, status: collab.state.status,
+             letGo: !collab.provider.shouldConnect && (!ws || ws.readyState >= 2) };
+  });
   await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
-  await expect.poll(here, { timeout: 20_000 }).toBe(2);
+  // Asleep, not closed: a closed session never comes back (the bug), and a
+  // live socket would hold the page out of the cache.
+  expect(away).toEqual({ asleep: true, status: 'asleep', letGo: true });
   await cdp.send('Page.setWebLifecycleState', { state: 'active' });
-  await shown(true);                                    // back: it must be in the room again
+  await page.evaluate(() => {                           // back: pageshow, then shown
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
   await waitLive(page);
-  await expect.poll(here, { timeout: 20_000 }).toBe(3);
+  await expect.poll(here, { timeout: 30_000 }).toBe(3);
   await expect(a.locator('#collab')).toHaveText(/3 here/, { timeout: 20_000 });
   // And it can still be handed the connector's ops: it said hello again.
   expect(await page.evaluate('collab.state.status')).toBe('live');
