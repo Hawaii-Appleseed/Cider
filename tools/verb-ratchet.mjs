@@ -77,7 +77,9 @@ export const CORES = {
 const esc = s => s.replace(/[$]/g, '\\$');
 
 /** Lines that call a core outside the pilot section and outside any core's
- *  own body (a core may build on another: tableSplit unmerges first). */
+ *  own body (a core may build on another: tableSplit unmerges first). A line
+ *  that carries `// verb-ratchet: <why>` is not counted: the call on it is
+ *  not a UI edit (a count-only read, a step inside another core's edit). */
 export function bypasses(text) {
   const lines = text.split('\n');
   const names = Object.keys(CORES);
@@ -93,6 +95,9 @@ export function bypasses(text) {
     if (inPilot) return;
     const t = l.trim();
     if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
+    // A call that is not a UI edit says so, and why, on its own line: a
+    // count-only read (`linkBareUrls(true)`), or a step inside another core.
+    if (/\/\/ verb-ratchet: \S/.test(l)) return;
     for (const m of l.replace(/\/\/.*$/, '').matchAll(call)) out.push({ line: i + 1, core: m[1], verb: CORES[m[1]] });
   });
   return out;

@@ -536,6 +536,11 @@ jobs:
       # only go down (tools/status-ratchet.json).
       - name: Status ratchet
         run: node tools/status-ratchet.mjs
+      # A menu row, panel button or dialog that makes an edit a pilot verb
+      # already makes calls the verb (uiVerb), not the verb's core in its own
+      # changeDoc(); this counts the calls left (docs/ui-pilot-verbs.md).
+      - name: Verb ratchet
+        run: node tools/verb-ratchet.mjs
       # Keyboard shortcuts are keymap.bind() rows; key listeners added
       # outside the keymap may only go down (tools/key-ratchet.json).
       - name: Key ratchet

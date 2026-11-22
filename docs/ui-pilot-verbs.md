@@ -21,16 +21,24 @@ alone and why.
 
 ## How the UI calls a verb
 
-`uiVerb(verb, ...args)` runs `[{verb, args}]` through the same batch core the
-pilot uses (`pilotBatch`), minus the pilot's wait for an open inline editor (a
-person clicking a menu row is not mid-sentence somewhere else). On a refusal it
-says the verb's error through `tell(…, {kind: 'error'})` and returns `null`;
-otherwise it returns the verb's result (`{replaced: 3}`, `{copies: [...]}`).
-The caller repaints its panel and says what happened, as before.
+`uiVerb(verb, ...args)` runs `[{verb, args}]` through `docsync.api.batch()`,
+the pilot's own path, minus its wait for an open inline editor (`uiBatching`:
+a person clicking a menu row is not mid-sentence somewhere else, and the row
+made the same edit through `changeDoc()` before). On a refusal it says the
+verb's error through `tell(…, {kind: 'error'})` and returns `null`; otherwise it
+returns the verb's result (`{replaced: 3}`, `{copies: [...]}`). `uiOps(ops)` is
+the same for several ops in one step (Save this cell's look as… is
+`defineCellStyle` + `cellStyle`). The caller repaints its panel and says what
+happened, as before.
 
 `tools/verb-ratchet.mjs` counts the UI calls to a verb's core still outside
 the pilot section (`// pilot verbs: begin` … `// pilot verbs: end`) and CI fails
-when the count rises; `--write` lowers the bar, `--list` names each one.
+when the count rises (the "Verb ratchet" step in `editor-tests.yml`); `--write`
+lowers the bar, `--list` names each one. A line that carries
+`// verb-ratchet: <why>` is not counted: two do, `linkBareUrls(true)` (a count
+for the button's label, not an edit) and `pruneDefaults`' `setDefaultStyle`
+(a step inside another core's edit). The bar is 1: Distribute rows over a
+RANGE of rows, which the verb (`tableRow 'even'`, the whole table) cannot say.
 
 ## Inventory
 
@@ -71,8 +79,10 @@ which wraps its row in `changeDoc`). Now each calls `uiVerb(verb, …)`.
 | Click-to-thread | `threadWire` | `thread` | already called `_threadValidate` itself |
 | Table menu ▸ Merge cells | `tableMenu` | `mergeCells` | **bug:** a merge across another merge's edge said the error and still left an empty undo step marked unsaved |
 | Table menu ▸ Unmerge / Split cell ▸ h, v | `tableMenu` | `unmergeCells` / `splitCell` | none |
-| Table menu ▸ Add/Delete/Move row or column, Fit columns to content | `tableMenu` | `tableRow` / `tableCol` | the menu disables the rows the verb would refuse |
-| Table menu ▸ Cell style ▸ (name) / No cell style / Save this cell's look as… | `tableMenu` | `cellStyle`, `defineCellStyle` + `cellStyle` (one step) | none |
+| Table menu ▸ Add/Delete/Move row or column, Fit columns to content, Distribute rows (whole table) | `tableMenu` | `tableRow` / `tableCol` | the menu disables the rows the verb would refuse |
+| Table panel ▸ ↑ Row, ↓ Row, − Row, ← Col, → Col, − Col | `renderTablePanel` (`tableVerb`) | `tableRow` / `tableCol` | none |
+| Tab out of a table's last cell (a new row) | `tableAppendRow` | `tableRow` | none |
+| Table menu ▸ Cell style ▸ (name) / No cell style / Save this cell's look as… | `tableMenu` | `cellStyle`, `defineCellStyle` + `cellStyle` (one step) | Save as… held its step open across the name dialog; now the dialog comes first and the edit after |
 | Table menu ▸ Convert table to text | `tableMenu` | `tableToText` | **bug:** a refusal said the error and left an empty, dirty step |
 
 Two of the bugs above are one: `changeDoc` withdraws its step only when the
@@ -89,14 +99,19 @@ edit too.
 
 ### Fixed beside the routing: the type toolbar made no undo step
 
-`wireType()` wrote every type control (size, tracking, leading, colour, the
-size stepper, the two sliders, the colour pop) as
+`wireType()` wrote every type control as
 `setStyle(selected, …); markDirty(); await render()`: no `changeDoc`, no
-`beginChange`. ⌘Z after a size change undid the edit BEFORE it, or nothing.
-The fields' `input` events also wrote live, ahead of any step. Now a control's
-first live write opens a step (`beginChange`) and its commit closes it, so a
-drag or a typed size is one undo step, and a release where it was grabbed
-leaves none.
+`beginChange`. That is size, tracking, leading and colour, the size stepper,
+the two sliders, the colour pop, text style, font, weight, case, italic,
+underline, alignment, effects, Reset and every row of the ¶ popover. ⌘Z after
+a size change undid the edit BEFORE it, or nothing. The fields' `input` events
+also wrote live, ahead of any step. Now each control is one step: a one-shot
+control (`typeSet`) opens a step, writes, and commits; a live one opens its
+step on the first `input` (`liveWrite`) and commits on `change`
+(`liveCommit`). A step that changed nothing is taken back, so a slider let go
+where it was grabbed leaves none. The baseline grid's default (written when
+the ¶ popover's grid box is first ticked) now goes in the same step as the
+slot's own switch; it used to be written outside any step.
 
 ### Left alone, and why
 
