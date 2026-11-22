@@ -339,8 +339,11 @@ test('prerendered from the list, an editor fetches and paints but joins nobody a
 // back/forward cache, and a page restored from there keeps its scripts and
 // state (so `collab` is set and startCollab refuses to start another) but
 // not its socket. It showed the report, said nothing, and counted as nobody.
-// Driven with the events Chrome fires in that order, since Playwright's
-// Chromium does not keep pages in the back/forward cache.
+// Driven with the events Chrome fires in that order, and the page FROZEN
+// between them as the cache freezes it (CDP's web lifecycle state), since
+// Playwright's Chromium does not keep pages in the back/forward cache. A
+// page left running would wake its own session (its presence poll counts as
+// use) and the room would never see it go.
 test('a tab back from the back/forward cache rejoins the room and counts as open', async () => {
   const room = `Hawaii-Appleseed~Cider~${PROJECT}`;
   const here = async () => (await (await fetch(`${hubAs(ADA_PORT)}/api/collab/here?rooms=${room}`)).json())[room].open_now;
@@ -356,8 +359,11 @@ test('a tab back from the back/forward cache rejoins the room and counts as open
     document.dispatchEvent(new Event('visibilitychange'));
     if (!v) window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
   }, v);
+  const cdp = await page.context().newCDPSession(page);
   await shown(false);                                   // into the cache: it lets go of the room
+  await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
   await expect.poll(here, { timeout: 20_000 }).toBe(2);
+  await cdp.send('Page.setWebLifecycleState', { state: 'active' });
   await shown(true);                                    // back: it must be in the room again
   await waitLive(page);
   await expect.poll(here, { timeout: 20_000 }).toBe(3);
