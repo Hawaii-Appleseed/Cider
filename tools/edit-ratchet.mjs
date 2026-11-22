@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // The editor changes a document one way: changeDoc() in docsync/editor/edit.html,
 // which marks the undo step, runs the change, marks it for saving and redraws.
+// A change that spans two events (a drag, a slider) takes beginChange() instead.
 // Before it, every feature ran those steps itself (pushHistory(), the change,
 // markDirty(), `await render()`) in about 230 places, and a site that missed
 // or reordered one made a change that could not be undone or was never saved.
@@ -21,13 +22,15 @@ const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/edit-ratchet.json');
 
 /** Lines that call pushHistory() themselves: not comments, not its own
- *  definition, and not the one call inside changeDoc(). */
+ *  definition, and not the one call each inside changeDoc() and
+ *  beginChange() (the step for a change that spans two events: a drag, a
+ *  slider, crop mode). */
 export function bareCalls(text) {
   const lines = text.split('\n');
   const out = [];
   let inChangeDoc = false;
   lines.forEach((l, i) => {
-    if (/^async function changeDoc\(/.test(l)) inChangeDoc = true;
+    if (/^(async function changeDoc|function beginChange)\(/.test(l)) inChangeDoc = true;
     else if (inChangeDoc && /^}/.test(l)) inChangeDoc = false;
     const t = l.trim();
     if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
