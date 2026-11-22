@@ -423,6 +423,11 @@ jobs:
       - name: Two staff members in one document, through the hub
         run: PRIMER_HUB_DIR="$GITHUB_WORKSPACE/hub" npx playwright test collab-hub.spec.js --workers=1
 
+      # The connector laying out a report nobody has open, through the
+      # headless editor (measure/), on the same hub checkout.
+      - name: Nobody in the room, laid out by the headless editor
+        run: PRIMER_HUB_DIR="$GITHUB_WORKSPACE/hub" npx playwright test measure-hub.spec.js --workers=1
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
