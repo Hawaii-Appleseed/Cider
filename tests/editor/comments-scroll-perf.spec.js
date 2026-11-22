@@ -98,6 +98,33 @@ async function instrument(page) {
   });
 }
 
+/** Scroll the report from startY in 12px steps, one frame each; the frame intervals and how
+ *  often the leader line was showing. Clears the layout timings first, so they are this scroll's. */
+async function scrollSteps(page, startY) {
+  return page.evaluate(async startY => {
+    const w = document.getElementById('out').contentWindow;
+    const se = w.document.scrollingElement;
+    const max = se.scrollHeight - w.innerHeight;
+    const frames = [], led = [];
+    let y = startY;
+    w.scrollTo(0, y);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    window.__perf.layout.length = 0;
+    let last = performance.now();
+    const stepPx = 12;
+    for (let i = 0; i < 160 && y < max; i++) {
+      y = Math.min(max, y + stepPx);
+      w.scrollTo(0, y);
+      await new Promise(r => requestAnimationFrame(r));
+      const now = performance.now();
+      frames.push(now - last); last = now;
+      const led1 = document.getElementById('cmt-leader');
+      led.push(led1.hidden ? 0 : 1);
+    }
+    return { frames, ledShown: led.reduce((a, b) => a + b, 0), steps: frames.length };
+  }, startY);
+}
+
 const stats = xs => {
   const s = [...xs].sort((a, b) => a - b);
   const q = p => s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0;
@@ -123,36 +150,26 @@ test.describe('comments margin performance', () => {
     }, mid);
     await expect(page.locator('#cmt-leader')).toBeVisible();
     // Scroll the report in steps, a frame each; record the frame times.
-    const res = await page.evaluate(async startY => {
-      const w = document.getElementById('out').contentWindow;
-      const se = w.document.scrollingElement;
-      const max = se.scrollHeight - w.innerHeight;
-      const frames = [], led = [];
-      window.__perf.layout.length = 0;
-      let last = performance.now(), y = startY;
-      w.scrollTo(0, y);
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      window.__perf.layout.length = 0;
-      const stepPx = 12;
-      for (let i = 0; i < 160 && y < max; i++) {
-        y = Math.min(max, y + stepPx);
-        w.scrollTo(0, y);
-        await new Promise(r => requestAnimationFrame(r));
-        const now = performance.now();
-        frames.push(now - last); last = now;
-        const led1 = document.getElementById('cmt-leader');
-        led.push(led1.hidden ? 0 : 1);
-      }
-      return { frames, ledShown: led.reduce((a, b) => a + b, 0), steps: frames.length };
-    }, startY);
+    const res = await scrollSteps(page, startY);
     const perf = await page.evaluate(() => window.__perf);
+    // The same scroll with the comments closed: what a frame costs on THIS machine with no
+    // cards to place. A GitHub runner paces frames at 22-28ms on its own (the cards' layout
+    // is 2-5ms of that), so a fixed budget on the frame failed on slow runners for every
+    // branch; the frame is judged against this baseline instead.
+    await page.evaluate(() => { hubCommentsToggle(false); });
+    await expect(page.locator('#cmt-leader')).toBeHidden();
+    const baseRes = await scrollSteps(page, startY);
+    await page.evaluate(() => { hubCommentsToggle(true, { load: false }); });
     const out = { comments: comments.length, steps: res.steps, ledShown: res.ledShown,
-      layout: stats(perf.layout), frame: stats(res.frames), loaf: stats(perf.loaf || []) };
+      layout: stats(perf.layout), frame: stats(res.frames), baseFrame: stats(baseRes.frames), loaf: stats(perf.loaf || []) };
     console.log('SCROLL-PERF ' + JSON.stringify(out));
     expect(res.steps).toBeGreaterThan(30);
     expect(perf.layout.length).toBeGreaterThan(10);   // the layout ran on scrolled frames
     expect(out.layout.p95).toBeLessThan(8);            // ~1.5ms on a laptop; loose for CI
-    expect(out.frame.p95).toBeLessThan(40);
+    // A frame with the cards may be slow only where the machine is slow too: it fails when it
+    // is over 40ms AND more than 12ms over the same scroll without them (a card layout that
+    // regressed by a frame's worth fails on any machine).
+    if (out.frame.p95 >= 40) expect(out.frame.p95).toBeLessThan(out.baseFrame.p95 + 12);
     // The leader still points somewhere on the way.
     expect(res.ledShown).toBeGreaterThan(0);
     // ...and is moved by transform alone: no left/top/width to lay the page out for.
@@ -193,7 +210,10 @@ test.describe('comments margin performance', () => {
     const out = { comments: comments.length, click: stats(click), render: stats(perf.render), paint: stats(perf.paint), layout: stats(perf.layout) };
     console.log('CLICK-PERF ' + JSON.stringify(out));
     expect(await renders0()).toBeGreaterThan(5);
-    expect(out.render.p95).toBeLessThan(40);
+    // The typical render, not the near-maximum: with 22 samples the p95 is the second-slowest
+    // one, which a slow runner put at 38-40ms on clean branches (p50 there: 11-17ms).
+    expect(out.render.p50).toBeLessThan(25);
+    expect(out.render.p95).toBeLessThan(60);
     expect(out.click.p95).toBeLessThan(120);
   });
 });
