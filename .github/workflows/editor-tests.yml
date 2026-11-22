@@ -527,6 +527,10 @@ jobs:
       # still to be moved over may only go down (tools/edit-ratchet.json).
       - name: Edit ratchet
         run: node tools/edit-ratchet.mjs
+      # The status line is said through tell(); direct writes to #stat may
+      # only go down (tools/status-ratchet.json).
+      - name: Status ratchet
+        run: node tools/status-ratchet.mjs
 
   # The engine grew and no published report moved — or the change says which
   # did, and why. Two sweeps against `base`, the commit this push or pull
