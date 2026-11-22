@@ -24976,6 +24976,8 @@ const snapshot = () => JSON.stringify({ source, layout });
 //   versionReplaced() the document was swapped for a saved version under it
 //   discardLive()    take back the words boundary() let stream in: the
 //                    document's files after, or null when there were none
+//   shared           true for the room's history: its steps are this tab's
+//                    own, so a relayed undo can tell Claude's from a person's
 function localHistory() {
   // Each entry is {state, time}: past entries hold the state BEFORE their
   // step, future entries the state their redo goes TO. Objects, not the
@@ -24983,6 +24985,7 @@ function localHistory() {
   // redo and shared by two steps that happened to leave the same state.
   const past = [], future = [];
   return {
+    shared: false,
     open(before) {
       // The redo list is set aside, not dropped, until the step proves to
       // change something: a refused action used to cost the redo list here
@@ -25050,6 +25053,7 @@ function collabHistory(s) {
   });
   const top = st => (st.length ? st[st.length - 1] : null);
   return {
+    shared: true,
     open(b) { before = b; depth = um.undoStack.length; s.mark(); },
     withdraw() {
       // Nothing changed since open(), so the step has no item — unless the
@@ -40190,6 +40194,7 @@ function pilotMarkStep() {
   pilotUndoneStep = null;
 }
 async function pilotHistory(verb) {
+  if (!undoHistory.shared) return { ok: false, error: 'undo and redo are relayed only to an editor in a shared session' };
   if (verb === 'undo') {
     if (!pilotLastStep || undoHistory.top() !== pilotLastStep)
       return { ok: false, error: 'the last step in the open editor is not your edit — someone has changed the report since, or this tab did not apply it. Nothing was undone; ask them to use Undo, or change it back with another edit' };
