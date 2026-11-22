@@ -83,7 +83,7 @@ test.describe('incremental rendering', () => {
       const el = frame.locator(`[data-el="text.${id}"]`);
       await el.scrollIntoViewIfNeeded();
       await settled(page);
-      const beforeDepth = await page.evaluate(() => past.length);
+      const beforeDepth = await page.evaluate(() => undoHistory.steps().past.length);
       const box = await el.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
@@ -93,7 +93,7 @@ test.describe('incremental rendering', () => {
       await settled(page);
 
       // Exactly one: a doubled dragify would have pushed two.
-      expect(await page.evaluate(() => past.length)).toBe(beforeDepth + 1);
+      expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(beforeDepth + 1);
       // and one Undo really puts it back where it was
       const movedX = await page.evaluate(i => boxes().find(b => b.id === i).x, id);
       await page.keyboard.press('Control+z');
@@ -122,7 +122,7 @@ test.describe('incremental rendering', () => {
       const h1 = frame.locator('[data-el="basics.h1"]');
       await h1.scrollIntoViewIfNeeded();
       await settled(page);
-      const depth = await page.evaluate(() => past.length);
+      const depth = await page.evaluate(() => undoHistory.steps().past.length);
       const b = await h1.boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await page.mouse.down();
@@ -130,7 +130,7 @@ test.describe('incremental rendering', () => {
       await page.mouse.up();
       await settled(page);
 
-      expect(await page.evaluate(() => past.length)).toBe(depth + 1);
+      expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(depth + 1);
       expect(await page.evaluate(() => layout.positions['basics.h1'])).toBeTruthy();
       // put it back so this spec leaves the fixture as it found it
       await page.evaluate(async () => {

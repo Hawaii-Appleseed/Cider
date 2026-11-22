@@ -158,7 +158,7 @@ test.describe('pilot verbs', () => {
   test.describe('batch refs', () => {
     test('addTextBox {as} then place/@name/setBoxText in ONE call, one history entry',
       async ({ page }) => {
-        const pastBefore = await page.evaluate(() => past.length);
+        const pastBefore = await page.evaluate(() => undoHistory.steps().past.length);
         const r = await page.evaluate(async () => docsync.api.batch([
           { verb: 'addTextBox', args: { page: 3, x: 1, y: 1, w: 2, h: 1.5, md: 'ref me' }, as: 'note' },
           { verb: 'place', args: ['@note', { x: 3, y: 2 }] },
@@ -175,7 +175,7 @@ test.describe('pilot verbs', () => {
         expect(box.md).toBe('placed and retexted');
         expect(box.h).toBe(1.5);              // h landed at creation, no second op
         expect(box.style).toMatchObject({ size: 11 });
-        expect(await page.evaluate(() => past.length)).toBe(pastBefore + 1);
+        expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(pastBefore + 1);
       });
 
     test('a ref to a name no earlier op defined refuses up front', async ({ page }) => {
@@ -191,7 +191,7 @@ test.describe('pilot verbs', () => {
     test('a deferred validation failing mid-batch rolls the WHOLE batch back',
       async ({ page }) => {
         const boxesBefore = await page.evaluate(() => (layout.boxes || []).length);
-        const pastBefore = await page.evaluate(() => past.length);
+        const pastBefore = await page.evaluate(() => undoHistory.steps().past.length);
         const r = await page.evaluate(async () => docsync.api.batch([
           { verb: 'addTextBox', args: { page: 3, x: 1, y: 1 }, as: 'note' },
           // setBoxText's validate runs at apply time (it holds a ref) — and
@@ -202,7 +202,7 @@ test.describe('pilot verbs', () => {
         expect(r.error).toContain('op 1');
         expect(await page.evaluate(() => (layout.boxes || []).length)).toBe(boxesBefore);
         expect(await page.evaluate(() => dirty)).toBe(false);
-        expect(await page.evaluate(() => past.length)).toBe(pastBefore);
+        expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(pastBefore);
       });
   });
 

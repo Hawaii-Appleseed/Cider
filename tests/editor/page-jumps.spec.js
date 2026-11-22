@@ -64,12 +64,12 @@ test('undo keeps 200 steps, and the button says so', async ({ page }) => {
     await page.evaluate(([id, i]) => docsync.api.place(id, { x: 1 + (i % 5) * 0.1, y: 1 + (i % 7) * 0.1 }), [id, i]);
   }
   await settled(page);
-  expect(await page.evaluate(() => past.length)).toBe(80);
+  expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(80);
   for (let i = 0; i < 80; i++) await page.evaluate(() => undo());
   await settled(page);
   const end = await page.evaluate(id => layout.positions[id] ? { ...layout.positions[id] } : null, id);
   expect(end).toEqual(start);
-  expect(await page.evaluate(() => past.length)).toBe(0);
+  expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(0);
 });
 
 test('the Find list says how much of it is not shown', async ({ page }) => {

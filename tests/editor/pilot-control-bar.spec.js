@@ -14,7 +14,7 @@ const elOf = async (page, id) => page.evaluate(async id => {
   const inv = docsync.api.inventory();
   return inv.pages.flatMap(p => p.elements).find(e => e.id === id) || null;
 }, id);
-const steps = page => page.evaluate(() => past.length);
+const steps = page => page.evaluate(() => undoHistory.steps().past.length);
 
 test.describe('pilot: the control bar, by verb', () => {
   test.beforeEach(async ({ page }) => {

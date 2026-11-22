@@ -144,6 +144,28 @@ test('undo in B removes only B\'s part; A\'s stays', async () => {
   await expect.poll(() => slot(a), { timeout: 20_000 }).toBe('A says: ' + base + ' (B agrees)');
 });
 
+// A change judged AFTER it reached the room (a pilot batch the engine would
+// not build) is put back by beginChange().rollback(). Alone, its step came
+// off the stack; in a session the change and its reverse were left in one
+// Y.UndoManager item, so Undo stayed lit and the next ⌘Z did a visible
+// nothing. One history now: the step comes off in both.
+test('a change rolled back after it reached the room leaves no undo step behind', async () => {
+  const r = await b.evaluate(async key => {
+    const n = collab.undoManager.undoStack.length;
+    const was = readSlot(key);
+    const step = beginChange();
+    writeSlot(key, was + ' (rolled back)');
+    await step.commit();
+    const grew = collab.undoManager.undoStack.length;
+    await step.rollback();
+    return { n, grew, after: collab.undoManager.undoStack.length, back: readSlot(key) === was };
+  }, SLOT);
+  expect(r.grew).toBe(r.n + 1);
+  expect(r.after).toBe(r.n);
+  expect(r.back).toBe(true);
+  await expect.poll(() => slot(a), { timeout: 20_000 }).not.toContain('(rolled back)');
+});
+
 test('a move in A lands in B\'s layout and geometry', async () => {
   const r = await api(a, `place('cover.logo', { x: 1.25, y: 4 })`);
   expect(r.ok).toBe(true);

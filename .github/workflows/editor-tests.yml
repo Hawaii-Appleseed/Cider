@@ -540,6 +540,11 @@ jobs:
       # outside the keymap may only go down (tools/key-ratchet.json).
       - name: Key ratchet
         run: node tools/key-ratchet.mjs
+      # Undo goes through undoHistory, one interface over the local stacks
+      # and the session's Y.UndoManager; lines that reach past it into either
+      # backend may only go down (tools/undo-ratchet.json).
+      - name: Undo ratchet
+        run: node tools/undo-ratchet.mjs
 
   # The engine grew and no published report moved — or the change says which
   # did, and why. Two sweeps against `base`, the commit this push or pull
