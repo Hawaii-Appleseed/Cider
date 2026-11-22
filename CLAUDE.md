@@ -337,7 +337,7 @@ Rules that bite:
   `tell(text, { kind, title, ms, sticky, keep, flash, click })`, which owns
   `#stat`'s words, red look and timers and lets an error hold the line
   against a routine message a moment later; never write `$('stat')`
-  directly (`tools/status-ratchet.mjs` holds the count at 0). Every width or height lands through
+  directly (`tools/status-ratchet.mjs` holds the count at 0). Every keyboard shortcut is a `keymap.bind((e, d) => …, { scope, inText, when, doc, phase })` row: one listener pair per document, scopes run popup, then text, then global, and `keymap.inText(e)` alone decides when a key belongs to a field; never add a `keydown`/`keyup` listener except on one element owned by one popup or field (`tools/key-ratchet.mjs` holds the rest at 20). Every width or height lands through
   `commitSize(d, el, {w, h})` — a handle drag, a group's corner, the pilot's
   `place()` — which knows where each kind keeps its size (a text box's
   height floor, a paragraph's `hmin`, a table's width only). Never write
