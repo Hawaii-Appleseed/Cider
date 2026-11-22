@@ -67,4 +67,35 @@ test.describe('undo / redo', () => {
     await page.keyboard.press('Control+z');
     await expect(page.locator('#stat')).toContainText('nothing to undo');
   });
+
+  // One history, two backends (undoHistory): a step that is opened and then
+  // withdrawn because it changed nothing used to cost the redo list when
+  // editing alone (pushHistory emptied it before the action had done
+  // anything), while in a shared session redo survived.
+  test('a refused change leaves the redo list as it was', async ({ page }) => {
+    await page.evaluate(() => docsync.api.setSlot('basics.h1', 'REDO SURVIVES'));
+    await page.evaluate(() => undo());
+    await expect(page.locator('#redo')).toBeEnabled();
+    const kept = await page.evaluate(async () => { await changeDoc(() => false); return !$('redo').disabled; });
+    expect(kept).toBe(true);
+    await page.evaluate(() => redo());
+    await expect(page.frameLocator('#out').locator('[data-slot="basics.h1"]')).toContainText('REDO SURVIVES');
+  });
+
+  // A step's time was keyed by its snapshot string, so two steps that began
+  // from the same state shared one time: the History list showed the first
+  // step at the time of the later one (and withdrawing the later one wiped it).
+  test('two steps that start from the same state keep their own times', async ({ page }) => {
+    const t = await page.evaluate(async () => {
+      const was = docsync.api.getSlot('basics.h1').md;
+      await docsync.api.setSlot('basics.h1', 'FIRST');
+      const first = historyList().find(r => r.i === -1).time;
+      await new Promise(r => setTimeout(r, 1100));   // a different second on the list
+      await docsync.api.setSlot('basics.h1', was);
+      await docsync.api.setSlot('basics.h1', 'FIRST');
+      return { first, listed: historyList().find(r => r.i === -3).time };
+    });
+    expect(t.first).toBeTruthy();
+    expect(t.listed).toBe(t.first);
+  });
 });

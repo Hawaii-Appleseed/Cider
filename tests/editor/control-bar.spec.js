@@ -44,7 +44,7 @@ test.describe('control bar', () => {
     await expect(page.locator('#tt')).toContainText('Left edge');
     await expect(page.locator('#tt')).toContainText('drag');
     // press the letter and drag right 100px: X moves by 1 inch, in ONE undo step
-    const before = (await rect(page)).x, steps = await page.evaluate(() => past.length);
+    const before = (await rect(page)).x, steps = await page.evaluate(() => undoHistory.steps().past.length);
     const box = await lab.boundingBox();
     const x0 = box.x + 4, y0 = box.y + box.height / 2;
     await page.mouse.move(x0, y0);
@@ -55,7 +55,7 @@ test.describe('control bar', () => {
     await page.mouse.up();
     await settled(page);
     expect((await rect(page)).x).toBeCloseTo(before + 1, 2);
-    expect(await page.evaluate(() => past.length)).toBe(steps + 1);
+    expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(steps + 1);
   });
 
   test('the docked bar is two fixed rows, the same height in every mode and width, and a narrow one scrolls the bar', async ({ page }) => {

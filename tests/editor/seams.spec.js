@@ -177,13 +177,13 @@ test.describe('one way to take a step back, one list of document wires, a writeS
   test('an action that did nothing leaves no undo step, and the batch rolls back to its own snapshot', async ({ page }) => {
     await gotoEditor(page, PROJ);
     const r = await page.evaluate(async () => {
-      const n0 = past.length;
+      const n0 = undoHistory.steps().past.length;
       pushHistory(); withdrawStep();                            // the pair, as every no-op action calls it
-      const n1 = past.length;
+      const n1 = undoHistory.steps().past.length;
       const src = source;
       const b = await docsync.api.batch([{ verb: 'setSlot', args: ['groc.lead', 'changed'] },
                                          { verb: 'place', args: ['no.such.thing', { x: 1 }] }]);
-      return { n0, n1, n2: past.length, bok: b.ok, same: source === src, canUndo: !$('undo').disabled };
+      return { n0, n1, n2: undoHistory.steps().past.length, bok: b.ok, same: source === src, canUndo: !$('undo').disabled };
     });
     expect(r.n1).toBe(r.n0);
     expect(r.n2).toBe(r.n0);

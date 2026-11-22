@@ -195,7 +195,7 @@ test.describe('pilot api', () => {
 
   test.describe('batch', () => {
     test('several ops apply as ONE history entry and ONE render', async ({ page }) => {
-      const pastBefore = await page.evaluate(() => past.length);
+      const pastBefore = await page.evaluate(() => undoHistory.steps().past.length);
 
       const r = await page.evaluate(async () => docsync.api.batch([
         { verb: 'setSlot', args: ['basics.h1', 'BATCHED HEADING'] },
@@ -211,7 +211,7 @@ test.describe('pilot api', () => {
       expect(r.results[2]).toMatchObject({ verb: 'recolor', id: 'page.3', fill: '#FFF6D8' });
 
       // ONE history entry for all three — not three.
-      expect(await page.evaluate(() => past.length)).toBe(pastBefore + 1);
+      expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(pastBefore + 1);
 
       // All three landed.
       expect((await api(page, `getSlot('basics.h1')`)).md).toBe('BATCHED HEADING');
@@ -229,7 +229,7 @@ test.describe('pilot api', () => {
     test('a bad op refuses the WHOLE batch — nothing partially applies',
       async ({ page }) => {
         const before = (await api(page, `getSlot('basics.h1')`)).md;
-        const pastBefore = await page.evaluate(() => past.length);
+        const pastBefore = await page.evaluate(() => undoHistory.steps().past.length);
 
         const r = await page.evaluate(async () => docsync.api.batch([
           { verb: 'setSlot', args: ['basics.h1', 'SHOULD NOT LAND'] },
@@ -242,7 +242,7 @@ test.describe('pilot api', () => {
         // before any mutation, precisely so this could not half-land.
         expect((await api(page, `getSlot('basics.h1')`)).md).toBe(before);
         expect(await page.evaluate(() => dirty)).toBe(false);
-        expect(await page.evaluate(() => past.length)).toBe(pastBefore);
+        expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(pastBefore);
       });
 
     test('an unsupported verb is refused by name, not attempted', async ({ page }) => {

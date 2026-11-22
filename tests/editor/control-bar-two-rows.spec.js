@@ -335,11 +335,11 @@ test.describe('control bar: two rows', () => {
     expect(await inRow(page, 'cb-skew')).toBe('bot');
     const f = await barField(page, '#cb-skew');
     await expect(f).toBeVisible();
-    const steps = await page.evaluate(() => past.length);
+    const steps = await page.evaluate(() => undoHistory.steps().past.length);
     await f.fill('20');
     await f.press('Enter');
     await expect.poll(() => page.evaluate(() => layout.shapes.find(s => s.id === 'cb-rect').skew)).toBe(20);
-    expect(await page.evaluate(() => past.length)).toBe(steps + 1);
+    expect(await page.evaluate(() => undoHistory.steps().past.length)).toBe(steps + 1);
     await expect(f).toHaveValue('20');                                         // ctlPaint reads it back
     await page.evaluate(() => undo());
     await expect.poll(() => page.evaluate(() => layout.shapes.find(s => s.id === 'cb-rect').skew || 0)).toBe(0);
