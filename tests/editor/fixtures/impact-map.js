@@ -20,7 +20,7 @@ const PENDING = path.join(DIR, 'pending');
 
 function mappable() {
   const out = execFileSync('git', ['ls-files', '*.py', 'docsync/editor/*'], { cwd: ROOT, encoding: 'utf8' });
-  return out.split('\n').filter(f => f && (f.endsWith('.py') || f.endsWith('.js') || f.endsWith('.html')));
+  return out.split('\n').filter(f => f && !f.startsWith('docsync/editor/parts/') && (f.endsWith('.py') || f.endsWith('.js') || f.endsWith('.html')));
 }
 
 /** Before the run: copy every file a record could point into. */
@@ -31,7 +31,10 @@ function snapshot() {
     if (!fs.existsSync(src)) continue;
     const dst = path.join(PENDING, f);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.copyFileSync(src, dst);
+    // The map's coordinates for edit.html are the ASSEMBLED file's (what was
+    // served); its parts are folded into it, not mapped on their own.
+    if (f === 'docsync/editor/edit.html') fs.writeFileSync(dst, require('../../../tools/editor-source.cjs').assembled().text);
+    else fs.copyFileSync(src, dst);
   }
   fs.writeFileSync(path.join(PENDING, '.head'),
     execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim());
@@ -72,7 +75,10 @@ function merge() {
   for (const kind of ['js', 'py']) {
     for (const [f, e] of Object.entries(map[kind])) {
       const now = path.join(ROOT, f);
-      if (!fs.existsSync(now) || !fs.readFileSync(now).equals(fs.readFileSync(path.join(PENDING, f)))) moved.push(f);
+      const nowBytes = !fs.existsSync(now) ? null
+        : f === 'docsync/editor/edit.html' ? Buffer.from(require('../../../tools/editor-source.cjs').assembled().text)
+        : fs.readFileSync(now);
+      if (!nowBytes || !nowBytes.equals(fs.readFileSync(path.join(PENDING, f)))) moved.push(f);
       delete e.idx;
       for (const s of Object.keys(e.hit)) e.hit[s] = [...e.hit[s]];
     }

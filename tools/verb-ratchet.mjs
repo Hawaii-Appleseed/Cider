@@ -19,9 +19,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// The editor as a browser gets it: edit.html with its parts inlined
+// (tools/editor-source.cjs); a line is reported in the file a person edits.
+const { assembled, loc } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/verb-ratchet.json');
 
 /** The verb each core belongs to. A core is the function a verb's apply
@@ -104,15 +108,16 @@ export function bypasses(text) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const text = readFileSync(SRC, 'utf8');
+  const ED = assembled();
+  const text = ED.text;
   if (!/\/\/ pilot verbs: begin\b/.test(text) || !/\/\/ pilot verbs: end\b/.test(text)) {
-    console.error('verb-ratchet: the `// pilot verbs: begin` / `// pilot verbs: end` markers are missing from docsync/editor/edit.html.');
+    console.error('verb-ratchet: the `// pilot verbs: begin` / `// pilot verbs: end` markers are missing from the editor (docsync/editor/edit.html and its parts).');
     process.exit(1);
   }
   const left = bypasses(text);
   const allowed = JSON.parse(readFileSync(BASE, 'utf8')).bypasses;
   if (process.argv.includes('--list')) {
-    for (const b of left) console.log(`${b.line}\t${b.core}\t(verb ${b.verb})`);
+    for (const b of left) console.log(`${loc(ED, b.line)}\t${b.core}\t(verb ${b.verb})`);
   }
   if (process.argv.includes('--write')) {
     if (left.length > allowed) {
@@ -122,10 +127,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify({ bypasses: left.length }, null, 2) + '\n');
     console.log(`verb-ratchet: bar set to ${left.length} (was ${allowed}).`);
   } else if (left.length > allowed) {
-    console.error(`verb-ratchet: ${left.length} UI calls to a pilot verb's core in docsync/editor/edit.html; ${allowed} allowed.`);
+    console.error(`verb-ratchet: ${left.length} UI calls to a pilot verb's core in the editor (docsync/editor/edit.html and its parts); ${allowed} allowed.`);
     console.error('An edit a pilot verb already makes goes through uiVerb(verb, ...args), which validates,');
     console.error('refuses with words, and rolls back what the engine will not build. Calls left:');
-    for (const b of left) console.error(`  ${b.line}: ${b.core}() — uiVerb('${b.verb}', …)`);
+    for (const b of left) console.error(`  ${loc(ED, b.line)}: ${b.core}() — uiVerb('${b.verb}', …)`);
     process.exit(1);
   } else {
     console.log(`verb-ratchet: ${left.length} UI calls to a verb's core (bar ${allowed})`

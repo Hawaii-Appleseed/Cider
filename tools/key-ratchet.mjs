@@ -18,9 +18,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+// The editor as a browser gets it: edit.html with its parts inlined
+// (tools/editor-source.cjs); a line is reported in the file a person edits.
+const { assembled, loc } = createRequire(import.meta.url)('./editor-source.cjs');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docsync/editor/edit.html');
 const BASE = join(root, 'tools/key-ratchet.json');
 
 const LISTEN = /\baddEventListener\(\s*['"`](?:keydown|keyup|keypress)['"`]/g;
@@ -43,8 +47,9 @@ export function keyListeners(text) {
   return out;
 }
 
+let ED;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const found = keyListeners(readFileSync(SRC, 'utf8'));
+  const found = keyListeners((ED = assembled()).text);
   const allowed = JSON.parse(readFileSync(BASE, 'utf8')).keyListeners;
   if (process.argv.includes('--write')) {
     if (found.length > allowed) {
@@ -54,10 +59,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     writeFileSync(BASE, JSON.stringify({ keyListeners: found.length }, null, 2) + '\n');
     console.log(`key-ratchet: bar set to ${found.length} (was ${allowed}).`);
   } else if (found.length > allowed) {
-    console.error(`key-ratchet: ${found.length} key listeners outside the keymap in docsync/editor/edit.html; ${allowed} allowed.`);
+    console.error(`key-ratchet: ${found.length} key listeners outside the keymap in the editor (docsync/editor/edit.html and its parts); ${allowed} allowed.`);
     console.error('A shortcut is a binding: keymap.bind((e, d) => …, { scope, inText, when, doc, phase, type }).');
     console.error('Lines that add a key listener themselves:');
-    console.error('  ' + found.join(', '));
+    console.error('  ' + found.map(n => loc(ED, n)).join(', '));
     process.exit(1);
   } else {
     console.log(`key-ratchet: ${found.length} key listeners outside the keymap (bar ${allowed})`

@@ -271,7 +271,7 @@ const SHARED = new WeakMap();           // page -> { query, fingerprint }
 // each one's value (a Map or Set by its size, other objects not at all), and
 // a difference boots again. A few are clocks and counters, not state.
 const EDITOR_LETS = (() => {
-  const src = require('fs').readFileSync(require('path').join(__dirname, '../../../docsync/editor/edit.html'), 'utf8');
+  const src = require('../../../tools/editor-source.cjs').assembled().text;   // edit.html, parts inlined
   const names = new Set();
   for (const line of src.split('\n')) {
     if (!line.startsWith('let ')) continue;

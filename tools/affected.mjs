@@ -42,6 +42,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { createRequire } from 'node:module';
+
+// The editor is edit.html plus the areas it includes from docsync/editor/parts/,
+// served as ONE file (tools/editor-source.cjs). Here a change to a part is a
+// change to that one file, in its assembled lines: the impact map was recorded
+// against what the browser ran, which is the assembled text.
+const EDITOR_SRC = createRequire(import.meta.url)('./editor-source.cjs');
+const EDITOR_F = 'docsync/editor/edit.html';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SPEC_DIR = 'tests/editor';
@@ -80,6 +88,7 @@ function changedFiles() {
   }
   // Untracked files under docs/ are the stager's copies, not anybody's edit.
   for (const f of git('ls-files', '--others', '--exclude-standard').split('\n')) if (f && !f.startsWith('docs/')) files.add(f);
+  for (const f of [...files]) if (EDITOR_SRC.isEditorSource(f) && f !== EDITOR_F) { files.delete(f); files.add(EDITOR_F); }
   return [...files].sort();
 }
 
@@ -98,10 +107,32 @@ function parseHunks(diff) {
 }
 
 const exists = f => fs.existsSync(path.join(ROOT, f));
-const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+const read = f => (f === EDITOR_F ? EDITOR_SRC.assembled().text : fs.readFileSync(path.join(ROOT, f), 'utf8'));
+/** A file's text at SINCE (edit.html: assembled from that revision's parts); throws when absent. */
+const atSince = f => {
+  if (f !== EDITOR_F) return git('show', `${SINCE}:${f}`);
+  const a = EDITOR_SRC.assembledAt(SINCE, { cwd: ROOT });
+  if (!a) throw new Error(`${f} is not at ${SINCE}`);
+  return a.text;
+};
+/** -U0 hunks between two texts (edit.html's assembled ones), through git diff --no-index. */
+function diffTexts(a, b) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'affected-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'a'), a);
+    fs.writeFileSync(path.join(dir, 'b'), b);
+    const r = spawnSync('git', ['diff', '--no-index', '-U0', path.join(dir, 'a'), path.join(dir, 'b')], { encoding: 'utf8', maxBuffer: 1 << 28 });
+    return parseHunks(r.stdout || '');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
 
 /** This change, as hunks from SINCE to the working tree (a new file: all of it). */
 function myHunks(f) {
+  if (f === EDITOR_F) {
+    let was = null;
+    try { was = atSince(f); } catch (e) { /* new */ }
+    if (was != null) return diffTexts(was, read(f));
+  }
   const tracked = spawnSync('git', ['cat-file', '-e', `${SINCE}:${f}`], { cwd: ROOT }).status === 0;
   if (!tracked) {
     const lines = exists(f) ? read(f).split('\n') : [];
@@ -112,6 +143,7 @@ function myHunks(f) {
 
 /** Hunks from the map's snapshot of `f` to the working tree. */
 function driftHunks(f) {
+  if (f === EDITOR_F) return diffTexts(fs.readFileSync(path.join(MAP_DIR, 'base', f), 'utf8'), read(f));
   const r = spawnSync('git', ['diff', '--no-index', '-U0', path.join(MAP_DIR, 'base', f), path.join(ROOT, f)],
     { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
   return parseHunks(r.stdout || '');
@@ -462,7 +494,7 @@ function coverageRule(f, kind) {
   const mine = myHunks(f);
   let now = null, was = null;
   try { now = model(f, read(f), `tree:${f}`); } catch (e) { /* mid-edit syntax: count it all as code */ }
-  try { was = model(f, git('show', `${SINCE}:${f}`), `since:${f}`); } catch (e) { /* new file, or unparsable */ }
+  try { was = model(f, atSince(f), `since:${f}`); } catch (e) { /* new file, or unparsable */ }
   // Words only: a comment, a docstring, a blank line — on both sides.
   const prose = (m, from, to) => {
     for (let l = Math.ceil(from); l <= Math.floor(to); l++) if (!m || !m.script[l] || m.code[l]) return false;
@@ -698,7 +730,7 @@ const QUIET = [/\.md$/, /^LICENSE$/, /^\.claude\//, /^\.github\//, /^docs\/(?!pr
   // Built output: the test server re-renders it at startup, so it changes
   // whenever its renderer does — and that change is what selects.
   /^report2027\/web\/index\.html$/, /^\.impact\//, /(^|\/)node_modules$/];
-const EVERYTHING = [/^tests\/editor\/fixtures\//, /^playwright\.config\.js$/, /^package(-lock)?\.json$/, /^report2027\/(content\.md|layout\.json|web\/)/];
+const EVERYTHING = [/^tools\/editor-source\.cjs$/, /^docsync\/editor_source\.py$/, /^tests\/editor\/fixtures\//, /^playwright\.config\.js$/, /^package(-lock)?\.json$/, /^report2027\/(content\.md|layout\.json|web\/)/];
 
 // What decides the gate, or how the suite is cut up: with --ci, everything.
 const CI_EVERYTHING = [/^\.github\//, /^tools\/(affected|ci-shard)\.mjs$/, /^tests\/editor\/shard-weights\.json$/];

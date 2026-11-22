@@ -513,10 +513,12 @@ still how a section is added to a report that already exists.
 
 ## Editing the editor itself (`edit.html`)
 
-Its whole stylesheet is one JS **template literal**: a backtick or `${…}` in a
-CSS comment ends the literal early and kills the ENTIRE script — the editor
-hangs at "loading the render engine…" with no console error. After ANY
-`edit.html` change run a boot test (`npx playwright test boot-errors.spec.js`)
+It is written as several files (`edit.html` plus the areas it includes from
+`docsync/editor/parts/`, e.g. `parts/editor.css`, `parts/pdf.js`) and served as
+ONE: `docsync/editor_source.py` inlines the parts wherever the editor is staged
+or shipped, so it is still one classic script — a syntax error in any part
+kills the ENTIRE editor, which hangs at "loading the render engine…" with no
+console error. After ANY editor change run a boot test (`npx playwright test boot-errors.spec.js`)
 or at least `node --check` its inline script (`tools/test_render.py` does).
 An isolated DOM check that a feature works is NOT proof the file still boots.
 

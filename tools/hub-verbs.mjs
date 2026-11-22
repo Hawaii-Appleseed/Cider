@@ -38,6 +38,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+
+// The editor as the hub gets it: edit.html with its parts inlined (docsync.hub
+// writes the same bytes, docsync/editor_source.py).
+const { assembled } = createRequire(import.meta.url)('./editor-source.cjs');
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -135,14 +140,15 @@ function main(argv) {
     copyHub(hub, args.ref, copy);
     const carried = path.join(copy, 'primer', 'edit.html');
     if (!fs.existsSync(carried)) { console.error(`hub-verbs: ${hub} has no primer/edit.html (the editor it serves).`); return 2; }
-    if (fs.readFileSync(carried).equals(fs.readFileSync(args.editor))) {
+    const mineText = Buffer.from(assembled(args.editor).text, 'utf8');
+    if (fs.readFileSync(carried).equals(mineText)) {
       console.log('hub-verbs: the hub already carries this very editor; nothing to compare.');
       return 0;
     }
     const rel = path.relative(ROOT, args.editor);
     console.log(`hub-verbs: the hub's test_mcp.mjs, first with its own editor${args.ref ? ` (${args.ref})` : ''}, then with ${rel.startsWith('..') ? args.editor : rel}`);
     const base = runHubTest(copy);
-    fs.copyFileSync(args.editor, carried);
+    fs.writeFileSync(carried, mineText);
     const mine = runHubTest(copy);
 
     if (base.failures.length) {

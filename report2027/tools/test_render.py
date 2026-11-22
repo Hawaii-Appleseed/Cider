@@ -47,7 +47,9 @@ def check_editor_js():
     edit = REPORT.parent / "docsync" / "editor" / "edit.html"
     if not edit.exists():
         return
-    html = edit.read_text()
+    sys.path.insert(0, str(REPORT.parent))
+    from docsync.editor_source import assembled          # edit.html + its parts, as served
+    html = assembled(edit)
     scripts = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html, re.S)
     if not scripts:
         return
@@ -58,8 +60,8 @@ def check_editor_js():
     r = subprocess.run(["node", "--check", js], capture_output=True, text=True)
     os.unlink(js)
     if r.returncode != 0:
-        FAILS.append("edit.html inline script has a JS syntax error (a backtick or "
-                     "${...} inside the stylesheet template literal?):\n" + r.stderr.strip()[:500])
+        FAILS.append("edit.html inline script (with its parts inlined) has a JS syntax "
+                     "error:\n" + r.stderr.strip()[:500])
 
 
 def _png_page_tests(_sv):
