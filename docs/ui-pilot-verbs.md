@@ -67,7 +67,7 @@ which wraps its row in `changeDoc`). Now each calls `uiVerb(verb, …)`.
 | Object ▸ Step and Repeat… | `stepRepeatDialog` | `stepRepeat` | none; no engine guard on up to 100 new objects |
 | Links ▸ Relink… | `linksRender` | `relink` | no engine guard |
 | Hyperlinks ▸ Change… / Link bare addresses | `hyperlinksRender` | `changeLink` / `linkBareUrls` | no engine guard |
-| Find ▸ Fonts ▸ Replace with | `renderFindFonts` | `replaceFont` | **bug:** a font used in 0 places still left an empty, dirty step |
+| Find ▸ Fonts ▸ Replace with | `renderFindFonts` | `replaceFont` | **bug:** a font used in 0 places still left an empty, dirty step (the core also made `layout.text` up front on a report without one, so even the verb's step kept it; now made only when written) |
 | Layers panel: show/hide, lock, ⇣ to layer, merge, delete, delete unused | `docLayersRender` / `layerWrite` | `defineLayer`, `toLayer`, `mergeLayers`, `dropLayer`, `dropUnusedLayers` | none in the input; no engine guard |
 | Right-click ▸ Change on this page only / Back to the shared layout | object menu | `masterOverride` | none |
 | Right-click ▸ Convert text to table | object menu | `textToTable` | a refusal was handled by hand (`{...t, ok:false}`); the verb throws and rolls back |
@@ -82,6 +82,11 @@ which wraps its row in `changeDoc`). Now each calls `uiVerb(verb, …)`.
 | Table menu ▸ Add/Delete/Move row or column, Fit columns to content, Distribute rows (whole table) | `tableMenu` | `tableRow` / `tableCol` | the menu disables the rows the verb would refuse |
 | Table panel ▸ ↑ Row, ↓ Row, − Row, ← Col, → Col, − Col | `renderTablePanel` (`tableVerb`) | `tableRow` / `tableCol` | none |
 | Tab out of a table's last cell (a new row) | `tableAppendRow` | `tableRow` | none |
+
+A FLOW table (one content.md lays out with the words) is not something
+`tableRow` / `tableCol` take, and the menu, panel and Tab offer the same rows
+on it; there `tableLine()` runs the verb's own apply (`_pilotApplyTableLine`)
+in a `changeDoc`, so the edit is the same code without the verb's validation.
 | Table menu ▸ Cell style ▸ (name) / No cell style / Save this cell's look as… | `tableMenu` | `cellStyle`, `defineCellStyle` + `cellStyle` (one step) | Save as… held its step open across the name dialog; now the dialog comes first and the edit after |
 | Table menu ▸ Convert table to text | `tableMenu` | `tableToText` | **bug:** a refusal said the error and left an empty, dirty step |
 

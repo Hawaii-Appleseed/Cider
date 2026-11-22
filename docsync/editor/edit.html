@@ -10538,7 +10538,9 @@ function tableMenu(d, td, e) {
   const tid = 'table.' + t.id;
   const verbItem = (icon, label, key, verb, args, on = true, after = null) =>
     item(icon, label, key, async () => {
-      const r = await uiVerb(verb, ...args);
+      const r = verb === 'tableRow' || verb === 'tableCol'
+        ? await tableLine(t, verb === 'tableRow' ? 'row' : 'col', ...args.slice(1))
+        : await uiVerb(verb, ...args);
       if (!r) return;
       if (after) after(r);
       paintCells($('out').contentDocument);
@@ -10917,7 +10919,7 @@ function tableInsertRow(t, at) {
  *  filled by typing through it, as in Word, Docs and InDesign. It used to
  *  close the words and drop the keyboard on the page. */
 async function tableAppendRow(t) {
-  if (!await uiVerb('tableRow', 'table.' + t.id, 'insert', t.rows.length)) return;
+  if (!await tableLine(t, 'row', 'insert', t.rows.length)) return;
   const d = $('out').contentDocument;
   const id = 'table.' + t.id, r = t.rows.length - 1;
   if (!selIds.has(id)) setSel(d, [id]);
@@ -11049,12 +11051,21 @@ async function tableWrite(fn) {
   paintCells($('out').contentDocument);
   renderTablePanel();
 }
-/** The panel's table, through a pilot verb (tableRow, tableCol, …): the
- *  table's id goes first, the rest of the verb's arguments after it. */
-async function tableVerb(verb, ...args) {
+/** A row or column edit (insert, delete, move, even, fit) through tableRow /
+ *  tableCol. A FLOW table (one content.md lays out with the words) is not
+ *  something those verbs take, and the menu and panel offer the same rows on
+ *  it, so it gets the verb's own apply in a changeDoc: the same edit, without
+ *  the verb's validation. */
+async function tableLine(t, kind, op, at, to) {
+  const id = 'table.' + t.id;
+  if (!t.flow) return uiVerb(kind === 'row' ? 'tableRow' : 'tableCol', id, op, at, to);
+  return changeDoc(() => _pilotApplyTableLine(kind, id, op, at, to));
+}
+/** The panel's table, one row or column edit (tableLine), then repaint. */
+async function tableVerb(kind, op, at) {
   const t = tableOfId(tablePanelId || '');
   if (!t) return;
-  if (!await uiVerb(verb, 'table.' + t.id, ...args)) return;
+  if (!await tableLine(t, kind, op, at)) return;
   paintCells($('out').contentDocument);
   renderTablePanel();
 }
@@ -11141,17 +11152,17 @@ function renderTablePanel() {
   const ac = rg ? rg.c0 : cols - 1, ac2 = rg ? rg.c1 : cols - 1;
   h('Rows & columns');
   const rr = row();
-  btn(rr, '↑ Row', 'Insert a row above', () => tableVerb('tableRow', 'insert', ar));
-  btn(rr, '↓ Row', 'Insert a row below', () => tableVerb('tableRow', 'insert', ar2 + 1));
+  btn(rr, '↑ Row', 'Insert a row above', () => tableVerb('row', 'insert', ar));
+  btn(rr, '↓ Row', 'Insert a row below', () => tableVerb('row', 'insert', ar2 + 1));
   const delR = btn(rr, '− Row', 'Delete this row',
-    () => tableVerb('tableRow', 'delete', ar));
+    () => tableVerb('row', 'delete', ar));
   delR.disabled = rows <= 1;
   delR.classList.add('danger');
   const cr = row();
-  btn(cr, '← Col', 'Insert a column to the left', () => tableVerb('tableCol', 'insert', ac));
-  btn(cr, '→ Col', 'Insert a column to the right', () => tableVerb('tableCol', 'insert', ac2 + 1));
+  btn(cr, '← Col', 'Insert a column to the left', () => tableVerb('col', 'insert', ac));
+  btn(cr, '→ Col', 'Insert a column to the right', () => tableVerb('col', 'insert', ac2 + 1));
   const delC = btn(cr, '− Col', 'Delete this column',
-    () => tableVerb('tableCol', 'delete', ac));
+    () => tableVerb('col', 'delete', ac));
   delC.disabled = cols <= 1;
   delC.classList.add('danger');
   const or = row();
@@ -13669,10 +13680,12 @@ function replaceFont(from, to) {
       const k = el.dataset.slot;
       if (seen.has(k)) return;
       seen.add(k);
-      layout.text = layout.text || {};
-      if ((layout.text[k] || {}).font) return;
+      if (((layout.text || {})[k] || {}).font) return;
       const raw = ((d.defaultView || window).getComputedStyle(el).fontFamily || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
       if (raw.toLowerCase() !== from.toLowerCase()) return;
+      // Made only when written: making it up front turned a font used
+      // nowhere into a changed document (an empty, unsaved undo step).
+      layout.text = layout.text || {};
       layout.text[k] = { ...(layout.text[k] || {}), font: to };
       n++;
     });
