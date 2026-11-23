@@ -694,6 +694,31 @@ Rules that bite:
 
 ## Recent architecture (2026-07), so you don't rediscover it
 
+- **The fact ledger: one number per fact, pointed at from every report
+  (2026-11-23).** `docsync/ledger/<issue area>.json` (one file per staff-hub
+  issue key: tax-and-budget, housing, food-equity, labor, transportation,
+  public-health, education, social-justice, criminal-justice, native-hawaiian;
+  `ledger.AREAS`) holds each figure Hawaiʻi Appleseed states, with its source,
+  status (proposed | confirmed, and `checked`: who and when), `since` and a
+  `history` of earlier values. Words point at it with `{fact:<id>}`,
+  `{fact:<id>|<format>}` (pct, percent, n, $M, $M1, $million, $billion) and
+  `{fact:<id>@<date>}` (pinned: the value the ledger stood behind on that date,
+  for testimony and anything already said). `docsync/ledger.py` writes the
+  number in at build (Content.raw and Layout.resolve_text, so slots, boxes and
+  table cells all take it); published output is plain words, and an unknown fact
+  or a format for the wrong unit refuses a published build and shows `⚠` in the
+  editor. `[^fact.<id>]` cites the fact's own source with no `[[sources]]` line
+  (`content.FactSources`). The data is staged with the engine
+  (`stage.ledger_files()`), so the editor reads the same files: `parts/facts.js`
+  draws the chip (ⓕ and the number), offers Insert fact ▸ by issue area (pinned
+  to today in a testimony project), and adds three Preflight kinds:
+  `fact-unknown` (error), `fact-proposed`, and `fact-changed` (the ledger's value
+  differs from `layout.factsSeen[id]`, what the report last agreed it said; the
+  draft already shows the new number, and Mark reviewed records it).
+  `python3 -m docsync.facts check DIR…` finds typed-in numbers that disagree with
+  a fact. A ledger change is an engine change (a PR) until the hub has its own
+  Facts page.
+
 - **The Squarespace block is a FROZEN render, not a responsive one.**
   `exportHtml(true)` emits a fixed-width design scaled into the host's column,
   so anything in the CSS that re-asks a question about the viewport is a leak:
