@@ -33046,7 +33046,59 @@ async function collabSavedByPeer(j) {
     await new Promise(r => setTimeout(r, 100));
   }
 }
+/** A layout as comparable text: sorted keys, empty containers dropped. */
+function layoutCanon(l) {
+  const sort = v => Array.isArray(v) ? v.map(sort)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, sort(v[k])])) : v;
+  const o = typeof l === 'string' ? JSON.parse(l || '{}') : JSON.parse(JSON.stringify(l || {}));
+  return JSON.stringify(sort(JSON.parse(layoutSaid(o))));
+}
+/** Why this tab is NOT holding the shared document's latest, or '' when it is
+ *  (or when it cannot say: no session, not live, nothing seeded). A Save sends
+ *  THIS tab's copy, under a `base` that follows the room, so the store's own
+ *  check cannot see a tab that kept its old words while its base moved on: it
+ *  saves them over the newer version (2026-11-23: a tab open since before a
+ *  run of Claude's layout edits autosaved its blank layout over four built
+ *  pages). The room's document as the network delivered it (netFiles) is what
+ *  everyone else sees; the editor's own copy must agree with it. They differ for
+ *  a moment after every remote edit, so callers wait a beat before asking again. */
+function collabBehindRoom() {
+  if (!collab || !collab.state || collab.state.phase !== 'ready' || collab.state.status !== 'live') return '';
+  try {
+    const sh = collab.files(), net = collab.netFiles();
+    if (!net || typeof net.content !== 'string' || !net.content.trim()) return '';
+    if (sh.content !== net.content) return 'the shared document has changes this tab has not taken in';
+    if (layoutCanon(layout) !== layoutCanon(net.layoutText)) return "this tab's page layout differs from the shared document's";
+  } catch (e) { return ''; }
+  return '';
+}
 async function docStoreSave(layoutText, force = false, auto = false, leaving = false) {
+  if (!force) {
+    let behind = collabBehindRoom(), waited = false;
+    // A beat for the remote edit that just arrived to reach the page; a tab on
+    // its way out has no later (and the room still holds what it has).
+    for (let i = 0; behind && !leaving && i < 15; i++, waited = true) {
+      await new Promise(r => setTimeout(r, 100));
+      behind = collabBehindRoom();
+    }
+    if (behind) {
+      if (leaving) return false;
+      if (auto) {
+        hubAutosaveHold = true; hubAutosaveHoldWhy = '';   // a question, answered by a press of Save
+        tell(`not saved — ${behind}; reload to catch up (Save sends this tab's copy anyway)`, { kind: 'warn', keep: true });
+        markDirty(); hubSaveLabel();
+        return false;
+      }
+      const ok = await dsConfirm(`${behind[0].toUpperCase()}${behind.slice(1)}.\n\n`
+        + "Saving now would replace the newer shared document with this tab's older copy. "
+        + 'Reload to catch up instead, unless you mean to overwrite it.',
+        { okLabel: 'Save this copy over it', danger: true });
+      if (!ok) { tell('not saved — this tab is behind the shared document'); markDirty(); return false; }
+    }
+    // What was waited for has landed on the page: save that, not the copy
+    // this call was handed before it did.
+    if (waited && auto) layoutText = JSON.stringify(layout, null, 2) + '\n';
+  }
   $('save').disabled = true;
   hubSaveBusy = true;
   tell('saving…');
