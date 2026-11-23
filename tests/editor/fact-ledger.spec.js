@@ -72,4 +72,30 @@ test.describe('fact ledger', () => {
     expect(rows).toContain('capgains-share-over-400k');
     expect(await text(page, id)).toBe('Start here.');
   });
+
+  test('a token that goes in any way records its baseline, so a later ledger change is flagged', async ({ page }) => {
+    await gotoEditor(page);
+    // Opening a report writes nothing.
+    expect(await page.evaluate(() => layout.factsSeen || null)).toBeNull();
+    // A pilot verb (what the hub connector relays), not the Insert fact menu.
+    const id = await addBox(page, 'Rate {fact:top-income-tax-rate}, then {fact:capgains-share-over-400k@2025-01}, and {fact:no-such-fact}.');
+    expect(await page.evaluate(() => layout.factsSeen)).toEqual({ 'top-income-tax-rate': 13 });
+    // Undo takes the baseline with the edit, and does not write one back.
+    await page.evaluate(() => undo());
+    expect(await page.evaluate(() => (layout.factsSeen || {})['top-income-tax-rate'])).toBeUndefined();
+    await page.evaluate(() => redo());
+    // A batch setSlot on a real slot, as edit_report sends it.
+    const slot = 'whopays.p1';
+    const r = await page.evaluate(k => docsync.api.batch([{ verb: 'setSlot', args: [k, 'About {fact:millionaires-count} millionaires.'] }]), slot);
+    expect(r.ok).toBe(true);
+    expect(await page.evaluate(() => layout.factsSeen['millionaires-count'])).toBe(81814);
+    // The ledger moves: the report says so, naming the number it last agreed to.
+    await page.evaluate(() => { LEDGER.facts['millionaires-count'].value = 90000; LEDGER.facts['millionaires-count'].shown = '90,000'; });
+    const changed = await page.evaluate(() => factIssues().filter(i => i.kind === 'fact-changed').map(i => i.fact));
+    expect(changed).toEqual(['millionaires-count']);
+    // A baseline already recorded is kept by later edits.
+    await addBox(page, 'Again {fact:millionaires-count}.');
+    expect(await page.evaluate(() => layout.factsSeen['millionaires-count'])).toBe(81814);
+    expect(id).toBeTruthy();
+  });
 });

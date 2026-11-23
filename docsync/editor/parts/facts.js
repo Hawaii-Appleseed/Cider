@@ -160,6 +160,32 @@ function factsSeenRecord(ids) {
   return changeDoc(() => { layout.factsSeen = seen; }, { render: false });
 }
 
+/** The baseline for every fact the document points at and has none for: the
+ *  ledger's value now. Run inside every change the document takes
+ *  (changeDoc, beginChange's commit), so a token that went in any other way
+ *  than Insert fact (typed, pasted, a pilot setSlot from the hub connector,
+ *  the headless editor) is recorded in the same step and saved with it, and
+ *  fact-changed can fire for it later. A token already in the document with
+ *  no baseline gets one with the next edit of any kind; nothing is written
+ *  just because a report was opened. Not run by undo, redo or a collaborator's
+ *  change arriving: those are not new edits, and a write there would cost the
+ *  redo stack. Pinned tokens need none (they never follow the ledger), and an
+ *  id the ledger lacks has nothing to record. Mutates `layout`; true when it
+ *  added anything. */
+function factsSeenFill() {
+  if (!Object.keys(LEDGER.facts).length) return false;
+  if (!String(source || '').includes('{fact:') && !JSON.stringify(layout || {}).includes('{fact:')) return false;
+  const seen = layout.factsSeen || {};
+  const add = {};
+  factUses().forEach(u => {
+    const f = LEDGER.facts[u.id];
+    if (!u.date && f && seen[u.id] == null && add[u.id] == null) add[u.id] = Number(f.value);
+  });
+  if (!Object.keys(add).length) return false;
+  layout.factsSeen = { ...seen, ...add };
+  return true;
+}
+
 /** Preflight's fact rows: unknown (error), proposed, and changed since the
  *  report last reviewed it — the draft already says the new number. */
 function factIssues() {
