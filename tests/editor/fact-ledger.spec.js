@@ -159,4 +159,23 @@ test.describe('fact ledger', () => {
     expect(await page.evaluate(() => layout.boxes.length)).toBe(before + 1);
     expect(md).toBe('{fact:wfc-eitc-loss-2028}');
   });
+
+  test('the chip writes every format exactly as the engine does', async ({ page }) => {
+    // The chip is a preview; the engine (docsync/ledger.py) writes the published
+    // words. They disagreed on an exact half: Python rounds it to even, JS up,
+    // so a chip said "1,235" over a page that printed "1,234".
+    const values = [0, 7, 7.25, 13, 77, 99.5, 1234.5, 2.5, 0.5, 81814, 999999, 2500000, 3500000,
+      41250000, 41700000, 41750000, 132000000, 250000000, 2550000000, 2645700000, 1e9];
+    const py = require('child_process').spawnSync('python3', ['-B', '-c', `
+import json, sys
+from docsync import ledger as L
+vals = json.loads(sys.argv[1])
+print(json.dumps({k: [L.FORMATS[k](float(v)) for v in vals] for k in L.FORMATS}))
+`, JSON.stringify(values)], { cwd: require('path').resolve(__dirname, '../..'), encoding: 'utf8' });
+    expect(py.status, py.stderr).toBe(0);
+    const want = JSON.parse(py.stdout);
+    await gotoEditor(page);
+    const got = await page.evaluate(vs => Object.fromEntries(Object.entries(FACT_FORMATS).map(([k, [f]]) => [k, vs.map(f)])), values);
+    expect(got).toEqual(want);
+  });
 });
