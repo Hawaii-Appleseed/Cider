@@ -285,6 +285,7 @@ class Fact:
     match: str = ""
     unless: str = ""
     status: str = "proposed"
+    checked: str = ""       # who checked it against the source, and when
     note: str = ""
 
 
