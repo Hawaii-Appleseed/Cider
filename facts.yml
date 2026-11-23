@@ -1,0 +1,51 @@
+# The fact ledger: the figures Hawaiʻi Appleseed states, the number we stand
+# behind for each, and where it comes from. `python3 -m docsync.facts check`
+# lists every report that states one and flags any that says another number.
+#
+# status: proposed = seeded by Claude from the reports themselves (the most
+# recent cited source wins); confirmed = a person checked it against the source.
+# Every entry below is PROPOSED: a person has to confirm the number.
+
+- id: capgains-share-over-400k
+  says: Share of Hawaiʻi capital gains income going to filers earning over $400,000
+  value: 77
+  unit: pct
+  shown: 77 percent
+  as_of: tax year 2023
+  source: Hawaiʻi Department of Taxation, Individual Income Tax Statistics, Tax Year 2023, Table 21
+  url: https://tax.hawaii.gov/stats/a5_1annual/a5_5ind_inc/
+  match: capital gains.*\$400,000|\$400,000.*capital gains
+  status: proposed
+  note: The wealth tax report cites TY2023 for 77 percent; the budget primer and testimony say 70 percent, with no source year.
+
+- id: top-income-tax-rate
+  says: Hawaiʻi's top individual income tax rate
+  value: 13
+  unit: pct
+  shown: 13 percent
+  as_of: current law
+  match: top (income tax )?rate|wages are taxed up to|income from wages|taxed up to
+  unless: typical state|effective|paid about|GET|general excise
+  status: proposed
+  note: The reports also disagree on which act set it (Act 24 or Act 25) and above what income ($500,000 single or $1 million). Confirm against the statute.
+
+- id: millionaires-count
+  says: Number of millionaires in Hawaiʻi
+  value: 81814
+  unit: count
+  shown: "81,814"
+  as_of: "2024"
+  source: Altrata (formerly Wealth-X), Market Sizing Wealth Data for Hawaiʻi, Nov 9, 2025
+  match: millionaire
+  status: proposed
+
+- id: wfc-eitc-loss-2028
+  says: State EITC lost by working families in tax year 2028 if the Act 163 expansions lapse
+  value: 42800000
+  unit: usd
+  shown: $42.8 million
+  as_of: tax year 2028 estimate
+  source: Hawaiʻi Appleseed microsimulation (wfc-credits, Table 8)
+  match: earned income tax credit loss|from the (state )?(earned income tax credit|EITC)|EITC loss
+  status: proposed
+  note: wfc-credits' text says $41.7 million; its own Table 8 says 42.8 (range 42.1 to 43.5). The fact sheet rounds Table 8 to $43M.
