@@ -98,4 +98,65 @@ test.describe('fact ledger', () => {
     expect(await page.evaluate(() => layout.factsSeen['millionaires-count'])).toBe(81814);
     expect(id).toBeTruthy();
   });
+
+  test('Preflight finds a ledger figure typed as words and links it, and leaves quotes alone', async ({ page }) => {
+    await gotoEditor(page);
+    const typed = () => page.evaluate(() => factTypedIssues().map(i => `${i.fact}:${i.typed}:${i.agrees}`).sort());
+    const id = await addBox(page, 'The top rate will rise to 13 percent next year.');
+    const other = await addBox(page, 'Once the top rate was 11 percent.');
+    await addBox(page, '“The top rate is 13 percent,” she said. - The top rate is 13 percent. — [Someone, a bill](https://e.org/x)');
+    expect(await typed()).toEqual(['top-income-tax-rate:11 percent:false', 'top-income-tax-rate:13 percent:true']);
+    const off = await page.evaluate(() => factTypedIssues().find(i => !i.agrees));
+    expect(off.note).toContain('the ledger says 13 percent (11 percent was its value for tax years 2009-2026)');
+    // In the Preflight list, only the one that agrees offers Link.
+    const btns = await page.evaluate(() => {
+      preflightRender();
+      return [...document.querySelectorAll('#pf-list .pf-row[data-kind="fact-typed"] .pf-act')].map(b => b.textContent);
+    });
+    expect(btns).toEqual(['Link to ledger']);
+    // Link: the same words on the page, the token in the document, a baseline, one undo step.
+    const ok = await page.evaluate(() => factLink(factTypedIssues().find(i => i.agrees)));
+    expect(ok).toBe(true);
+    const box = await page.evaluate(i => layout.boxes.find(b => 'text.' + b.id === i).md, id);
+    expect(box).toBe('The top rate will rise to {fact:top-income-tax-rate} next year.');
+    expect(await text(page, id)).toBe('The top rate will rise to 13 percent next year.');
+    expect(await page.evaluate(() => layout.factsSeen['top-income-tax-rate'])).toBe(13);
+    expect(await typed()).toEqual(['top-income-tax-rate:11 percent:false']);
+    await page.evaluate(() => undo());
+    expect(await page.evaluate(i => layout.boxes.find(b => 'text.' + b.id === i).md, id)).toBe('The top rate will rise to 13 percent next year.');
+    expect(other).toBeTruthy();
+
+    // A slot in content.md, and testimony's pin to today.
+    expect((await page.evaluate(() => docsync.api.setSlot('whopays.p1', 'Hawaiʻi has 81,814 millionaires now.'))).ok).toBe(true);
+    const pinned = await page.evaluate(async () => {
+      const was = M.name;
+      M.name = 'Tax testimony';
+      try { await factLink(factTypedIssues().find(i => i.slot === 'whopays.p1')); } finally { M.name = was; }
+      const t = source.split('[[whopays.p1]]')[1].split('[[')[0].trim();
+      return t;
+    });
+    expect(pinned).toBe(`Hawaiʻi has {fact:millionaires-count@${new Date().toISOString().slice(0, 10)}} millionaires now.`);
+    // Words that moved since Preflight read them: nothing changes.
+    const stale = await page.evaluate(() => factLink({ fact: 'top-income-tax-rate', slot: 'whopays.p1', typed: '13 percent', sentence: 'gone' }));
+    expect(stale).toBe(false);
+  });
+
+  test('the Insert palette lists the ledger under Facts and places a box that follows it', async ({ page }) => {
+    await gotoEditor(page);
+    const rows = await page.evaluate(() => {
+      openPalette();
+      const all = palShown.filter(r => r.cat === 'Fact').length;
+      palCat = 'Fact'; palFilter();
+      const facts = palShown.map(r => r.id);
+      closePalette();
+      return { all, facts };
+    });
+    expect(rows.all).toBe(0);
+    expect(rows.facts).toContain('fact:wfc-eitc-loss-2028');
+    const before = await page.evaluate(() => (layout.boxes || []).length);
+    await page.evaluate(() => palRows().find(r => r.id === 'fact:wfc-eitc-loss-2028').run());
+    const md = await page.evaluate(() => layout.boxes[layout.boxes.length - 1].md);
+    expect(await page.evaluate(() => layout.boxes.length)).toBe(before + 1);
+    expect(md).toBe('{fact:wfc-eitc-loss-2028}');
+  });
 });
