@@ -199,6 +199,13 @@ export class CollabSession {
    * @param {(awayMs: number) => boolean} [o.onStale]  true = the editor is starting over
    *                                   (a reload), so the session stays closed; anything
    *                                   else and it rejoins and merges, as it always did
+   * @param {(info: {awayMs: number, wroteAway: boolean}) => (Promise<string>|string)} [o.beforeWake]
+   *                                   asked before a session with edits made WHILE AWAY rejoins
+   *                                   (wake() only; a session with nothing of its own to send
+   *                                   just receives). 'restart' = the editor is starting over,
+   *                                   so those edits are not merged into a room that may have
+   *                                   been rewritten under them and the session stays closed;
+   *                                   anything else, or a rejection, rejoins and merges
    * @param {Function} [o.WebSocketPolyfill]   for a Node client (see below); browsers never set it
    */
   constructor(o) {
@@ -213,6 +220,7 @@ export class CollabSession {
     this.onHistory = o.onHistory || (() => {});
     this.onPeers = o.onPeers || (() => {});
     this.onStale = o.onStale || null;
+    this.beforeWake = o.beforeWake || null;
     // The room may hand THIS editor pilot ops to apply (the hub's /pilot, on
     // behalf of a person's own Claude): (msg) => {ok, error?, results?}. When
     // unset, such a message is answered as refused rather than left hanging.
@@ -347,6 +355,7 @@ export class CollabSession {
   #wroteAway = false;        // the editor changed the document while the socket was gone
   #tickAt = Date.now();      // the idle timer's last run; a long gap is the machine asleep
   #stale = false;            // onStale said the editor is starting over: stay closed
+  #waking = false;           // beforeWake has been asked and has not answered yet
   #asleep = false;
   #sleepTimer = 0;
   #deadWs = null;            // the socket sleep() killed; wake() takes it off the provider
@@ -505,8 +514,45 @@ export class CollabSession {
       try { dead.close(); } catch (e) { /* already gone */ }
     }
     this.#set({ status: 'connecting' });
+    // Edits made while away are CRDT operations on the copy this tab left with.
+    // If the room was rewritten meanwhile (a Save made straight to the store,
+    // Claude's headless editor, a restore), merging them does not give either
+    // side's document but a mixture of both (a layout of one build's pages
+    // under another's shapes), and the tab then saves that. The editor is asked
+    // first; one that is starting over (a reload) is not merged at all.
+    // Idempotent while it thinks: every keystroke calls wake() on an idle tab.
+    if (this.beforeWake && this.#wroteAway) {
+      if (this.#waking) return true;
+      this.#waking = true;
+      const awayMs = this.#sleptAt ? Date.now() - this.#sleptAt : 0;
+      Promise.resolve().then(() => this.beforeWake({ awayMs, wroteAway: true })).catch(() => 'go').then(v => {
+        this.#waking = false;
+        if (this.#stale || this.state.status === 'closed') return;
+        if (v === 'restart') this.#startOver(); else this.connect();
+      });
+      return true;
+    }
     this.connect();
     return true;
+  }
+
+  /** Let go of the socket for good: the page is on its way out (a reload) and
+   *  this session must not merge anything on the way. */
+  #startOver() {
+    this.#stale = true;
+    this.#asleep = true;
+    // A dead socket included: a close that never completes (see wake()) would
+    // leave the provider holding it.
+    const ws = this.provider.ws;
+    try { this.provider.disconnect(); } catch (e) { /* already closed */ }
+    if (ws && this.provider.ws === ws) {
+      this.provider.ws = null;
+      this.provider.wsconnected = false;
+      this.provider.wsconnecting = false;
+      try { ws.close(); } catch (e) { /* already gone */ }
+    }
+    this.#deadWs = null;
+    this.#set({ status: 'asleep' });
   }
 
   /**
@@ -521,20 +567,7 @@ export class CollabSession {
     let over = false;
     try { over = this.onStale(ms) === true; } catch { over = false; }
     if (!over) return false;
-    this.#stale = true;
-    this.#asleep = true;
-    // Let go of the socket for good, a dead one included: a close that never
-    // completes (see wake()) would leave the provider holding it.
-    const ws = this.provider.ws;
-    try { this.provider.disconnect(); } catch (e) { /* already closed */ }
-    if (ws && this.provider.ws === ws) {
-      this.provider.ws = null;
-      this.provider.wsconnected = false;
-      this.provider.wsconnecting = false;
-      try { ws.close(); } catch (e) { /* already gone */ }
-    }
-    this.#deadWs = null;
-    this.#set({ status: 'asleep' });
+    this.#startOver();
     return true;
   }
 

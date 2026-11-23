@@ -26213,9 +26213,13 @@ async function startCollab() {
     beforeRemote: () => { collabNoteCaret(); collabFlushDirty(); },
     onBaseSha: collabSaved,
     onFiles: (files, why) => { collabAdopt(files, why); },
+    beforeWake: collabBeforeWake,
     onStatus: st => {
+      const was = collabInfo.status;
       collabInfo = { ...collabInfo, status: st.status, phase: st.phase, peers: st.peers,
                      here: st.here, error: st.error };
+      // Back from asleep or offline: check this tab took in what it missed.
+      if (st.status === 'live' && was !== 'live' && was !== 'connecting' && was !== undefined) collabReviveSoon();
       // A dropped socket hears no more peers messages, so the last roster
       // would stand: a colleague's caret, ring and "typing" lock painted on
       // a page they may have left an hour ago. Not live: nobody is here.
@@ -27226,6 +27230,55 @@ function collabStale(awayMs) {
     .catch(e => swallowed('collabStale: draft cache', e))
     .finally(() => location.reload());
   return true;
+}
+
+/** A sleeping tab with edits made WHILE AWAY is about to rejoin the room. Those
+ *  edits are operations on the copy the tab left with; if the document was
+ *  saved from anywhere else meanwhile (another session, Claude's headless
+ *  editor, a restore) the room was rewritten under them, and merging gives a
+ *  mixture of both documents that the tab then saves (a simulated rewrite left
+ *  9 of 12 shapes and a page order of neither; 2026-11-23). So when the store's
+ *  version is not the one this tab holds, the tab starts over from the current
+ *  document: its own edits are put aside (the draft cache keeps them as
+ *  draft-stale:<id>, which the next boot says it did not restore) and the page
+ *  reloads, the one path known to be a fresh join. Words being typed right now,
+ *  an open dialog, or a store that cannot be asked: merge, as it always did. */
+async function collabBeforeWake(info) {
+  if (!docStore() || !docVersion || editing || document.querySelector('dialog[open]')) return 'go';
+  let m = null;
+  try {
+    const r = await fetch(docStore(), { cache: 'no-store' });
+    m = r.ok ? await r.json() : null;
+  } catch (e) { return 'go'; }
+  if (!m || !m.exists || !m.version || m.version === docVersion) return 'go';
+  try {
+    const kv = await idbKV();
+    if (kv) await kv.set(cacheKey(), { source, layout: JSON.stringify(layout), at: Date.now(), base: docVersion });
+  } catch (e) { swallowed('collabBeforeWake: draft cache', e); }
+  const mins = Math.max(1, Math.round((info.awayMs || 0) / 60000));
+  tell(`this tab was away ${mins} minute${mins === 1 ? '' : 's'} and the document was saved meanwhile — opening the current version; the edits made here are set aside`,
+       { kind: 'warn', ms: 12000 });
+  setTimeout(() => location.reload(), 300);
+  return 'restart';
+}
+
+/** The session is live again after being asleep or offline. Whatever that did,
+ *  this tab's own copy must now agree with the room's: if it still does not a
+ *  moment later (a remote edit not taken in, a layout kept from before), the
+ *  room's document replaces it, as it does for anyone joining. Not while words
+ *  are being typed. */
+let collabReviveTimer = 0;
+function collabReviveSoon() {
+  clearTimeout(collabReviveTimer);
+  collabReviveTimer = setTimeout(async () => {
+    collabReviveTimer = 0;
+    if (!collab || editing || document.querySelector('dialog[open]')) return;
+    const behind = collabBehindRoom();
+    if (!behind) return;
+    try { await collabAdopt(collab.files(), 'adopt'); }
+    catch (e) { swallowed('collabRevive', e); return; }
+    tell(`caught up with the shared document (${behind})`, { ms: 8000 });
+  }, 2500);
 }
 
 function offerEditorReload() {
