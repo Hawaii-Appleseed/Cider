@@ -128,6 +128,10 @@ function buildFactRows(d, m, host, range) {
   });
 }
 
+/** The Insert palette's fact row: a text box holding the fact (pinned to
+ *  today in testimony), placed as any new text box is. */
+const addFactBox = id => addTextBox('plain', `{fact:${id}${factPinsByDefault() ? '@' + todayIso() : ''}}`);
+
 /** Every fact token in the document: {id, date, fmt, where}. */
 function factUses() {
   const out = [];
@@ -215,4 +219,162 @@ function factIssues() {
     }
   });
   return issues;
+}
+
+// ------------------------------------------------- a ledgered figure, typed
+// docsync/facts.py's check, cut to the question Preflight asks of each slot
+// and text box: does a sentence state a ledgered fact (its `match`, not its
+// `unless`) with a typed number of the same kind, and not through a token?
+// The hub connector asks the same of a slot (the hub's assets/factledger.js
+// typedFacts); this is its twin. When the number is the ledger's, Preflight
+// offers Link: the token in its place, so it follows the ledger from then on.
+// When it is not, it says so and leaves the choice to a person.
+//
+// Words that are not ours to change are left out: anything in quotation
+// marks, a blockquote, and a line that ends by attributing itself to someone
+// (`— [Name, …](link)`), as testimony summaries do. Their numbers are what
+// that person said, whatever the ledger says now.
+const FT_SCALE = { thousand: 1e3, million: 1e6, billion: 1e9, trillion: 1e12, K: 1e3, M: 1e6, B: 1e9 };
+const FT_NUM = /(?<![\w.#§/-])(\$\s?)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?:\s?(%|percent\b|per\s?cent\b)|\s(thousand|million|billion|trillion)\b|([KMB])\b)?/g;
+const FT_SENT = /(?<=[.!?;])\s+(?=[*_]*[A-Z"“(])|\n{2,}|\n(?=\s*[-*•]\s)/;
+const FT_ATTRIBUTED = /[—–-]\s*\[[^\]]+\]\([^)]+\)\s*$/;
+
+function typedNumbers(sentence) {
+  const plain = sentence.replace(/\[\^[^\]\s]+\]/g, ' ').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`#>|]+/g, ' ');
+  const quoted = [...plain.matchAll(/“[^”]*”|"[^"]*"/g)].map(m => [m.index, m.index + m[0].length]);
+  const out = [];
+  for (const m of plain.matchAll(FT_NUM)) {
+    if (quoted.some(([a, b]) => m.index > a && m.index < b)) continue;
+    const [whole, dollar, digits, frac, pct, word, letter] = m;
+    const before = plain.slice(Math.max(0, m.index - 16), m.index);
+    if (/\b(?:HB|SB|Act|Section|Table|Figure|page|No\.?|FY|TY|tax year)\s*$/i.test(before)) continue;
+    const sc = FT_SCALE[word ? word.toLowerCase() : letter || ''] || 1;
+    const v = Number(digits.replace(/,/g, '') + (frac || '')) * sc;
+    const unit = pct ? 'pct' : dollar ? 'usd' : 'count';
+    if (unit === 'count' && (v < 100 || (v >= 1900 && v <= 2100 && !digits.includes(',')))) continue;
+    out.push({ shown: whole.trim(), value: v, unit, step: (frac ? 10 ** -frac.length : 1) * sc });
+  }
+  return out;
+}
+const ftAgrees = (n, v) => Math.abs(n.value - v) <= n.step / 2 + 1e-9;
+
+/** [{fact, typed, ledger, agrees, earlier, sentence}] for one piece of text. */
+function typedFacts(text) {
+  const out = [];
+  const md = String(text || '');
+  if (!md.trim() || !Object.keys(LEDGER.facts).length) return out;
+  for (const sentence of md.split(FT_SENT)) {
+    const line = sentence.trim();
+    if (!line || /^>/.test(line) || FT_ATTRIBUTED.test(line)) continue;
+    const linked = new Set([...line.matchAll(FACT_TOKEN_RE)].map(m => m[1]));
+    const bare = line.replace(FACT_TOKEN_RE, ' ');
+    const nums = typedNumbers(bare);
+    if (!nums.length) continue;
+    for (const f of Object.values(LEDGER.facts)) {
+      if (!f.match || linked.has(f.id)) continue;
+      let rx, nx;
+      try { rx = new RegExp(f.match, 'i'); nx = f.unless ? new RegExp(f.unless, 'i') : null; } catch (e) { continue; }
+      if (!rx.test(bare) || (nx && nx.test(bare))) continue;
+      const mine = nums.filter(n => n.unit === f.unit);
+      if (!mine.length) continue;
+      const hit = mine.find(n => ftAgrees(n, Number(f.value)));
+      // A disagreement is only worth a row when the typed figure could be a
+      // version of this one: an earlier ledger value, or within a factor of
+      // two of it (facts.py's `near`). "2.6 percent of income" in a sentence
+      // that matches the capital-gains share is another figure, not a stale one.
+      const ratio = n => Math.abs(Math.log(Math.abs(n.value || 1e-9) / Math.abs(Number(f.value) || 1e-9)));
+      const wasOne = n => (f.history || []).find(h => ftAgrees(n, Number(h.value)));
+      const n = hit || mine.filter(x => wasOne(x) || ratio(x) <= Math.log(2)).sort((a, b) => ratio(a) - ratio(b))[0];
+      if (!n) continue;
+      const old = !hit && wasOne(n);
+      out.push({ fact: f.id, typed: n.shown, ledger: f.shown || factWords(f.id, null, null).text, agrees: !!hit,
+                 earlier: old ? (old.as_of || old.since || 'an earlier value') : null, sentence: line });
+    }
+  }
+  return out;
+}
+
+/** Every text the document holds, with a way to rewrite it: content.md's
+ *  slots ({slot}) and the layout's words (a text box's md, a table cell…,
+ *  {el, path}). */
+function factTexts() {
+  const out = [];
+  const lines = String(source || '').split('\n');
+  let key = null, start = 0;
+  const close = end => { if (key && key !== 'sources') out.push({ where: key, slot: key, text: lines.slice(start, end).join('\n') }); };
+  lines.forEach((l, i) => {
+    const k = l.match(/^\[\[([^\]]+)\]\]\s*$/);
+    if (!k) return;
+    close(i);
+    key = k[1]; start = i + 1;
+  });
+  close(lines.length);
+  const walk = (v, path, where) => {
+    if (typeof v === 'string') { if (/\d/.test(v) && v.length > 12) out.push({ where, path, text: v }); return; }
+    if (Array.isArray(v)) { v.forEach((x, i) => walk(x, path.concat(i), where)); return; }
+    if (v && typeof v === 'object') {
+      Object.entries(v).forEach(([k, x]) => {
+        if (k === 'factsSeen' || k === 'style' || k === 'src' || k === 'url') return;
+        walk(x, path.concat(k), where || (v.id != null ? (path[0] === 'boxes' ? 'text.' + v.id : String(v.id)) : null));
+      });
+    }
+  };
+  walk(layout, [], null);
+  return out;
+}
+
+/** Preflight's fact-typed rows. */
+function factTypedIssues() {
+  const issues = [];
+  factTexts().forEach(t => {
+    typedFacts(t.text).forEach(x => {
+      const f = LEDGER.facts[x.fact];
+      issues.push({ kind: 'fact-typed', ids: t.where ? [t.where] : [], fact: x.fact, agrees: x.agrees,
+        typed: x.typed, sentence: x.sentence, slot: t.slot || null, path: t.path || null,
+        note: x.agrees
+          ? `“${x.typed}” is ${f.says.charAt(0).toLowerCase() + f.says.slice(1)}, typed as words. Link it and it follows the ledger`
+          : `says ${x.typed}; the ledger says ${x.ledger}${x.earlier ? ` (${x.typed} was its value for ${x.earlier})` : ''}. Check which is right` });
+    });
+  });
+  return issues;
+}
+
+/** Link: the typed figure in that sentence becomes the fact's token (pinned
+ *  to today in testimony, as Insert fact does), as one undo step. Refused,
+ *  changing nothing, when the words moved since Preflight read them. */
+async function factLink(issue) {
+  const token = `{fact:${issue.fact}${factPinsByDefault() ? '@' + todayIso() : ''}}`;
+  const swap = text => {
+    const at = text.indexOf(issue.sentence);
+    if (at < 0) return null;
+    const i = text.indexOf(issue.typed, at);
+    if (i < 0 || i >= at + issue.sentence.length) return null;
+    return text.slice(0, i) + token + text.slice(i + issue.typed.length);
+  };
+  let done = false;
+  await changeDoc(() => {
+    if (issue.slot) {
+      const lines = String(source || '').split('\n');
+      const h = lines.findIndex(l => l.trim() === `[[${issue.slot}]]`);
+      if (h < 0) return false;
+      let e = h + 1;
+      while (e < lines.length && !/^\[\[[^\]]+\]\]\s*$/.test(lines[e])) e++;
+      const next = swap(lines.slice(h + 1, e).join('\n'));
+      if (next == null) return false;
+      source = [...lines.slice(0, h + 1), next, ...lines.slice(e)].join('\n');
+    } else if (issue.path) {
+      let o = layout;
+      for (const k of issue.path.slice(0, -1)) { o = o && o[k]; }
+      const last = issue.path[issue.path.length - 1];
+      if (!o || typeof o[last] !== 'string') return false;
+      const next = swap(o[last]);
+      if (next == null) return false;
+      o[last] = next;
+    } else return false;
+    done = true;
+    return true;
+  });
+  if (!done) tell('those words changed since Preflight read them — check again', { kind: 'error' });
+  else tell(`linked to the ledger: ${issue.typed} is now ${token}`);
+  return done;
 }
