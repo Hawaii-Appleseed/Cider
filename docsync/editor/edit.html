@@ -26220,6 +26220,9 @@ async function startCollab() {
                      here: st.here, error: st.error };
       // Back from asleep or offline: check this tab took in what it missed.
       if (st.status === 'live' && was !== 'live' && was !== 'connecting' && was !== undefined) collabReviveSoon();
+      // An automatic Save was put off while the session was away: it goes now
+      // (docStoreSave checks again that the tab agrees with the room first).
+      if (st.status === 'live' && was !== 'live' && typeof hubAutosaveSchedule === 'function') hubAutosaveSchedule();
       // A dropped socket hears no more peers messages, so the last roster
       // would stand: a colleague's caret, ring and "typing" lock painted on
       // a page they may have left an hour ago. Not live: nobody is here.
@@ -33147,8 +33150,35 @@ function collabBehindRoom() {
   } catch (e) { return ''; }
   return '';
 }
+/** Is this tab's session joined to a room but NOT in it right now: asleep (the
+ *  socket let go after a quiet spell) or reconnecting after one? Then its copy
+ *  is the one it left with, and the room (and the store) may have moved: the
+ *  hub's own count of who is in says nobody is, so a headless edit goes ahead
+ *  and saves, and a tab that wakes with its older, still-dirty copy sent it over
+ *  that version about 40 seconds later (2026-11-23, twice). A session that never
+ *  joined yet (starting up) or one whose relay is down ('offline') is not this:
+ *  it has nothing newer to be behind, and a document must still save without the
+ *  relay. */
+function collabAwayFromRoom() {
+  if (!collab || !collab.state || collab.state.phase !== 'ready') return false;
+  return collab.state.status === 'asleep' || collab.state.status === 'connecting';
+}
 async function docStoreSave(layoutText, force = false, auto = false, leaving = false) {
-  if (!force) {
+  let asked = false;
+  if (!force && collabAwayFromRoom()) {
+    // An automatic Save waits for the session to be live and agreeing (the
+    // check below then applies); nothing is lost meanwhile - the edits are in
+    // the draft cache, and a tab on its way out restores them from there if
+    // the document has not moved. A pressed Save is a person's call.
+    if (auto) return false;
+    const ok = await dsConfirm('This tab is not connected to the shared document right now (it was asleep).\n\n'
+      + 'Saving now would send this tab\'s copy, which may be older than what everyone else sees. '
+      + 'Wait a moment for it to catch up, unless you mean to overwrite it.',
+      { okLabel: 'Save this copy anyway', danger: true });
+    if (!ok) { tell('not saved — this tab is catching up with the shared document'); markDirty(); return false; }
+    asked = true;   // answered: the room check below is not asked a second time (the store's own base check still is)
+  }
+  if (!force && !asked) {
     let behind = collabBehindRoom(), waited = false;
     // A beat for the remote edit that just arrived to reach the page; a tab on
     // its way out has no later (and the room still holds what it has).
