@@ -508,7 +508,10 @@ cmd_land() {
 # else it stops there. WT_VENDOR_CMD / WT_HUB_CMD replace steps 2 and 4 (the test does).
 # A report's engine/manifest.json lists its engine files, so it ships WITH them: a
 # deleted engine file (normalise.py) with the old manifest would 404 in every editor.
-SHIP_OWNED='^primer/(edit\.html|collab-client\.js|editor-version\.txt|sw\.js)$|^primer/[^/]+/engine/(docsync/[^/]+\.py|manifest\.json)$'
+# The fact ledger's data (docsync/ledger/<area>.json) is engine too: the 2026-11-23
+# ship carried the manifests that name it and left the files, and every hub editor's
+# boot failed on the 404.
+SHIP_OWNED='^primer/(edit\.html|collab-client\.js|editor-version\.txt|sw\.js)$|^primer/[^/]+/engine/(docsync/[^/]+\.py|docsync/ledger/[^/]+\.json|manifest\.json)$'
 
 fresh_copy() { # <repo> <path> <ref>: a detached checkout of <ref>, reset each time
   local repo="$1" path="$2" ref="$3"
