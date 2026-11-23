@@ -7054,13 +7054,13 @@ const TEXT_PRESETS = {
                 style: { size: 14, weight: 700, color: '#FFFFFF', align: 'center' },
                 w: 1.9, fill: '#2F3E46', act: 'pdf' },
 };
-async function addTextBox(kind) {
+async function addTextBox(kind, md) {
   const preset = TEXT_PRESETS[kind] || TEXT_PRESETS.body;
   const page = visiblePageId();
   const id = freeBoxId();
   await changeDoc(() => {
     const box = { id, page, x: placeX(preset.w), y: 2, w: preset.w,
-                  z: nextZ(1, page), md: preset.md };   // on top of whatever floats there
+                  z: nextZ(1, page), md: md ?? preset.md };   // on top of whatever floats there
     if (preset.style && Object.keys(preset.style).length) box.style = { ...preset.style };
     if (preset.fill) box.fill = preset.fill;
     if (preset.act) box.act = preset.act;
@@ -14779,6 +14779,13 @@ const palRows = () => {
     // Images
     { id: 'ar-img', cat: 'Image', name: 'Upload image', desc: 'From your computer', icon: { p: '<path d="M7 9.5V3M4.5 5.2L7 2.7l2.5 2.5M2.5 10.5V12h9v-1.5"/>' }, run: () => startImageUpload(), kw: 'picture photo logo' },
   ];
+  // The fact ledger: a box holding the fact, which follows the ledger. In
+  // running text the same thing is right-click ▸ Insert fact.
+  Object.values(LEDGER.facts).sort((a, b) => String(a.says).localeCompare(String(b.says))).forEach(f => rows.push({
+    id: 'fact:' + f.id, cat: 'Fact', name: `${f.shown || f.value} · ${f.says}`, noPin: true,
+    desc: `${LEDGER.areas[f.area] || f.area}${f.as_of ? ', ' + f.as_of : ''}${f.status === 'confirmed' ? '' : ' · proposed'} — a box that follows the ledger; in text, right-click ▸ Insert fact`,
+    icon: { p: '<circle cx="7" cy="7" r="5.6"/><path d="M8.6 4.2H6.6v5.8M5.4 6.6h3"/>' },
+    run: () => addFactBox(f.id), kw: `fact ledger number figure ${f.id} ${f.area}` }));
   // What this report already carries: a template's logos, earlier uploads.
   (M ? projectImages() : []).forEach(n => rows.push({ id: 'img:' + n, cat: 'Image', name: n, desc: 'In this report',
     icon: { p: '<rect x="1.5" y="2" width="11" height="10" rx="1.5"/><circle class="fl" cx="5" cy="5.6" r="1.1"/><path d="M2.5 10.5l3-3 2.2 2.2 2-2 1.8 1.8"/>' },
@@ -14786,8 +14793,8 @@ const palRows = () => {
   return rows;
 };
 const PAL_SUGGESTED = ['text-plain', 'shape-rect', 'chart', 'table', 'ar-img'];
-const PAL_CATS = [['', 'All'], ['Text', 'Text'], ['Shape', 'Shapes'], ['Icon', 'Icons'], ['Data', 'Charts and tables'], ['Image', 'Images']];
-const PAL_HEADS = { Text: 'Text', Shape: 'Shapes', Icon: 'Icons', Data: 'Charts and tables', Image: 'Images' };
+const PAL_CATS = [['', 'All'], ['Text', 'Text'], ['Shape', 'Shapes'], ['Icon', 'Icons'], ['Data', 'Charts and tables'], ['Fact', 'Facts'], ['Image', 'Images']];
+const PAL_HEADS = { Text: 'Text', Shape: 'Shapes', Icon: 'Icons', Data: 'Charts and tables', Fact: 'Facts', Image: 'Images' };
 const palSvg = ic => `<svg viewBox="${ic.vb || '0 0 14 14'}"${ic.art ? ' class="art"' : ''}>${ic.p}</svg>`;
 const palEsc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const STAR_SVG = '<svg viewBox="0 0 14 14"><path d="M7 1.6l1.7 3.4 3.8.55-2.75 2.68.65 3.77L7 10.22 3.6 12l.65-3.77L1.5 5.55l3.8-.55z"/></svg>';
@@ -14829,8 +14836,10 @@ function palFilter() {
   const words = q.split(/\s+/).filter(Boolean);
   const hay = r => `${r.name} ${r.desc} ${r.kw || ''} ${r.cat}`.toLowerCase();
   if (!words.length && !palCat) {
+    // The ledger's facts wait behind their chip or a word typed: one row per
+    // fact would bury everything else as the ledger grows.
     palShown = PAL_SUGGESTED.map(id => ({ ...palAll.find(r => r.id === id), sug: true }))
-      .concat(palAll);
+      .concat(palAll.filter(r => r.cat !== 'Fact'));
   } else {
     palShown = palAll.filter(r => (!palCat || r.cat === palCat) && words.every(w => hay(r).includes(w)));
     // Nothing named it: icons are searched by their own tray.
@@ -20418,7 +20427,7 @@ const PF_LABEL = { 'print-overflow': 'Cut off in print', 'off-sheet': 'Off the p
   'low-res': 'Low resolution for print', 'no-alt': 'No description', 'low-contrast': 'Low contrast',
   'font-failed': 'Font did not load', cramped: 'Text squeezed in its box',
   'fact-unknown': 'A fact the ledger does not have', 'fact-proposed': 'A fact not yet confirmed',
-  'fact-changed': 'A fact changed in the ledger' };
+  'fact-changed': 'A fact changed in the ledger', 'fact-typed': 'A ledger figure typed as words' };
 const rgbaOf = c => { const m = String(c).match(/rgba?\(([^)]+)\)/); if (!m) return null;
   const v = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return [v[0], v[1], v[2], v[3] ?? 1]; };
 const lumOf = ([r, g, b]) => [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
@@ -20526,7 +20535,7 @@ function preflightIssues() {
       note: `${imgSrcOf(img).split('/').pop()} — a screen reader has nothing to say for it` });
   });
   issues.push(...contrastIssues(d));
-  issues.push(...factIssues());
+  issues.push(...factIssues(), ...factTypedIssues());
   try {
     [...d.fonts].filter(f => f.status === 'error').forEach(f =>
       issues.push({ kind: 'font-failed', ids: [], note: `${f.family.replace(/^["']|["']$/g, '')} ${f.weight} ${f.style} — the page shows a fallback` }));
@@ -20597,6 +20606,19 @@ function preflightRender(list = preflightIssues()) {
           preflightRender();
         });
         t.appendChild(ok);
+      }
+      if (k === 'fact-typed' && i.agrees) {
+        // The same number, from the ledger: the words do not change today,
+        // and from now on they follow it.
+        const ln = document.createElement('button');
+        ln.className = 'pf-act';
+        ln.textContent = 'Link to ledger';
+        ln.addEventListener('click', async ev => {
+          ev.stopPropagation();
+          await factLink(i);
+          preflightRender();
+        });
+        t.appendChild(ln);
       }
       r.append(dot, t);
       r.addEventListener('click', () => goToIssue(i));
