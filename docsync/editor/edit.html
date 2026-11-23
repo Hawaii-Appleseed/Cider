@@ -24124,6 +24124,18 @@ async function idbKV() {
 const cacheKey = () => `draft-cache:${M.id}`;   // per project; stable across draft/main views
 let _cacheTimer = 0;
 let cachedRestored = false;
+let cachedDropped = '';              // why a cached draft was NOT restored on this boot
+/** Why a cached draft is older than the version loaded, or '' when it is not.
+ *  A draft carries the version it was made on (`base`); one cached before that
+ *  was recorded has none, so it is compared by time instead: a version is named
+ *  <UTC time>-<id>, and one saved after the draft was cached is newer than it. */
+function cachedDraftStale(cached, version) {
+  if (cached.base) return cached.base === version ? '' : 'the document was saved by someone else since';
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(\d{3})Z/.exec(String(version));
+  if (!m || !cached.at) return '';
+  const saved = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6], +m[7]);
+  return saved > cached.at ? 'the document was saved after they were kept' : '';
+}
 function cacheDraft() {
   if (local || !M) return;
   clearTimeout(_cacheTimer);
@@ -24131,7 +24143,9 @@ function cacheDraft() {
     if (!dirty) return;                // nothing unsaved to keep
     const kv = await idbKV();
     if (!kv) return;
-    try { await kv.set(cacheKey(), { source, layout: JSON.stringify(layout), at: Date.now() }); }
+    // `base` is the store's version these edits were made on top of: without
+    // it a draft cannot tell, a day later, that the document has moved on.
+    try { await kv.set(cacheKey(), { source, layout: JSON.stringify(layout), at: Date.now(), base: docStore() ? docVersion : null }); }
     catch (e) { /* storage full / private mode — losing the cache is not fatal */ }
   }, 800);
 }
@@ -24152,6 +24166,21 @@ async function restoreCachedDraft() {
   if (!cached || cached.source == null) return;
   const cachedLayout = cached.layout || '{}';
   if (cached.source === source && cachedLayout === JSON.stringify(layout)) return;  // nothing new
+  // A draft is edits on top of the version it was made on. On the hub that
+  // version can have moved while this browser was away — a Save from another
+  // session, Claude's headless editor, a restore — and then the draft is the
+  // OLDER document: restored, it shows the old layout, seeds an empty room
+  // with it and autosaves it over the newer version (2026-11-23: a report's
+  // headless layout edits "vanished" from a freshly opened editor). So it is
+  // restored only when it was made on the version now loaded.
+  if (docStore() && docVersion) {
+    const why = cachedDraftStale(cached, docVersion);
+    if (why) {
+      cachedDropped = why;
+      try { await kv.set('draft-stale:' + M.id, cached); await kv.del(cacheKey()); } catch (e) { /* a full store: it is dropped anyway */ }
+      return;
+    }
+  }
   source = cached.source;
   try { layout = JSON.parse(cachedLayout); } catch (e) { source = original; return; }
   layout.positions = layout.positions || {};
@@ -24856,6 +24885,8 @@ async function boot() {
   if (local && !renderFailed) sayIdle();
   else if (cachedRestored) tell(
     'restored unsaved edits from this browser — Save to keep them, or Discard to drop them');
+  else if (cachedDropped) tell(
+    `unsaved edits kept in this browser were not restored: ${cachedDropped}, so they are older than what is on screen`, { kind: 'warn', ms: 12000 });
   // What moved while this person was away. After the first render, because
   // the marks go onto rendered paragraphs and the diff is against `source`,
   // which the render above settled. Not awaited, and silent when there is
