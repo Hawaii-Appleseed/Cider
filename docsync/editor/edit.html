@@ -22356,6 +22356,7 @@ async function changeDoc(change, { render: draw = true, burst = null } = {}) {
     throw e;
   }
   if ((out === false || (out && out.ok === false)) && untouched()) { withdraw(); return out; }
+  factsSeenFill();
   markDirty();
   if (draw) await render();
   return out;
@@ -22390,7 +22391,7 @@ function beginChange() {
     async commit({ render: draw = true } = {}) {
       if (open) {
         open = false; committed = true;
-        if (untouched()) { withdrawStep(); kept = false; } else markDirty();
+        if (untouched()) { withdrawStep(); kept = false; } else { factsSeenFill(); markDirty(); }
       }
       if (draw) await render();
       return kept;
@@ -22398,7 +22399,7 @@ function beginChange() {
     cancel() {
       if (!open) return;
       open = false;
-      if (untouched()) { withdrawStep(); kept = false; } else markDirty();
+      if (untouched()) { withdrawStep(); kept = false; } else { factsSeenFill(); markDirty(); }
     },
     async rollback({ render: draw = committed } = {}) {
       const st = JSON.parse(before);
