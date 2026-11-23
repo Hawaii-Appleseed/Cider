@@ -33,14 +33,32 @@ function ledgerAdopt(urls, datas) {
 // ledger.py's FORMATS, for the chip's preview only — the engine writes the
 // words that are published.
 const fmtG = v => Math.abs(v) >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 10 }) : String(+v.toPrecision(10));
+// Python's format() rounds the EXACT binary value, and an exact half to even:
+// 1234.5 -> "1,234", 2.5 million -> "$2M", and 2.55 (2.5499… in binary) ->
+// "2.5". toLocaleString and Math.round round the half up, so the chip said
+// "1,235" over a page that printed "1,234". This rounds the full expansion,
+// as the hub connector's twin does (its assets/factledger.js `fixed`, which
+// dev/test_factledger.mjs holds to ledger.py value by value).
+function fmtFixed(v, digits) {
+  const neg = v < 0;
+  const [int, frac = ''] = Math.abs(v).toFixed(100).split('.');
+  const keep = frac.slice(0, digits), rest = frac.slice(digits);
+  let n = BigInt(int + keep);
+  const last = Number((int + keep).slice(-1));
+  if (rest[0] > '5' || (rest[0] === '5' && (/[1-9]/.test(rest.slice(1)) || last % 2 === 1))) n += 1n;
+  const str = n.toString().padStart(digits + 1, '0');
+  const whole = BigInt(str.slice(0, str.length - digits)).toLocaleString('en-US');
+  const out = digits ? `${whole}.${str.slice(-digits)}` : whole;
+  return neg && /[1-9]/.test(str) ? '-' + out : out;
+}
 const fmtMoney = (v, div, digits, word) => {
-  let s = (v / div).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  let s = fmtFixed(v / div, digits);
   if (digits && s.endsWith('.' + '0'.repeat(digits))) s = s.slice(0, -(digits + 1));
   return `$${s}${word}`;
 };
 const FACT_FORMATS = {
   pct: [v => fmtG(v) + '%', 'pct'], percent: [v => fmtG(v) + ' percent', 'pct'],
-  n: [v => Math.round(v).toLocaleString('en-US'), 'count'],
+  n: [v => fmtFixed(v, 0), 'count'],
   $M: [v => fmtMoney(v, 1e6, 0, 'M'), 'usd'], $M1: [v => fmtMoney(v, 1e6, 1, 'M'), 'usd'],
   $million: [v => fmtMoney(v, 1e6, 1, ' million'), 'usd'], $billion: [v => fmtMoney(v, 1e9, 1, ' billion'), 'usd'],
 };
