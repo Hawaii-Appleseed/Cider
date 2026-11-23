@@ -699,6 +699,63 @@ describe('two editors on one room', { skip: E2E ? false : 'COLLAB_E2E=0' }, () =
     a.close();
   });
 
+  // 2026-11-23: a tab that typed while away is not just "words": its edits are
+  // operations on the copy it left with, and a room rewritten meanwhile (a Save
+  // made straight to the store) merges with them into a mixture of both
+  // documents. beforeWake lets the editor say the tab is starting over.
+  test('edits made while away: beforeWake is asked, and a tab that starts over is not merged', async () => {
+    const room = uniqueRoom('wake-restart');
+    const asked = [];
+    const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0, beforeWake: info => { asked.push(info); return 'restart'; } });
+    await a.ready;
+    const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+    await b.ready;
+    await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+
+    // Nothing of its own to send: nobody is asked, it simply rejoins.
+    assert.equal(a.sleep(), true);
+    assert.equal(a.wake(), true);
+    assert.equal(asked.length, 0, 'a tab with nothing to send was asked');
+    await waitFor(() => a.state.status === 'live', 10_000, 'A never came back from a plain sleep');
+
+    // Typed while away: asked first, and 'restart' keeps it out of the room.
+    assert.equal(a.sleep(), true);
+    const docA = parseContent(a.files().content);
+    const slotA = docA.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+    slotA.text = 'A, typed while away: ' + slotA.text;
+    a.mark(); a.flush({ content: serializeContent(docA), layout: p.layout });
+    assert.equal(a.wake(), true);
+    assert.equal(a.wake(), true, 'a second wake while it is being asked');
+    await waitFor(() => a.stale, 5000, 'the editor said restart and the session did not stop');
+    assert.equal(asked.length, 1, 'asked once, however many wakes');
+    assert.equal(asked[0].wroteAway, true);
+    await sleep(600);
+    assert.equal(a.provider.wsconnected, false, 'a session that starts over opened a socket');
+    assert.ok(!b.files().content.includes('A, typed while away: '), 'the edits made while away reached the room');
+    a.close(); b.close();
+  });
+
+  test('edits made while away merge as before when the editor says go, or cannot say', async () => {
+    for (const verdict of ['go', 'throw']) {
+      const room = uniqueRoom('wake-' + verdict);
+      const a = open(room, 'ada', p, { idleMs: 0, hiddenMs: 0,
+        beforeWake: () => { if (verdict === 'throw') throw new Error('the store could not be asked'); return 'go'; } });
+      await a.ready;
+      const b = open(room, 'grace', p, { idleMs: 0, hiddenMs: 0 });
+      await b.ready;
+      await waitFor(() => a.state.peers === 2, 5000, 'presence never showed two');
+      assert.equal(a.sleep(), true);
+      const docA = parseContent(a.files().content);
+      const slotA = docA.blocks.find(x => x.kind === 'slot' && x.text.length > 20);
+      slotA.text = 'A typed it while away: ' + slotA.text;
+      a.mark(); a.flush({ content: serializeContent(docA), layout: p.layout });
+      assert.equal(a.wake(), true);
+      await waitFor(() => b.files().content.includes('A typed it while away: '), 15_000, `${verdict}: the words never reached the room`);
+      assert.equal(a.stale, false);
+      a.close(); b.close();
+    }
+  });
+
   test('a collaborator typing keeps an otherwise idle session awake', async () => {
     const room = uniqueRoom('watch');
     // A is only READING — no local edits at all, and a deadline it would trip
