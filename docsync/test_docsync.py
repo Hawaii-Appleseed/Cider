@@ -6406,6 +6406,64 @@ check_eq("ledger: staged with the engine",
          [k in _staged(None)["files"]
           for k in ("engine/docsync/ledger.py", "engine/docsync/ledger/tax-and-budget.json")], [True, True])
 
+# ---- the ledger, brought in from the hub (tools/ledger_from_hub.py) ----------
+import importlib.util as _ilu                              # noqa: E402
+_spec = _ilu.spec_from_file_location("ledger_from_hub", Path(__file__).resolve().parent.parent / "tools" / "ledger_from_hub.py")
+_LFH = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_LFH)
+from docsync.ledger import AREAS as _LAREAS                # noqa: E402
+with _tempfile.TemporaryDirectory() as _d:
+    _d = Path(_d)
+    _mine, _hub = _d / "ledger", _d / "hub"
+    _mine.mkdir(); _hub.mkdir()
+    _A = {"id": "a-rate", "says": "A rate", "value": 13, "unit": "pct", "status": "confirmed", "source": "s"}
+    _B = {"id": "b-count", "says": "A count", "value": 5000, "unit": "count", "status": "confirmed", "source": "s"}
+    _hand = '{\n  "area": "tax-and-budget",\n  "name": "Taxes & Budget",\n  "facts": [\n    ' \
+        + json.dumps(_B) + ',\n    ' + json.dumps(_A) + '\n  ]\n}\n'
+    (_mine / "tax-and-budget.json").write_text(_hand, encoding="utf-8")
+
+    def _serve(facts_by_area):
+        for a in _LAREAS:
+            (_hub / f"{a}.json").write_text(json.dumps({"area": a, "name": _LAREAS[a], "facts": facts_by_area.get(a, [])}), encoding="utf-8")
+
+    _serve({"tax-and-budget": [_A, _B]})
+    _lines = _LFH.sync(_hub, _mine)
+    check_eq("from the hub: nothing changed, a hand-formatted file is left byte for byte",
+             (_mine / "tax-and-budget.json").read_text(encoding="utf-8"), _hand)
+    check_eq("and an area the hub has empty gets its (empty) file", sorted(p.name for p in _mine.iterdir()),
+             sorted(f"{a}.json" for a in _LAREAS))
+    _lines = _LFH.sync(_hub, _mine)
+    check_eq("in step: no lines, no writes", _lines, [])
+
+    _A2 = {**_A, "value": 14, "status": "proposed"}
+    _H = {"id": "rent", "says": "Rent", "value": 2100, "unit": "usd", "shown": "$2,100", "status": "proposed", "source": "ACS"}
+    _serve({"tax-and-budget": [_A2, _B], "housing": [_H]})
+    _lines = _LFH.sync(_hub, _mine)
+    check_eq("a new value and a new fact are said, one line each", sorted(_lines),
+             ["+ rent (housing): $2,100, proposed", "~ a-rate (tax-and-budget): 13 -> 14; now proposed"])
+    check_eq("the file keeps its order", [f["id"] for f in json.loads((_mine / "tax-and-budget.json").read_text())["facts"]],
+             ["b-count", "a-rate"])
+    from docsync.ledger import load as _lload               # noqa: E402
+    check_eq("and the engine reads what was written", _lload(_mine)["rent"]["value"], 2100)
+
+    _before = {p.name: p.read_text() for p in _mine.iterdir()}
+    _serve({"tax-and-budget": [_A2]})
+    try:
+        _LFH.sync(_hub, _mine); _why = ""
+    except _LFH.Refused as e:
+        _why = str(e)
+    check_eq("a fact missing from the hub refuses the lot (the hub cannot delete one)",
+             ("b-count" in _why, {p.name: p.read_text() for p in _mine.iterdir()} == _before), (True, True))
+    _serve({"tax-and-budget": [_A2, _B], "housing": [_H, {**_H, "id": "Bad Id"}]})
+    try:
+        _LFH.sync(_hub, _mine); _why = ""
+    except _LFH.Refused as e:
+        _why = str(e)
+    check_eq("a ledger the engine would refuse is refused, and nothing written",
+             ("would not load" in _why, {p.name: p.read_text() for p in _mine.iterdir()} == _before), (True, True))
+    (_hub / "labor.json").unlink()
+    check_eq("a missing area file refuses", _LFH.main([str(_hub), "--ledger", str(_mine)]), 1)
+
 if FAILS:
     print("\n\n".join("FAIL: " + f for f in FAILS))
     print(f"\n{len(FAILS)} failed")

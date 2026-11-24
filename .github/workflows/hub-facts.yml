@@ -1,0 +1,53 @@
+# The fact ledger, brought in from the staff hub.
+#
+# The hub holds the ledger (its Facts page). Its workflow facts-to-cider.yml
+# fetches every area file, runs tools/ledger_from_hub.py over a checkout of
+# main and, when something moved, force-pushes the result to the branch
+# `hub-facts` with the org's publishing App (which may push but not open a
+# pull request). This turns that push into a pull request that merges itself
+# once the Editor tests gate passes, like any other change to main.
+#
+# A pull request opened with this workflow's own token starts no workflows,
+# so the first time the gate is dispatched on the branch by hand (the run's
+# check lands on the same commit, which is what the ruleset asks of it).
+# Later pushes to an open pull request start it the usual way: the App's push
+# is not this token's.
+name: Facts from the hub
+on:
+  push:
+    branches: [hub-facts]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: hub-facts
+  cancel-in-progress: false
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Open the pull request, or find it
+        id: pr
+        run: |
+          set -euo pipefail
+          n=$(gh pr list --repo "$REPO" --head hub-facts --base main --state open --json number -q '.[0].number')
+          if [ -z "$n" ]; then
+            body=$(gh api "repos/$REPO/commits/${{ github.sha }}" -q .commit.message | tail -n +2)
+            gh pr create --repo "$REPO" --base main --head hub-facts \
+              --title "Facts from the hub" \
+              --body "$(printf '%s\n\n%s\n' "The fact ledger as the staff hub holds it (its Facts page), brought in by the hub's facts-to-cider workflow and tools/ledger_from_hub.py. It merges itself when the gate passes." "$body")"
+            echo "new=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Merge it when the gate passes
+        run: gh pr merge hub-facts --repo "$REPO" --auto --merge
+      - name: Start the gate on a pull request this token opened
+        if: steps.pr.outputs.new == '1'
+        run: gh workflow run editor-tests.yml --repo "$REPO" --ref hub-facts
