@@ -1494,7 +1494,7 @@
       "y": 2.35,
       "w": 2.2,
       "z": 35,
-      "md": "**$43M**",
+      "md": "**{fact:wfc-eitc-loss-2028|$M}**",
       "style": {
         "size": 15,
         "weight": 700,
@@ -1562,7 +1562,7 @@
       "y": 4.5,
       "w": 2.1,
       "z": 14,
-      "md": "**Less for working families** in 2028 if the expansions expire.\n\nThat is **$43M** from the EITC and **$34M** from food/excise.\n\n*Does not include the CDCTC.",
+      "md": "**Less for working families** in 2028 if the expansions expire.\n\nThat is **{fact:wfc-eitc-loss-2028|$M}** from the EITC and **$34M** from food/excise.\n\n*Does not include the CDCTC.",
       "style": {
         "size": 12.5,
         "color": "#3D4A5C",
