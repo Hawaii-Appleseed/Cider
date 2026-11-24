@@ -1554,7 +1554,10 @@ let PBASE = '';                 // '' = this directory
 let REGISTRY = null;
 let UNKNOWN_PROJECT = '';           // the ?project= nobody here answers to
 
-const withBase = u => PBASE ? PBASE.replace(/\/+$/, '') + '/' + u : u;
+// A manifest file named by an absolute address (the hub's live fact ledger,
+// /api/facts/area/<area>.json, docsync.hub live_ledger) is fetched from there,
+// not under the project's base.
+const withBase = u => /^(\/|[a-z][a-z0-9+.-]*:)/i.test(u) ? u : PBASE ? PBASE.replace(/\/+$/, '') + '/' + u : u;
 
 /** Every URL the editor writes carries the project, so a draft link, a
  *  reload, or a post-publish reset never quietly jumps projects. */
