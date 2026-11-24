@@ -716,8 +716,14 @@ Rules that bite:
   differs from `layout.factsSeen[id]`, what the report last agreed it said; the
   draft already shows the new number, and Mark reviewed records it).
   `python3 -m docsync.facts check DIR…` finds typed-in numbers that disagree with
-  a fact. A ledger change is an engine change (a PR) until the hub has its own
-  Facts page.
+  a fact. **The staff hub holds the ledger (2026-11-24): change a fact on its
+  Facts page (/facts), never in these files.** Hub editors read it live
+  (`docsync.hub` points their manifests at `/api/facts/area/<area>.json`), and
+  once an hour the hub's `facts-to-cider.yml` runs `tools/ledger_from_hub.py`
+  and pushes the branch `hub-facts`, which `hub-facts.yml` turns into a
+  pull request that merges itself when the gate passes. A hand edit here is
+  overwritten by the next sync, and one that removes a fact makes the sync
+  refuse until it is put back.
 
 - **The Squarespace block is a FROZEN render, not a responsive one.**
   `exportHtml(true)` emits a fixed-width design scaled into the host's column,
