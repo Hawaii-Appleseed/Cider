@@ -7,9 +7,15 @@
 // a fact is unknown, unconfirmed, or changed since someone last reviewed it.
 //
 // The ledger's files are staged with the engine (stage.ledger_files), one per
-// issue area; ledgerAdopt() reads them whenever the engine files load.
+// issue area; ledgerAdopt() reads them whenever the engine files load. They
+// are known by where the engine reads them (docsync/ledger/), not by where
+// they are fetched from: on the staff hub the manifest fetches them from the
+// hub's own store (/api/facts/area/<area>.json, docsync.hub live_ledger), so a
+// number changed on the hub's Facts page reaches the next load.
 let LEDGER = { areas: {}, facts: {} };
-const LEDGER_URL = 'engine/docsync/ledger/';
+const LEDGER_PATH = 'docsync/ledger/';
+/** The hub's Facts page, where a fact is added or changed. */
+const FACTS_PAGE = '/facts';
 const FACT_TOKEN_RE = /\{fact:([a-z0-9][a-z0-9-]{0,63})(?:@(\d{4}(?:-\d{2}(?:-\d{2})?)?))?(?:\|([A-Za-z$%0-9]{1,12}))?\}/g;
 // ledger.py's AREAS, in the hub's order (the issue_brief keys).
 const LEDGER_AREAS = [['tax-and-budget', 'Taxes & Budget'], ['housing', 'Affordable Housing'],
@@ -20,7 +26,8 @@ const LEDGER_AREAS = [['tax-and-budget', 'Taxes & Budget'], ['housing', 'Afforda
 function ledgerAdopt(urls, datas) {
   const facts = {};
   urls.forEach((u, i) => {
-    if (!u.startsWith(LEDGER_URL) || !u.endsWith('.json')) return;
+    const path = M.files && M.files[u];
+    if (typeof path !== 'string' || !path.startsWith(LEDGER_PATH) || !path.endsWith('.json')) return;
     try {
       const raw = typeof datas[i] === 'string' ? datas[i] : new TextDecoder().decode(datas[i]);
       const area = JSON.parse(raw);
@@ -142,6 +149,15 @@ function buildFactRows(d, m, host, range) {
       n.className = 'ds-menu-head';
       n.textContent = 'Testimony: pinned to today';
       sub.appendChild(n);
+    }
+    // On the hub, the way to a fact this list lacks, or a number that moved.
+    if (docStore()) {
+      const b = d.createElement('button');
+      b.dataset.factsPage = '';
+      b.textContent = 'Add or change a fact…';
+      b.title = 'The hub\'s Facts page, in a new tab: a change there reaches this report on its next open';
+      b.addEventListener('click', () => { closeMenu(d); window.open(FACTS_PAGE, '_blank', 'noopener'); });
+      sub.appendChild(b);
     }
   });
 }
