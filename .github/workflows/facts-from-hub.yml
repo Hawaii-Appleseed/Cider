@@ -1,0 +1,89 @@
+# The fact ledger, read from the staff hub's export and brought into
+# docsync/ledger/.
+#
+# The hub holds the ledger (its Facts page). Two halves bring it here, because
+# each repository holds only one of the keys:
+#
+#   - the hub's facts-export.yml (the hub repo is private, and on the org's
+#     free plan org secrets never reach a private repo, but it holds the
+#     Access service token) fetches every area file once an hour and commits
+#     any change to the hub branch `facts-export`;
+#   - this (Cider is public, so it gets the org's publishing App) reads that
+#     branch ten minutes later, runs tools/ledger_from_hub.py over main and,
+#     when a fact moved, pushes the branch `hub-facts` with the App. The App's
+#     push starts hub-facts.yml, which opens the pull request and sets it to
+#     merge itself when the gate passes.
+#
+# The script writes nothing when the answer looks wrong (an area missing, a
+# fact this ledger has gone, a ledger the engine would refuse), and the run
+# goes red. An open pull request already carrying the same files is left
+# alone, so a quiet hour does not restart its tests.
+name: Facts from the hub
+on:
+  schedule:
+    - cron: '51 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: facts-from-hub
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: A token for Cider and the hub
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISH_APP_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+          owner: Hawaii-Appleseed
+          repositories: Cider,staff-updates-internal
+
+      - name: Cider's main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.app.outputs.token }}
+          fetch-depth: 1
+
+      - name: The hub's export
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p ../fetched
+          for a in $(python3 -c 'from docsync.ledger import AREAS; print(" ".join(AREAS))'); do
+            gh api -H 'Accept: application/vnd.github.raw' \
+              "repos/Hawaii-Appleseed/staff-updates-internal/contents/facts/$a.json?ref=facts-export" > "../fetched/$a.json"
+          done
+
+      - name: Into the ledger
+        id: sync
+        run: |
+          set -euo pipefail
+          python3 tools/ledger_from_hub.py ../fetched > ../changes.txt
+          cat ../changes.txt
+          if [ -s ../changes.txt ]; then echo "moved=1" >> "$GITHUB_OUTPUT"; fi
+
+      - name: To the hub-facts branch
+        if: steps.sync.outputs.moved == '1'
+        run: |
+          set -euo pipefail
+          git config user.name "Hub facts"
+          git config user.email "hub-facts@users.noreply.github.com"
+          if git fetch -q --depth 1 origin hub-facts 2>/dev/null && git diff --quiet FETCH_HEAD -- docsync/ledger; then
+            echo "hub-facts already carries these files: nothing to push"
+            exit 0
+          fi
+          git checkout -q -B hub-facts
+          git add docsync/ledger
+          { echo "Facts from the hub"; echo; cat ../changes.txt; } > ../msg.txt
+          git commit -q -F ../msg.txt
+          git push -q -f origin hub-facts
+          echo "pushed hub-facts"

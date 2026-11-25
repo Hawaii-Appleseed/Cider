@@ -719,9 +719,13 @@ Rules that bite:
   a fact. **The staff hub holds the ledger (2026-11-24): change a fact on its
   Facts page (/facts), never in these files.** Hub editors read it live
   (`docsync.hub` points their manifests at `/api/facts/area/<area>.json`), and
-  once an hour the hub's `facts-to-cider.yml` runs `tools/ledger_from_hub.py`
-  and pushes the branch `hub-facts`, which `hub-facts.yml` turns into a
-  pull request that merges itself when the gate passes. A hand edit here is
+  once an hour the hub's `facts-export.yml` commits the area files to its
+  branch `facts-export` (the hub is private on the free plan, so it never gets
+  the org's App secrets, but it holds the Access token), and ten minutes later
+  `facts-from-hub.yml` here (public: it gets the App) runs
+  `tools/ledger_from_hub.py` over them and pushes the branch `hub-facts`, which
+  `hub-facts.yml` turns into a pull request that merges itself when the gate
+  passes. A hand edit here is
   overwritten by the next sync, and one that removes a fact makes the sync
   refuse until it is put back.
 

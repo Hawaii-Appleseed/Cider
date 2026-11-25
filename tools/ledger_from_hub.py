@@ -5,10 +5,11 @@ The staff hub holds the fact ledger (its Facts page, a D1 store; the hub's
 README, "Facts"). Editors on the hub read it live, but local editors, the
 engine's own checks and every build GitHub makes (publish-sites.yml, the
 editor suite) read the files in docsync/ledger/, so those files are brought
-up to date from the hub: the hub's workflow `facts-to-cider.yml` fetches
-/api/facts/area/<area>.json for every area into a folder, runs this over it
-and pushes the result to the branch `hub-facts`, which `hub-facts.yml` here
-turns into a pull request that merges itself once the gate passes.
+up to date from the hub: the hub's `facts-export.yml` commits every area
+file to its branch `facts-export` hourly, and `facts-from-hub.yml` here reads
+them into a folder, runs this over it and pushes the result to the branch
+`hub-facts`, which `hub-facts.yml` turns into a pull request that merges
+itself once the gate passes.
 
     python3 tools/ledger_from_hub.py FETCHED_DIR [--ledger docsync/ledger]
 
