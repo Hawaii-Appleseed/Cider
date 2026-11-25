@@ -372,6 +372,26 @@ def drawn_slots(render: Path | None) -> list[str] | None:
             return None
 
 
+# The hub keeps the fact ledger itself (its D1 store, changed on its Facts
+# page): /api/facts/area/<area>.json answers with the live area file, and
+# falls back to the copy vendored here when it cannot. So a hub manifest names
+# that address for each ledger file, and a number changed on the hub reaches
+# every editor's next load with no ship between. The Pyodide path is
+# unchanged (docsync/ledger/<area>.json), so the engine reads it as always.
+LIVE_LEDGER = "/api/facts/area/"
+
+
+def live_ledger(files: dict) -> dict:
+    """A manifest's `files` with each ledger file fetched from the hub's
+    store instead of the vendored copy beside it."""
+    out = {}
+    for url, path in files.items():
+        if isinstance(path, str) and path.startswith("docsync/ledger/") and path.endswith(".json"):
+            url = LIVE_LEDGER + path.rsplit("/", 1)[1]
+        out[url] = path
+    return out
+
+
 def vendor(hub: Path, projects: list[dict], *, dry: bool,
            missing: list[str] | None = None) -> list[str]:
     """Copy everything; append to `missing` each reference a project's page
@@ -419,6 +439,8 @@ def vendor(hub: Path, projects: list[dict], *, dry: bool,
         _sync_tree(sdir / "engine", pdir / "engine", changed, dry=dry, skip=("manifest.json",))
         m = json.loads((sdir / "engine" / "manifest.json").read_text())
         m["repo"] = p["repo"]
+        if isinstance(m.get("files"), dict):
+            m["files"] = live_ledger(m["files"])
         drawn = p["drawn"] if "drawn" in p else drawn_slots(p.get("render"))
         if drawn is not None:
             m["drawn"] = drawn

@@ -3362,6 +3362,20 @@ with _tempfile.TemporaryDirectory() as _d:
              (_hub / "primer" / "bp" / "engine" / "manifest.json").is_file(), True)
     check_eq("and its place on the hub's list",
              json.loads((_hub / "primer" / "projects.json").read_text()).get("bp", {}).get("name"), "Budget Primer")
+# ---- the hub: its editors read the fact ledger from the hub's own store ----
+from docsync.hub import live_ledger as _live_ledger, LIVE_LEDGER as _LIVE_LEDGER  # noqa: E402
+from docsync.stage import ledger_files as _ledger_files    # noqa: E402
+from docsync.ledger import AREAS as _AREAS                 # noqa: E402
+_files = {"engine/docsync/ledger.py": "docsync/ledger.py",
+          "engine/docsync/ledger/housing.json": "docsync/ledger/housing.json",
+          "engine/projects/x/content.md": "projects/x/content.md"}
+check_eq("a hub manifest fetches each ledger file from the hub's store, at the same engine path",
+         _live_ledger(_files),
+         {"engine/docsync/ledger.py": "docsync/ledger.py",
+          _LIVE_LEDGER + "housing.json": "docsync/ledger/housing.json",
+          "engine/projects/x/content.md": "projects/x/content.md"})
+check_eq("every issue area has a file, so every editor loads every area the hub may fill",
+         sorted(_ledger_files()), sorted(f"ledger/{a}.json" for a in _AREAS))
 # ---- the hub: a ship that would hide words people typed is refused ----------
 # A renderer that renames or drops a slot does not delete what was typed into
 # it — the room keeps it — it just stops drawing it, and nobody is told.

@@ -1524,6 +1524,13 @@ function dragUnlisten(d, move, up) {
 // Keyed by the ?project= AS WRITTEN, not by PROJECT: loadRegistry() clears
 // PROJECT for an id the registry does not list (the engine next door is
 // used), and the speculation runs before the registry is read.
+// A manifest file's address, under a project's base. One named absolutely (the
+// hub's live fact ledger, /api/facts/area/<area>.json, docsync.hub
+// live_ledger) is fetched from there as it is. withBase and the speculation
+// below both go through this: the speculation once built its own, and a
+// second open of a hub report asked for /primer/<id>/api/facts/… and never
+// finished booting.
+const underBase = (base, u) => /^(\/|[a-z][a-z0-9+.-]*:)/i.test(u) ? u : base ? base.replace(/\/+$/, '') + '/' + u : u;
 const ENGINE_MEMO = 'primer-engine:';   // + the ?project= param -> {base, files}
 const ENGINE_MEMO_ID = new URLSearchParams(location.search).get('project') || '';
 let engineAhead = null;                 // {base, files: Map url -> promise}, until boot() looks
@@ -1533,7 +1540,7 @@ let engineAhead = null;                 // {base, files: Map url -> promise}, un
   let memo = null;
   try { memo = JSON.parse(localStorage.getItem(ENGINE_MEMO + id) || 'null'); } catch (e) { /* private mode, or junk */ }
   if (!memo || typeof memo.base !== 'string' || !Array.isArray(memo.files) || !memo.files.length) return;
-  const at = u => (memo.base ? memo.base.replace(/\/+$/, '') + '/' + u : u);
+  const at = u => underBase(memo.base, u);
   const files = new Map(memo.files.map(u => [u, BINARY_RE.test(u) ? getBytes(at(u)) : get(at(u))]));
   for (const p of files.values()) p.catch(() => {});   // reported by boot's Promise.all, if taken; else nobody's
   engineAhead = { base: memo.base, files };
@@ -1554,7 +1561,7 @@ let PBASE = '';                 // '' = this directory
 let REGISTRY = null;
 let UNKNOWN_PROJECT = '';           // the ?project= nobody here answers to
 
-const withBase = u => PBASE ? PBASE.replace(/\/+$/, '') + '/' + u : u;
+const withBase = u => underBase(PBASE, u);
 
 /** Every URL the editor writes carries the project, so a draft link, a
  *  reload, or a post-publish reset never quietly jumps projects. */
