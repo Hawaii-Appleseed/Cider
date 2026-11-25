@@ -1,10 +1,9 @@
 # The fact ledger, brought in from the staff hub.
 #
-# The hub holds the ledger (its Facts page). Its workflow facts-to-cider.yml
-# fetches every area file, runs tools/ledger_from_hub.py over a checkout of
-# main and, when something moved, force-pushes the result to the branch
-# `hub-facts` with the org's publishing App (which may push but not open a
-# pull request). This turns that push into a pull request that merges itself
+# The hub holds the ledger (its Facts page). facts-from-hub.yml reads the
+# hub's export, runs tools/ledger_from_hub.py over a checkout of main and,
+# when something moved, force-pushes the result to the branch `hub-facts`
+# with the org's publishing App (which may push but not open a pull request). This turns that push into a pull request that merges itself
 # once the Editor tests gate passes, like any other change to main.
 #
 # A pull request opened with this workflow's own token starts no workflows,
@@ -43,7 +42,7 @@ jobs:
             body=$(gh api "repos/$REPO/commits/${{ github.sha }}" -q .commit.message | tail -n +2)
             gh pr create --repo "$REPO" --base main --head hub-facts \
               --title "Facts from the hub" \
-              --body "$(printf '%s\n\n%s\n' "The fact ledger as the staff hub holds it (its Facts page), brought in by the hub's facts-to-cider workflow and tools/ledger_from_hub.py. It merges itself when the gate passes." "$body")"
+              --body "$(printf '%s\n\n%s\n' "The fact ledger as the staff hub holds it (its Facts page), brought in by facts-from-hub.yml and tools/ledger_from_hub.py. It merges itself when the gate passes." "$body")"
             echo "new=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Merge it when the gate passes
