@@ -98,6 +98,40 @@ test('a stand-in editor is no wider than the paragraph it replaced (retitc cover
   expect(Math.abs(r.hleft - r.left), `left ${r.left} -> ${r.hleft}`).toBeLessThanOrEqual(2);
 });
 
+test('a centred paragraph does not slide sideways when it opens (primer toc.mission1)', async ({ page }) => {
+  await gotoEditor(page, '?project=budget-primer');
+  const r = await page.evaluate(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const d = document.getElementById('out').contentDocument;
+    // Against the sheet, not the window: focusing the field may scroll.
+    const lines = el => {
+      const pg = el.closest('section.page').getBoundingClientRect();
+      const out = [];
+      const w = d.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n; (n = w.nextNode());) {
+        const rg = d.createRange(); rg.selectNodeContents(n);
+        for (const rc of rg.getClientRects()) out.push([rc.left - pg.left, rc.top - pg.top]);
+      }
+      return out;
+    };
+    const el = d.querySelector('[data-slot="toc.mission1"]');
+    el.scrollIntoView({ block: 'center' });
+    const was = lines(el);
+    el.dispatchEvent(new MouseEvent(el.closest('[data-el]') ? 'dblclick' : 'click', { bubbles: true, cancelable: true, view: d.defaultView }));
+    await sleep(150);
+    const host = d.querySelector('.ds-edit[data-slot="toc.mission1"]');
+    const now = host ? lines(host) : [];
+    if (host) host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    return { opened: !!host, standIn: host && !host.classList.contains('ds-edit-in'), was, now };
+  });
+  await settle(page);
+  expect(r.opened, 'toc.mission1 opens').toBe(true);
+  expect(r.standIn, 'in a stand-in (the case that slid)').toBe(true);
+  expect(r.now.length, 'same number of lines').toBe(r.was.length);
+  const worst = Math.max(...r.was.map((p, i) => Math.max(Math.abs(p[0] - r.now[i][0]), Math.abs(p[1] - r.now[i][1]))));
+  expect(worst, `every line stays where it was (worst ${worst.toFixed(2)}px)`).toBeLessThanOrEqual(0.3);
+});
+
 test('an empty block slot keeps a box a click can land on (tfc eyebrow.p-1)', async ({ page }) => {
   await gotoEditor(page, '?project=tfc-2027-priorities');
   const r = await page.evaluate(async () => {

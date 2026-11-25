@@ -29974,6 +29974,19 @@ function caretOrAll(d, host, at) {
   s.addRange(r);
 }
 
+/** Where an element's first line of words starts, in the frame's px; null
+ *  when it has no words. edit() compares it across the swap to a stand-in. */
+function firstLineLeft(d, el) {
+  const w = d.createTreeWalker(el, NodeFilter.SHOW_TEXT,
+    { acceptNode: n => (n.data.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP) });
+  const n = w.nextNode();
+  if (!n) return null;
+  const r = d.createRange();
+  r.selectNodeContents(n);
+  const rc = r.getClientRects()[0];
+  return rc ? rc.left : null;
+}
+
 /** The point of a pointer event, as caretAt wants it. */
 const ptOf = e => (e && Number.isFinite(e.clientX) ? { x: e.clientX, y: e.clientY } : null);
 
@@ -30122,6 +30135,7 @@ function edit(d, key, clicked, at) {
   // Formatting lives in the chrome bar (B/I/lists appear there while a rich
   // editor is open — syncMarksBar), links on ⌘K, endnotes on right-click.
   const standRect = (!inPlace && !inside) ? blocks[0].getBoundingClientRect() : null;
+  const standLine = standRect ? firstLineLeft(d, blocks[0]) : null;
   if (inside) target.replaceChildren(host);
   else if (inPlace) target.replaceWith(host);
   else { blocks[0].replaceWith(host); blocks.slice(1).forEach(b => b.remove()); }
@@ -30136,8 +30150,28 @@ function edit(d, key, clicked, at) {
     const hr = host.getBoundingClientRect();
     // rounded UP: a hundredth of a pixel short wraps the last word onto a
     // line of its own (seen with the CI runner's fonts)
-    if (hr.width > standRect.width + 1) host.style.maxWidth = (Math.ceil(standRect.width / z) + 1) + 'px';
-    if (standRect.left > hr.left + 1) host.style.marginLeft = ((standRect.left - hr.left) / z).toFixed(2) + 'px';
+    let pad = 0;
+    if (hr.width > standRect.width + 1) {
+      const maxW = Math.ceil(standRect.width / z) + 1;
+      host.style.maxWidth = maxW + 'px';
+      pad = maxW - standRect.width / z;
+    }
+    let left = (standRect.left - hr.left) / z;
+    if (standRect.left > hr.left + 1) host.style.marginLeft = left.toFixed(2) + 'px';
+    else left = 0;
+    // That spare pixel or two of width is not free: a paragraph centred by
+    // its own auto margins, or centred text, re-centres in the wider box and
+    // every line slid right by half of it while the words were open (the
+    // primer's mission paragraphs on page 2: 643.2px in a 645px box, ~1px).
+    // Where the first line now starts is the measure; move the box back by
+    // however far it went, never by more than the padding could account for.
+    if (pad > 0 && standLine !== null) {
+      const now = firstLineLeft(d, host);
+      const drift = now === null ? 0 : (now - standLine) / z;
+      if (Math.abs(drift) > 0.05 && Math.abs(drift) <= pad + 0.5) {
+        host.style.marginLeft = (left - drift).toFixed(2) + 'px';
+      }
+    }
   }
   richHost = host;
   richOpts = { allowLists, allowMd, fnLabels, headMark, wear };
